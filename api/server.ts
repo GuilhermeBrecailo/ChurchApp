@@ -1,27 +1,25 @@
-// src/server.ts
-import Fastify from "fastify";
+import { fastify } from "fastify";
 import cors from "@fastify/cors";
+import AppInit from "./src/interfaces/plugins/AppInit";
+import { UserRoutes } from "./src/interfaces/routes/UserRoutes.js";
 
-const app = Fastify({
-  logger: true, // Loga tudo que acontece, ótimo para debug
+const server = fastify({
+  trustProxy: true,
 });
 
-// Registrar plugins
-app.register(cors, {
-  origin: true, // Em prod, troque pelo domínio do seu front
+await server.register(cors, {
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 });
 
-// Registrar rotas (Aqui conectamos com a camada de Application/Domain)
-// app.register(escalaRoutes, { prefix: "/escalas" });
+await server.register(AppInit); // 👈 ESSENCIAL (decorate acontece aqui)
 
-const start = async () => {
-  try {
-    await app.listen({ port: 3333 });
-    console.log("🔥 Servidor rodando na porta 3333");
-  } catch (err) {
-    app.log.error(err);
-    process.exit(1);
-  }
-};
+server.get("/status", async () => {
+  return { success: true };
+});
 
-start();
+await server.register(UserRoutes, { prefix: "/" });
+
+await server.listen({ port: 3000, host: "0.0.0.0" });
+
+console.log("🚀 Server running on http://localhost:3000");

@@ -4,6 +4,7 @@ export class User {
   private id: string | undefined = undefined;
   private name: string = "";
   private email: string = "";
+  private phone: string = "";
   private crunch?: string;
 
   private createdAt?: Date = new Date();
@@ -14,7 +15,7 @@ export class User {
     }
 
     if (props.id) this.id = props.id;
-
+    this.setPhone(props.phone);
     this.createdAt = props.createdAt;
     this.setName(props.name);
     this.setEmail(props.email);
@@ -35,6 +36,10 @@ export class User {
 
   public getEmail(): string {
     return this.email;
+  }
+
+  public getPhone(): string {
+    return this.phone;
   }
 
   public getCrunch(): string | undefined {
@@ -59,6 +64,13 @@ export class User {
     this.email = email;
   }
 
+  public setPhone(phone: string) {
+    if (!phone?.trim()) {
+      throw new DomainError("Telefone é obrigatorio");
+    }
+    this.phone = phone;
+  }
+
   public setCrunch(crunch: string | undefined) {
     if (!crunch?.trim()) {
       throw new DomainError("Igreja é obrigatorio");
@@ -68,9 +80,10 @@ export class User {
 }
 
 export interface UserDto {
-  id: string;
+  id?: string;
   name: string;
   email: string;
+  phone: string;
   createdAt?: Date;
   Crunch?: string;
 }

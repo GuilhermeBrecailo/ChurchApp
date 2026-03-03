@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",                  // Output moderno do JS
+    "module": "ESNext",                  // Para usar import/export
+    "moduleResolution": "Bundler",       // Resolve imports corretamente
+    "strict": true,                       // Habilita verificações rígidas
+    "esModuleInterop": true,             // Permite importar CommonJS
+    "skipLibCheck": true,                 // Ignora checagem de libs
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node", "jest"],           // Reconhece node e jest
+    "outDir": "dist"                      // Pasta de saída (opcional)
+  },
+  "include": [
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "src/@types/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

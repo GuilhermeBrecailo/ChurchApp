@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
     provider = "postgresql"
-    url      = env("DATABASE_URL") // <--- CERTO (Sem aspas por fora)
+    url      = env("DATABASE_URL")
 }
 
 // Contexto de Identidade (Auth)
@@ -12,7 +12,7 @@ model User {
     id        String   @id @default(uuid())
     name      String
     email     String   @unique
-    password  String // Hash
+    phone     String
     createdAt DateTime @default(now())
 
     // Isso te dá poder para criar igrejas e ver tudo, ignorando as regras de Tenant.
