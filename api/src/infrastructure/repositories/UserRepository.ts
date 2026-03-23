@@ -4,13 +4,15 @@ import { IUserRespository } from "../../domain/repositories/IUserRepository";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 
 export class UserRepository implements IUserRespository {
-  public async createUser(user: UserDto): Promise<{ id: string }> {
+  public async createUser(user: User): Promise<{ id: string }> {
     try {
       const result = await $prismaClient.user.create({
         data: {
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
+          name: user.getName(),
+          email: user.getEmail(),
+          phone: user.getPhone(),
+          crunchId: user.getCrunchId() ?? "",
+          role: user.getRole() ?? "",
         },
       });
 

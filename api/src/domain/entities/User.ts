@@ -5,7 +5,8 @@ export class User {
   private name: string = "";
   private email: string = "";
   private phone: string = "";
-  private crunch?: string;
+  private crunchId?: string;
+  private role?: string;
 
   private createdAt?: Date = new Date();
 
@@ -42,12 +43,16 @@ export class User {
     return this.phone;
   }
 
-  public getCrunch(): string | undefined {
-    return this.crunch;
+  public getCrunchId(): string | undefined {
+    return this.crunchId;
   }
 
   public getCreatedAt(): Date | undefined {
     return this.createdAt;
+  }
+
+  getRole(): string | undefined {
+    return this.role;
   }
 
   public setName(name: string): void {
@@ -71,11 +76,18 @@ export class User {
     this.phone = phone;
   }
 
-  public setCrunch(crunch: string | undefined) {
-    if (!crunch?.trim()) {
+  public setCrunchId(crunchId: string | undefined) {
+    if (!crunchId?.trim()) {
       throw new DomainError("Igreja é obrigatorio");
     }
-    this.crunch = crunch;
+    this.crunchId = crunchId;
+  }
+
+  public setRole(role: string | undefined) {
+    if (!role?.trim()) {
+      throw new DomainError("Cargo é obrigatorio");
+    }
+    this.role = role;
   }
 }
 
@@ -86,4 +98,5 @@ export interface UserDto {
   phone: string;
   createdAt?: Date;
   Crunch?: string;
+  role?: string;
 }

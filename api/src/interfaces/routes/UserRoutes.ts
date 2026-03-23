@@ -1,28 +1,28 @@
 import { FastifyInstance } from "fastify";
-import { UserController } from "../controllers/UserController";
 import { controllerHandler } from "../controllers/Handler";
+import { UserAdapters } from "../adapters/userAdapters";
 
 export async function UserRoutes(app: FastifyInstance) {
-  const controller = new UserController();
+  const adapters = new UserAdapters();
 
   app.post(
     "/api/user/create",
-    controllerHandler(controller.create.bind(controller)),
+    controllerHandler(adapters.createUser.bind(adapters)),
   );
   app.delete(
     "/api/user/delete",
-    controllerHandler(controller.delete.bind(controller)),
+    controllerHandler(adapters.deleteUser.bind(adapters)),
   );
   app.get(
     "/api/user/getById",
-    controllerHandler(controller.get.bind(controller)),
+    controllerHandler(adapters.getUserById.bind(adapters)),
   );
   app.get(
     "/api/user/getAll",
-    controllerHandler(controller.getAll.bind(controller)),
+    controllerHandler(adapters.getAllUsers.bind(adapters)),
   );
   app.post(
     "/api/user/update",
-    controllerHandler(controller.update.bind(controller)),
+    controllerHandler(adapters.updateUser.bind(adapters)),
   );
 }
