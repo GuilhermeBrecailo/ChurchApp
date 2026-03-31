@@ -8,11 +8,15 @@ export class UserRepository implements IUserRespository {
     try {
       const result = await $prismaClient.user.create({
         data: {
+          id: user.getId(),
           name: user.getName(),
           email: user.getEmail(),
           phone: user.getPhone(),
-          crunchId: user.getCrunchId() ?? "",
-          role: user.getRole() ?? "",
+          crunch: {
+            connect: {
+              id: user.getCrunchId(),
+            },
+          },
         },
       });
 

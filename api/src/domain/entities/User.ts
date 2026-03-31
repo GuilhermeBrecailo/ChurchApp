@@ -97,6 +97,6 @@ export interface UserDto {
   email: string;
   phone: string;
   createdAt?: Date;
-  Crunch?: string;
+  crunchId?: string;
   role?: string;
 }

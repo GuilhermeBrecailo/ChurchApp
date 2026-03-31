@@ -1,9 +1,10 @@
-import { UpdateUserService } from "../../application/Services/UpdateUserService";
-import { CreateUserUseCase } from "../../application/use-cases/CreateUserUseCase";
-import { DeleteUserUseCase } from "../../application/use-cases/DeleteUserUseCase";
-import { GetAllUserUseCase } from "../../application/use-cases/GetAllUserUseCase";
-import { GetUserByIdUseCase } from "../../application/use-cases/GetUserByIdUseCase";
-import { UpdateUserUseCase } from "../../application/use-cases/UpdateUserUseCase";
+import { UpdateUserService } from "../../application/Services/User/UpdateUserService";
+import { CreateUserUseCase } from "../../application/use-cases/User/CreateUserUseCase";
+import { DeleteUserUseCase } from "../../application/use-cases/User/DeleteUserUseCase";
+import { GetAllUserUseCase } from "../../application/use-cases/User/GetAllUserUseCase";
+import { GetUserByIdUseCase } from "../../application/use-cases/User/GetUserByIdUseCase";
+import { UpdateUserUseCase } from "../../application/use-cases/User/UpdateUserUseCase";
+
 import { UserRepository } from "../../infrastructure/repositories/UserRepository";
 import { UserController } from "../controllers/UserController";
 

@@ -13,7 +13,7 @@ export async function UserRoutes(app: FastifyInstance) {
     "/api/user/delete",
     controllerHandler(adapters.deleteUser.bind(adapters)),
   );
-  app.get(
+  app.post(
     "/api/user/getById",
     controllerHandler(adapters.getUserById.bind(adapters)),
   );

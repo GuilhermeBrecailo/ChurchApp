@@ -1,7 +1,7 @@
 import { fastify } from "fastify";
 import cors from "@fastify/cors";
-import AppInit from "./src/interfaces/plugins/AppInit";
-import { UserRoutes } from "./src/interfaces/routes/UserRoutes.js";
+import { UserRoutes } from "./src/interfaces/routes/UserRoutes.ts";
+import { CrunchRoutes } from "./src/interfaces/routes/CrunchRoutes.ts";
 
 const server = fastify({
   trustProxy: true,
@@ -12,13 +12,12 @@ await server.register(cors, {
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 });
 
-await server.register(AppInit); // 👈 ESSENCIAL (decorate acontece aqui)
-
 server.get("/status", async () => {
   return { success: true };
 });
 
 await server.register(UserRoutes, { prefix: "/" });
+await server.register(CrunchRoutes, { prefix: "/" });
 
 await server.listen({ port: 3000, host: "0.0.0.0" });
 

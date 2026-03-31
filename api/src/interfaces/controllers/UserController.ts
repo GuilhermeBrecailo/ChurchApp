@@ -1,11 +1,12 @@
 import { FastifyRequest } from "fastify";
 import { User, UserDto } from "../../domain/entities/User";
 import { JwtDecoded } from "../../application/use-cases/Auth/JwtValidationUseCase";
-import { CreateUserUseCase } from "../../application/use-cases/CreateUserUseCase";
-import { DeleteUserUseCase } from "../../application/use-cases/DeleteUserUseCase";
-import { GetUserByIdUseCase } from "../../application/use-cases/GetUserByIdUseCase";
-import { GetAllUserUseCase } from "../../application/use-cases/GetAllUserUseCase";
-import { UpdateUserService } from "../../application/Services/UpdateUserService";
+
+import { UpdateUserService } from "../../application/Services/User/UpdateUserService";
+import { CreateUserUseCase } from "../../application/use-cases/User/CreateUserUseCase";
+import { DeleteUserUseCase } from "../../application/use-cases/User/DeleteUserUseCase";
+import { GetUserByIdUseCase } from "../../application/use-cases/User/GetUserByIdUseCase";
+import { GetAllUserUseCase } from "../../application/use-cases/User/GetAllUserUseCase";
 
 export class UserController {
   constructor(
@@ -20,14 +21,9 @@ export class UserController {
     const { id } = request.user as JwtDecoded;
     const { name, email, phone } = request.body as UserDto;
 
-    const payload = {
-      id,
-      name,
-      email,
-      phone,
-    };
+    const user = new User({ id, name, email, phone });
 
-    return await this.createUserUseCase.execute(payload);
+    return await this.createUserUseCase.execute(user);
   }
 
   async delete(request: FastifyRequest): Promise<{ success: boolean }> {
@@ -44,7 +40,7 @@ export class UserController {
     return await this.getUserByIdUseCase.execute(id);
   }
 
-  async getAll(request: FastifyRequest): Promise<User[]> {
+  async getAll(): Promise<User[]> {
     return await this.getAllUserUseCase.execute();
   }
 
