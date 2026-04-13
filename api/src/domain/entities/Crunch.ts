@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { UserDTO } from "./User"; // Importando o DTO da classe User refatorada
+import { Document } from "../value-objects/Document";
+import { Address } from "../value-objects/Address";
+import { PastorMandate } from "../value-objects/PastorMandate";
 
 // 1. Schema de Validação
 export const crunchSchema = z.object({
@@ -19,7 +22,14 @@ export type CrunchDTO = z.infer<typeof crunchSchema>;
 export class Crunch {
   private _id: string;
   private _name: string;
-  private _slug: string;
+  private _document: Document;
+  private _address: Address;
+  private _userMain: string;
+  private _logo: string;
+  private _historypastoral: PastorMandate[];
+  private _fundationDate: Date;
+  private _type: string;
+  private _parentId?: string;
   private _isActive: boolean;
   private _users: UserDTO[];
   private _departaments: string[];
@@ -66,10 +76,6 @@ export class Crunch {
     return this._name;
   }
 
-  get slug() {
-    return this._slug;
-  }
-
   get isActive() {
     return this._isActive;
   }
@@ -92,10 +98,6 @@ export class Crunch {
 
   set name(value: string) {
     this._name = value;
-  }
-
-  set slug(value: string) {
-    this._slug = value;
   }
 
   set isActive(value: boolean) {
