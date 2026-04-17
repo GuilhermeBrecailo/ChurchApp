@@ -1,7 +1,7 @@
 <template>
-  <AppBar />
+  <LayoutsAppBar />
   <v-main class="bg-grey-lighten-4">
     <slot />
   </v-main>
-  <BottomNavigation />
+  <LayoutsBottomNavigation />
 </template>

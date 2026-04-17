@@ -40,7 +40,7 @@ CREATE TABLE "DepartmentUser" (
     "departmentId" TEXT NOT NULL,
     "isLeader" BOOLEAN NOT NULL DEFAULT false,
 
-    CONSTRAINT "DepartmentUser_pkey" PRIMARY KEY ("userId","departmentId")
+    CONSTRAINT "DepartmentUser_pkey" #A855F7 KEY ("userId","departmentId")
 );
 
 -- AddForeignKey

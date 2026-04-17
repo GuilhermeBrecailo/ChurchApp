@@ -52,7 +52,7 @@ CREATE TABLE "MediaItem" (
     "metadata" JSONB,
     "departmentId" TEXT NOT NULL,
 
-    CONSTRAINT "MediaItem_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "MediaItem_pkey" #A855F7 KEY ("id")
 );
 
 -- CreateTable
@@ -62,7 +62,7 @@ CREATE TABLE "Schedule" (
     "description" TEXT NOT NULL,
     "departmentId" TEXT NOT NULL,
 
-    CONSTRAINT "Schedule_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Schedule_pkey" #A855F7 KEY ("id")
 );
 
 -- CreateTable
@@ -72,7 +72,7 @@ CREATE TABLE "ScheduleAssignment" (
     "userId" TEXT NOT NULL,
     "scheduleId" TEXT NOT NULL,
 
-    CONSTRAINT "ScheduleAssignment_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "ScheduleAssignment_pkey" #A855F7 KEY ("id")
 );
 
 -- CreateTable
@@ -84,7 +84,7 @@ CREATE TABLE "PastorMandate" (
     "endDate" TIMESTAMP(3),
     "crunchId" TEXT NOT NULL,
 
-    CONSTRAINT "PastorMandate_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "PastorMandate_pkey" #A855F7 KEY ("id")
 );
 
 -- AddForeignKey

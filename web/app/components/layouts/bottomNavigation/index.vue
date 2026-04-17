@@ -6,7 +6,7 @@
     grow
     app
   >
-    <v-btn to="/" class="flex-col custom-btn">
+    <v-btn to="/" class="flex-col custom-btn" exact>
       <House size="20" />
       <span class="nav-label mt-1">Início</span>
     </v-btn>
@@ -16,9 +16,21 @@
       <span class="nav-label mt-1">Escalas</span>
     </v-btn>
 
-    <v-btn to="/ministerios" class="flex-col custom-btn">
+    <v-btn
+      to="/ministery"
+      class="flex-col custom-btn"
+      :active="$route.path.startsWith('/ministery')"
+    >
       <Users size="20" />
       <span class="nav-label mt-1">Ministérios</span>
+    </v-btn>
+    <v-btn
+      to="/user"
+      class="flex-col custom-btn"
+      :active="$route.path.startsWith('/user')"
+    >
+      <User size="20" />
+      <span class="nav-label mt-1">Usuário</span>
     </v-btn>
 
     <v-btn to="/admin" class="flex-col custom-btn">
@@ -29,7 +41,7 @@
 </template>
 
 <script setup>
-import { House, CalendarDays, Users, Cog } from "lucide-vue-next";
+import { House, CalendarDays, User, Users, Cog } from "lucide-vue-next";
 </script>
 
 <style scoped>
@@ -48,7 +60,7 @@ import { House, CalendarDays, Users, Cog } from "lucide-vue-next";
 
 .custom-btn.v-btn--active {
   color: #6366f1 !important; /* Tom de roxo/índigo */
-  background-color: rgba(var(--v-theme-primary), 0.15) !important;
+  background-color: rgba(var(--v-theme-#A855F7), 0.15) !important;
 }
 
 .custom-btn:hover > .v-btn__overlay {

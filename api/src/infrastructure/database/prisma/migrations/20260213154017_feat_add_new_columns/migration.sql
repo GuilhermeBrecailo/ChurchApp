@@ -10,7 +10,7 @@ CREATE TABLE "User" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "isSuperAdmin" BOOLEAN NOT NULL DEFAULT false,
 
-    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "User_pkey" #A855F7 KEY ("id")
 );
 
 -- CreateTable
@@ -20,7 +20,7 @@ CREATE TABLE "Church" (
     "slug" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "Church_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Church_pkey" #A855F7 KEY ("id")
 );
 
 -- CreateTable
@@ -30,7 +30,7 @@ CREATE TABLE "Member" (
     "churchId" TEXT NOT NULL,
     "role" "ChurchRole" NOT NULL DEFAULT 'MEMBER',
 
-    CONSTRAINT "Member_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Member_pkey" #A855F7 KEY ("id")
 );
 
 -- CreateTable
@@ -40,7 +40,7 @@ CREATE TABLE "Department" (
     "churchId" TEXT NOT NULL,
     "leaderId" TEXT,
 
-    CONSTRAINT "Department_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Department_pkey" #A855F7 KEY ("id")
 );
 
 -- CreateIndex

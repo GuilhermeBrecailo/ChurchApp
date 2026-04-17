@@ -33,7 +33,7 @@ CREATE TABLE "Crunch" (
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "Crunch_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Crunch_pkey" #A855F7 KEY ("id")
 );
 
 -- CreateIndex
