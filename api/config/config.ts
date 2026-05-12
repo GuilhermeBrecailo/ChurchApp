@@ -40,4 +40,5 @@ export const $config = {
   URL_VALIDATE_CTE: process.env.URL_VALIDATE_CTE!,
 
   BACKEND_TOKEN_CTE: process.env.BACKEND_TOKEN_CTE!,
+  URL_BACKEND: process.env.URL_BACKEND!,
 };

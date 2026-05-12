@@ -1,47 +1,45 @@
-/*
-  Warnings:
+-- CreateTable
+CREATE TABLE "Crunch" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "userMainId" TEXT,
+    "logo" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "city" TEXT NOT NULL,
+    "road" TEXT NOT NULL,
+    "localZipCode" TEXT NOT NULL,
+    "state" TEXT NOT NULL,
+    "complement" TEXT,
+    "number" TEXT,
+    "document" TEXT,
 
-  - You are about to drop the column `slug` on the `Crunch` table. All the data in the column will be lost.
-  - You are about to drop the column `isSuperAdmin` on the `User` table. All the data in the column will be lost.
-  - You are about to drop the `DepartmentUser` table. If the table is not empty, all the data it contains will be lost.
-  - Added the required column `leaderId` to the `Department` table without a default value. This is not possible if the table is not empty.
+    CONSTRAINT "Crunch_pkey" PRIMARY KEY ("id")
+);
 
-*/
--- DropForeignKey
-ALTER TABLE "Department" DROP CONSTRAINT "Department_crunchId_fkey";
+-- CreateTable
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "phone" TEXT,
+    "role" TEXT NOT NULL DEFAULT 'MEMBER',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "crunchId" TEXT NOT NULL,
 
--- DropForeignKey
-ALTER TABLE "DepartmentUser" DROP CONSTRAINT "DepartmentUser_departmentId_fkey";
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
 
--- DropForeignKey
-ALTER TABLE "DepartmentUser" DROP CONSTRAINT "DepartmentUser_userId_fkey";
+-- CreateTable
+CREATE TABLE "Department" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "crunchId" TEXT NOT NULL,
+    "leaderId" TEXT NOT NULL,
 
--- DropIndex
-DROP INDEX "Crunch_slug_key";
-
--- AlterTable
-ALTER TABLE "Crunch" DROP COLUMN "slug",
-ADD COLUMN     "city" TEXT,
-ADD COLUMN     "district" TEXT,
-ADD COLUMN     "docType" TEXT,
-ADD COLUMN     "docValue" TEXT,
-ADD COLUMN     "logo" TEXT,
-ADD COLUMN     "number" TEXT,
-ADD COLUMN     "state" TEXT,
-ADD COLUMN     "street" TEXT,
-ADD COLUMN     "userMainId" TEXT,
-ADD COLUMN     "zipCode" TEXT;
-
--- AlterTable
-ALTER TABLE "Department" ADD COLUMN     "isActive" BOOLEAN NOT NULL DEFAULT true,
-ADD COLUMN     "leaderId" TEXT NOT NULL;
-
--- AlterTable
-ALTER TABLE "User" DROP COLUMN "isSuperAdmin",
-ALTER COLUMN "phone" DROP NOT NULL;
-
--- DropTable
-DROP TABLE "DepartmentUser";
+    CONSTRAINT "Department_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "MediaItem" (
@@ -52,7 +50,7 @@ CREATE TABLE "MediaItem" (
     "metadata" JSONB,
     "departmentId" TEXT NOT NULL,
 
-    CONSTRAINT "MediaItem_pkey" #A855F7 KEY ("id")
+    CONSTRAINT "MediaItem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -62,7 +60,7 @@ CREATE TABLE "Schedule" (
     "description" TEXT NOT NULL,
     "departmentId" TEXT NOT NULL,
 
-    CONSTRAINT "Schedule_pkey" #A855F7 KEY ("id")
+    CONSTRAINT "Schedule_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -72,7 +70,7 @@ CREATE TABLE "ScheduleAssignment" (
     "userId" TEXT NOT NULL,
     "scheduleId" TEXT NOT NULL,
 
-    CONSTRAINT "ScheduleAssignment_pkey" #A855F7 KEY ("id")
+    CONSTRAINT "ScheduleAssignment_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -84,8 +82,14 @@ CREATE TABLE "PastorMandate" (
     "endDate" TIMESTAMP(3),
     "crunchId" TEXT NOT NULL,
 
-    CONSTRAINT "PastorMandate_pkey" #A855F7 KEY ("id")
+    CONSTRAINT "PastorMandate_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- AddForeignKey
+ALTER TABLE "User" ADD CONSTRAINT "User_crunchId_fkey" FOREIGN KEY ("crunchId") REFERENCES "Crunch"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Department" ADD CONSTRAINT "Department_crunchId_fkey" FOREIGN KEY ("crunchId") REFERENCES "Crunch"("id") ON DELETE CASCADE ON UPDATE CASCADE;
