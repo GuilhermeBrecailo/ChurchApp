@@ -42,6 +42,23 @@ model User {
 
     ledDepartments Department[]         @relation("Leader")
     assignments    ScheduleAssignment[]
+    userAuth       UserAuth?
+}
+
+model UserAuth {
+    id String @id @default(uuid())
+
+    groupId  String @unique @map("group_id")
+    scopeId  String @unique @map("scope_id")
+    clientId String @unique @map("client_id")
+    secret   String
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    UserId String @unique @map("user_id")
+    User   User   @relation(fields: [UserId], references: [id], onDelete: Cascade)
+
+    @@map("tenant_auths")
 }
 
 model Department {
