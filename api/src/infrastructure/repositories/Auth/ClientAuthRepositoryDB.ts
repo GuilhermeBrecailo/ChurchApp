@@ -22,10 +22,6 @@ export class ClientAuthRepositoryDB implements IClientDbRepository {
         data: {
           id: user.id,
           UserId: user.id,
-          groupId: user.groupId,
-          scopeId: user.scopeId,
-          clientId: user.clientId,
-          secret: user.secret,
         },
       });
     } catch (error) {
