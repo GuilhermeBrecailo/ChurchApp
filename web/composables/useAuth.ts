@@ -1,5 +1,5 @@
-import type { CustomFetch } from "@/types/nuxt";
 import { jwtDecode } from "jwt-decode";
+import { CustomFetch } from "../types/nuxt";
 
 export const useAuth = () => {
   const access_token = useState("access_token", () => null);
