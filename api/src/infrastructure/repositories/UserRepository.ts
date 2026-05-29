@@ -13,11 +13,7 @@ export class UserRepository implements IUserRespository {
           email: user.email,
           phone: user.phone,
           role: user.role,
-          crunch: {
-            connect: {
-              id: user.crunchId,
-            },
-          },
+          crunchId: user.crunchId ?? null,
         },
       });
 
@@ -85,6 +81,8 @@ export class UserRepository implements IUserRespository {
         name: result.name,
         email: result.email,
         phone: result.phone ?? "",
+        crunchId: result.crunchId ?? undefined,
+        role: result.role,
         createdAt: result.createdAt,
       });
     } catch (error) {
@@ -112,6 +110,8 @@ export class UserRepository implements IUserRespository {
           name: user.name,
           email: user.email,
           phone: user.phone ?? "",
+          crunchId: user.crunchId ?? undefined,
+          role: user.role,
           createdAt: user.createdAt,
         });
       });

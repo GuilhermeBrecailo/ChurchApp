@@ -1,7 +1,7 @@
 <template>
-  <div class="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+  <div class="auth-page flex items-center justify-center min-h-screen p-4">
     <v-card
-      class="w-full max-w-md p-8 rounded-3xl shadow-xl bg-white"
+      class="auth-card w-full max-w-md p-8 rounded-3xl bg-white"
       elevation="0"
     >
       <div class="flex flex-col items-center mb-8">
@@ -16,15 +16,19 @@
         </p>
       </div>
 
-      <v-form @submit.prevent="handleLogin">
+      <v-form autocomplete="off" @submit.prevent="handleLogin">
         <v-text-field
           v-model="email"
           label="Email"
-          placeholder="seu@email.com"
+          type="email"
+          autocomplete="off"
           prepend-inner-icon="mdi-email-outline"
           variant="outlined"
+          density="comfortable"
+          bg-color="white"
           color="purple-darken-3"
-          class="mb-4"
+          class="auth-input mb-4"
+          hide-details="auto"
           :disabled="loading"
         ></v-text-field>
 
@@ -32,15 +36,18 @@
           v-model="password"
           label="Senha"
           :type="showPassword ? 'text' : 'password'"
-          placeholder="••••••••"
+          autocomplete="off"
           prepend-inner-icon="mdi-lock-outline"
           :append-inner-icon="
             showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'
           "
           @click:append-inner="showPassword = !showPassword"
           variant="outlined"
+          density="comfortable"
+          bg-color="white"
           color="purple-darken-3"
-          class="mb-6"
+          class="auth-input mb-6"
+          hide-details="auto"
           :disabled="loading"
         ></v-text-field>
 
@@ -78,14 +85,18 @@
         </NuxtLink>
 
         <div class="text-sm text-gray-500">
-          Não tem uma conta?
+          Pastor titular?
           <NuxtLink
             to="/register"
             class="text-purple-700 hover:text-purple-900 font-bold transition-colors duration-200 ml-1"
           >
-            Registre-se
+            Cadastre sua igreja
           </NuxtLink>
         </div>
+
+        <p class="text-xs text-gray-500 text-center mb-0">
+          Se voce e membro, peca para sua igreja criar seu acesso.
+        </p>
       </div>
     </v-card>
   </div>
@@ -101,7 +112,7 @@ definePageMeta({
 
 const route = useRoute();
 const router = useRouter();
-const { login, session, setSessionFromToken, access_token } = useAuth();
+const { login, session, setSessionFromToken, fetchMe, access_token } = useAuth();
 
 const email = ref("");
 const password = ref("");
@@ -126,6 +137,7 @@ const handleLogin = async () => {
 
   if (data?.access_token) {
     setSessionFromToken(data.access_token);
+    await fetchMe();
   } else {
     await session();
   }
@@ -141,13 +153,32 @@ const handleLogin = async () => {
 };
 </script>
 
-<style>
-/* Corrige o fundo de preenchimento automático (autofill) do navegador para manter o fundo branco */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px white inset !important;
-  -webkit-text-fill-color: #333 !important;
+<style scoped>
+.auth-page {
+  background: #f8fafc;
+}
+
+.auth-card {
+  box-shadow: 0 18px 45px rgba(88, 28, 135, 0.12);
+}
+
+.auth-input :deep(.v-field) {
+  border-radius: 14px;
+}
+
+.auth-input :deep(.v-field__input) {
+  min-height: 48px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.auth-input :deep(input:-webkit-autofill),
+.auth-input :deep(input:-webkit-autofill:hover),
+.auth-input :deep(input:-webkit-autofill:focus),
+.auth-input :deep(input:-webkit-autofill:active) {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  caret-color: #1f2937;
+  transition: background-color 9999s ease-in-out 0s;
 }
 </style>

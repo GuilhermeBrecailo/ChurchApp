@@ -5,18 +5,30 @@ Este documento descreve o fluxo esperado da experiencia, considerando a estrutur
 ## Fluxo publico
 
 1. Usuario acessa `/login`.
-2. Caso nao tenha conta, navega para `/register`.
-3. Apos login/cadastro bem-sucedido, o fluxo esperado seria levar o usuario para `/`.
+2. Pastor titular sem conta navega para `/register`.
+3. No cadastro publico, a conta criada e sempre de `Pastor titular`.
+4. Apos cadastro bem-sucedido, volta para `/login`.
+5. Apos login, o front carrega `/api/me` para saber papel e vinculo com igreja.
+6. Membros nao se cadastram publicamente; recebem acesso criado pela igreja.
 
 Estado atual:
 
-- login e cadastro ainda nao fazem chamada real para API;
-- nao existe redirecionamento automatico apos autenticar;
-- nao ha guarda de rota para impedir acesso a telas internas sem login.
+- login e cadastro chamam a API;
+- o middleware protege rotas internas;
+- pastor sem igreja ve o card de criacao de igreja no `/`;
+- membro sem igreja fica limitado ao `/` e `/user` ate ser vinculado.
+
+## Fluxo de onboarding de igreja
+
+1. Usuario autenticado sem igreja acessa `/`.
+2. Se for `PASTOR`, visualiza formulario para criar igreja.
+3. Ao criar igreja, o backend vincula `crunchId` ao usuario e define `userMainId` como pastor titular.
+4. Se for `MEMBER`, fica bloqueado ate ser vinculado por um pastor ou usuario com permissao.
+5. Usuario com igreja e redirecionado para `/`.
 
 ## Fluxo principal logado
 
-1. Usuario entra no dashboard `/`.
+1. Usuario com igreja entra no dashboard `/`.
 2. Visualiza sua proxima escala.
 3. Consulta atalhos rapidos.
 4. Consulta proximos cultos/eventos.
@@ -71,6 +83,7 @@ Estado atual:
 
 Estado atual:
 
-- tela nao valida permissao de admin;
-- estatisticas sao fixas;
-- acoes administrativas ainda nao estao conectadas.
+- membros sao listados pela API;
+- pastor titular ou usuario com permissao pode adicionar membros;
+- apenas o pastor titular pode conceder permissao para adicionar membros;
+- estatisticas de ministerios, escalas e musicas ainda sao fixas.

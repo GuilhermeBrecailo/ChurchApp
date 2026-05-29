@@ -10,6 +10,28 @@ export async function UserRoutes(app: FastifyInstance) {
     controllerHandler(adapters.createPastor.bind(adapters)),
   );
 
+  app.get("/api/me", controllerHandler(adapters.getMe.bind(adapters)));
+
+  app.post(
+    "/api/church/create-own",
+    controllerHandler(adapters.createOwnChurch.bind(adapters)),
+  );
+
+  app.get(
+    "/api/church/members",
+    controllerHandler(adapters.getChurchMembers.bind(adapters)),
+  );
+
+  app.post(
+    "/api/church/members",
+    controllerHandler(adapters.createChurchMember.bind(adapters)),
+  );
+
+  app.patch(
+    "/api/church/members/:id/permissions",
+    controllerHandler(adapters.updateChurchMemberPermissions.bind(adapters)),
+  );
+
   app.post(
     "/api/user/create",
     controllerHandler(adapters.createUser.bind(adapters)),

@@ -2,6 +2,8 @@ import { defineNuxtRouteMiddleware, navigateTo } from "#app";
 import { useAuth } from "../../composables/useAuth";
 
 const publicRoutes = ["/login", "/register", "/forgot-password"];
+const onboardingRoutes = ["/onboarding/church"];
+const noChurchAllowedRoutes = ["/", "/user", ...onboardingRoutes];
 
 export default defineNuxtRouteMiddleware(async (to) => {
   if (import.meta.server) return;
@@ -10,7 +12,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     (route) => to.path === route || to.path.startsWith(`${route}/`),
   );
 
-  const { access_token, session, should_refresh } = useAuth();
+  const { access_token, user, session, should_refresh, fetchMe } = useAuth();
 
   if (isPublicRoute) {
     if (access_token.value && to.path === "/login") {
@@ -31,5 +33,26 @@ export default defineNuxtRouteMiddleware(async (to) => {
         redirect: to.fullPath,
       },
     });
+  }
+
+  if (!user.value?.id) {
+    await fetchMe();
+  }
+
+  const isOnboardingRoute = onboardingRoutes.some(
+    (route) => to.path === route || to.path.startsWith(`${route}/`),
+  );
+
+  const isNoChurchAllowedRoute = noChurchAllowedRoutes.some(
+    (route) =>
+      to.path === route || (route !== "/" && to.path.startsWith(`${route}/`)),
+  );
+
+  if (!user.value?.hasChurch && !isNoChurchAllowedRoute) {
+    return navigateTo("/");
+  }
+
+  if (user.value?.hasChurch && isOnboardingRoute) {
+    return navigateTo("/");
   }
 });

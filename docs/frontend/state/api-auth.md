@@ -1,6 +1,6 @@
 # Frontend: Estado, Auth e Integracao com API
 
-O front ainda nao possui uma camada de API completamente conectada ao backend.
+O front usa composables para autenticar, guardar a sessao e carregar o contexto da igreja do usuario.
 
 ## Composable de autenticacao
 
@@ -8,86 +8,65 @@ Arquivo:
 
 - `web/composables/useAuth.ts`
 
-Responsabilidade esperada:
+Responsabilidades atuais:
 
-- guardar `access_token`;
-- guardar dados do usuario;
-- expor funcoes de `register`, `login` e `logout`.
+- guardar `access_token` em `useState`;
+- guardar dados do usuario em `useState`;
+- registrar contas como `PASTOR` ou `MEMBER`;
+- fazer login, refresh de sessao e logout;
+- decodificar o JWT para iniciar estado local;
+- buscar `/api/me` para completar os dados reais do banco.
 
-Estado atual:
+## Contexto do usuario
 
-- usa `useState` para `access_token` e `user`;
-- tenta usar `$customFetch`;
-- monta URLs com `config.public.URL_BACKEND`;
-- importa `jwtDecode`, mas ainda nao usa esse import;
-- chama endpoints que nao batem com as rotas atuais do backend.
+Depois de autenticar, o front chama:
 
-## Tipos de API
+- `GET /api/me`
 
-Arquivos:
+Esse endpoint retorna:
 
-- `web/composables/useTypes.ts`;
-- `web/types/nuxt.d.ts`.
+- dados basicos do usuario;
+- `role`;
+- `crunchId`;
+- `church`;
+- `hasChurch`;
+- `isTitularPastor`.
 
-`ApiResponse` define uma resposta padrao com:
+Esses campos decidem se o usuario pode entrar no app interno ou se deve passar pelo onboarding.
+
+## Onboarding de igreja
+
+Arquivo:
+
+- `web/app/pages/onboarding/church.vue`
+
+Regra:
+
+- pastor sem igreja pode criar uma igreja em `POST /api/church/create-own`;
+- membro sem igreja fica bloqueado ate ser vinculado por um pastor/admin;
+- usuario com igreja nao permanece no onboarding e volta para `/`.
+
+## Middleware
+
+Arquivo:
+
+- `web/app/middleware/auth.global.ts`
+
+Regras:
+
+- rotas publicas: `/login`, `/register`, `/forgot-password`;
+- rotas internas exigem `access_token`;
+- se o usuario nao tiver igreja, redireciona para `/onboarding/church`;
+- se ja tiver igreja, libera dashboard, escalas, ministerios, usuario e admin.
+
+## Custom fetch
+
+Arquivo:
+
+- `web/app/plugins/customFetch.ts`
+
+O helper `$customFetch` padroniza respostas no formato:
 
 - `data`;
 - `error`;
 - `status`.
-
-`nuxt.d.ts` declara `$customFetch` no Nuxt app e nas propriedades dos componentes Vue.
-
-## Pontos pendentes
-
-### Plugin do `$customFetch`
-
-Existe tipagem para `$customFetch`, mas nao foi encontrado plugin em `web/plugins` registrando esse helper.
-
-Antes de usar `useAuth` em producao, sera necessario criar um plugin, por exemplo:
-
-- `web/plugins/customFetch.ts`.
-
-### Runtime config
-
-`useAuth.ts` usa:
-
-- `config.public.URL_BACKEND`.
-
-Mas `web/nuxt.config.ts` ainda nao define esse valor.
-
-### Endpoints desalinhados
-
-O composable chama:
-
-- `/auth/register`;
-- `/auth/login`;
-- `/public/auth/logout`.
-
-As rotas registradas no backend atualmente incluem:
-
-- `/api/pastor/signup`;
-- `/api/user/create`;
-- `/api/user/getAll`;
-- `/api/user/getById`;
-- `/api/user/update`;
-- `/api/user/delete`;
-- `/api/crunch/create`;
-- `/api/crunch/getAll`;
-- `/api/crunch/getById`;
-- `/api/crunch/update`;
-- `/api/crunch/delete`.
-
-E necessario decidir se o backend vai ganhar rotas de auth separadas ou se o front deve chamar as rotas existentes.
-
-## Integracao recomendada
-
-1. Definir `URL_BACKEND` no `nuxt.config.ts`.
-2. Criar plugin `$customFetch`.
-3. Ajustar `useAuth.ts` para os endpoints reais.
-4. Criar middleware para proteger rotas internas.
-5. Trocar mocks de paginas por chamadas reais.
-6. Centralizar tipos de entidades usadas pelo front.
-
-Para o padrao completo de criacao de composables, veja:
-
-- [Padrao de composables](composables.md)

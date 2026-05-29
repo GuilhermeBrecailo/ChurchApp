@@ -161,12 +161,30 @@
     >
       <Save size="18" class="mr-2" /> Salvar Perfil
     </v-btn>
+
+    <v-btn
+      block
+      variant="tonal"
+      color="error"
+      class="text-none rounded-lg font-weight-bold mt-4"
+      size="large"
+      :loading="loadingLogout"
+      :disabled="loadingLogout"
+      @click="handleLogout"
+    >
+      Sair
+    </v-btn>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { CalendarX, Plus, Save } from "lucide-vue-next";
+import { useAuth } from "../../composables/useAuth";
+
+const router = useRouter();
+const { logout } = useAuth();
+const loadingLogout = ref(false);
 
 // Dados do formulário
 const form = ref({
@@ -210,6 +228,13 @@ const salvarPerfil = () => {
   console.log("Salvando dados do perfil:", perfilCompleto);
   // Aqui entraria a sua requisição para API (ex: $fetch('/api/user', { ... }))
   alert("Perfil salvo com sucesso!");
+};
+
+const handleLogout = async () => {
+  loadingLogout.value = true;
+  await logout();
+  loadingLogout.value = false;
+  await router.push("/login");
 };
 </script>
 

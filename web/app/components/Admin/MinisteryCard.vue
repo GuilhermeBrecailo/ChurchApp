@@ -13,6 +13,9 @@
       <p class="text-caption text-grey-darken-1 mb-0">
         Líder: {{ ministry.leader }}
       </p>
+      <p v-if="ministry.typeLabel" class="text-caption text-grey-darken-1 mb-0">
+        Tipo: {{ ministry.typeLabel }}
+      </p>
     </div>
 
     <div class="d-flex align-center">

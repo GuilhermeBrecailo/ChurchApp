@@ -8,10 +8,10 @@
       </v-btn>
 
       <div class="ml-3 d-flex flex-column justify-center">
-        <span class="greeting-text">Olá, gui 👋</span>
+        <span class="greeting-text">Olá, {{ firstName }}</span>
         <div class="d-flex align-center mt-n1">
           <Church size="16" class="church-icon mr-1" />
-          <span class="church-text">Minha Igreja</span>
+          <span class="church-text">{{ churchName }}</span>
         </div>
       </div>
     </div>
@@ -28,8 +28,20 @@
   </v-app-bar>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Bell, Church } from "lucide-vue-next";
+import { computed } from "vue";
+import { useAuth } from "../../../../composables/useAuth";
+
+const { user } = useAuth();
+
+const firstName = computed(() => {
+  const name = user.value?.name?.trim();
+
+  return name ? name.split(" ")[0] : "usuario";
+});
+
+const churchName = computed(() => user.value?.church?.name || "Sem igreja");
 </script>
 
 <style scoped>

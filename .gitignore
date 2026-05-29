@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs
+dist/
+build/
+.output/
+.nuxt/
+.nitro/
+.cache/
+*/dist/
+*/build/
+*/.output/
+*/.nuxt/
+*/.nitro/
+*/.cache/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+*/.env
+*/.env.*
+!*/.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Editor and OS files
+.DS_Store
+.idea/
+.fleet/
+
+# Local Docker overrides
+docker-compose.override.yml

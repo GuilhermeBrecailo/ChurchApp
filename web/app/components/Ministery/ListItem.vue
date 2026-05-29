@@ -11,6 +11,9 @@
       <p class="text-caption text-grey-darken-1 mb-0">
         Líder: {{ ministerio.lider }}
       </p>
+      <p v-if="ministerio.tipo" class="text-caption text-grey-darken-1 mb-0">
+        Tipo: {{ ministerio.tipo }}
+      </p>
     </div>
     <ChevronRight size="20" color="#9CA3AF" />
   </v-card>

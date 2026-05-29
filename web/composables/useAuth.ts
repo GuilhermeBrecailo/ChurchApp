@@ -6,10 +6,19 @@ interface AuthUser {
   id: string;
   email: string;
   name: string;
-  tenant_id?: string;
+  tenant_id?: string | null;
+  crunchId?: string | null;
+  hasChurch?: boolean;
+  isTitularPastor?: boolean;
+  canManageMembers?: boolean;
   is_admin: boolean;
   role?: string;
   phone?: string;
+  church?: {
+    id: string;
+    name: string;
+    userMainId?: string | null;
+  } | null;
 }
 
 interface KeycloakPayload {
@@ -42,17 +51,47 @@ export const useAuth = () => {
       email: payload.email || payload.preferred_username || "",
       name: payload.name || payload.preferred_username || "",
       tenant_id: payload.tenant_id,
+      crunchId: null,
+      hasChurch: false,
+      isTitularPastor: false,
+      canManageMembers: false,
       is_admin: payload.is_admin === true,
       role: payload.role,
       phone: user.value?.phone,
+      church: null,
     };
   };
 
-  const registerPastor = async (props: {
+  const fetchMe = async () => {
+    if (!access_token.value) return null;
+
+    const { data, error } = await $customFetch<AuthUser>(
+      `${config.public.URL_BACKEND}/api/me`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${access_token.value}`,
+        },
+      },
+    );
+
+    if (error || !data) return null;
+
+    user.value = {
+      ...user.value,
+      ...data,
+      is_admin: data.is_admin ?? data.role === "PASTOR",
+    };
+
+    return user.value;
+  };
+
+  const registerAccount = async (props: {
     name: string;
     email: string;
     password: string;
     phone: string;
+    role: "PASTOR" | "MEMBER";
   }) => {
     return await $customFetch<{ id: string }>(
       `${config.public.URL_BACKEND}/api/pastor/signup`,
@@ -87,6 +126,7 @@ export const useAuth = () => {
 
       if (data?.access_token) {
         setSessionFromToken(data.access_token);
+        await fetchMe();
         return;
       }
 
@@ -129,12 +169,14 @@ export const useAuth = () => {
   return {
     access_token,
     user,
-    register: registerPastor,
-    registerPastor,
+    register: registerAccount,
+    registerPastor: registerAccount,
+    registerAccount,
     login,
     session,
     logout,
     should_refresh,
     setSessionFromToken,
+    fetchMe,
   };
 };

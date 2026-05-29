@@ -28,8 +28,8 @@ Estado atual:
 
 - campos de email e senha;
 - alternancia de visibilidade da senha;
-- `handleLogin` apenas escreve no console;
-- link para `/register`;
+- `handleLogin` autentica e carrega `/api/me`;
+- link para `/register` orientado a pastor titular;
 - link para `/forgot-password`, mas essa rota ainda nao existe.
 
 ## `/register`
@@ -43,9 +43,10 @@ Tela publica de cadastro. Usa o layout `notAppBottom`.
 Estado atual:
 
 - campos de nome, email, telefone, senha e confirmacao;
+- cadastro publico cria sempre `Pastor titular`;
 - validacao simples de igualdade entre senhas;
-- `handleRegister` apenas escreve no console;
-- link de login usa `href="#"`, ainda nao navega para `/login`.
+- `handleRegister` chama a API e volta para `/login`;
+- membros devem ser criados pela area administrativa da igreja.
 
 ## `/scale`
 

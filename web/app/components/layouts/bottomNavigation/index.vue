@@ -11,12 +11,13 @@
       <span class="nav-label mt-1">Início</span>
     </v-btn>
 
-    <v-btn to="/scale" class="flex-col custom-btn">
+    <v-btn v-if="hasChurch" to="/scale" class="flex-col custom-btn">
       <CalendarDays size="20" />
       <span class="nav-label mt-1">Escalas</span>
     </v-btn>
 
     <v-btn
+      v-if="hasChurch"
       to="/ministery"
       class="flex-col custom-btn"
       :active="$route.path.startsWith('/ministery')"
@@ -33,15 +34,21 @@
       <span class="nav-label mt-1">Usuário</span>
     </v-btn>
 
-    <v-btn to="/admin" class="flex-col custom-btn">
+    <v-btn v-if="hasChurch" to="/admin" class="flex-col custom-btn">
       <Cog size="20" />
       <span class="nav-label mt-1">Admin</span>
     </v-btn>
   </v-bottom-navigation>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { House, CalendarDays, User, Users, Cog } from "lucide-vue-next";
+import { computed } from "vue";
+import { useAuth } from "../../../../composables/useAuth";
+
+const { user } = useAuth();
+
+const hasChurch = computed(() => user.value?.hasChurch === true);
 </script>
 
 <style scoped>
