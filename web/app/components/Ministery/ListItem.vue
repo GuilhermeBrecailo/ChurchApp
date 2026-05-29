@@ -1,6 +1,7 @@
 <template>
   <v-card
-    class="rounded-xl pa-4 d-flex align-center justify-space-between elevation-1 cursor-pointer"
+    color="white"
+    class="ministery-card rounded-xl pa-4 d-flex align-center justify-space-between elevation-1 cursor-pointer"
     @click="$emit('click')"
   >
     <div>
@@ -35,5 +36,9 @@ defineEmits(["click"]);
 }
 .cursor-pointer:active {
   transform: scale(0.98);
+}
+.ministery-card {
+  background-color: #ffffff !important;
+  color: #111827;
 }
 </style>

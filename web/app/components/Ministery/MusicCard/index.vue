@@ -1,5 +1,8 @@
 <template>
-  <v-card class="rounded-xl pa-4 mb-3 elevation-1 d-flex align-center bg-white">
+  <v-card
+    color="white"
+    class="music-card rounded-xl pa-4 mb-3 elevation-1 d-flex align-center"
+  >
     <div
       class="music-icon-wrapper rounded-lg d-flex align-center justify-center mr-4 flex-shrink-0"
     >
@@ -61,5 +64,9 @@ const getBadgeColor = (categoria) => {
   width: 48px;
   height: 48px;
   background-color: #eef2ff;
+}
+.music-card {
+  background-color: #ffffff !important;
+  color: #111827;
 }
 </style>
