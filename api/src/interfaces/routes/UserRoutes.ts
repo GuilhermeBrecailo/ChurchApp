@@ -12,6 +12,16 @@ export async function UserRoutes(app: FastifyInstance) {
 
   app.get("/api/me", controllerHandler(adapters.getMe.bind(adapters)));
 
+  app.get(
+    "/api/me/profile",
+    controllerHandler(adapters.getMyProfile.bind(adapters)),
+  );
+
+  app.patch(
+    "/api/me/profile",
+    controllerHandler(adapters.updateMyProfile.bind(adapters)),
+  );
+
   app.post(
     "/api/church/create-own",
     controllerHandler(adapters.createOwnChurch.bind(adapters)),

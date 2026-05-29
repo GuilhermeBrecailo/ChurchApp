@@ -5,38 +5,49 @@
         Meu Perfil
       </h1>
       <p class="text-body-2 text-grey-darken-1 mb-0">
-        Suas informações e disponibilidade
+        Suas informações, ministério e disponibilidade
       </p>
     </div>
 
-    <div class="d-flex align-center mb-6 px-2">
-      <v-avatar
-        size="56"
-        color="#EEF2FF"
-        class="mr-4 text-#A855F7 font-weight-bold text-h6"
-      >
-        gb
-      </v-avatar>
-      <div>
-        <h2
-          class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0"
-          style="line-height: 1.2"
+    <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
+      <div class="d-flex align-center">
+        <v-avatar
+          size="56"
+          color="#EEF2FF"
+          class="mr-4 text-purple-darken-3 font-weight-bold text-h6"
         >
-          gui brecailo
-        </h2>
-        <p class="text-caption text-grey-darken-1 mb-1">brecailo3@gmail.com</p>
-        <v-chip
-          size="x-small"
-          color="#6366f1"
-          variant="flat"
-          class="font-weight-bold px-2 rounded-sm"
-        >
-          Admin
-        </v-chip>
+          {{ initials }}
+        </v-avatar>
+        <div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+            {{ profile?.name || user?.name || "Usuário" }}
+          </h2>
+          <p class="text-caption text-grey-darken-1 mb-1">
+            {{ profile?.email || user?.email }}
+          </p>
+          <v-chip
+            size="x-small"
+            color="#6366f1"
+            variant="flat"
+            class="font-weight-bold px-2 rounded-sm"
+          >
+            {{ roleLabel }}
+          </v-chip>
+        </div>
       </div>
-    </div>
+    </v-card>
 
-    <v-card class="rounded-xl pa-4 mb-4 elevation-1 bg-white border-subtle">
+    <v-alert
+      v-if="loadError"
+      type="error"
+      variant="tonal"
+      density="compact"
+      class="mb-4"
+    >
+      {{ loadError }}
+    </v-alert>
+
+    <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
       <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-4">
         Ministério
       </h3>
@@ -45,98 +56,117 @@
         Ministério principal
       </div>
       <v-select
-        v-model="form.ministerio"
-        :items="['Louvor', 'Recepção', 'Som e Mídia', 'Intercessão', 'Kids']"
+        v-model="form.primaryDepartmentId"
+        :items="departmentOptions"
+        item-title="label"
+        item-value="value"
         placeholder="Selecione um ministério..."
         variant="outlined"
-        density="compact"
-        class="mb-4"
-        hide-details
-      ></v-select>
+        density="comfortable"
+        color="purple-darken-3"
+        bg-color="white"
+        class="profile-input mb-4"
+        hide-details="auto"
+        clearable
+        :disabled="isLoading || isSaving"
+      />
 
       <div class="text-caption font-weight-medium text-grey-darken-2 mb-1">
         O que você faz
       </div>
       <v-text-field
-        v-model="form.funcao"
+        v-model="form.ministryFunction"
         placeholder="ex: Vocalista, Guitarrista, Professor..."
         variant="outlined"
-        density="compact"
-        hide-details
-      ></v-text-field>
+        density="comfortable"
+        color="purple-darken-3"
+        bg-color="white"
+        class="profile-input"
+        hide-details="auto"
+        :disabled="isLoading || isSaving"
+      />
     </v-card>
 
-    <v-card class="rounded-xl pa-4 mb-4 elevation-1 bg-white border-subtle">
+    <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
       <div class="d-flex align-center mb-1">
-        <CalendarX size="18" class="mr-2 text-#A855F7" />
+        <CalendarX size="18" class="mr-2" color="#A855F7" />
         <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
           Indisponibilidade
         </h3>
       </div>
       <p class="text-caption text-grey-darken-1 mb-4">
-        Marque as datas em que você não poderá servir:
+        Marque as datas em que você não poderá servir.
       </p>
 
       <div class="d-flex gap-2 mb-3 align-center">
         <v-text-field
-          v-model="novaData"
+          v-model="newUnavailableDate"
           type="date"
           variant="outlined"
-          density="compact"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
           hide-details
-          class="flex-grow-1"
-        ></v-text-field>
+          class="profile-input flex-grow-1"
+          :disabled="isLoading || isSaving"
+        />
 
         <v-btn
           variant="outlined"
           color="grey-darken-1"
-          class="rounded-lg bg-white"
-          size="40"
+          class="profile-icon-btn bg-white"
+          size="48"
           icon
-          @click="adicionarData"
+          :disabled="isLoading || isSaving"
+          @click="addUnavailableDate"
         >
           <Plus size="20" />
         </v-btn>
       </div>
 
       <div
-        v-if="datasIndisponiveis.length === 0"
+        v-if="unavailableDates.length === 0"
         class="text-caption text-grey-darken-1 font-italic mt-2"
       >
         Nenhuma data bloqueada
       </div>
       <div v-else class="d-flex flex-wrap gap-2 mt-3">
         <v-chip
-          v-for="(data, index) in datasIndisponiveis"
-          :key="index"
+          v-for="date in unavailableDates"
+          :key="date"
           closable
-          @click:close="removerData(index)"
           color="#A855F7"
           variant="tonal"
           size="small"
           class="font-weight-medium"
+          :disabled="isSaving"
+          @click:close="removeUnavailableDate(date)"
         >
-          {{ formatarData(data) }}
+          {{ formatDate(date) }}
         </v-chip>
       </div>
     </v-card>
 
-    <v-card class="rounded-xl pa-4 mb-4 elevation-1 bg-white border-subtle">
+    <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
       <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">
         Sugestão
       </h3>
       <v-textarea
-        v-model="form.sugestao"
+        v-model="form.profileSuggestion"
         placeholder="Compartilhe alguma sugestão com os líderes..."
         variant="outlined"
-        density="compact"
+        density="comfortable"
+        color="purple-darken-3"
+        bg-color="white"
+        class="profile-input"
         hide-details
         rows="3"
         auto-grow
-      ></v-textarea>
+        :disabled="isLoading || isSaving"
+      />
     </v-card>
 
-    <v-card class="rounded-xl pa-4 mb-6 elevation-1 bg-white border-subtle">
+    <v-card class="profile-card pa-4 mb-6 elevation-1 bg-white">
       <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">
         Contato
       </h3>
@@ -144,20 +174,46 @@
         Telefone / WhatsApp
       </div>
       <v-text-field
-        v-model="form.telefone"
+        v-model="form.phone"
         placeholder="(00) 00000-0000"
         variant="outlined"
-        density="compact"
-        hide-details
-      ></v-text-field>
+        density="comfortable"
+        color="purple-darken-3"
+        bg-color="white"
+        class="profile-input"
+        hide-details="auto"
+        :disabled="isLoading || isSaving"
+      />
     </v-card>
+
+    <v-alert
+      v-if="saveMessage"
+      type="success"
+      variant="tonal"
+      density="compact"
+      class="mb-4"
+    >
+      {{ saveMessage }}
+    </v-alert>
+
+    <v-alert
+      v-if="saveError"
+      type="error"
+      variant="tonal"
+      density="compact"
+      class="mb-4"
+    >
+      {{ saveError }}
+    </v-alert>
 
     <v-btn
       color="#A855F7"
       block
       class="text-none rounded-lg font-weight-medium elevation-2"
       size="large"
-      @click="salvarPerfil"
+      :loading="isSaving"
+      :disabled="isLoading || isSaving"
+      @click="saveProfile"
     >
       <Save size="18" class="mr-2" /> Salvar Perfil
     </v-btn>
@@ -169,7 +225,7 @@
       class="text-none rounded-lg font-weight-bold mt-4"
       size="large"
       :loading="loadingLogout"
-      :disabled="loadingLogout"
+      :disabled="loadingLogout || isSaving"
       @click="handleLogout"
     >
       Sair
@@ -178,56 +234,139 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { CalendarX, Plus, Save } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
+import {
+  useDepartments,
+  type ChurchDepartment,
+} from "../../composables/useDepartments";
+import { useUser, type MyProfileDTO } from "../../composables/useUser";
 
 const router = useRouter();
-const { logout } = useAuth();
-const loadingLogout = ref(false);
+const { logout, user, fetchMe } = useAuth();
+const { getDepartments } = useDepartments();
+const { getMyProfile, updateMyProfile } = useUser();
 
-// Dados do formulário
-const form = ref({
-  ministerio: null,
-  funcao: "",
-  sugestao: "",
-  telefone: "",
+const loadingLogout = ref(false);
+const isLoading = ref(true);
+const isSaving = ref(false);
+const loadError = ref("");
+const saveError = ref("");
+const saveMessage = ref("");
+const profile = ref<MyProfileDTO | null>(null);
+const departments = ref<ChurchDepartment[]>([]);
+const newUnavailableDate = ref("");
+const unavailableDates = ref<string[]>([]);
+
+const form = reactive({
+  primaryDepartmentId: "",
+  ministryFunction: "",
+  profileSuggestion: "",
+  phone: "",
 });
 
-// Controle da Indisponibilidade
-const novaData = ref("");
-const datasIndisponiveis = ref([]);
+const departmentOptions = computed(() =>
+  departments.value.map((department) => ({
+    label: department.name,
+    value: department.id,
+  })),
+);
 
-const adicionarData = () => {
-  if (novaData.value && !datasIndisponiveis.value.includes(novaData.value)) {
-    datasIndisponiveis.value.push(novaData.value);
-    // Ordena as datas cronologicamente
-    datasIndisponiveis.value.sort();
-    novaData.value = ""; // Limpa o campo
+const initials = computed(() => {
+  const name = profile.value?.name || user.value?.name || "";
+  const letters = name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+
+  return letters || "UP";
+});
+
+const roleLabel = computed(() => {
+  const role = profile.value?.role || user.value?.role;
+  if (role === "PASTOR") return "Pastor";
+  return "Membro";
+});
+
+const applyProfile = (data: MyProfileDTO) => {
+  profile.value = data;
+  form.primaryDepartmentId = data.primaryDepartmentId || "";
+  form.ministryFunction = data.ministryFunction || "";
+  form.profileSuggestion = data.profileSuggestion || "";
+  form.phone = data.phone || "";
+  unavailableDates.value = [...(data.unavailableDates || [])].sort();
+};
+
+const loadProfile = async () => {
+  isLoading.value = true;
+  loadError.value = "";
+
+  const [profileResponse, departmentsResponse] = await Promise.all([
+    getMyProfile(),
+    getDepartments(),
+  ]);
+
+  if (profileResponse.error || !profileResponse.data) {
+    loadError.value = profileResponse.error || "Não foi possível carregar o perfil.";
+  } else {
+    applyProfile(profileResponse.data);
   }
+
+  departments.value = departmentsResponse.data ?? [];
+
+  if (departmentsResponse.error && !loadError.value) {
+    loadError.value = departmentsResponse.error;
+  }
+
+  isLoading.value = false;
 };
 
-const removerData = (index) => {
-  datasIndisponiveis.value.splice(index, 1);
+const addUnavailableDate = () => {
+  if (!newUnavailableDate.value) return;
+
+  if (!unavailableDates.value.includes(newUnavailableDate.value)) {
+    unavailableDates.value = [...unavailableDates.value, newUnavailableDate.value].sort();
+  }
+
+  newUnavailableDate.value = "";
 };
 
-// Converte 'YYYY-MM-DD' para 'DD/MM/YYYY' apenas para exibição
-const formatarData = (dataIso) => {
-  if (!dataIso) return "";
-  const partes = dataIso.split("-");
-  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+const removeUnavailableDate = (date: string) => {
+  unavailableDates.value = unavailableDates.value.filter((item) => item !== date);
 };
 
-// Ação de Salvar
-const salvarPerfil = () => {
-  const perfilCompleto = {
-    ...form.value,
-    indisponibilidades: datasIndisponiveis.value,
-  };
+const formatDate = (dateIso: string) => {
+  if (!dateIso) return "";
+  const [year, month, day] = dateIso.split("-");
+  return `${day}/${month}/${year}`;
+};
 
-  console.log("Salvando dados do perfil:", perfilCompleto);
-  // Aqui entraria a sua requisição para API (ex: $fetch('/api/user', { ... }))
-  alert("Perfil salvo com sucesso!");
+const saveProfile = async () => {
+  saveError.value = "";
+  saveMessage.value = "";
+  isSaving.value = true;
+
+  const { data, error } = await updateMyProfile({
+    phone: form.phone,
+    profileSuggestion: form.profileSuggestion,
+    primaryDepartmentId: form.primaryDepartmentId || null,
+    ministryFunction: form.ministryFunction,
+    unavailableDates: unavailableDates.value,
+  });
+
+  isSaving.value = false;
+
+  if (error || !data) {
+    saveError.value = error || "Não foi possível salvar o perfil.";
+    return;
+  }
+
+  applyProfile(data);
+  await fetchMe();
+  saveMessage.value = "Perfil salvo com sucesso.";
 };
 
 const handleLogout = async () => {
@@ -236,18 +375,37 @@ const handleLogout = async () => {
   loadingLogout.value = false;
   await router.push("/login");
 };
+
+onMounted(loadProfile);
 </script>
 
 <style scoped>
 .min-vh-100 {
   min-height: 100vh;
 }
-/* Espaço extra no rodapé para não esconder o botão Salvar atrás do Bottom Navigation */
 .pb-20 {
   padding-bottom: 90px !important;
 }
 .gap-2 {
   gap: 8px;
+}
+.profile-card {
+  border: 1px solid #f3f4f6;
+  border-radius: 18px;
+}
+.profile-input :deep(.v-field) {
+  border-radius: 14px;
+}
+.profile-input :deep(.v-field__input) {
+  min-height: 48px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.profile-input :deep(textarea.v-field__input) {
+  min-height: 96px;
+}
+.profile-icon-btn {
+  border-radius: 14px !important;
 }
 .border-subtle {
   border: 1px solid #f3f4f6;

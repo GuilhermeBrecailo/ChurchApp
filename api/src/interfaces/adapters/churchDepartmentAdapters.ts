@@ -1,7 +1,14 @@
 import { FastifyRequest } from "fastify/types/request";
 import crypto from "node:crypto";
+import type { Prisma } from "@prisma/client";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
+
+type CurrentUser = Prisma.UserGetPayload<{
+  include: {
+    crunch: true;
+  };
+}>;
 
 function getAuthUserId(request: FastifyRequest) {
   const authHeader = request.headers.authorization;
@@ -27,7 +34,35 @@ function getAuthUserId(request: FastifyRequest) {
 }
 
 export class ChurchDepartmentAdapters {
-  private async getCurrentUser(request: FastifyRequest) {
+  private scheduleSelect = {
+    id: true,
+    date: true,
+    description: true,
+    departmentId: true,
+    department: {
+      select: {
+        id: true,
+        name: true,
+        type: true,
+      },
+    },
+    assignments: {
+      select: {
+        id: true,
+        role: true,
+        userId: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    },
+  };
+
+  private async getCurrentUser(request: FastifyRequest): Promise<CurrentUser> {
     const userId = getAuthUserId(request);
     const user = await $prismaClient.user.findUnique({
       where: {
@@ -49,7 +84,7 @@ export class ChurchDepartmentAdapters {
     return user;
   }
 
-  private isTitularPastor(user: Awaited<ReturnType<this["getCurrentUser"]>>) {
+  private isTitularPastor(user: CurrentUser) {
     return user.role === "PASTOR" && user.crunch?.userMainId === user.id;
   }
 
@@ -85,12 +120,30 @@ export class ChurchDepartmentAdapters {
     return department;
   }
 
+  private async getScheduleFromCurrentChurch(scheduleId: string, crunchId: string) {
+    const schedule = await $prismaClient.schedule.findFirst({
+      where: {
+        id: scheduleId,
+        department: {
+          crunchId,
+        },
+      },
+      select: this.scheduleSelect,
+    });
+
+    if (!schedule) {
+      throw new DomainError("Escala não encontrada nesta igreja");
+    }
+
+    return schedule;
+  }
+
   async getChurchDepartments(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
 
     return await $prismaClient.department.findMany({
       where: {
-        crunchId: user.crunchId,
+        crunchId: user.crunchId!,
       },
       orderBy: {
         name: "asc",
@@ -148,7 +201,7 @@ export class ChurchDepartmentAdapters {
         name: body.name.trim(),
         type: body.type || "OTHER",
         leaderId: leader.id,
-        crunchId: user.crunchId,
+        crunchId: user.crunchId!,
         isActive: true,
       },
       select: {
@@ -277,6 +330,254 @@ export class ChurchDepartmentAdapters {
             email: true,
           },
         },
+      },
+    });
+  }
+
+  async getChurchDepartmentSchedules(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+
+    if (!id) {
+      throw new DomainError("Ministério não informado");
+    }
+
+    await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+
+    return await $prismaClient.schedule.findMany({
+      where: {
+        departmentId: id,
+      },
+      orderBy: {
+        date: "asc",
+      },
+      select: this.scheduleSelect,
+    });
+  }
+
+  async getChurchSchedules(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+
+    return await $prismaClient.schedule.findMany({
+      where: {
+        department: {
+          crunchId: user.crunchId!,
+        },
+      },
+      orderBy: {
+        date: "asc",
+      },
+      select: this.scheduleSelect,
+    });
+  }
+
+  async createChurchDepartmentSchedule(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+
+    if (!id) {
+      throw new DomainError("Ministério não informado");
+    }
+
+    return await this.createSchedule(id, user.crunchId!, request.body);
+  }
+
+  async createChurchSchedule(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const body = request.body as { departmentId?: string };
+
+    if (!body.departmentId) {
+      throw new DomainError("Ministério da escala é obrigatório");
+    }
+
+    return await this.createSchedule(body.departmentId, user.crunchId!, body);
+  }
+
+  private async createSchedule(
+    departmentId: string,
+    crunchId: string,
+    rawBody: unknown,
+  ) {
+    const body = rawBody as {
+      title?: string;
+      description?: string;
+      date?: string;
+      time?: string;
+    };
+
+    if (!body.title?.trim()) {
+      throw new DomainError("Título da escala é obrigatório");
+    }
+
+    if (!body.date) {
+      throw new DomainError("Data da escala é obrigatória");
+    }
+
+    await this.getDepartmentFromCurrentChurch(departmentId, crunchId);
+
+    const scheduleDate = new Date(
+      `${body.date}T${body.time || "00:00"}:00.000`,
+    );
+
+    if (Number.isNaN(scheduleDate.getTime())) {
+      throw new DomainError("Data da escala inválida");
+    }
+
+    return await $prismaClient.schedule.create({
+      data: {
+        id: crypto.randomUUID(),
+        date: scheduleDate,
+        description: body.title.trim(),
+        departmentId,
+      },
+      select: this.scheduleSelect,
+    });
+  }
+
+  async updateChurchScheduleAssignments(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+    const body = request.body as {
+      assignments?: {
+        userId?: string;
+        role?: string;
+      }[];
+    };
+
+    if (!id) {
+      throw new DomainError("Escala não informada");
+    }
+
+    const assignments = body.assignments ?? [];
+
+    if (!Array.isArray(assignments)) {
+      throw new DomainError("Voluntários inválidos");
+    }
+
+    await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+
+    const normalizedAssignments = assignments
+      .map((assignment) => ({
+        userId: assignment.userId?.trim(),
+        role: assignment.role?.trim() || "Voluntário",
+      }))
+      .filter((assignment): assignment is { userId: string; role: string } =>
+        Boolean(assignment.userId),
+      );
+
+    const uniqueUserIds = [...new Set(normalizedAssignments.map((item) => item.userId))];
+
+    if (uniqueUserIds.length !== normalizedAssignments.length) {
+      throw new DomainError("Não é possível repetir o mesmo voluntário na escala");
+    }
+
+    if (uniqueUserIds.length > 0) {
+      const users = await $prismaClient.user.findMany({
+        where: {
+          id: {
+            in: uniqueUserIds,
+          },
+          crunchId: user.crunchId!,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (users.length !== uniqueUserIds.length) {
+        throw new DomainError("Um ou mais voluntários não pertencem a esta igreja");
+      }
+    }
+
+    await $prismaClient.$transaction([
+      $prismaClient.scheduleAssignment.deleteMany({
+        where: {
+          scheduleId: id,
+        },
+      }),
+      ...normalizedAssignments.map((assignment) =>
+        $prismaClient.scheduleAssignment.create({
+          data: {
+            id: crypto.randomUUID(),
+            scheduleId: id,
+            userId: assignment.userId,
+            role: assignment.role,
+          },
+        }),
+      ),
+    ]);
+
+    return await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+  }
+
+  async getChurchDepartmentResources(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+
+    if (!id) {
+      throw new DomainError("Ministério não informado");
+    }
+
+    await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+
+    return await $prismaClient.mediaItem.findMany({
+      where: {
+        departmentId: id,
+      },
+      orderBy: {
+        title: "asc",
+      },
+      select: {
+        id: true,
+        title: true,
+        url: true,
+        category: true,
+        metadata: true,
+        departmentId: true,
+      },
+    });
+  }
+
+  async createChurchDepartmentResource(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+    const body = request.body as {
+      title?: string;
+      url?: string;
+      category?: string;
+      notes?: string;
+    };
+
+    if (!id) {
+      throw new DomainError("Ministério não informado");
+    }
+
+    if (!body.title?.trim()) {
+      throw new DomainError("Título do recurso é obrigatório");
+    }
+
+    if (!body.url?.trim()) {
+      throw new DomainError("Link do recurso é obrigatório");
+    }
+
+    await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+
+    return await $prismaClient.mediaItem.create({
+      data: {
+        id: crypto.randomUUID(),
+        title: body.title.trim(),
+        url: body.url.trim(),
+        category: body.category?.trim() || "Geral",
+        metadata: body.notes?.trim() ? { notes: body.notes.trim() } : undefined,
+        departmentId: id,
+      },
+      select: {
+        id: true,
+        title: true,
+        url: true,
+        category: true,
+        metadata: true,
+        departmentId: true,
       },
     });
   }

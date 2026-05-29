@@ -29,4 +29,39 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
     "/api/church/departments/:id/tasks",
     controllerHandler(adapters.createChurchDepartmentTask.bind(adapters)),
   );
+
+  app.get(
+    "/api/church/departments/:id/schedules",
+    controllerHandler(adapters.getChurchDepartmentSchedules.bind(adapters)),
+  );
+
+  app.post(
+    "/api/church/departments/:id/schedules",
+    controllerHandler(adapters.createChurchDepartmentSchedule.bind(adapters)),
+  );
+
+  app.get(
+    "/api/church/schedules",
+    controllerHandler(adapters.getChurchSchedules.bind(adapters)),
+  );
+
+  app.post(
+    "/api/church/schedules",
+    controllerHandler(adapters.createChurchSchedule.bind(adapters)),
+  );
+
+  app.patch(
+    "/api/church/schedules/:id/assignments",
+    controllerHandler(adapters.updateChurchScheduleAssignments.bind(adapters)),
+  );
+
+  app.get(
+    "/api/church/departments/:id/resources",
+    controllerHandler(adapters.getChurchDepartmentResources.bind(adapters)),
+  );
+
+  app.post(
+    "/api/church/departments/:id/resources",
+    controllerHandler(adapters.createChurchDepartmentResource.bind(adapters)),
+  );
 }

@@ -13,6 +13,31 @@ export interface UserDTO {
   password?: string;
 }
 
+export interface MyProfileDTO {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  role: string;
+  profileSuggestion?: string | null;
+  primaryDepartmentId?: string | null;
+  ministryFunction?: string;
+  primaryDepartment?: {
+    id: string;
+    name: string;
+    type: string;
+  } | null;
+  unavailableDates: string[];
+}
+
+interface UpdateMyProfileDTO {
+  phone?: string;
+  profileSuggestion?: string;
+  primaryDepartmentId?: string | null;
+  ministryFunction?: string;
+  unavailableDates?: string[];
+}
+
 export const useUser = () => {
   const config = useRuntimeConfig();
   const { access_token } = useAuth();
@@ -82,6 +107,29 @@ export const useUser = () => {
     });
   };
 
+  const getMyProfile = async (): Promise<ApiResponse<MyProfileDTO>> => {
+    return await $customFetch<MyProfileDTO>(
+      `${config.public.URL_BACKEND}/api/me/profile`,
+      {
+        method: "GET",
+        headers: authHeaders(),
+      },
+    );
+  };
+
+  const updateMyProfile = async (
+    profile: UpdateMyProfileDTO,
+  ): Promise<ApiResponse<MyProfileDTO>> => {
+    return await $customFetch<MyProfileDTO>(
+      `${config.public.URL_BACKEND}/api/me/profile`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: profile,
+      },
+    );
+  };
+
   return {
     createPastor,
     createUser,
@@ -89,5 +137,7 @@ export const useUser = () => {
     getUserById,
     updateUser,
     deleteUser,
+    getMyProfile,
+    updateMyProfile,
   };
 };

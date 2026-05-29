@@ -1,5 +1,9 @@
 <template>
-  <v-card class="rounded-xl pa-4 mb-4 elevation-1 bg-white">
+  <v-card
+    :id="`schedule-${event.id}`"
+    class="rounded-xl pa-4 mb-4 elevation-1 bg-white schedule-card"
+    :class="{ 'schedule-card-selected': selected }"
+  >
     <div class="d-flex justify-space-between align-start mb-4">
       <div>
         <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
@@ -49,6 +53,7 @@
         color="primary"
         class="text-none font-weight-medium"
         size="small"
+        @click="$emit('add-volunteer', event)"
       >
         <UserPlus size="16" class="mr-2" />
         Adicionar Voluntário
@@ -60,10 +65,30 @@
 <script setup>
 import { Clock, UserPlus } from "lucide-vue-next";
 
+defineEmits(["add-volunteer"]);
+
 defineProps({
   event: {
     type: Object,
     required: true,
   },
+  selected: {
+    type: Boolean,
+    default: false,
+  },
 });
 </script>
+
+<style scoped>
+.schedule-card {
+  border: 1px solid transparent;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.schedule-card-selected {
+  border-color: #a855f7;
+  box-shadow: 0 10px 26px rgba(168, 85, 247, 0.18) !important;
+}
+</style>

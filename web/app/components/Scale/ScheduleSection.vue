@@ -6,6 +6,8 @@
           v-for="event in events"
           :key="event.id"
           :event="event"
+          :selected="event.id === selectedEventId"
+          @add-volunteer="$emit('add-volunteer', $event)"
         />
       </div>
     </UtilsTitle>
@@ -13,6 +15,8 @@
 </template>
 
 <script setup>
+defineEmits(["add-volunteer"]);
+
 const props = defineProps({
   title: {
     type: String,
@@ -21,6 +25,10 @@ const props = defineProps({
   events: {
     type: Array,
     required: true,
+  },
+  selectedEventId: {
+    type: String,
+    default: "",
   },
 });
 </script>

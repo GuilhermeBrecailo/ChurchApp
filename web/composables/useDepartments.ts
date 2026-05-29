@@ -32,6 +32,39 @@ export interface DepartmentTask {
   } | null;
 }
 
+export interface DepartmentSchedule {
+  id: string;
+  date: string;
+  description: string;
+  departmentId: string;
+  department?: {
+    id: string;
+    name: string;
+    type: string;
+  };
+  assignments?: {
+    id: string;
+    role: string;
+    userId: string;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+    };
+  }[];
+}
+
+export interface DepartmentResource {
+  id: string;
+  title: string;
+  url: string;
+  category: string;
+  metadata?: {
+    notes?: string;
+  } | null;
+  departmentId: string;
+}
+
 interface CreateDepartmentDTO {
   name: string;
   leaderId: string;
@@ -44,6 +77,27 @@ interface CreateDepartmentTaskDTO {
   priority?: string;
   dueDate?: string;
   assigneeId?: string;
+}
+
+interface CreateDepartmentScheduleDTO {
+  title: string;
+  date: string;
+  time?: string;
+  departmentId?: string;
+}
+
+interface CreateDepartmentResourceDTO {
+  title: string;
+  url: string;
+  category?: string;
+  notes?: string;
+}
+
+interface UpdateScheduleAssignmentsDTO {
+  assignments: {
+    userId: string;
+    role: string;
+  }[];
 }
 
 export const useDepartments = () => {
@@ -122,11 +176,109 @@ export const useDepartments = () => {
     );
   };
 
+  const getDepartmentSchedules = async (
+    id: string,
+  ): Promise<ApiResponse<DepartmentSchedule[]>> => {
+    return await $customFetch<DepartmentSchedule[]>(
+      `${config.public.URL_BACKEND}/api/church/departments/${id}/schedules`,
+      {
+        method: "GET",
+        headers: authHeaders(),
+      },
+    );
+  };
+
+  const createDepartmentSchedule = async (
+    id: string,
+    schedule: CreateDepartmentScheduleDTO,
+  ): Promise<ApiResponse<DepartmentSchedule>> => {
+    return await $customFetch<DepartmentSchedule>(
+      `${config.public.URL_BACKEND}/api/church/departments/${id}/schedules`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+        body: schedule,
+      },
+    );
+  };
+
+  const getChurchSchedules = async (): Promise<
+    ApiResponse<DepartmentSchedule[]>
+  > => {
+    return await $customFetch<DepartmentSchedule[]>(
+      `${config.public.URL_BACKEND}/api/church/schedules`,
+      {
+        method: "GET",
+        headers: authHeaders(),
+      },
+    );
+  };
+
+  const createChurchSchedule = async (
+    schedule: CreateDepartmentScheduleDTO,
+  ): Promise<ApiResponse<DepartmentSchedule>> => {
+    return await $customFetch<DepartmentSchedule>(
+      `${config.public.URL_BACKEND}/api/church/schedules`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+        body: schedule,
+      },
+    );
+  };
+
+  const updateScheduleAssignments = async (
+    scheduleId: string,
+    payload: UpdateScheduleAssignmentsDTO,
+  ): Promise<ApiResponse<DepartmentSchedule>> => {
+    return await $customFetch<DepartmentSchedule>(
+      `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}/assignments`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: payload,
+      },
+    );
+  };
+
+  const getDepartmentResources = async (
+    id: string,
+  ): Promise<ApiResponse<DepartmentResource[]>> => {
+    return await $customFetch<DepartmentResource[]>(
+      `${config.public.URL_BACKEND}/api/church/departments/${id}/resources`,
+      {
+        method: "GET",
+        headers: authHeaders(),
+      },
+    );
+  };
+
+  const createDepartmentResource = async (
+    id: string,
+    resource: CreateDepartmentResourceDTO,
+  ): Promise<ApiResponse<DepartmentResource>> => {
+    return await $customFetch<DepartmentResource>(
+      `${config.public.URL_BACKEND}/api/church/departments/${id}/resources`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+        body: resource,
+      },
+    );
+  };
+
   return {
     getDepartments,
     createDepartment,
     getDepartmentById,
     getDepartmentTasks,
     createDepartmentTask,
+    getDepartmentSchedules,
+    createDepartmentSchedule,
+    getChurchSchedules,
+    createChurchSchedule,
+    updateScheduleAssignments,
+    getDepartmentResources,
+    createDepartmentResource,
   };
 };

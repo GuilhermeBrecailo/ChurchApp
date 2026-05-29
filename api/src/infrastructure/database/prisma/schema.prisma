@@ -37,6 +37,7 @@ model User {
     role      String   @default("MEMBER")
     createdAt DateTime @default(now())
     canManageMembers Boolean @default(false)
+    profileSuggestion String?
 
     crunchId String?
     crunch   Crunch? @relation(fields: [crunchId], references: [id])
@@ -44,6 +45,8 @@ model User {
     ledDepartments Department[]         @relation("Leader")
     assignments    ScheduleAssignment[]
     departmentTasks DepartmentTask[]
+    departmentMemberships UserDepartmentMembership[]
+    unavailableDates UserUnavailableDate[]
     userAuth       UserAuth?
 }
 
@@ -78,6 +81,34 @@ model Department {
     mediaItems MediaItem[]
     schedules  Schedule[]
     tasks      DepartmentTask[]
+    members    UserDepartmentMembership[]
+}
+
+model UserDepartmentMembership {
+    id        String  @id @default(uuid())
+    function  String?
+    isPrimary Boolean @default(true)
+    createdAt DateTime @default(now())
+
+    userId String
+    user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    departmentId String
+    department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, departmentId])
+}
+
+model UserUnavailableDate {
+    id        String   @id @default(uuid())
+    date      DateTime
+    reason    String?
+    createdAt DateTime @default(now())
+
+    userId String
+    user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, date])
 }
 
 model DepartmentTask {

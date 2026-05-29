@@ -111,6 +111,160 @@ export class UserAdapters {
     };
   }
 
+  async getMyProfile(request: FastifyRequest) {
+    const userId = getAuthUserId(request);
+
+    const user = await $prismaClient.user.findUnique({
+      where: {
+        id: userId,
+      },
+      include: {
+        departmentMemberships: {
+          where: {
+            isPrimary: true,
+          },
+          include: {
+            department: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+              },
+            },
+          },
+          take: 1,
+        },
+        unavailableDates: {
+          orderBy: {
+            date: "asc",
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new DomainError("Usuário não encontrado");
+    }
+
+    const primaryMembership = user.departmentMemberships[0] || null;
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      profileSuggestion: user.profileSuggestion,
+      primaryDepartmentId: primaryMembership?.departmentId || null,
+      ministryFunction: primaryMembership?.function || "",
+      primaryDepartment: primaryMembership?.department || null,
+      unavailableDates: user.unavailableDates.map((item) =>
+        item.date.toISOString().slice(0, 10),
+      ),
+    };
+  }
+
+  async updateMyProfile(request: FastifyRequest) {
+    const userId = getAuthUserId(request);
+    const body = request.body as {
+      phone?: string;
+      profileSuggestion?: string;
+      primaryDepartmentId?: string | null;
+      ministryFunction?: string;
+      unavailableDates?: string[];
+    };
+
+    const user = await $prismaClient.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      throw new DomainError("Usuário não encontrado");
+    }
+
+    if (!user.crunchId) {
+      throw new DomainError("Usuário não possui igreja vinculada");
+    }
+
+    if (body.primaryDepartmentId) {
+      const department = await $prismaClient.department.findFirst({
+        where: {
+          id: body.primaryDepartmentId,
+          crunchId: user.crunchId,
+        },
+      });
+
+      if (!department) {
+        throw new DomainError("Ministério não encontrado nesta igreja");
+      }
+    }
+
+    const unavailableDates = Array.isArray(body.unavailableDates)
+      ? [...new Set(body.unavailableDates)]
+      : [];
+
+    const normalizedUnavailableDates = unavailableDates.map((date) => {
+      const parsedDate = new Date(`${date}T00:00:00.000`);
+
+      if (Number.isNaN(parsedDate.getTime())) {
+        throw new DomainError("Data de indisponibilidade inválida");
+      }
+
+      return parsedDate;
+    });
+
+    await $prismaClient.$transaction(async (tx) => {
+      await tx.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          phone: body.phone?.trim() || null,
+          profileSuggestion: body.profileSuggestion?.trim() || null,
+        },
+      });
+
+      await tx.userDepartmentMembership.deleteMany({
+        where: {
+          userId: user.id,
+          isPrimary: true,
+        },
+      });
+
+      if (body.primaryDepartmentId) {
+        await tx.userDepartmentMembership.create({
+          data: {
+            id: crypto.randomUUID(),
+            userId: user.id,
+            departmentId: body.primaryDepartmentId,
+            function: body.ministryFunction?.trim() || null,
+            isPrimary: true,
+          },
+        });
+      }
+
+      await tx.userUnavailableDate.deleteMany({
+        where: {
+          userId: user.id,
+        },
+      });
+
+      if (normalizedUnavailableDates.length > 0) {
+        await tx.userUnavailableDate.createMany({
+          data: normalizedUnavailableDates.map((date) => ({
+            id: crypto.randomUUID(),
+            userId: user.id,
+            date,
+          })),
+        });
+      }
+    });
+
+    return await this.getMyProfile(request);
+  }
+
   async createOwnChurch(request: FastifyRequest) {
     const userId = getAuthUserId(request);
     const body = request.body as {

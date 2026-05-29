@@ -5,7 +5,7 @@
         Próximos Cultos
       </h3>
       <a
-        href="#"
+        href="/scale"
         class="text-caption text-#A855F7 text-decoration-none d-flex align-center font-weight-medium"
       >
         Ver todos <ChevronRight size="14" class="ml-1" />
@@ -15,9 +15,10 @@
     <div class="d-flex flex-column gap-3 pb-4">
       <v-card
         v-for="(event, index) in eventsList"
-        :key="index"
+        :key="event.id || index"
         color="white"
-        class="rounded-xl pa-3 d-flex align-center elevation-1 flex-shrink-0"
+        class="rounded-xl pa-3 d-flex align-center elevation-1 flex-shrink-0 event-card"
+        @click="goToSchedule(event.id)"
       >
         <div
           class="date-badge rounded-lg d-flex flex-column align-center justify-center mr-4"
@@ -32,48 +33,64 @@
             {{ event.title }}
           </p>
           <p class="text-caption text-grey-darken-1 mb-0">
-            {{ event.subtitle }} &bull; {{ event.time }}
+            {{ event.department }} &bull; {{ event.time }}
           </p>
         </div>
         <ChevronRight size="20" color="#9CA3AF" />
+      </v-card>
+
+      <v-card
+        v-if="eventsList.length === 0"
+        color="white"
+        class="rounded-xl pa-5 elevation-1 text-center"
+      >
+        <p class="text-caption text-grey-darken-1 mb-0">
+          Nenhuma escala futura cadastrada.
+        </p>
       </v-card>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { computed } from "vue";
 import { ChevronRight } from "lucide-vue-next";
+import type { DepartmentSchedule } from "../../../../composables/useDepartments";
 
-const eventsList = [
-  {
-    day: "25",
-    month: "ABR",
-    title: "Culto Especial de Louvor",
-    subtitle: "Louvor",
-    time: "19:00",
-  },
-  {
-    day: "21",
-    month: "ABR",
-    title: "Culto de Quarta",
-    subtitle: "Louvor",
-    time: "19:30",
-  },
-  {
-    day: "21",
-    month: "ABR",
-    title: "Culto de Quarta",
-    subtitle: "Intercessão",
-    time: "19:00",
-  },
-  {
-    day: "28",
-    month: "ABR",
-    title: "Culto de Domingo",
-    subtitle: "Celebração",
-    time: "18:00",
-  },
-];
+const router = useRouter();
+
+const props = defineProps<{
+  schedules?: DepartmentSchedule[];
+}>();
+
+const eventsList = computed(() =>
+  (props.schedules || []).slice(0, 5).map((schedule) => {
+    const date = new Date(schedule.date);
+
+    return {
+      id: schedule.id,
+      day: new Intl.DateTimeFormat("pt-BR", { day: "2-digit" }).format(date),
+      month: new Intl.DateTimeFormat("pt-BR", { month: "short" })
+        .format(date)
+        .replace(".", ""),
+      title: schedule.description,
+      department: schedule.department?.name || "Sem ministério",
+      time: new Intl.DateTimeFormat("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(date),
+    };
+  }),
+);
+
+const goToSchedule = (id: string) => {
+  router.push({
+    path: "/scale",
+    query: {
+      schedule: id,
+    },
+  });
+};
 </script>
 
 <style scoped>
@@ -97,5 +114,16 @@ const eventsList = [
   font-size: 0.55rem;
   line-height: 1;
   margin-top: 2px;
+}
+
+.event-card {
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.event-card:active {
+  transform: scale(0.99);
 }
 </style>

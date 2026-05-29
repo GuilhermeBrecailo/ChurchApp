@@ -1,11 +1,21 @@
 <template>
   <div class="pa-4 pb-8 bg-grey-lighten-4">
     <template v-if="hasChurch">
-      <DashboardNextScheduleCard />
+      <DashboardNextScheduleCard :schedule="nextSchedule" />
 
       <DashboardQuickAccess />
 
-      <DashboardUpcomingEvents />
+      <v-alert
+        v-if="schedulesError"
+        type="error"
+        variant="tonal"
+        density="compact"
+        class="mb-4"
+      >
+        {{ schedulesError }}
+      </v-alert>
+
+      <DashboardUpcomingEvents :schedules="upcomingSchedules" />
     </template>
 
     <template v-else-if="isPastorWithoutChurch">
@@ -136,15 +146,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Church } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useChurch } from "../../composables/useChurch";
+import {
+  useDepartments,
+  type DepartmentSchedule,
+} from "../../composables/useDepartments";
 
 const router = useRouter();
 const { user } = useAuth();
 const { createOwnChurch } = useChurch();
+const { getChurchSchedules } = useDepartments();
 
 const hasChurch = computed(() => user.value?.hasChurch === true);
 const isPastorWithoutChurch = computed(
@@ -156,6 +171,8 @@ const isMemberWithoutChurch = computed(
 
 const loading = ref(false);
 const errorMessage = ref("");
+const schedules = ref<DepartmentSchedule[]>([]);
+const schedulesError = ref("");
 
 const churchForm = reactive({
   name: "",
@@ -194,6 +211,53 @@ const handleCreateChurch = async () => {
 
   await router.replace("/");
 };
+
+const upcomingSchedules = computed(() => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStart = today.getTime();
+
+  const futureSchedules = schedules.value
+    .filter((schedule) => new Date(schedule.date).getTime() >= todayStart)
+    .sort(
+      (current, next) =>
+        new Date(current.date).getTime() - new Date(next.date).getTime(),
+    );
+
+  if (futureSchedules.length > 0) {
+    return futureSchedules;
+  }
+
+  return [...schedules.value].sort(
+    (current, next) =>
+      new Date(next.date).getTime() - new Date(current.date).getTime(),
+  );
+});
+
+const nextSchedule = computed(() => upcomingSchedules.value[0] || null);
+
+const loadSchedules = async () => {
+  if (!hasChurch.value) return;
+
+  schedulesError.value = "";
+  const { data, error } = await getChurchSchedules();
+
+  if (error) {
+    schedulesError.value = error;
+    schedules.value = [];
+    return;
+  }
+
+  schedules.value = data ?? [];
+};
+
+watch(hasChurch, (value) => {
+  if (value) {
+    loadSchedules();
+  }
+});
+
+onMounted(loadSchedules);
 </script>
 
 <style scoped>

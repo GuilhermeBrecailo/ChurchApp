@@ -18,9 +18,9 @@
   </UtilsTitle>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useRouter } from "vue-router";
-import { CalendarDays, Music, Users, BookOpen } from "lucide-vue-next";
+import { CalendarDays, Church, Settings, Users } from "lucide-vue-next";
 
 const router = useRouter();
 
@@ -30,32 +30,32 @@ const menuItems = [
     icon: CalendarDays,
     iconColor: "#6366F1",
     bgColor: "#EEF2FF",
-    route: "/escalas",
+    route: "/scale",
   },
   {
-    title: "Músicas",
-    icon: Music,
+    title: "Ministérios",
+    icon: Church,
     iconColor: "#A855F7",
     bgColor: "#FAF5FF",
-    route: "/musicas",
+    route: "/ministery",
   },
   {
-    title: "Membros",
+    title: "Meu Perfil",
     icon: Users,
     iconColor: "#14B8A6",
     bgColor: "#F0FDFA",
-    route: "/membros",
+    route: "/user",
   },
   {
-    title: "Devocionais",
-    icon: BookOpen,
+    title: "Admin",
+    icon: Settings,
     iconColor: "#EAB308",
     bgColor: "#FEFCE8",
-    route: "/devocionais",
+    route: "/admin",
   },
 ];
 
-const goToRoute = (route) => {
+const goToRoute = (route: string) => {
   if (route) {
     router.push(route);
   }

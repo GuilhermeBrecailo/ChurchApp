@@ -121,35 +121,52 @@ const loading = ref(false);
 const errorMessage = ref("");
 
 const handleLogin = async () => {
-  loading.value = true;
   errorMessage.value = "";
+  const normalizedEmail = email.value.trim();
 
-  const { data, error } = await login({
-    email: email.value,
-    password: password.value,
-  });
-
-  if (error) {
-    errorMessage.value = error;
-    loading.value = false;
+  if (!normalizedEmail || !password.value) {
+    errorMessage.value = "Informe email e senha para entrar.";
     return;
   }
 
-  if (data?.access_token) {
-    setSessionFromToken(data.access_token);
-    await fetchMe();
-  } else {
-    await session();
-  }
+  loading.value = true;
 
-  loading.value = false;
+  try {
+    const { data, error } = await login({
+      email: normalizedEmail,
+      password: password.value,
+    });
 
-  if (!access_token.value) {
+    if (error) {
+      errorMessage.value = error;
+      return;
+    }
+
+    if (data?.access_token) {
+      setSessionFromToken(data.access_token);
+      await fetchMe();
+    } else {
+      await session();
+    }
+
+    if (!access_token.value) {
+      errorMessage.value = "Nao foi possivel iniciar a sessao.";
+      return;
+    }
+
+    const redirect =
+      typeof route.query.redirect === "string" &&
+      route.query.redirect.startsWith("/") &&
+      !route.query.redirect.startsWith("//")
+        ? route.query.redirect
+        : "/";
+
+    await router.push(redirect);
+  } catch {
     errorMessage.value = "Nao foi possivel iniciar a sessao.";
-    return;
+  } finally {
+    loading.value = false;
   }
-
-  await router.push((route.query.redirect as string) || "/");
 };
 </script>
 
