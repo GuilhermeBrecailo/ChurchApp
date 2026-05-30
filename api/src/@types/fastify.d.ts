@@ -10,5 +10,6 @@ declare module "fastify" {
   // Se quiser tipar app.user globalmente, pode usar any por enquanto
   interface FastifyInstance {
     app: any;
+    use: (...handlers: any[]) => FastifyInstance;
   }
 }

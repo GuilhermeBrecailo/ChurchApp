@@ -1,5 +1,5 @@
 import fp from "fastify-plugin";
-import fastifyExpress from "@fastify/express";
+import fastifyExpress from "fastify-express";
 import session from "express-session";
 import Keycloak from "keycloak-connect";
 import { FastifyPluginAsync } from "fastify";
@@ -29,12 +29,21 @@ const KeycloakPlugin: FastifyPluginAsync = async (fastify) => {
   fastify.addHook("preHandler", async (request, reply) => {
     // rotas públicas não precisam de token
     const publicRoutes = [
-      "/auth/register",
-      "/auth/login-admin",
-      "/storage/v1/temp/clean",
+      "/status",
+      "/api/pastor/signup",
+      "/public/auth/login",
+      "/public/auth/refresh-token",
+      "/public/auth/logout",
     ];
-    const path = request.routeOptions?.url || request.raw.url;
-    if (!path || path.startsWith("/public") || publicRoutes.includes(path)) {
+    const path = (request.routeOptions?.url || request.raw.url || "").split(
+      "?",
+    )[0];
+    if (
+      request.method === "OPTIONS" ||
+      !path ||
+      path.startsWith("/public") ||
+      publicRoutes.includes(path)
+    ) {
       return;
     }
 

@@ -61,14 +61,14 @@ export class AuthAdapters {
       password?: string;
     };
 
-    if (!email || !password) {
-      throw new Error("Email e senha sao obrigatorios");
+    if (!email?.trim() || !password) {
+      throw new DomainError("Email e senha são obrigatórios");
     }
 
     const params = new URLSearchParams();
     params.append("client_id", keycloakClientId);
     params.append("grant_type", "password");
-    params.append("username", email);
+    params.append("username", email.trim().toLowerCase());
     params.append("password", password);
 
     const token = await requestKeycloakToken(params);
@@ -85,7 +85,7 @@ export class AuthAdapters {
     const refreshToken = readCookie(request, refreshCookieName);
 
     if (!refreshToken) {
-      throw new Error("Refresh token nao encontrado");
+      throw new DomainToken("Refresh token não encontrado");
     }
 
     const params = new URLSearchParams();

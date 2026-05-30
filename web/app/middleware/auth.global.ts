@@ -39,6 +39,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
     await fetchMe();
   }
 
+  if (!user.value?.id) {
+    return navigateTo({
+      path: "/login",
+      query: {
+        redirect: to.fullPath,
+      },
+    });
+  }
+
   const isOnboardingRoute = onboardingRoutes.some(
     (route) => to.path === route || to.path.startsWith(`${route}/`),
   );

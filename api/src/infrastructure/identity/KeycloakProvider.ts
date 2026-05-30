@@ -10,11 +10,16 @@ export class KeycloakProvider implements IIdentityProvider {
   ): Promise<string> {
     await authenticateKeycloakAdmin();
 
+    if (!password) {
+      throw new Error("Senha é obrigatória");
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
     const [firstName, ...lastNameParts] = name.trim().split(/\s+/);
 
     const user = await kcAdminClient.users.create({
-      username: email,
-      email,
+      username: normalizedEmail,
+      email: normalizedEmail,
       firstName: firstName || name,
       lastName: lastNameParts.join(" ") || "Usuario",
       enabled: true,

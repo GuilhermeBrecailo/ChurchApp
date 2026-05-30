@@ -13,15 +13,24 @@ const FakeAuth: FastifyPluginAsync = async (fastify) => {
   fastify.addHook(
     "preHandler",
     async (request: FastifyRequest, reply: FastifyReply) => {
-      // rotas públicas que não precisam de ID (opcional)
       const publicRoutes = [
-        "/auth/register",
-        "/auth/login-admin",
-        "/storage/v1/temp/clean",
+        "/status",
+        "/api/pastor/signup",
+        "/public/auth/login",
+        "/public/auth/refresh-token",
+        "/public/auth/logout",
       ];
 
-      const path = request.routeOptions?.url || request.raw.url;
-      if (!path || path.startsWith("/public") || publicRoutes.includes(path)) {
+      const path = (request.routeOptions?.url || request.raw.url || "").split(
+        "?",
+      )[0];
+
+      if (
+        request.method === "OPTIONS" ||
+        !path ||
+        path.startsWith("/public") ||
+        publicRoutes.includes(path)
+      ) {
         return;
       }
 

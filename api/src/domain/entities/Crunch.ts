@@ -63,7 +63,7 @@ export class Crunch {
     props: Omit<CrunchDTO, "createdAt">,
     users: User[],
     address: Address,
-    document: Document,
+    document: Document | undefined,
     departaments: Department[],
   ): Crunch {
     const data = crunchSchema.omit({ createdAt: true }).parse(props);
@@ -81,7 +81,7 @@ export class Crunch {
     props: CrunchDTO,
     users: User[],
     address: Address,
-    document: Document,
+    document: Document | undefined,
     departaments: Department[],
   ): Crunch {
     const data = crunchSchema.parse(props);

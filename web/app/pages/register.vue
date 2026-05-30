@@ -165,8 +165,17 @@ const errorMessage = ref("");
 const handleRegister = async () => {
   errorMessage.value = "";
 
-  if (!form.name || !form.email || !form.phone || !form.password) {
+  const normalizedName = form.name.trim();
+  const normalizedEmail = form.email.trim().toLowerCase();
+  const normalizedPhone = form.phone.trim();
+
+  if (!normalizedName || !normalizedEmail || !normalizedPhone || !form.password) {
     errorMessage.value = "Preencha todos os campos obrigatorios.";
+    return;
+  }
+
+  if (form.password.length < 6) {
+    errorMessage.value = "A senha deve ter pelo menos 6 caracteres.";
     return;
   }
 
@@ -178,9 +187,9 @@ const handleRegister = async () => {
   loading.value = true;
 
   const { error } = await registerPastor({
-    name: form.name,
-    email: form.email,
-    phone: form.phone,
+    name: normalizedName,
+    email: normalizedEmail,
+    phone: normalizedPhone,
     role: "PASTOR",
     password: form.password,
   });

@@ -50,27 +50,64 @@ function getAuthUserId(request: FastifyRequest) {
 
 export class UserAdapters {
   async createPastor(request: FastifyRequest) {
-    // Pegamos tudo do body.
-    // Como é o Pastor, a role a gente fixa como 'ADMIN' ou 'PASTOR' por segurança.
-    const { email, name, phone, password, role } = request.body as any;
-    const normalizedRole = role === "MEMBER" ? "MEMBER" : "PASTOR";
+    const { email, name, phone, password } = request.body as {
+      email?: string;
+      name?: string;
+      phone?: string;
+      password?: string;
+    };
 
-    const identityProvider = new KeycloakProvider();
+    if (!name?.trim()) {
+      throw new DomainError("Nome é obrigatório");
+    }
 
-    // 1. Criar no Keycloak (Gera o ID oficial)
-    const keycloakId = await identityProvider.createUser(email, name, password);
+    if (!email?.trim()) {
+      throw new DomainError("Email é obrigatório");
+    }
 
-    // 2. Criar a Entidade de Domínio
-    const userEntity = User.create({
-      id: keycloakId,
-      name,
-      email,
-      phone,
-      role: normalizedRole,
+    if (!phone?.trim()) {
+      throw new DomainError("Telefone é obrigatório");
+    }
+
+    if (!password || password.length < 6) {
+      throw new DomainError("Senha deve ter pelo menos 6 caracteres");
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedName = name.trim();
+    const normalizedPhone = phone.trim();
+
+    const existingUser = await $prismaClient.user.findUnique({
+      where: {
+        email: normalizedEmail,
+      },
     });
 
-    // 3. Salva no seu banco (Prisma/UserRepository)
-    return await createUserUseCase.execute(userEntity);
+    if (existingUser) {
+      throw new DomainError("Já existe um usuário com esse email");
+    }
+
+    const identityProvider = new KeycloakProvider();
+    const keycloakId = await identityProvider.createUser(
+      normalizedEmail,
+      normalizedName,
+      password,
+    );
+
+    try {
+      const userEntity = User.create({
+        id: keycloakId,
+        name: normalizedName,
+        email: normalizedEmail,
+        phone: normalizedPhone,
+        role: "PASTOR",
+      });
+
+      return await createUserUseCase.execute(userEntity);
+    } catch (error) {
+      await identityProvider.deleteUser(keycloakId).catch(() => undefined);
+      throw error;
+    }
   }
 
   async getMe(request: FastifyRequest) {

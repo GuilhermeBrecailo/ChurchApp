@@ -23,7 +23,6 @@ export class Tenant {
       phone: payload.phone,
       name: payload.name,
       auth: payload.auth,
-      plan: payload.plan,
       expiration: payload.expiration,
       is_verified: payload.is_verified,
       created_at: payload.created_at,
@@ -86,8 +85,6 @@ export class Tenant {
     this.data.expiration = TenantSchema.shape.expiration.parse(value);
   }
   isExpired(): boolean {
-    if (this.data.plan.getName() === "free") return false;
-
     const expirationTime = this.data.expiration.getTime();
     const now = Date.now();
 

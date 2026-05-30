@@ -66,47 +66,6 @@ export const useUser = () => {
     );
   };
 
-  const createUser = async (
-    user: Omit<UserDTO, "id">,
-  ): Promise<ApiResponse<{ id: string }>> => {
-    return await $customFetch(`${config.public.URL_BACKEND}/api/user/create`, {
-      method: "POST",
-      headers: authHeaders(),
-      body: user,
-    });
-  };
-
-  const getAllUsers = async (): Promise<ApiResponse<UserDTO[]>> => {
-    return await $customFetch(`${config.public.URL_BACKEND}/api/user/getAll`, {
-      method: "GET",
-      headers: authHeaders(),
-    });
-  };
-
-  const getUserById = async (id: string): Promise<ApiResponse<UserDTO>> => {
-    return await $customFetch(`${config.public.URL_BACKEND}/api/user/getById`, {
-      method: "POST",
-      headers: authHeaders(),
-      body: { id },
-    });
-  };
-
-  const updateUser = async (user: UserDTO): Promise<ApiResponse<void>> => {
-    return await $customFetch(`${config.public.URL_BACKEND}/api/user/update`, {
-      method: "POST",
-      headers: authHeaders(),
-      body: user,
-    });
-  };
-
-  const deleteUser = async (id: string): Promise<ApiResponse<void>> => {
-    return await $customFetch(`${config.public.URL_BACKEND}/api/user/delete`, {
-      method: "DELETE",
-      headers: authHeaders(),
-      body: { id },
-    });
-  };
-
   const getMyProfile = async (): Promise<ApiResponse<MyProfileDTO>> => {
     return await $customFetch<MyProfileDTO>(
       `${config.public.URL_BACKEND}/api/me/profile`,
@@ -132,11 +91,6 @@ export const useUser = () => {
 
   return {
     createPastor,
-    createUser,
-    getAllUsers,
-    getUserById,
-    updateUser,
-    deleteUser,
     getMyProfile,
     updateMyProfile,
   };

@@ -2,7 +2,7 @@ import { FastifyRequest } from "fastify/types/request";
 
 import { Department } from "../../domain/entities/Departament";
 import { DepartmentRepository } from "../../infrastructure/repositories/DepartamentRepository";
-import { CreateDepartmentUseCase } from "../../application/use-cases/Departament/CreateDewpartamentUseCase";
+import { CreateDepartmentUseCase } from "../../application/use-cases/Departament/CreateDepartmentUseCase";
 import { DeleteDepartmentUseCase } from "../../application/use-cases/Departament/DeleteDepartmentUseCase";
 import { GetDepartmentByIdUseCase } from "../../application/use-cases/Departament/GetDepartmentByIdUseCase";
 import { GetAllDepartmentsUseCase } from "../../application/use-cases/Departament/GetAllDepartmentsUseCase";
