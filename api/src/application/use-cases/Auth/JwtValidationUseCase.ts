@@ -2,18 +2,14 @@ import jwt, { JwtHeader, JwtPayload } from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 import { DomainToken } from "../../../domain/value-objects/utils/DomainToken";
 
-export interface JwtDecoded extends JwtPayload {
-  tenant_id: string;
-}
-
 interface DecodedHeader {
   header: JwtHeader & { iss?: string };
   payload: JwtPayload & { iss?: string };
 }
 
-export interface JwtDecoded {
+export interface JwtDecoded extends JwtPayload {
   iss: string;
-  tenant_id: string;
+  tenant_id?: string;
   is_admin?: boolean;
   sub: string;
   aud: string | string[];
@@ -64,8 +60,7 @@ export class JwtValidationUseCase {
       !decoded ||
       decoded.header.alg !== "RS256" ||
       !decoded.header.kid ||
-      !decoded.payload.iss ||
-      !decoded.payload.tenant_id
+      !decoded.payload.iss
     ) {
       throw new DomainToken("Token inválido");
     }
@@ -75,14 +70,39 @@ export class JwtValidationUseCase {
 
   private getJwksClient(issuer: string) {
     if (!this.cache[issuer]) {
+      const jwksBaseUrl = this.getJwksBaseUrl(issuer);
+
       this.cache[issuer] = jwksClient({
-        jwksUri: `${issuer}/protocol/openid-connect/certs`,
+        jwksUri: `${jwksBaseUrl}/protocol/openid-connect/certs`,
         cache: true,
         cacheMaxEntries: 5,
         cacheMaxAge: 3600_000, // 1h
       });
     }
     return this.cache[issuer];
+  }
+
+  private getJwksBaseUrl(issuer: string) {
+    const keycloakBaseUrl = process.env.KEYCLOAK_ENDPOINT_BASE;
+
+    if (!keycloakBaseUrl) return issuer;
+
+    try {
+      const issuerUrl = new URL(issuer);
+
+      if (!["localhost", "127.0.0.1"].includes(issuerUrl.hostname)) {
+        return issuer;
+      }
+
+      const internalUrl = new URL(keycloakBaseUrl);
+      internalUrl.pathname = issuerUrl.pathname;
+      internalUrl.search = "";
+      internalUrl.hash = "";
+
+      return internalUrl.toString().replace(/\/$/, "");
+    } catch {
+      return issuer;
+    }
   }
 
   private async getPublicKey(

@@ -19,21 +19,90 @@
     <v-spacer></v-spacer>
 
     <div class="d-flex align-center">
-      <v-btn icon variant="text" color="grey-darken-3">
-        <v-badge content="3" color="error">
-          <Bell size="24" />
-        </v-badge>
-      </v-btn>
+      <v-menu location="bottom end" :close-on-content-click="false">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            icon
+            variant="text"
+            :color="notificationColor"
+            :loading="loading"
+            aria-label="Notificacoes"
+          >
+            <v-badge dot :model-value="hasUnreadNotifications" color="error">
+              <BellRing v-if="isEnabled" size="24" />
+              <BellOff v-else-if="status === 'denied' || status === 'unsupported'" size="24" />
+              <Bell v-else size="24" />
+            </v-badge>
+          </v-btn>
+        </template>
+
+        <v-card class="notification-card" elevation="8">
+          <v-card-text class="notification-content">
+            <div class="notification-list-empty">
+              <Bell size="22" />
+              <div>
+                <p class="notification-title">Notificacoes</p>
+                <p class="notification-description">Nao ha nenhuma notificacao.</p>
+              </div>
+            </div>
+
+            <div class="notification-settings">
+              <p class="notification-settings-title">{{ notificationTitle }}</p>
+              <p class="notification-description">{{ notificationDescription }}</p>
+            </div>
+
+            <v-btn
+              v-if="isEnabled"
+              block
+              variant="tonal"
+              color="grey-darken-3"
+              :loading="loading"
+              @click="disable"
+            >
+              Desativar notificacoes
+            </v-btn>
+
+            <v-btn
+              v-else
+              block
+              color="primary"
+              :disabled="!canAskPermission"
+              :loading="loading"
+              @click="enable"
+            >
+              Ativar notificacoes
+            </v-btn>
+
+            <p v-if="message" class="notification-message">{{ message }}</p>
+          </v-card-text>
+        </v-card>
+      </v-menu>
+
+      <v-snackbar v-model="showNotificationMessage" timeout="3500" location="top right">
+        {{ message }}
+      </v-snackbar>
     </div>
   </v-app-bar>
 </template>
 
 <script setup lang="ts">
-import { Bell, Church } from "lucide-vue-next";
-import { computed } from "vue";
+import { Bell, BellOff, BellRing, Church } from "lucide-vue-next";
+import { computed, onMounted } from "vue";
 import { useAuth } from "../../../../composables/useAuth";
+import { usePushNotifications } from "../../../../composables/usePushNotifications";
 
 const { user } = useAuth();
+const {
+  status,
+  message,
+  loading,
+  isEnabled,
+  canAskPermission,
+  refreshStatus,
+  enable,
+  disable,
+} = usePushNotifications();
 
 const firstName = computed(() => {
   const name = user.value?.name?.trim();
@@ -42,6 +111,43 @@ const firstName = computed(() => {
 });
 
 const churchName = computed(() => user.value?.church?.name || "Sem igreja");
+const hasUnreadNotifications = computed(() => false);
+
+const notificationColor = computed(() => {
+  if (isEnabled.value) return "primary";
+  if (status.value === "denied" || status.value === "unsupported") return "error";
+
+  return "grey-darken-3";
+});
+
+const notificationTitle = computed(() => {
+  if (isEnabled.value) return "Notificacoes do celular ativas";
+  if (status.value === "denied") return "Permissao bloqueada";
+  if (status.value === "unsupported") return "PWA indisponivel";
+
+  return "Notificacoes do celular desligadas";
+});
+
+const notificationDescription = computed(() => {
+  if (isEnabled.value) return "Voce sera avisado quando entrar em uma escala.";
+  if (status.value === "denied") return "Libere a permissao nas configuracoes do navegador.";
+  if (status.value === "unsupported") return "No celular, abra o app por HTTPS para receber push.";
+
+  return "Receba aviso no aparelho quando voce for escalado.";
+});
+
+const showNotificationMessage = computed({
+  get: () => Boolean(message.value),
+  set: (value: boolean) => {
+    if (!value) {
+      message.value = null;
+    }
+  },
+});
+
+onMounted(() => {
+  refreshStatus();
+});
 </script>
 
 <style scoped>
@@ -72,5 +178,53 @@ const churchName = computed(() => user.value?.church?.name || "Sem igreja");
   font-weight: 700;
   color: #1f2937; /* Cinza quase preto */
   line-height: 1.2;
+}
+
+.notification-card {
+  width: min(320px, calc(100vw - 32px));
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+}
+
+.notification-content {
+  display: grid;
+  gap: 14px;
+}
+
+.notification-list-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.notification-settings {
+  display: grid;
+  gap: 4px;
+}
+
+.notification-title {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111827 !important;
+}
+
+.notification-settings-title {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #111827 !important;
+}
+
+.notification-description,
+.notification-message {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.35;
+  color: #4b5563 !important;
 }
 </style>

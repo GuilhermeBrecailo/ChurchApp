@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
+import { pushNotificationService } from "../../infrastructure/notifications/PushNotificationService";
 
 type CurrentUser = Prisma.UserGetPayload<{
   include: {
@@ -489,6 +490,21 @@ export class ChurchDepartmentAdapters {
       }
     }
 
+    const previousAssignments = await $prismaClient.scheduleAssignment.findMany({
+      where: {
+        scheduleId: id,
+      },
+      select: {
+        userId: true,
+      },
+    });
+    const previousUserIds = new Set(
+      previousAssignments.map((assignment) => assignment.userId),
+    );
+    const newlyAssignedUserIds = uniqueUserIds.filter(
+      (userId) => !previousUserIds.has(userId),
+    );
+
     await $prismaClient.$transaction([
       $prismaClient.scheduleAssignment.deleteMany({
         where: {
@@ -507,7 +523,17 @@ export class ChurchDepartmentAdapters {
       ),
     ]);
 
-    return await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    const updatedSchedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+
+    await pushNotificationService.sendToUsers(newlyAssignedUserIds, {
+      title: "Voce foi escalado",
+      body: `${updatedSchedule.department.name} - ${updatedSchedule.description}`,
+      url: `/user`,
+      type: "schedule-assigned",
+      scheduleId: updatedSchedule.id,
+    });
+
+    return updatedSchedule;
   }
 
   async getChurchDepartmentResources(request: FastifyRequest) {

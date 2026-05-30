@@ -3,7 +3,7 @@ import { useAuth } from "../../composables/useAuth";
 
 const publicRoutes = ["/login", "/register", "/forgot-password"];
 const onboardingRoutes = ["/onboarding/church"];
-const noChurchAllowedRoutes = ["/", "/user", ...onboardingRoutes];
+const noChurchAllowedRoutes = ["/", "/user", "/admin", ...onboardingRoutes];
 
 export default defineNuxtRouteMiddleware(async (to) => {
   if (import.meta.server) return;
