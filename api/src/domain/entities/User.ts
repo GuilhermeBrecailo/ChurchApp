@@ -4,7 +4,7 @@ import { Email } from "../value-objects/Email";
 // 1. Schema de Validação
 export const userSchema = z.object({
   id: z.string().min(1, "Id não é válido"),
-  name: z.string().min(1, "Nome é obrigatório").trim(),
+  name: z.string().trim().min(1, "Nome é obrigatório"),
   email: z.string().email("Email inválido").trim(),
   phone: z.string().min(1, "Telefone é obrigatório").trim(),
   crunchId: z.string().min(1, "Igreja é obrigatório").trim().optional(),
