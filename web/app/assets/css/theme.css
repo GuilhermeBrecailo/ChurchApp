@@ -1,0 +1,107 @@
+:root {
+  color-scheme: light;
+}
+
+.app-theme-dark {
+  color-scheme: dark;
+}
+
+.app-theme-light,
+.app-theme-dark {
+  min-height: 100%;
+}
+
+.app-theme-light .v-application {
+  background: #f6f7f9;
+  color: #111827;
+}
+
+.app-theme-dark .v-application {
+  background: #111827;
+  color: #e5e7eb;
+}
+
+.app-theme-dark .bg-grey-lighten-4,
+.app-theme-dark .bg-gray-50,
+.app-theme-dark .auth-page {
+  background-color: #111827 !important;
+}
+
+.app-theme-dark .bg-grey-lighten-5 {
+  background-color: #1f2937 !important;
+}
+
+.app-theme-dark .bg-white,
+.app-theme-dark .v-card.bg-white,
+.app-theme-dark .v-card:not(.next-schedule-card) {
+  background-color: #182233 !important;
+  color: #e5e7eb !important;
+}
+
+.app-theme-dark .text-grey-darken-4,
+.app-theme-dark .text-gray-900,
+.app-theme-dark .text-purple-900 {
+  color: #f9fafb !important;
+}
+
+.app-theme-dark .text-grey-darken-2,
+.app-theme-dark .text-grey-darken-1,
+.app-theme-dark .text-gray-500 {
+  color: #aeb8c7 !important;
+}
+
+.app-theme-dark .text-purple-700,
+.app-theme-dark .hover\:text-purple-900:hover {
+  color: #c4b5fd !important;
+}
+
+.app-theme-dark .text-purple-400 {
+  color: #a78bfa !important;
+}
+
+.app-theme-dark .bg-purple-100 {
+  background-color: rgba(124, 58, 237, 0.2) !important;
+}
+
+.app-theme-dark .border-subtle,
+.app-theme-dark .v-card.border-subtle {
+  border-color: #2c394d !important;
+}
+
+.app-theme-dark .v-field,
+.app-theme-dark .v-field--variant-outlined {
+  background-color: #111827 !important;
+  color: #e5e7eb !important;
+}
+
+.app-theme-dark .v-field__outline {
+  color: #3b4a61 !important;
+}
+
+.app-theme-dark .v-label,
+.app-theme-dark .v-field__input,
+.app-theme-dark .v-field__prepend-inner,
+.app-theme-dark .v-field__append-inner {
+  color: #cbd5e1 !important;
+}
+
+.app-theme-dark input:-webkit-autofill,
+.app-theme-dark input:-webkit-autofill:hover,
+.app-theme-dark input:-webkit-autofill:focus,
+.app-theme-dark input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #111827 inset !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+  caret-color: #e5e7eb;
+}
+
+.theme-toggle-btn {
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: #f5f7ff;
+  color: #4f46e5 !important;
+}
+
+.app-theme-dark .theme-toggle-btn {
+  border-color: rgba(196, 181, 253, 0.2);
+  background: rgba(99, 102, 241, 0.16);
+  color: #c4b5fd !important;
+}

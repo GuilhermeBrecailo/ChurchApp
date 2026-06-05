@@ -1,8 +1,39 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
+  buildDir: process.env.NUXT_BUILD_DIR || ".nuxt",
   devtools: { enabled: true },
   modules: ["@nuxtjs/tailwindcss", "vuetify-nuxt-module"],
+  css: ["~/assets/css/theme.css"],
+  vuetify: {
+    vuetifyOptions: {
+      theme: {
+        defaultTheme: "light",
+        themes: {
+          light: {
+            dark: false,
+            colors: {
+              primary: "#4f46e5",
+              secondary: "#7c3aed",
+              background: "#f6f7f9",
+              surface: "#ffffff",
+              error: "#dc2626",
+            },
+          },
+          dark: {
+            dark: true,
+            colors: {
+              primary: "#a78bfa",
+              secondary: "#818cf8",
+              background: "#111827",
+              surface: "#182233",
+              error: "#f87171",
+            },
+          },
+        },
+      },
+    },
+  },
   app: {
     head: {
       title: "App Quadrangular",

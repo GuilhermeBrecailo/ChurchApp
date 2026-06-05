@@ -21,6 +21,7 @@ Configuracao atual:
 - habilita DevTools;
 - registra `@nuxtjs/tailwindcss`;
 - registra `vuetify-nuxt-module`;
+- registra a paleta clara/escura do Vuetify e o CSS global `web/app/assets/css/theme.css`;
 - expoe `runtimeConfig.public.URL_BACKEND` a partir de `NUXT_PUBLIC_URL_BACKEND`.
 
 ## Estrutura principal
@@ -31,6 +32,13 @@ Configuracao atual:
 - `web/app/components`: componentes reutilizaveis.
 - `web/composables`: funcoes reutilizaveis de estado e regras de UI/API.
 - `web/types`: tipos globais do Nuxt.
+
+## Tema
+
+- `web/composables/useThemeMode.ts`: controla o tema claro/escuro, persiste a escolha em cookie e atualiza a cor da barra do navegador/PWA.
+- `web/app/layouts/default.vue` e `web/app/layouts/notAppBottom.vue`: aplicam o tema ativo no `v-app`.
+- `web/app/components/layouts/appBar/index.vue`: possui o botao de alternancia de tema ao lado esquerdo das notificacoes.
+- `web/app/assets/css/theme.css`: complementa o tema escuro para telas que ainda usam classes claras fixas, como `bg-white`, `bg-grey-lighten-4` e textos `text-grey-*`.
 
 ## Estado atual
 

@@ -19,6 +19,22 @@
     <v-spacer></v-spacer>
 
     <div class="d-flex align-center">
+      <v-tooltip location="bottom" :text="themeToggleLabel">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            icon
+            variant="text"
+            class="theme-toggle-btn mr-1"
+            :aria-label="themeToggleLabel"
+            @click="toggleTheme"
+          >
+            <Sun v-if="isDark" size="22" />
+            <Moon v-else size="22" />
+          </v-btn>
+        </template>
+      </v-tooltip>
+
       <v-menu location="bottom end" :close-on-content-click="false">
         <template #activator="{ props }">
           <v-btn
@@ -88,11 +104,13 @@
 
 <script setup lang="ts">
 import { Bell, BellOff, BellRing, Church } from "lucide-vue-next";
+import { Moon, Sun } from "lucide-vue-next";
 import { computed, onMounted } from "vue";
 import { useAuth } from "../../../../composables/useAuth";
 import { usePushNotifications } from "../../../../composables/usePushNotifications";
 
 const { user } = useAuth();
+const { isDark, toggleTheme } = useThemeMode();
 const {
   status,
   message,
@@ -112,6 +130,9 @@ const firstName = computed(() => {
 
 const churchName = computed(() => user.value?.church?.name || "Sem igreja");
 const hasUnreadNotifications = computed(() => false);
+const themeToggleLabel = computed(() =>
+  isDark.value ? "Ativar tema claro" : "Ativar tema escuro",
+);
 
 const notificationColor = computed(() => {
   if (isEnabled.value) return "primary";
@@ -154,12 +175,22 @@ onMounted(() => {
 .appbar {
   background-color: white;
   padding: 5px 20px;
+  border-bottom: 1px solid #eef2ff;
+}
+
+:global(.app-theme-dark) .appbar {
+  background-color: #182233 !important;
+  border-bottom-color: #2c394d;
 }
 
 .avatar-text {
   color: #6366f1; /* Tom de roxo/índigo */
   font-weight: 700;
   font-size: 1.1rem;
+}
+
+:global(.app-theme-dark) .avatar-text {
+  color: #c4b5fd;
 }
 
 .greeting-text {
@@ -169,8 +200,16 @@ onMounted(() => {
   line-height: 1.2;
 }
 
+:global(.app-theme-dark) .greeting-text {
+  color: #aeb8c7;
+}
+
 .church-icon {
   color: #6366f1; /* Mesmo tom de roxo do avatar */
+}
+
+:global(.app-theme-dark) .church-icon {
+  color: #c4b5fd;
 }
 
 .church-text {
@@ -180,11 +219,21 @@ onMounted(() => {
   line-height: 1.2;
 }
 
+:global(.app-theme-dark) .church-text {
+  color: #f9fafb;
+}
+
 .notification-card {
   width: min(320px, calc(100vw - 32px));
   border-radius: 8px;
   background: #ffffff;
   color: #111827;
+}
+
+:global(.app-theme-dark) .notification-card {
+  background: #182233;
+  color: #e5e7eb;
+  border: 1px solid #2c394d;
 }
 
 .notification-content {
@@ -201,6 +250,11 @@ onMounted(() => {
   color: #6b7280;
 }
 
+:global(.app-theme-dark) .notification-list-empty {
+  border-bottom-color: #2c394d;
+  color: #aeb8c7;
+}
+
 .notification-settings {
   display: grid;
   gap: 4px;
@@ -213,11 +267,19 @@ onMounted(() => {
   color: #111827 !important;
 }
 
+:global(.app-theme-dark) .notification-title {
+  color: #f9fafb !important;
+}
+
 .notification-settings-title {
   margin: 0;
   font-size: 0.86rem;
   font-weight: 700;
   color: #111827 !important;
+}
+
+:global(.app-theme-dark) .notification-settings-title {
+  color: #f9fafb !important;
 }
 
 .notification-description,
@@ -226,5 +288,10 @@ onMounted(() => {
   font-size: 0.84rem;
   line-height: 1.35;
   color: #4b5563 !important;
+}
+
+:global(.app-theme-dark) .notification-description,
+:global(.app-theme-dark) .notification-message {
+  color: #aeb8c7 !important;
 }
 </style>

@@ -2,7 +2,7 @@
   <v-bottom-navigation
     class="bottom-nav elevation-10"
     height="64"
-    bg-color="white"
+    :bg-color="isDark ? '#182233' : 'white'"
     app
   >
     <v-btn to="/" class="flex-col custom-btn" exact>
@@ -46,6 +46,7 @@ import { computed } from "vue";
 import { useAuth } from "../../../../composables/useAuth";
 
 const { user } = useAuth();
+const { isDark } = useThemeMode();
 
 const hasChurch = computed(() => user.value?.hasChurch === true);
 const isPlatformAdmin = computed(
@@ -62,10 +63,15 @@ const adminLabel = computed(() => "Admin");
 .bottom-nav {
   width: 100%;
   max-width: 100vw;
+  border-top: 1px solid #e5e7eb;
   border-radius: 14px 14px 0 0 !important;
   padding: 4px max(4px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom))
     max(4px, env(safe-area-inset-left));
   overflow: hidden;
+}
+
+:global(.app-theme-dark) .bottom-nav {
+  border-top-color: #2c394d;
 }
 
 .nav-label {
@@ -101,6 +107,10 @@ const adminLabel = computed(() => "Admin");
     color 0.2s ease;
 }
 
+:global(.app-theme-dark) .custom-btn {
+  color: #aeb8c7 !important;
+}
+
 .custom-btn :deep(.v-btn__content) {
   display: flex;
   min-width: 0;
@@ -113,6 +123,11 @@ const adminLabel = computed(() => "Admin");
 .custom-btn.v-btn--active {
   color: #4f46e5 !important;
   background-color: #eef2ff !important;
+}
+
+:global(.app-theme-dark) .custom-btn.v-btn--active {
+  color: #c4b5fd !important;
+  background-color: rgba(99, 102, 241, 0.18) !important;
 }
 
 .custom-btn:hover > .v-btn__overlay {

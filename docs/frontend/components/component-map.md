@@ -14,7 +14,7 @@ Monta a casca da aplicacao logada:
 
 ### `layouts/appBar/index.vue`
 
-Cabecalho superior com usuario, igreja e notificacoes.
+Cabecalho superior com usuario, igreja, alternancia de tema claro/escuro e notificacoes.
 
 ### `layouts/bottomNavigation/index.vue`
 
