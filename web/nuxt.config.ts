@@ -5,6 +5,9 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ["@nuxtjs/tailwindcss", "vuetify-nuxt-module"],
   css: ["~/assets/css/theme.css"],
+  imports: {
+    dirs: ["../composables"],
+  },
   vuetify: {
     vuetifyOptions: {
       theme: {
