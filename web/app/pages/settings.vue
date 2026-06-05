@@ -2,7 +2,7 @@
   <div class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
     <div class="mb-6">
       <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
-        Configuracoes
+        Configurações
       </h1>
       <p class="text-body-2 text-grey-darken-1 mb-0">
         Dados cadastrais da sua igreja
@@ -30,7 +30,7 @@
               {{ user?.church?.name || "Igreja" }}
             </h2>
             <p class="text-caption text-grey-darken-1 mb-0">
-              {{ user?.church?.city || "Cidade nao informada" }}
+              {{ user?.church?.city || "Cidade não informada" }}
               {{ user?.church?.state ? `- ${user.church.state}` : "" }}
             </p>
           </div>
@@ -64,7 +64,7 @@
 
         <v-text-field
           v-model="form.road"
-          label="Endereco"
+          label="Endereço"
           variant="outlined"
           color="purple-darken-3"
           :disabled="!canEditChurch || loading"
@@ -73,7 +73,7 @@
         <div class="settings-grid">
           <v-text-field
             v-model="form.number"
-            label="Numero"
+            label="Número"
             variant="outlined"
             color="purple-darken-3"
             :disabled="!canEditChurch || loading"
@@ -122,7 +122,7 @@
             :loading="loading"
             :disabled="!canEditChurch || loading"
           >
-            Salvar alteracoes
+            Salvar alterações
           </v-btn>
         </div>
       </v-form>
@@ -176,7 +176,7 @@ const handleSaveChurch = async () => {
 
   if (!canEditChurch.value) {
     messageType.value = "error";
-    message.value = "Voce nao tem permissao para editar a igreja.";
+    message.value = "Você não tem permissão para editar a igreja.";
     return;
   }
 

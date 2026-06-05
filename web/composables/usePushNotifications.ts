@@ -78,15 +78,15 @@ export const usePushNotifications = () => {
 
   const enable = async () => {
     if (!access_token.value) {
-      message.value = "Entre na sua conta para ativar as notificacoes.";
+      message.value = "Entre na sua conta para ativar as notificações.";
       return;
     }
 
     if (!isPushSupported()) {
       status.value = "unsupported";
       message.value = window.isSecureContext
-        ? "Este navegador nao suporta notificacoes push."
-        : "Notificacoes no celular precisam de HTTPS.";
+        ? "Este navegador não suporta notificações push."
+        : "Notificações no celular precisam de HTTPS.";
       return;
     }
 
@@ -103,7 +103,7 @@ export const usePushNotifications = () => {
       );
 
       if (error || !data?.publicKey || !data.configured) {
-        message.value = "Notificacoes ainda nao estao configuradas no servidor.";
+        message.value = "Notificações ainda não estão configuradas no servidor.";
         return;
       }
 
@@ -111,7 +111,7 @@ export const usePushNotifications = () => {
 
       if (permission === "denied") {
         status.value = "denied";
-        message.value = "Permissao negada nas configuracoes do navegador.";
+        message.value = "Permissão negada nas configurações do navegador.";
         return;
       }
 
@@ -136,9 +136,9 @@ export const usePushNotifications = () => {
       });
 
       status.value = "enabled";
-      message.value = "Notificacoes ativadas.";
+      message.value = "Notificações ativadas.";
     } catch {
-      message.value = "Nao foi possivel ativar as notificacoes.";
+      message.value = "Não foi possível ativar as notificações.";
       await refreshStatus();
     } finally {
       loading.value = false;
@@ -171,9 +171,9 @@ export const usePushNotifications = () => {
       }
 
       status.value = "disabled";
-      message.value = "Notificacoes desativadas neste aparelho.";
+      message.value = "Notificações desativadas neste aparelho.";
     } catch {
-      message.value = "Nao foi possivel desativar as notificacoes.";
+      message.value = "Não foi possível desativar as notificações.";
     } finally {
       loading.value = false;
     }

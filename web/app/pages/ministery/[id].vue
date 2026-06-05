@@ -340,7 +340,7 @@
             class="rounded-lg text-none"
             @click="isSongDialogOpen = true"
           >
-            <Plus size="18" class="mr-1" /> Nova musica
+            <Plus size="18" class="mr-1" /> Nova música
           </v-btn>
         </div>
 
@@ -350,7 +350,7 @@
         >
           <Music size="32" color="#9CA3AF" class="mb-3" />
           <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-            Nenhuma musica no repertorio
+            Nenhuma música no repertório
           </p>
         </v-card>
 
@@ -366,7 +366,7 @@
                   {{ song.title }}
                 </h3>
                 <p class="text-caption text-grey-darken-1 mb-1 text-truncate">
-                  {{ song.metadata?.artist || "Artista nao informado" }}
+                  {{ song.metadata?.artist || "Artista não informado" }}
                 </p>
                 <div class="d-flex flex-wrap ga-2">
                   <v-chip size="x-small" color="purple-darken-3" variant="tonal">
@@ -644,10 +644,10 @@
           </v-avatar>
           <div>
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              {{ editingSongId ? "Editar musica" : "Nova musica" }}
+              {{ editingSongId ? "Editar música" : "Nova música" }}
             </h2>
             <p class="text-body-2 text-grey-darken-1 mb-0">
-              Organize o repertorio do ministerio de louvor.
+              Organize o repertório do ministério de louvor.
             </p>
           </div>
         </div>
@@ -655,7 +655,7 @@
         <v-form autocomplete="off" @submit.prevent="handleSaveSong">
           <v-text-field
             v-model="songForm.title"
-            label="Titulo"
+            label="Título"
             prepend-inner-icon="mdi-music-note-outline"
             variant="outlined"
             density="comfortable"
@@ -734,7 +734,7 @@
 
           <v-text-field
             v-model="songForm.notes"
-            label="Observacoes"
+            label="Observações"
             prepend-inner-icon="mdi-text"
             variant="outlined"
             density="comfortable"
@@ -772,7 +772,7 @@
               :loading="isCreatingSong"
               :disabled="isCreatingSong"
             >
-              {{ editingSongId ? "Salvar musica" : "Criar musica" }}
+              {{ editingSongId ? "Salvar música" : "Criar música" }}
             </v-btn>
           </div>
         </v-form>
@@ -1191,7 +1191,7 @@ const priorityOptions = [
   { label: "Alta", value: "HIGH" },
 ];
 
-const songCategoryOptions = ["Louvor", "Adoracao", "Hino", "Especial"];
+const songCategoryOptions = ["Louvor", "Adoração", "Hino", "Especial"];
 
 const baseTabs = [
   { label: "Visão geral", value: "overview", icon: Info },
@@ -1239,16 +1239,16 @@ const deleteDialogTitle = computed(() => {
     task: "Remover tarefa",
     schedule: "Remover escala",
     resource: "Remover recurso",
-    song: "Remover musica",
+    song: "Remover música",
   };
 
-  return pendingDelete.value ? labels[pendingDelete.value.kind] : "Confirmar remocao";
+  return pendingDelete.value ? labels[pendingDelete.value.kind] : "Confirmar remoção";
 });
 
 const deleteDialogMessage = computed(() => {
-  if (!pendingDelete.value) return "Essa acao nao pode ser desfeita.";
+  if (!pendingDelete.value) return "Essa ação não pode ser desfeita.";
 
-  return `${pendingDelete.value.title} sera removido permanentemente.`;
+  return `${pendingDelete.value.title} será removido permanentemente.`;
 });
 
 const departmentTypeLabel = (value: string) =>
@@ -1574,7 +1574,7 @@ const handleSaveSong = async () => {
   const title = songForm.title.trim();
 
   if (!title) {
-    createSongError.value = "Informe o titulo da musica.";
+    createSongError.value = "Informe o título da música.";
     return;
   }
 
@@ -1597,7 +1597,7 @@ const handleSaveSong = async () => {
   isCreatingSong.value = false;
 
   if (error || !data) {
-    createSongError.value = error || "Nao foi possivel salvar a musica.";
+    createSongError.value = error || "Não foi possível salvar a música.";
     return;
   }
 

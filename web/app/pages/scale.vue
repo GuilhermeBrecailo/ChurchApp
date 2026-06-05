@@ -305,7 +305,7 @@
     <UtilsConfirmDialog
       v-model="isDeleteScheduleDialogOpen"
       title="Remover escala"
-      message="Esta escala e seus voluntarios serao removidos."
+      message="Esta escala e seus voluntários serão removidos."
       :loading="isDeletingSchedule"
       @cancel="closeDeleteScheduleDialog"
       @confirm="confirmDeleteSchedule"

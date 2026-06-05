@@ -84,7 +84,7 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("push", (event) => {
   let payload = {
     title: "App Quadrangular",
-    body: "Voce recebeu uma nova notificacao.",
+    body: "Você recebeu uma nova notificação.",
     url: "/user",
   };
 

@@ -12,12 +12,12 @@
           Recuperar senha
         </h1>
         <p class="text-purple-400 text-sm mt-2 font-medium">
-          Fale com a lideranca da sua igreja para redefinir seu acesso.
+          Fale com a liderança da sua igreja para redefinir seu acesso.
         </p>
       </div>
 
       <v-alert type="info" variant="tonal" density="comfortable" class="mb-6">
-        A recuperacao automatica de senha ainda nao esta disponivel neste
+        A recuperação automática de senha ainda não está disponível neste
         ambiente.
       </v-alert>
 

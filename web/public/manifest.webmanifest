@@ -1,7 +1,7 @@
 {
   "name": "App Quadrangular",
   "short_name": "Quadrangular",
-  "description": "Gestao de igrejas, ministerios e escalas.",
+  "description": "Gestão de igrejas, ministérios e escalas.",
   "start_url": "/",
   "scope": "/",
   "id": "/",

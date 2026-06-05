@@ -237,7 +237,7 @@ const handleCreateDepartment = async () => {
   const name = departmentForm.name.trim();
 
   if (!name || !departmentForm.leaderId) {
-    createDepartmentError.value = "Informe o nome e o lider do ministerio.";
+    createDepartmentError.value = "Informe o nome e o líder do ministério.";
     return;
   }
 
@@ -252,7 +252,7 @@ const handleCreateDepartment = async () => {
   isCreatingDepartment.value = false;
 
   if (error || !data) {
-    createDepartmentError.value = error || "Nao foi possivel criar o ministerio.";
+    createDepartmentError.value = error || "Não foi possível criar o ministério.";
     return;
   }
 

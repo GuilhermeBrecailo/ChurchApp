@@ -21,7 +21,7 @@
       <v-form autocomplete="off" @submit.prevent="handleRegister">
         <v-text-field
           v-model="form.name"
-          label="Nome Completo"
+          label="Nome completo"
           autocomplete="off"
           prepend-inner-icon="mdi-account-outline"
           variant="outlined"
@@ -35,7 +35,7 @@
 
         <v-text-field
           v-model="form.email"
-          label="Email"
+          label="E-mail"
           type="email"
           autocomplete="off"
           prepend-inner-icon="mdi-email-outline"
@@ -84,7 +84,7 @@
 
         <v-text-field
           v-model="form.confirmPassword"
-          label="Confirmar Senha"
+          label="Confirmar senha"
           :type="showPassword ? 'text' : 'password'"
           autocomplete="off"
           prepend-inner-icon="mdi-lock-check-outline"
@@ -124,14 +124,14 @@
 
       <div class="mt-6 text-center">
         <p class="text-xs text-gray-500 mb-3">
-          Se voce e membro, peca para sua igreja criar seu acesso.
+          Se você é membro, peça para sua igreja criar seu acesso.
         </p>
-        <span class="text-sm text-gray-500">Ja tem uma conta? </span>
+        <span class="text-sm text-gray-500">Já tem uma conta? </span>
         <NuxtLink
           to="/login"
           class="text-sm text-purple-700 hover:text-purple-900 font-bold transition-colors duration-200"
         >
-          Faca login
+          Faça login
         </NuxtLink>
       </div>
     </v-card>
@@ -170,7 +170,7 @@ const handleRegister = async () => {
   const normalizedPhone = form.phone.trim();
 
   if (!normalizedName || !normalizedEmail || !normalizedPhone || !form.password) {
-    errorMessage.value = "Preencha todos os campos obrigatorios.";
+    errorMessage.value = "Preencha todos os campos obrigatórios.";
     return;
   }
 
@@ -180,7 +180,7 @@ const handleRegister = async () => {
   }
 
   if (form.password !== form.confirmPassword) {
-    errorMessage.value = "As senhas nao coincidem.";
+    errorMessage.value = "As senhas não coincidem.";
     return;
   }
 

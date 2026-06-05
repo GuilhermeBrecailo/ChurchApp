@@ -5,7 +5,7 @@
         Plataforma
       </h1>
       <p class="text-body-2 text-grey-darken-1 mb-0">
-        Igrejas, usuarios e ministerios de todo o sistema
+        Igrejas, usuários e ministérios de todo o sistema
       </p>
     </div>
 
@@ -28,14 +28,14 @@
         bgColor="#EEF2FF"
       />
       <AdminStatCard
-        title="Usuarios"
+        title="Usuários"
         :value="platformTotals.users"
         :icon="Users"
         iconColor="#14B8A6"
         bgColor="#F0FDFA"
       />
       <AdminStatCard
-        title="Ministerios"
+        title="Ministérios"
         :value="platformTotals.departments"
         :icon="Building"
         iconColor="#A855F7"
@@ -94,15 +94,15 @@
                     {{ church.name }}
                   </h3>
                   <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
-                    {{ church.city || "Cidade nao informada" }} {{ church.state ? `- ${church.state}` : "" }}
+                    {{ church.city || "Cidade não informada" }} {{ church.state ? `- ${church.state}` : "" }}
                   </p>
                 </div>
                 <ArrowRight size="18" color="#6B7280" />
               </div>
 
               <div class="church-metrics mt-3">
-                <span>{{ church.membersCount }} usuarios</span>
-                <span>{{ church.departmentsCount }} ministerios</span>
+                <span>{{ church.membersCount }} usuários</span>
+                <span>{{ church.departmentsCount }} ministérios</span>
                 <span>{{ church.isActive ? "Ativa" : "Inativa" }}</span>
               </div>
             </v-card>
@@ -117,7 +117,7 @@
         >
           <Building size="34" color="#9CA3AF" class="mb-3" />
           <p class="text-body-2 text-grey-darken-1 font-weight-medium mb-0 text-center">
-            Clique em uma igreja para ver usuarios, ministerios e dados gerais.
+            Clique em uma igreja para ver usuários, ministérios e dados gerais.
           </p>
         </v-card>
 
@@ -139,7 +139,7 @@
                   {{ selectedChurch.name }}
                 </h2>
                 <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
-                  {{ selectedChurch.road || "Endereco nao informado" }}
+                  {{ selectedChurch.road || "Endereço não informado" }}
                   {{ selectedChurch.number ? `, ${selectedChurch.number}` : "" }}
                 </p>
               </div>
@@ -175,7 +175,7 @@
 
           <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
             <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">
-              Usuarios
+              Usuários
             </h3>
             <div class="d-flex flex-column ga-2">
               <div
@@ -201,7 +201,7 @@
 
           <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
             <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">
-              Ministerios
+              Ministérios
             </h3>
             <div class="d-flex flex-column ga-2">
               <div
@@ -283,7 +283,7 @@
               Gerencia membros
             </h3>
             <p class="text-caption text-grey-darken-1 mb-0">
-              Indica se o usuario pode listar e cadastrar membros da igreja.
+              Indica se o usuário pode listar e cadastrar membros da igreja.
             </p>
           </div>
           <v-chip
@@ -291,7 +291,7 @@
             :color="selectedAdminUser.canManageMembers ? 'teal-darken-2' : 'grey'"
             variant="tonal"
           >
-            {{ selectedAdminUser.canManageMembers ? "Sim" : "Nao" }}
+            {{ selectedAdminUser.canManageMembers ? "Sim" : "Não" }}
           </v-chip>
         </div>
 
@@ -406,7 +406,7 @@
               color="teal-darken-2"
               variant="tonal"
             >
-              Permissao
+              Permissão
             </v-chip>
             <v-chip size="small" color="purple-darken-3" variant="tonal">
               {{ member.role === "PASTOR" ? "Pastor" : "Membro" }}
@@ -512,7 +512,7 @@
               Adicionar membro
             </h2>
             <p class="text-body-2 text-grey-darken-1 mb-0">
-              Crie o acesso ja vinculado a esta igreja.
+              Crie o acesso já vinculado a esta igreja.
             </p>
           </div>
         </div>
@@ -534,7 +534,7 @@
 
           <v-text-field
             v-model="memberForm.email"
-            label="Email"
+            label="E-mail"
             type="email"
             prepend-inner-icon="mdi-email-outline"
             variant="outlined"
@@ -564,7 +564,7 @@
 
           <v-text-field
             v-model="memberForm.password"
-            label="Senha temporaria"
+            label="Senha temporária"
             :type="showPassword ? 'text' : 'password'"
             prepend-inner-icon="mdi-lock-outline"
             :append-inner-icon="
@@ -758,7 +758,7 @@
 
         <v-text-field
           v-model="selectedMemberForm.email"
-          label="Email"
+          label="E-mail"
           type="email"
           variant="outlined"
           density="comfortable"
@@ -1009,19 +1009,19 @@ const isDeleteDialogOpen = computed({
 });
 
 const deleteDialogTitle = computed(() =>
-  pendingDeleteDepartment.value ? "Remover ministerio" : "Remover membro",
+  pendingDeleteDepartment.value ? "Remover ministério" : "Remover membro",
 );
 
 const deleteDialogMessage = computed(() => {
   if (pendingDeleteDepartment.value) {
-    return `O ministerio ${pendingDeleteDepartment.value.name} sera removido com suas escalas, tarefas, recursos e musicas.`;
+    return `O ministério ${pendingDeleteDepartment.value.name} será removido com suas escalas, tarefas, recursos e músicas.`;
   }
 
   if (pendingDeleteMember.value) {
-    return `O membro ${pendingDeleteMember.value.name} sera removido desta igreja.`;
+    return `O membro ${pendingDeleteMember.value.name} será removido desta igreja.`;
   }
 
-  return "Essa acao nao pode ser desfeita.";
+  return "Essa ação não pode ser desfeita.";
 });
 
 const memberForm = reactive({
@@ -1138,7 +1138,7 @@ const selectChurch = async (id: string) => {
   isLoadingChurch.value = false;
 
   if (error || !data) {
-    platformError.value = error || "Nao foi possivel carregar a igreja.";
+    platformError.value = error || "Não foi possível carregar a igreja.";
     return;
   }
 
@@ -1211,7 +1211,7 @@ const handleCreateMember = async () => {
   }
 
   if (form.password.length < 6) {
-    createMemberError.value = "A senha temporaria deve ter pelo menos 6 caracteres.";
+    createMemberError.value = "A senha temporária deve ter pelo menos 6 caracteres.";
     return;
   }
 
@@ -1222,7 +1222,7 @@ const handleCreateMember = async () => {
   isCreatingMember.value = false;
 
   if (error || !data) {
-    createMemberError.value = error || "Nao foi possivel criar o membro.";
+    createMemberError.value = error || "Não foi possível criar o membro.";
     return;
   }
 
@@ -1235,7 +1235,7 @@ const handleCreateDepartment = async () => {
   const name = departmentForm.name.trim();
 
   if (!name || !departmentForm.leaderId) {
-    createDepartmentError.value = "Informe o nome e o lider do ministerio.";
+    createDepartmentError.value = "Informe o nome e o líder do ministério.";
     return;
   }
 
@@ -1256,7 +1256,7 @@ const handleCreateDepartment = async () => {
   isCreatingDepartment.value = false;
 
   if (error || !data) {
-    createDepartmentError.value = error || "Nao foi possivel criar o ministerio.";
+    createDepartmentError.value = error || "Não foi possível criar o ministério.";
     return;
   }
 
@@ -1344,7 +1344,7 @@ const handleUpdateMember = async () => {
   isUpdatingMember.value = false;
 
   if (error || !data) {
-    permissionError.value = error || "Nao foi possivel salvar o membro.";
+    permissionError.value = error || "Não foi possível salvar o membro.";
     return;
   }
 
@@ -1402,7 +1402,7 @@ const handleUpdateMemberPermissions = async (value: boolean | null) => {
   isUpdatingPermissions.value = false;
 
   if (error || !data) {
-    permissionError.value = error || "Nao foi possivel atualizar as permissoes.";
+    permissionError.value = error || "Não foi possível atualizar as permissões.";
     selectedMemberCanManageMembers.value = selectedMember.value.canManageMembers;
     return;
   }

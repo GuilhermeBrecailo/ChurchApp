@@ -49,11 +49,11 @@ defineProps({
   },
   title: {
     type: String,
-    default: "Confirmar exclusao",
+    default: "Confirmar exclusão",
   },
   message: {
     type: String,
-    default: "Essa acao nao pode ser desfeita.",
+    default: "Essa ação não pode ser desfeita.",
   },
   confirmText: {
     type: String,

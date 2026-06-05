@@ -47,7 +47,7 @@ export const useChurch = () => {
   ): Promise<ApiResponse<ChurchResponse>> => {
     if (!access_token.value) {
       return {
-        error: "Sessao expirada. Faca login novamente.",
+        error: "Sessão expirada. Faça login novamente.",
         status: 401,
       };
     }
@@ -70,7 +70,7 @@ export const useChurch = () => {
       if (!updatedUser?.hasChurch) {
         return {
           ...response,
-          error: "Igreja criada, mas nao foi possivel atualizar sua sessao.",
+          error: "Igreja criada, mas não foi possível atualizar sua sessão.",
         };
       }
     }
@@ -83,7 +83,7 @@ export const useChurch = () => {
   ): Promise<ApiResponse<ChurchResponse>> => {
     if (!access_token.value) {
       return {
-        error: "Sessao expirada. Faca login novamente.",
+        error: "Sessão expirada. Faça login novamente.",
         status: 401,
       };
     }

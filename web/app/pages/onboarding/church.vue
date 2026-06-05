@@ -3,10 +3,10 @@
     <div class="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <div>
         <p class="text-sm font-semibold text-purple-700">
-          Configuracao inicial
+          Configuração inicial
         </p>
         <h1 class="mt-1 text-2xl font-bold text-gray-900">
-          Vinculo com a igreja
+          Vínculo com a igreja
         </h1>
       </div>
 
@@ -16,8 +16,8 @@
         variant="tonal"
         class="rounded-lg"
       >
-        Sua conta foi criada como membro. Para acessar escalas e ministerios,
-        um pastor ou administrador precisa vincular voce a uma igreja.
+        Sua conta foi criada como membro. Para acessar escalas e ministérios,
+        um pastor ou administrador precisa vincular você a uma igreja.
       </v-alert>
 
       <v-card
@@ -56,7 +56,7 @@
 
           <v-text-field
             v-model="form.road"
-            label="Endereco"
+            label="Endereço"
             variant="outlined"
             color="purple-darken-3"
             class="mb-4"
@@ -66,7 +66,7 @@
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <v-text-field
               v-model="form.number"
-              label="Numero"
+              label="Número"
               variant="outlined"
               color="purple-darken-3"
               :disabled="loading"

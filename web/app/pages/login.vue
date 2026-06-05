@@ -19,7 +19,7 @@
       <v-form autocomplete="off" @submit.prevent="handleLogin">
         <v-text-field
           v-model="email"
-          label="Email"
+          label="E-mail"
           type="email"
           autocomplete="off"
           prepend-inner-icon="mdi-email-outline"
@@ -95,7 +95,7 @@
         </div>
 
         <p class="text-xs text-gray-500 text-center mb-0">
-          Se voce e membro, peca para sua igreja criar seu acesso.
+          Se você é membro, peça para sua igreja criar seu acesso.
         </p>
       </div>
     </v-card>
@@ -125,7 +125,7 @@ const handleLogin = async () => {
   const normalizedEmail = email.value.trim();
 
   if (!normalizedEmail || !password.value) {
-    errorMessage.value = "Informe email e senha para entrar.";
+    errorMessage.value = "Informe e-mail e senha para entrar.";
     return;
   }
 
@@ -150,7 +150,7 @@ const handleLogin = async () => {
     }
 
     if (!access_token.value) {
-      errorMessage.value = "Nao foi possivel iniciar a sessao.";
+      errorMessage.value = "Não foi possível iniciar a sessão.";
       return;
     }
 
@@ -163,7 +163,7 @@ const handleLogin = async () => {
 
     await router.push(redirect);
   } catch {
-    errorMessage.value = "Nao foi possivel iniciar a sessao.";
+    errorMessage.value = "Não foi possível iniciar a sessão.";
   } finally {
     loading.value = false;
   }

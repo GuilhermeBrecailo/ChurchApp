@@ -29,7 +29,7 @@
               Crie sua igreja
             </h1>
             <p class="text-body-2 text-grey-darken-1 mb-0">
-              Esse passo libera escalas, ministerios e administracao.
+              Esse passo libera escalas, ministérios e administração.
             </p>
           </div>
         </div>
@@ -65,7 +65,7 @@
 
           <v-text-field
             v-model="churchForm.road"
-            label="Endereco"
+            label="Endereço"
             variant="outlined"
             color="purple-darken-3"
             class="mb-4"
@@ -75,7 +75,7 @@
           <div class="responsive-grid">
             <v-text-field
               v-model="churchForm.number"
-              label="Numero"
+              label="Número"
               variant="outlined"
               color="purple-darken-3"
               :disabled="loading"

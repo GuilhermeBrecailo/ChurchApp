@@ -27,7 +27,7 @@
             variant="text"
             :color="notificationColor"
             :loading="loading"
-            aria-label="Notificacoes"
+            aria-label="Notificações"
           >
             <v-badge dot :model-value="hasUnreadNotifications" color="error">
               <BellRing v-if="isEnabled" size="24" />
@@ -42,8 +42,8 @@
             <div class="notification-list-empty">
               <Bell size="22" />
               <div>
-                <p class="notification-title">Notificacoes</p>
-                <p class="notification-description">Nao ha nenhuma notificacao.</p>
+                <p class="notification-title">Notificações</p>
+                <p class="notification-description">Não há nenhuma notificação.</p>
               </div>
             </div>
 
@@ -60,7 +60,7 @@
               :loading="loading"
               @click="disable"
             >
-              Desativar notificacoes
+              Desativar notificações
             </v-btn>
 
             <v-btn
@@ -71,7 +71,7 @@
               :loading="loading"
               @click="enable"
             >
-              Ativar notificacoes
+              Ativar notificações
             </v-btn>
 
             <p v-if="message" class="notification-message">{{ message }}</p>
@@ -107,7 +107,7 @@ const {
 const firstName = computed(() => {
   const name = user.value?.name?.trim();
 
-  return name ? name.split(" ")[0] : "usuario";
+  return name ? name.split(" ")[0] : "usuário";
 });
 
 const churchName = computed(() => user.value?.church?.name || "Sem igreja");
@@ -121,19 +121,19 @@ const notificationColor = computed(() => {
 });
 
 const notificationTitle = computed(() => {
-  if (isEnabled.value) return "Notificacoes do celular ativas";
-  if (status.value === "denied") return "Permissao bloqueada";
-  if (status.value === "unsupported") return "PWA indisponivel";
+  if (isEnabled.value) return "Notificações do celular ativas";
+  if (status.value === "denied") return "Permissão bloqueada";
+  if (status.value === "unsupported") return "PWA indisponível";
 
-  return "Notificacoes do celular desligadas";
+  return "Notificações do celular desligadas";
 });
 
 const notificationDescription = computed(() => {
-  if (isEnabled.value) return "Voce sera avisado quando entrar em uma escala.";
-  if (status.value === "denied") return "Libere a permissao nas configuracoes do navegador.";
+  if (isEnabled.value) return "Você será avisado quando entrar em uma escala.";
+  if (status.value === "denied") return "Libere a permissão nas configurações do navegador.";
   if (status.value === "unsupported") return "No celular, abra o app por HTTPS para receber push.";
 
-  return "Receba aviso no aparelho quando voce for escalado.";
+  return "Receba aviso no aparelho quando você for escalado.";
 });
 
 const showNotificationMessage = computed({
