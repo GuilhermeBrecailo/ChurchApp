@@ -111,6 +111,10 @@ const adminLabel = computed(() => "Admin");
   color: #aeb8c7 !important;
 }
 
+:global(html.app-theme-dark) :deep(.custom-btn) {
+  color: #aeb8c7 !important;
+}
+
 .custom-btn :deep(.v-btn__content) {
   display: flex;
   min-width: 0;
@@ -126,6 +130,11 @@ const adminLabel = computed(() => "Admin");
 }
 
 :global(.app-theme-dark) .custom-btn.v-btn--active {
+  color: #c4b5fd !important;
+  background-color: rgba(99, 102, 241, 0.18) !important;
+}
+
+:global(html.app-theme-dark) :deep(.custom-btn.v-btn--active) {
   color: #c4b5fd !important;
   background-color: rgba(99, 102, 241, 0.18) !important;
 }

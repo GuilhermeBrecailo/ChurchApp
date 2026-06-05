@@ -11,6 +11,20 @@
   min-height: 100%;
 }
 
+.app-theme-dark,
+.app-theme-dark body,
+.app-theme-dark #__nuxt,
+.app-theme-dark .v-application,
+.app-theme-dark .v-application__wrap,
+.app-theme-dark .v-layout,
+.app-theme-dark .v-main,
+.app-theme-dark .v-main__wrap,
+.app-theme-dark .page-wrapper,
+.app-theme-dark .public-page-wrapper {
+  background: #111827 !important;
+  color: #e5e7eb;
+}
+
 .app-theme-light .v-application {
   background: #f6f7f9;
   color: #111827;
@@ -22,7 +36,9 @@
 }
 
 .app-theme-dark .bg-grey-lighten-4,
+.app-theme-dark .bg-grey-lighten-3,
 .app-theme-dark .bg-gray-50,
+.app-theme-dark .bg-slate-50,
 .app-theme-dark .auth-page {
   background-color: #111827 !important;
 }
@@ -33,19 +49,36 @@
 
 .app-theme-dark .bg-white,
 .app-theme-dark .v-card.bg-white,
-.app-theme-dark .v-card:not(.next-schedule-card) {
+.app-theme-dark .v-card:not(.next-schedule-card),
+.app-theme-dark .v-sheet,
+.app-theme-dark .v-list,
+.app-theme-dark .v-table,
+.app-theme-dark .v-expansion-panels,
+.app-theme-dark .v-expansion-panel {
+  background-color: #182233 !important;
+  color: #e5e7eb !important;
+}
+
+.app-theme-dark .v-app-bar,
+.app-theme-dark .v-toolbar,
+.app-theme-dark .appbar,
+.app-theme-dark .bottom-nav {
   background-color: #182233 !important;
   color: #e5e7eb !important;
 }
 
 .app-theme-dark .text-grey-darken-4,
+.app-theme-dark .text-grey-darken-3,
 .app-theme-dark .text-gray-900,
+.app-theme-dark .text-gray-800,
 .app-theme-dark .text-purple-900 {
   color: #f9fafb !important;
 }
 
 .app-theme-dark .text-grey-darken-2,
 .app-theme-dark .text-grey-darken-1,
+.app-theme-dark .text-grey,
+.app-theme-dark .text-gray-600,
 .app-theme-dark .text-gray-500 {
   color: #aeb8c7 !important;
 }
@@ -64,7 +97,9 @@
 }
 
 .app-theme-dark .border-subtle,
-.app-theme-dark .v-card.border-subtle {
+.app-theme-dark .v-card.border-subtle,
+.app-theme-dark .v-sheet,
+.app-theme-dark .v-divider {
   border-color: #2c394d !important;
 }
 
