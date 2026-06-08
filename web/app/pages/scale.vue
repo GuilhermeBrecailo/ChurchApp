@@ -93,11 +93,12 @@
       </v-alert>
     </div>
 
-    <v-bottom-sheet
+    <UtilsResponsiveOverlay
       v-model="isScheduleDetailsOpen"
       scrollable
       :scrim="true"
       max-width="980"
+      mobile-class="scale-details-mobile-sheet"
     >
       <v-card v-if="selectedDetailEvent" class="scale-details-sheet" elevation="0">
         <div class="scale-details-handle" />
@@ -316,9 +317,9 @@
                 :class="{ 'scale-song-card-active': activeDetailSong?.id === song.id }"
                 role="button"
                 tabindex="0"
-                @click="selectDetailSong(song)"
-                @keydown.enter="selectDetailSong(song)"
-                @keydown.space.prevent="selectDetailSong(song)"
+                @click="openSongFullscreen(song)"
+                @keydown.enter="openSongFullscreen(song)"
+                @keydown.space.prevent="openSongFullscreen(song)"
               >
                 <div class="scale-song-header">
                   <div class="min-w-0">
@@ -389,7 +390,7 @@
               >
                 <v-tab value="lyrics" class="text-none">Letra</v-tab>
                 <v-tab value="chords" class="text-none">Cifra</v-tab>
-                <v-tab value="notes" class="text-none">Notas</v-tab>
+                <v-tab value="notes" class="text-none">Tom</v-tab>
               </v-tabs>
 
               <pre class="scale-song-text">{{ getSongTabText(activeDetailSong, songTabs[activeDetailSong.id]) }}</pre>
@@ -419,9 +420,13 @@
           </section>
         </div>
       </v-card>
-    </v-bottom-sheet>
+    </UtilsResponsiveOverlay>
 
-    <v-dialog v-model="isSongFullscreenOpen" fullscreen transition="dialog-bottom-transition">
+    <UtilsResponsiveOverlay
+      v-model="isSongFullscreenOpen"
+      max-width="920"
+      mobile-class="scale-song-mobile-sheet"
+    >
       <v-card v-if="fullscreenSong" class="scale-fullscreen-song" elevation="0">
         <div class="scale-fullscreen-header">
           <div class="min-w-0">
@@ -442,7 +447,7 @@
           <v-tabs v-model="fullscreenSongTab" color="purple-darken-3">
             <v-tab value="lyrics" class="text-none">Letra</v-tab>
             <v-tab value="chords" class="text-none">Cifra</v-tab>
-            <v-tab value="notes" class="text-none">Notas</v-tab>
+            <v-tab value="notes" class="text-none">Tom</v-tab>
           </v-tabs>
           <div class="scale-song-meta">
             <v-chip v-if="fullscreenSong.metadata?.key" size="small" variant="tonal">
@@ -456,22 +461,34 @@
 
         <pre class="scale-fullscreen-text">{{ getSongTabText(fullscreenSong, fullscreenSongTab) }}</pre>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
-    <v-dialog v-model="isScheduleDialogOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isScheduleDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
-        <div class="d-flex align-center mb-5">
-          <v-avatar color="#FAF5FF" size="44" class="mr-3">
-            <Calendar size="20" color="#A855F7" />
-          </v-avatar>
-          <div>
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              {{ editingScheduleId ? "Editar escala" : "Nova escala" }}
-            </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0">
-              Cadastre uma escala para um ministério.
-            </p>
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar color="#FAF5FF" size="44" class="mr-3">
+              <Calendar size="20" color="#A855F7" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+                {{ editingScheduleId ? "Editar escala" : "Nova escala" }}
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0">
+                Cadastre uma escala para um ministério.
+              </p>
+            </div>
           </div>
+          <v-btn
+            icon
+            variant="text"
+            color="grey-darken-1"
+            size="small"
+            :disabled="isCreatingSchedule"
+            @click="closeScheduleDialog"
+          >
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
         </div>
 
         <v-form autocomplete="off" @submit.prevent="handleSaveSchedule">
@@ -643,22 +660,34 @@
           </div>
         </v-form>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
-    <v-dialog v-model="isAssignmentsDialogOpen" max-width="560">
+    <UtilsResponsiveOverlay v-model="isAssignmentsDialogOpen" max-width="560">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
-        <div class="d-flex align-center mb-5">
-          <v-avatar color="#FAF5FF" size="44" class="mr-3">
-            <UserPlus size="20" color="#A855F7" />
-          </v-avatar>
-          <div>
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              Voluntários da escala
-            </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0">
-              {{ selectedSchedule?.description || "Monte a equipe da escala." }}
-            </p>
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar color="#FAF5FF" size="44" class="mr-3">
+              <UserPlus size="20" color="#A855F7" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+                Voluntários da escala
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0">
+                {{ selectedSchedule?.description || "Monte a equipe da escala." }}
+              </p>
+            </div>
           </div>
+          <v-btn
+            icon
+            variant="text"
+            color="grey-darken-1"
+            size="small"
+            :disabled="isSavingAssignments"
+            @click="closeAssignmentsDialog"
+          >
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
         </div>
 
         <div class="scale-field-grid mb-4">
@@ -825,7 +854,7 @@
           </v-btn>
         </div>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
     <UtilsConfirmDialog
       v-model="isDeleteScheduleDialogOpen"
@@ -1281,7 +1310,15 @@ const getSongTabText = (
   tab = "lyrics",
 ) => {
   if (tab === "chords") return song.metadata?.chords || "Cifra não cadastrada.";
-  if (tab === "notes") return song.metadata?.notes || "Sem observações.";
+  if (tab === "notes") {
+    const items = [
+      song.metadata?.key ? `Tom: ${song.metadata.key}` : "",
+      song.metadata?.bpm ? `BPM: ${song.metadata.bpm}` : "",
+      song.metadata?.notes || "",
+    ].filter(Boolean);
+
+    return items.join("\n") || "Tom não cadastrado.";
+  }
 
   return song.metadata?.lyrics || "Letra não cadastrada.";
 };
@@ -1920,6 +1957,13 @@ watch(schedules, async () => {
   min-width: 112px;
 }
 
+.responsive-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .scale-details-sheet {
   max-height: min(92vh, 920px);
   overflow: hidden;
@@ -2207,7 +2251,7 @@ watch(schedules, async () => {
 .scale-fullscreen-song {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  min-height: 100vh;
+  min-height: min(100vh, 760px);
   background: #fff;
 }
 
@@ -2247,6 +2291,10 @@ watch(schedules, async () => {
 }
 
 @media (max-width: 420px) {
+  .scale-song-mobile-sheet .scale-fullscreen-song {
+    min-height: 100vh;
+  }
+
   .scale-page-header {
     align-items: flex-start;
     flex-direction: column;

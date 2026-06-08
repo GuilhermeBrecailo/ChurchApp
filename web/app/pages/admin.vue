@@ -136,12 +136,7 @@
       </div>
     </section>
 
-    <v-dialog
-      v-model="isChurchDetailsOpen"
-      max-width="920"
-      scrollable
-      @after-leave="closeChurchDetails"
-    >
+    <template v-if="false">
       <v-card class="church-details-surface bg-white" elevation="0">
         <div class="church-details-header">
           <div class="d-flex align-center min-w-0">
@@ -274,11 +269,13 @@
           </div>
         </div>
       </v-card>
-    </v-dialog>
+    </template>
 
-    <v-bottom-sheet
+    <UtilsResponsiveOverlay
       v-model="isChurchDetailsSheetOpen"
       scrollable
+      max-width="920"
+      mobile-class="church-details-mobile-sheet"
       @after-leave="closeChurchDetails"
     >
       <v-card class="church-details-sheet bg-white" elevation="0">
@@ -437,7 +434,8 @@
                 <div
                   v-for="department in visibleChurchDepartments"
                   :key="department.id"
-                  class="admin-row"
+                  class="admin-row clickable-row"
+                  @click="openAdminDepartmentDetails(department)"
                 >
                   <div class="min-w-0">
                     <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
@@ -481,7 +479,8 @@
                 <div
                   v-for="schedule in visibleChurchSchedules"
                   :key="schedule.id"
-                  class="admin-row schedule-row"
+                  class="admin-row schedule-row clickable-row"
+                  @click="openAdminScheduleDetails(schedule)"
                 >
                   <div class="min-w-0">
                     <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
@@ -505,9 +504,9 @@
           </div>
         </div>
       </v-card>
-    </v-bottom-sheet>
+    </UtilsResponsiveOverlay>
 
-    <v-dialog v-model="isAdminUserDetailsOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isAdminUserDetailsOpen" max-width="520">
       <v-card
         v-if="selectedAdminUser"
         class="rounded-xl pa-6 bg-white"
@@ -585,7 +584,119 @@
           </v-btn>
         </div>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
+
+    <UtilsResponsiveOverlay v-model="isAdminDepartmentDetailsOpen" max-width="520">
+      <v-card
+        v-if="selectedAdminDepartment"
+        class="rounded-xl pa-6 bg-white"
+        elevation="0"
+      >
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar color="#FAF5FF" size="48" class="mr-3">
+              <Building size="22" color="#A855F7" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                {{ selectedAdminDepartment.name }}
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0 text-truncate">
+                Líder: {{ selectedAdminDepartment.leader.name }}
+              </p>
+            </div>
+          </div>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeAdminDepartmentDetails">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <div class="member-info">
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Tipo</p>
+            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+              {{ departmentTypeLabel(selectedAdminDepartment.type) }}
+            </p>
+          </div>
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Status</p>
+            <v-chip
+              size="small"
+              :color="selectedAdminDepartment.isActive ? 'teal-darken-2' : 'grey'"
+              variant="tonal"
+            >
+              {{ selectedAdminDepartment.isActive ? "Ativo" : "Inativo" }}
+            </v-chip>
+          </div>
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Membros</p>
+            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+              {{ selectedAdminDepartment.membersCount }}
+            </p>
+          </div>
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Escalas</p>
+            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+              {{ selectedAdminDepartment.schedulesCount }}
+            </p>
+          </div>
+        </div>
+      </v-card>
+    </UtilsResponsiveOverlay>
+
+    <UtilsResponsiveOverlay v-model="isAdminScheduleDetailsOpen" max-width="520">
+      <v-card
+        v-if="selectedAdminSchedule"
+        class="rounded-xl pa-6 bg-white"
+        elevation="0"
+      >
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar color="#F0FDFA" size="48" class="mr-3">
+              <Calendar size="22" color="#14B8A6" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                {{ selectedAdminSchedule.description }}
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0 text-truncate">
+                {{ selectedAdminSchedule.department.name }}
+              </p>
+            </div>
+          </div>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeAdminScheduleDetails">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <div class="member-info">
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Data</p>
+            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+              {{ formatDate(selectedAdminSchedule.date) }}
+            </p>
+          </div>
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Voluntários</p>
+            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+              {{ selectedAdminSchedule.assignmentsCount }}
+            </p>
+          </div>
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Itens vinculados</p>
+            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+              {{ selectedAdminSchedule.mediaItemsCount }}
+            </p>
+          </div>
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Ensaio</p>
+            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+              {{ selectedAdminSchedule.rehearsalAt ? formatDate(selectedAdminSchedule.rehearsalAt) : "-" }}
+            </p>
+          </div>
+        </div>
+      </v-card>
+    </UtilsResponsiveOverlay>
   </div>
 
   <div v-else-if="canAccessChurchAdmin" class="church-admin-page pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
@@ -737,6 +848,11 @@
           v-for="department in departments"
           :key="department.id"
           class="ministry-item"
+          role="button"
+          tabindex="0"
+          @click="openChurchDepartmentDetails(department)"
+          @keydown.enter="openChurchDepartmentDetails(department)"
+          @keydown.space.prevent="openChurchDepartmentDetails(department)"
         >
           <AdminMinisteryCard
             :ministry="{
@@ -753,7 +869,7 @@
               variant="text"
               color="grey-darken-1"
               size="small"
-              @click="openDepartmentEditDialog(department)"
+              @click.stop="openDepartmentEditDialog(department)"
             >
               <v-icon size="18">mdi-pencil-outline</v-icon>
             </v-btn>
@@ -762,7 +878,7 @@
               variant="text"
               color="red-darken-2"
               size="small"
-              @click="handleDeleteDepartment(department)"
+              @click.stop="handleDeleteDepartment(department)"
             >
               <v-icon size="18">mdi-delete-outline</v-icon>
             </v-btn>
@@ -780,7 +896,7 @@
         {{ departmentsError }}
       </v-alert>
     </section>
-    <v-dialog v-model="isMemberDialogOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isMemberDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
           <v-avatar color="#EEF2FF" size="44" class="mr-3">
@@ -892,9 +1008,9 @@
           </div>
         </v-form>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
-    <v-dialog v-model="isDepartmentDialogOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isDepartmentDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
           <v-avatar color="#FAF5FF" size="44" class="mr-3">
@@ -989,9 +1105,9 @@
           </div>
         </v-form>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
-    <v-dialog v-model="isMemberDetailsOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isMemberDetailsOpen" max-width="520">
       <v-card v-if="selectedMember" class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
           <v-avatar color="#EEF2FF" size="48" class="mr-3">
@@ -1127,7 +1243,65 @@
           </div>
         </div>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
+
+    <UtilsResponsiveOverlay v-model="isChurchDepartmentDetailsOpen" max-width="520">
+      <v-card
+        v-if="selectedChurchDepartment"
+        class="rounded-xl pa-6 bg-white"
+        elevation="0"
+      >
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar color="#FAF5FF" size="48" class="mr-3">
+              <Building size="22" color="#A855F7" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                {{ selectedChurchDepartment.name }}
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0 text-truncate">
+                Líder: {{ selectedChurchDepartment.leader.name }}
+              </p>
+            </div>
+          </div>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeChurchDepartmentDetails">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <div class="member-info">
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Tipo</p>
+            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+              {{ departmentTypeLabel(selectedChurchDepartment.type) }}
+            </p>
+          </div>
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Status</p>
+            <v-chip
+              size="small"
+              :color="selectedChurchDepartment.isActive ? 'teal-darken-2' : 'grey'"
+              variant="tonal"
+            >
+              {{ selectedChurchDepartment.isActive ? "Ativo" : "Inativo" }}
+            </v-chip>
+          </div>
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Membros</p>
+            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+              {{ selectedChurchDepartment.membersCount || 0 }}
+            </p>
+          </div>
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Escalas</p>
+            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+              {{ selectedChurchDepartment.schedulesCount || 0 }}
+            </p>
+          </div>
+        </div>
+      </v-card>
+    </UtilsResponsiveOverlay>
 
     <UtilsConfirmDialog
       v-model="isDeleteDialogOpen"
@@ -1176,7 +1350,9 @@ import {
 import {
   useAdmin,
   type AdminChurch,
+  type AdminChurchDepartment,
   type AdminChurchDetails,
+  type AdminChurchSchedule,
   type AdminChurchUser,
 } from "../../composables/useAdmin";
 
@@ -1211,6 +1387,9 @@ const isLoadingChurch = ref(false);
 const isMemberDialogOpen = ref(false);
 const isMemberDetailsOpen = ref(false);
 const isAdminUserDetailsOpen = ref(false);
+const isAdminDepartmentDetailsOpen = ref(false);
+const isAdminScheduleDetailsOpen = ref(false);
+const isChurchDepartmentDetailsOpen = ref(false);
 const isChurchDetailsOpen = ref(false);
 const isChurchDetailsSheetOpen = ref(false);
 const isDepartmentDialogOpen = ref(false);
@@ -1224,6 +1403,9 @@ const permissionError = ref("");
 const showPassword = ref(false);
 const selectedMember = ref<ChurchMember | null>(null);
 const selectedAdminUser = ref<AdminChurchUser | null>(null);
+const selectedAdminDepartment = ref<AdminChurchDepartment | null>(null);
+const selectedAdminSchedule = ref<AdminChurchSchedule | null>(null);
+const selectedChurchDepartment = ref<ChurchDepartment | null>(null);
 const selectedMemberCanManageMembers = ref(false);
 const editingDepartmentId = ref("");
 const pendingDeleteDepartment = ref<ChurchDepartment | null>(null);
@@ -1483,6 +1665,36 @@ const openAdminUserDetails = (member: AdminChurchUser) => {
 const closeAdminUserDetails = () => {
   isAdminUserDetailsOpen.value = false;
   selectedAdminUser.value = null;
+};
+
+const openAdminDepartmentDetails = (department: AdminChurchDepartment) => {
+  selectedAdminDepartment.value = department;
+  isAdminDepartmentDetailsOpen.value = true;
+};
+
+const closeAdminDepartmentDetails = () => {
+  isAdminDepartmentDetailsOpen.value = false;
+  selectedAdminDepartment.value = null;
+};
+
+const openAdminScheduleDetails = (schedule: AdminChurchSchedule) => {
+  selectedAdminSchedule.value = schedule;
+  isAdminScheduleDetailsOpen.value = true;
+};
+
+const closeAdminScheduleDetails = () => {
+  isAdminScheduleDetailsOpen.value = false;
+  selectedAdminSchedule.value = null;
+};
+
+const openChurchDepartmentDetails = (department: ChurchDepartment) => {
+  selectedChurchDepartment.value = department;
+  isChurchDepartmentDetailsOpen.value = true;
+};
+
+const closeChurchDepartmentDetails = () => {
+  isChurchDepartmentDetailsOpen.value = false;
+  selectedChurchDepartment.value = null;
 };
 
 const resetMemberForm = () => {
@@ -2122,6 +2334,13 @@ onMounted(async () => {
   text-align: center;
 }
 
+.responsive-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .church-admin-page {
   max-width: 1120px;
   margin: 0 auto;
@@ -2202,6 +2421,13 @@ onMounted(async () => {
 
 .ministry-item {
   min-width: 0;
+  cursor: pointer;
+}
+
+.ministry-item:focus-visible,
+.clickable-row:focus-visible {
+  outline: 3px solid rgba(168, 85, 247, 0.28);
+  outline-offset: 2px;
 }
 
 .ministry-actions {
@@ -2228,7 +2454,8 @@ onMounted(async () => {
   padding: 10px 12px;
 }
 
-.user-row {
+.user-row,
+.clickable-row {
   cursor: pointer;
 }
 

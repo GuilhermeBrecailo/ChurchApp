@@ -44,19 +44,35 @@
     </v-card>
 
     <div v-else class="ministery-grid">
-      <MinisteryListItem
+      <div
         v-for="department in departments"
         :key="department.id"
-        :ministerio="{
-          nome: department.name,
-          lider: department.leader.name,
-          tipo: departmentTypeLabel(department.type),
-          membros: department.membersCount || 0,
-          escalas: department.schedulesCount || 0,
-          musicas: department.songsCount || 0,
-        }"
-        @click="goToMinisterio(department.id)"
-      />
+        class="ministery-list-shell"
+      >
+        <MinisteryListItem
+          :ministerio="{
+            nome: department.name,
+            lider: department.leader.name,
+            tipo: departmentTypeLabel(department.type),
+            membros: department.membersCount || 0,
+            escalas: department.schedulesCount || 0,
+            musicas: department.songsCount || 0,
+          }"
+          @click="goToMinisterio(department.id)"
+        />
+        <v-btn
+          v-if="canDeleteDepartment"
+          icon
+          variant="text"
+          color="red-darken-2"
+          size="small"
+          class="ministery-delete-btn"
+          :disabled="isDeletingDepartment"
+          @click.stop="handleDeleteDepartment(department)"
+        >
+          <Trash2 size="17" />
+        </v-btn>
+      </div>
     </div>
 
     <v-alert
@@ -69,20 +85,32 @@
       {{ departmentsError }}
     </v-alert>
 
-    <v-dialog v-model="isDepartmentDialogOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isDepartmentDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
-        <div class="d-flex align-center mb-5">
-          <v-avatar color="#FAF5FF" size="44" class="mr-3">
-            <Building size="20" color="#A855F7" />
-          </v-avatar>
-          <div>
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              Novo ministério
-            </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0">
-              Cadastre um ministério e defina um líder.
-            </p>
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar color="#FAF5FF" size="44" class="mr-3">
+              <Building size="20" color="#A855F7" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+                Novo ministério
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0">
+                Cadastre um ministério e defina um líder.
+              </p>
+            </div>
           </div>
+          <v-btn
+            icon
+            variant="text"
+            color="grey-darken-1"
+            size="small"
+            :disabled="isCreatingDepartment"
+            @click="closeDepartmentDialog"
+          >
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
         </div>
 
         <v-form autocomplete="off" @submit.prevent="handleCreateDepartment">
@@ -164,14 +192,23 @@
           </div>
         </v-form>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
+
+    <UtilsConfirmDialog
+      v-model="isDeleteDepartmentDialogOpen"
+      title="Remover ministério"
+      :message="deleteDepartmentMessage"
+      :loading="isDeletingDepartment"
+      @cancel="closeDeleteDepartmentDialog"
+      @confirm="confirmDeleteDepartment"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { Building, Plus } from "lucide-vue-next";
+import { Building, Plus, Trash2 } from "lucide-vue-next";
 import {
   useDepartments,
   type ChurchDepartment,
@@ -181,7 +218,7 @@ import { useAuth } from "../../../composables/useAuth";
 
 const router = useRouter();
 const { user } = useAuth();
-const { getDepartments, createDepartment } = useDepartments();
+const { getDepartments, createDepartment, deleteDepartment } = useDepartments();
 const { getMembers } = useMembers();
 
 const departments = ref<ChurchDepartment[]>([]);
@@ -190,6 +227,8 @@ const departmentsError = ref("");
 const createDepartmentError = ref("");
 const isDepartmentDialogOpen = ref(false);
 const isCreatingDepartment = ref(false);
+const isDeletingDepartment = ref(false);
+const pendingDeleteDepartment = ref<ChurchDepartment | null>(null);
 
 const departmentForm = reactive({
   name: "",
@@ -216,6 +255,20 @@ const isChurchWideManager = computed(
     user.value?.is_admin === true,
 );
 const canCreateDepartment = computed(() => isChurchWideManager.value);
+const canDeleteDepartment = computed(() => isChurchWideManager.value);
+const isDeleteDepartmentDialogOpen = computed({
+  get: () => Boolean(pendingDeleteDepartment.value),
+  set: (value: boolean) => {
+    if (!value && !isDeletingDepartment.value) {
+      pendingDeleteDepartment.value = null;
+    }
+  },
+});
+const deleteDepartmentMessage = computed(() =>
+  pendingDeleteDepartment.value
+    ? `O ministério ${pendingDeleteDepartment.value.name} será removido com suas escalas, tarefas, recursos e músicas.`
+    : "Essa ação não pode ser desfeita.",
+);
 const activeDepartmentsCount = computed(
   () => departments.value.filter((department) => department.isActive).length,
 );
@@ -296,6 +349,36 @@ const handleCreateDepartment = async () => {
   closeDepartmentDialog();
 };
 
+const handleDeleteDepartment = (department: ChurchDepartment) => {
+  pendingDeleteDepartment.value = department;
+};
+
+const closeDeleteDepartmentDialog = () => {
+  if (!isDeletingDepartment.value) {
+    pendingDeleteDepartment.value = null;
+  }
+};
+
+const confirmDeleteDepartment = async () => {
+  if (!pendingDeleteDepartment.value) return;
+
+  departmentsError.value = "";
+  isDeletingDepartment.value = true;
+  const departmentId = pendingDeleteDepartment.value.id;
+  const { error } = await deleteDepartment(departmentId);
+  isDeletingDepartment.value = false;
+
+  if (error) {
+    departmentsError.value = error;
+    return;
+  }
+
+  departments.value = departments.value.filter(
+    (department) => department.id !== departmentId,
+  );
+  pendingDeleteDepartment.value = null;
+};
+
 onMounted(async () => {
   await Promise.all([loadDepartments(), loadMembers()]);
 });
@@ -345,6 +428,15 @@ onMounted(async () => {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
 }
+.ministery-list-shell {
+  position: relative;
+}
+.ministery-delete-btn {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 2;
+}
 .border-subtle {
   border: 1px solid #f3f4f6;
 }
@@ -355,6 +447,12 @@ onMounted(async () => {
   min-height: 48px;
   padding-top: 10px;
   padding-bottom: 10px;
+}
+.responsive-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 @media (max-width: 520px) {
   .ministery-page-header {

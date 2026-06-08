@@ -5,7 +5,7 @@
         Meu Perfil
       </h1>
       <p class="text-body-2 text-grey-darken-1 mb-0">
-        Suas informações, ministério e disponibilidade
+        Suas informações e disponibilidade
       </p>
     </div>
 
@@ -58,46 +58,6 @@
     </v-alert>
 
     <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
-      <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-4">
-        Ministério
-      </h3>
-
-      <div class="text-caption font-weight-medium text-grey-darken-2 mb-1">
-        Ministério principal
-      </div>
-      <v-select
-        v-model="form.primaryDepartmentId"
-        :items="departmentOptions"
-        item-title="label"
-        item-value="value"
-        placeholder="Selecione um ministério..."
-        variant="outlined"
-        density="comfortable"
-        color="purple-darken-3"
-        bg-color="white"
-        class="profile-input mb-4"
-        hide-details="auto"
-        clearable
-        :disabled="isLoading || isSaving"
-      />
-
-      <div class="text-caption font-weight-medium text-grey-darken-2 mb-1">
-        O que você faz
-      </div>
-      <v-text-field
-        v-model="form.ministryFunction"
-        placeholder="ex: Vocalista, Guitarrista, Professor..."
-        variant="outlined"
-        density="comfortable"
-        color="purple-darken-3"
-        bg-color="white"
-        class="profile-input"
-        hide-details="auto"
-        :disabled="isLoading || isSaving"
-      />
-    </v-card>
-
-    <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
       <div class="d-flex align-center mb-1">
         <CalendarX size="18" class="mr-2" color="#A855F7" />
         <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
@@ -125,7 +85,7 @@
           variant="outlined"
           color="grey-darken-1"
           class="profile-icon-btn bg-white"
-          size="48"
+          size="large"
           icon
           :disabled="isLoading || isSaving"
           @click="addUnavailableDate"
@@ -263,18 +223,33 @@
       Sair
     </v-btn>
 
-    <v-dialog
+    <UtilsResponsiveOverlay
       v-model="isPasswordDialogOpen"
       max-width="480"
       :persistent="mustChangePassword"
     >
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
-        <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-1">
-          Redefinir senha
-        </h2>
-        <p class="text-body-2 text-grey-darken-1 mb-5">
-          Informe uma nova senha para acessar o aplicativo.
-        </p>
+        <div class="responsive-dialog-header mb-5">
+          <div class="min-w-0">
+            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-1">
+              Redefinir senha
+            </h2>
+            <p class="text-body-2 text-grey-darken-1 mb-0">
+              Informe uma nova senha para acessar o aplicativo.
+            </p>
+          </div>
+          <v-btn
+            v-if="!mustChangePassword"
+            icon
+            variant="text"
+            color="grey-darken-1"
+            size="small"
+            :disabled="isSavingPassword"
+            @click="closePasswordDialog"
+          >
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
 
         <v-text-field
           v-model="passwordForm.password"
@@ -345,7 +320,7 @@
           </v-btn>
         </div>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
   </div>
 </template>
 
@@ -353,15 +328,10 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { CalendarX, Plus, Save } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
-import {
-  useDepartments,
-  type ChurchDepartment,
-} from "../../composables/useDepartments";
 import { useUser, type MyProfileDTO } from "../../composables/useUser";
 
 const router = useRouter();
 const { logout, user, fetchMe } = useAuth();
-const { getDepartments } = useDepartments();
 const { getMyProfile, updateMyProfile, updateMyPassword } = useUser();
 
 const loadingLogout = ref(false);
@@ -375,7 +345,6 @@ const passwordError = ref("");
 const passwordMessage = ref("");
 const isPasswordDialogOpen = ref(false);
 const profile = ref<MyProfileDTO | null>(null);
-const departments = ref<ChurchDepartment[]>([]);
 const newUnavailableDate = ref("");
 const unavailableDates = ref<string[]>([]);
 
@@ -395,13 +364,6 @@ const mustChangePassword = computed(
   () =>
     profile.value?.mustChangePassword === true ||
     user.value?.mustChangePassword === true,
-);
-
-const departmentOptions = computed(() =>
-  departments.value.map((department) => ({
-    label: department.name,
-    value: department.id,
-  })),
 );
 
 const initials = computed(() => {
@@ -439,21 +401,12 @@ const loadProfile = async () => {
   isLoading.value = true;
   loadError.value = "";
 
-  const [profileResponse, departmentsResponse] = await Promise.all([
-    getMyProfile(),
-    getDepartments(),
-  ]);
+  const profileResponse = await getMyProfile();
 
   if (profileResponse.error || !profileResponse.data) {
     loadError.value = profileResponse.error || "Não foi possível carregar o perfil.";
   } else {
     applyProfile(profileResponse.data);
-  }
-
-  departments.value = departmentsResponse.data ?? [];
-
-  if (departmentsResponse.error && !loadError.value) {
-    loadError.value = departmentsResponse.error;
   }
 
   isLoading.value = false;
@@ -622,6 +575,14 @@ onMounted(loadProfile);
 .profile-icon-btn {
   flex: 0 0 auto;
   border-radius: 14px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  width: 48px !important;
+}
+.profile-icon-btn :deep(.v-btn__content) {
+  align-items: center;
+  display: flex;
+  justify-content: center;
 }
 .unavailable-date-row {
   display: grid;
@@ -660,6 +621,12 @@ onMounted(loadProfile);
 }
 .border-subtle {
   border: 1px solid #f3f4f6;
+}
+.responsive-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 @media (max-width: 420px) {

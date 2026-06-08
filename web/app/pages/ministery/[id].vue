@@ -404,7 +404,12 @@
           <v-card
             v-for="song in songs"
             :key="song.id"
-            class="ministery-content-card pa-4 elevation-1 bg-white"
+            class="ministery-content-card pa-4 elevation-1 bg-white song-click-card"
+            role="button"
+            tabindex="0"
+            @click="openSongViewer(song)"
+            @keydown.enter="openSongViewer(song)"
+            @keydown.space.prevent="openSongViewer(song)"
           >
             <div class="d-flex justify-space-between align-start ga-3">
               <div class="min-w-0">
@@ -459,6 +464,7 @@
                 variant="text"
                 color="grey-darken-1"
                 size="small"
+                @click.stop
               >
                 <ExternalLink size="16" />
               </v-btn>
@@ -491,7 +497,7 @@
                 variant="text"
                 color="purple-darken-3"
                 size="small"
-                @click="openSongViewer(song)"
+                @click.stop="openSongViewer(song)"
               >
                 <BookOpen size="16" />
               </v-btn>
@@ -500,7 +506,7 @@
                 variant="text"
                 color="grey-darken-1"
                 size="small"
-                @click="openSongEditDialog(song)"
+                @click.stop="openSongEditDialog(song)"
               >
                 <Pencil size="16" />
               </v-btn>
@@ -509,7 +515,7 @@
                 variant="text"
                 color="red-darken-2"
                 size="small"
-                @click="handleDeleteSong(song)"
+                @click.stop="handleDeleteSong(song)"
               >
                 <Trash2 size="16" />
               </v-btn>
@@ -524,7 +530,7 @@
                 color="purple-darken-3"
                 size="small"
                 class="text-none"
-                @click="openSongViewer(song)"
+                @click.stop="openSongViewer(song)"
               >
                 Ver letra e cifra
               </v-btn>
@@ -626,7 +632,7 @@
       </section>
     </template>
 
-    <v-dialog v-model="isScheduleDialogOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isScheduleDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
           <v-avatar color="#FAF5FF" size="44" class="mr-3">
@@ -795,9 +801,9 @@
           </div>
         </v-form>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
-    <v-dialog v-model="isResourceDialogOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isResourceDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
           <v-avatar color="#FAF5FF" size="44" class="mr-3">
@@ -898,9 +904,9 @@
           </div>
         </v-form>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
-    <v-dialog v-model="isSongDialogOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isSongDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
           <v-avatar color="#FAF5FF" size="44" class="mr-3">
@@ -1113,9 +1119,14 @@
           </div>
         </v-form>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
-    <v-dialog v-model="isSongViewerOpen" max-width="760" scrollable>
+    <UtilsResponsiveOverlay
+      v-model="isSongViewerOpen"
+      max-width="760"
+      scrollable
+      mobile-class="song-viewer-mobile-sheet"
+    >
       <v-card v-if="selectedSong" class="rounded-xl bg-white song-viewer" elevation="0">
         <div class="song-viewer-header">
           <div class="min-w-0">
@@ -1173,7 +1184,7 @@
           <v-tabs v-model="songViewerTab" color="purple-darken-3" class="mb-4">
             <v-tab value="lyrics" class="text-none">Letra</v-tab>
             <v-tab value="chords" class="text-none">Cifra</v-tab>
-            <v-tab value="notes" class="text-none">Notas</v-tab>
+            <v-tab value="notes" class="text-none">Tom</v-tab>
           </v-tabs>
 
           <pre v-if="songViewerTab === 'lyrics'" class="song-text-block">{{ selectedSong.metadata?.lyrics || "Letra não cadastrada." }}</pre>
@@ -1270,12 +1281,12 @@
               {{ songPreferenceError }}
             </v-alert>
           </div>
-          <pre v-else class="song-text-block">{{ selectedSong.metadata?.notes || "Sem observações." }}</pre>
+          <pre v-else class="song-text-block">{{ selectedSongToneText }}</pre>
         </div>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
-    <v-dialog v-model="isActivityDialogOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isActivityDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
           <v-avatar color="#FAF5FF" size="44" class="mr-3">
@@ -1366,9 +1377,9 @@
           </div>
         </v-form>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
-    <v-dialog v-model="isAssignmentsDialogOpen" max-width="560">
+    <UtilsResponsiveOverlay v-model="isAssignmentsDialogOpen" max-width="560">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
           <v-avatar color="#FAF5FF" size="44" class="mr-3">
@@ -1540,9 +1551,9 @@
           </v-btn>
         </div>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
-    <v-dialog v-model="isTaskDialogOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isTaskDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
           <v-avatar color="#FAF5FF" size="44" class="mr-3">
@@ -1650,7 +1661,7 @@
           </div>
         </v-form>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
     <UtilsConfirmDialog
       v-model="isDeleteDialogOpen"
@@ -1930,6 +1941,18 @@ const activityResources = computed(() =>
 const selectedSchedule = computed(() =>
   schedules.value.find((schedule) => schedule.id === selectedScheduleId.value),
 );
+
+const selectedSongToneText = computed(() => {
+  if (!selectedSong.value) return "Tom não cadastrado.";
+
+  const items = [
+    selectedSong.value.metadata?.key ? `Tom: ${selectedSong.value.metadata.key}` : "",
+    selectedSong.value.metadata?.bpm ? `BPM: ${selectedSong.value.metadata.bpm}` : "",
+    selectedSong.value.metadata?.notes || "",
+  ].filter(Boolean);
+
+  return items.join("\n") || "Tom não cadastrado.";
+});
 
 const detailSummary = computed(() => [
   { label: "escalas", value: schedules.value.length },
@@ -3000,6 +3023,13 @@ onMounted(async () => {
 .schedule-media-chip {
   cursor: pointer;
 }
+.song-click-card {
+  cursor: pointer;
+}
+.song-click-card:focus-visible {
+  outline: 3px solid rgba(168, 85, 247, 0.28);
+  outline-offset: 2px;
+}
 .schedule-assignment-list {
   display: grid;
   gap: 8px;
@@ -3143,6 +3173,14 @@ onMounted(async () => {
   }
 }
 @media (max-width: 420px) {
+  .song-viewer-mobile-sheet .song-viewer {
+    min-height: 100vh;
+  }
+
+  .song-viewer-mobile-sheet .song-viewer-body {
+    max-height: calc(100vh - 112px);
+  }
+
   .ministery-detail-header {
     align-items: flex-start;
     flex-direction: column;
