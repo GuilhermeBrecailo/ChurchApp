@@ -579,14 +579,14 @@
             @keydown.space.prevent="openSongViewer(song)"
           >
             <div class="d-flex justify-space-between align-start ga-3">
-              <div class="min-w-0">
-                <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1 text-truncate">
+              <div class="song-title-block min-w-0">
+                <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 text-truncate">
                   {{ song.title }}
                 </h3>
-                <p class="text-caption text-grey-darken-1 mb-1 text-truncate">
+                <p class="text-caption text-grey-darken-1 text-truncate">
                   {{ song.metadata?.artist || "Artista não informado" }}
                 </p>
-                <div class="d-flex flex-wrap ga-2">
+                <div class="song-chip-row d-flex flex-wrap ga-2">
                   <v-chip size="x-small" color="purple-darken-3" variant="tonal">
                     {{ song.metadata?.songCategory || "Louvor" }}
                   </v-chip>
@@ -3062,59 +3062,59 @@ const confirmDelete = async () => {
   const target = pendingDelete.value;
   isConfirmingDelete.value = true;
 
-  if (target.kind === "task") {
-    tasksError.value = "";
-    const { error } = await deleteDepartmentTask(departmentId, target.id);
-    isConfirmingDelete.value = false;
+  try {
+    if (target.kind === "task") {
+      tasksError.value = "";
+      const { error } = await deleteDepartmentTask(departmentId, target.id);
 
-    if (error) {
-      tasksError.value = error;
-      return;
+      if (error) {
+        tasksError.value = error;
+        return;
+      }
+
+      tasks.value = tasks.value.filter((item) => item.id !== target.id);
     }
 
-    tasks.value = tasks.value.filter((item) => item.id !== target.id);
-  }
+    if (target.kind === "schedule") {
+      schedulesError.value = "";
+      const { error } = await deleteChurchSchedule(target.id);
 
-  if (target.kind === "schedule") {
-    schedulesError.value = "";
-    const { error } = await deleteChurchSchedule(target.id);
-    isConfirmingDelete.value = false;
+      if (error) {
+        schedulesError.value = error;
+        return;
+      }
 
-    if (error) {
-      schedulesError.value = error;
-      return;
+      schedules.value = schedules.value.filter((item) => item.id !== target.id);
     }
 
-    schedules.value = schedules.value.filter((item) => item.id !== target.id);
-  }
+    if (target.kind === "resource") {
+      resourcesError.value = "";
+      const { error } = await deleteDepartmentResource(departmentId, target.id);
 
-  if (target.kind === "resource") {
-    resourcesError.value = "";
-    const { error } = await deleteDepartmentResource(departmentId, target.id);
-    isConfirmingDelete.value = false;
+      if (error) {
+        resourcesError.value = error;
+        return;
+      }
 
-    if (error) {
-      resourcesError.value = error;
-      return;
+      resources.value = resources.value.filter((item) => item.id !== target.id);
     }
 
-    resources.value = resources.value.filter((item) => item.id !== target.id);
-  }
+    if (target.kind === "song") {
+      songsError.value = "";
+      const { error } = await deleteDepartmentSong(departmentId, target.id);
 
-  if (target.kind === "song") {
-    songsError.value = "";
-    const { error } = await deleteDepartmentSong(departmentId, target.id);
-    isConfirmingDelete.value = false;
+      if (error) {
+        songsError.value = error;
+        return;
+      }
 
-    if (error) {
-      songsError.value = error;
-      return;
+      songs.value = songs.value.filter((item) => item.id !== target.id);
     }
 
-    songs.value = songs.value.filter((item) => item.id !== target.id);
+    pendingDelete.value = null;
+  } finally {
+    isConfirmingDelete.value = false;
   }
-
-  pendingDelete.value = null;
 };
 
 const openAssignmentsDialog = (schedule: DepartmentSchedule) => {
@@ -3500,6 +3500,18 @@ onMounted(async () => {
 }
 .song-click-card {
   cursor: pointer;
+}
+.song-title-block {
+  display: grid;
+  gap: 2px;
+}
+.song-title-block h3,
+.song-title-block p {
+  line-height: 1.25;
+  margin-bottom: 0;
+}
+.song-chip-row {
+  margin-top: 6px;
 }
 .song-click-card:focus-visible {
   outline: 3px solid rgba(168, 85, 247, 0.28);

@@ -11,7 +11,18 @@ type CurrentUser = Prisma.UserGetPayload<{
   include: {
     crunch: true;
   };
-}>;
+}> & {
+  isPlatformAdmin: boolean;
+};
+
+type AuthPayload = {
+  sub?: string;
+  is_admin?: boolean;
+  realm_access?: {
+    roles?: string[];
+  };
+  resource_access?: Record<string, { roles?: string[] }>;
+};
 
 type DepartmentWithStats = {
   id: string;
@@ -44,7 +55,7 @@ type UploadedPdf = {
 
 const PDF_MAX_SIZE_BYTES = 10 * 1024 * 1024;
 
-function getAuthUserId(request: FastifyRequest) {
+function getAuthPayload(request: FastifyRequest): AuthPayload {
   const authHeader = request.headers.authorization;
   const token = authHeader?.replace("Bearer ", "");
 
@@ -58,13 +69,23 @@ function getAuthUserId(request: FastifyRequest) {
     throw new DomainError("Token inválido");
   }
 
-  const decoded = JSON.parse(Buffer.from(payload, "base64url").toString());
+  return JSON.parse(Buffer.from(payload, "base64url").toString());
+}
 
-  if (!decoded?.sub) {
-    throw new DomainError("Token sem usuário");
-  }
+function isPlatformAdminPayload(payload: AuthPayload) {
+  const tokenRoles = [
+    ...(payload.realm_access?.roles ?? []),
+    ...Object.values(payload.resource_access ?? {}).flatMap(
+      (access) => access.roles ?? [],
+    ),
+  ];
 
-  return decoded.sub as string;
+  return (
+    payload.is_admin === true ||
+    tokenRoles.includes("ADMIN") ||
+    tokenRoles.includes("SUPER_ADMIN") ||
+    tokenRoles.includes("admin")
+  );
 }
 
 export class ChurchDepartmentAdapters {
@@ -237,7 +258,13 @@ export class ChurchDepartmentAdapters {
   }
 
   private async getCurrentUser(request: FastifyRequest): Promise<CurrentUser> {
-    const userId = getAuthUserId(request);
+    const authPayload = getAuthPayload(request);
+    const userId = authPayload.sub;
+
+    if (!userId) {
+      throw new DomainError("Token sem usuário");
+    }
+
     const user = await $prismaClient.user.findUnique({
       where: {
         id: userId,
@@ -255,11 +282,15 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Usuário não possui igreja vinculada");
     }
 
-    return user;
+    return {
+      ...user,
+      isPlatformAdmin: isPlatformAdminPayload(authPayload),
+    };
   }
 
   private isChurchWideManager(user: CurrentUser) {
     return (
+      user.isPlatformAdmin ||
       user.role === "PASTOR" ||
       user.role === "ADMIN" ||
       user.role === "SUPER_ADMIN"
