@@ -271,7 +271,7 @@
 
         <v-card
           v-if="schedules.length === 0 && !schedulesError"
-          class="rounded-xl pa-8 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+          class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
         >
           <Calendar size="32" color="#9CA3AF" class="mb-3" />
           <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -392,7 +392,7 @@
 
         <v-card
           v-if="tasks.length === 0 && !tasksError"
-          class="rounded-xl pa-8 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+          class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
         >
           <CheckSquare size="32" color="#9CA3AF" class="mb-3" />
           <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -473,7 +473,7 @@
 
         <v-card
           v-if="resourceMaterials.length === 0 && !resourcesError"
-          class="rounded-xl pa-8 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+          class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
         >
           <FileText size="32" color="#9CA3AF" class="mb-3" />
           <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -559,7 +559,7 @@
 
         <v-card
           v-if="songs.length === 0 && !songsError"
-          class="rounded-xl pa-8 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+          class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
         >
           <Music size="32" color="#9CA3AF" class="mb-3" />
           <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -743,7 +743,7 @@
 
         <v-card
           v-if="activityResources.length === 0 && !resourcesError"
-          class="rounded-xl pa-8 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+          class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
         >
           <BookOpen size="32" color="#9CA3AF" class="mb-3" />
           <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -1026,9 +1026,10 @@
             :disabled="isCreatingResource"
           />
 
-          <v-text-field
+          <v-combobox
             v-model="resourceForm.category"
             label="Categoria"
+            :items="resourceCategoryOptions"
             prepend-inner-icon="mdi-tag-outline"
             variant="outlined"
             density="comfortable"
@@ -1225,6 +1226,21 @@
             :disabled="isCreatingSong"
           />
 
+          <v-textarea
+            v-model="songForm.keyboardChords"
+            label="Cifra para teclado"
+            prepend-inner-icon="mdi-piano"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input mb-4 chords-input"
+            hide-details="auto"
+            rows="6"
+            auto-grow
+            :disabled="isCreatingSong"
+          />
+
           <div v-if="songForm.pdfUrl && !songForm.removePdf" class="pdf-current-card mb-4">
             <div class="min-w-0">
               <p class="text-caption font-weight-bold text-grey-darken-4 mb-0">
@@ -1335,6 +1351,21 @@
           </v-tabs>
 
           <div class="song-viewer-controls">
+            <v-btn-toggle
+              v-if="songViewerTab === 'chords'"
+              v-model="songViewerInstrument"
+              density="compact"
+              mandatory
+              class="song-instrument-toggle"
+            >
+              <v-btn value="default" size="small" class="text-none">
+                Violão/Guitarra
+              </v-btn>
+              <v-btn value="keyboard" size="small" class="text-none">
+                Teclado
+              </v-btn>
+            </v-btn-toggle>
+
             <div
               v-if="songViewerTab === 'chords'"
               class="song-viewer-key-controls"
@@ -1392,14 +1423,14 @@
             <MusicSongTextRenderer
               class="song-viewer-text"
               mode="chords"
-              :text="personalSongForm.chords || selectedSong.metadata?.chords"
+              :text="selectedSongChordsText"
               empty-text="Cifra não cadastrada."
               :auto-scroll="songViewerAutoScrollSpeed > 0"
               :scroll-speed="songViewerAutoScrollSpeed"
             />
 
             <details class="personal-chords-editor">
-              <summary>Editar minha cifra</summary>
+              <summary>{{ personalChordsSummary }}</summary>
 
               <v-text-field
                 v-model="personalSongForm.personalKey"
@@ -1597,10 +1628,11 @@
             hide-details="auto"
             :disabled="isSavingAssignments"
           />
-          <v-text-field
+          <v-combobox
             v-model="assignmentForm.role"
             label="Função"
-            placeholder="ex: Vocal"
+            :items="assignmentRoleOptions"
+            placeholder="ex: Teclado"
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
@@ -2030,6 +2062,7 @@ const songForm = reactive({
   notes: "",
   lyrics: "",
   chords: "",
+  keyboardChords: "",
   pdfUrl: "",
   pdfKey: "",
   pdfFileName: "",
@@ -2050,6 +2083,7 @@ const personalSongForm = reactive({
   personalKey: "",
   chords: "",
 });
+const songViewerInstrument = ref<"default" | "keyboard">("default");
 
 const assignmentForm = reactive({
   userId: "",
@@ -2073,7 +2107,7 @@ const departmentTypes = [
   { label: "Louvor", value: "MUSIC" },
   { label: "Crianças", value: "KIDS" },
   { label: "Recepção", value: "RECEPTION" },
-  { label: "Mídia", value: "MEDIA" },
+  { label: "Sonoplastia", value: "MEDIA" },
   { label: "Intercessão", value: "INTERCESSION" },
   { label: "Outro", value: "OTHER" },
 ];
@@ -2085,6 +2119,29 @@ const priorityOptions = [
 ];
 
 const songCategoryOptions = ["Louvor", "Adoração", "Hino", "Especial"];
+const departmentRoleOptions: Record<string, string[]> = {
+  WORSHIP: [
+    "Ministro",
+    "Cantor(a)",
+    "Guitarra",
+    "Baixo",
+    "Violão",
+    "Bateria",
+    "Cajon",
+    "Teclado",
+  ],
+  MUSIC: [
+    "Ministro",
+    "Cantor(a)",
+    "Guitarra",
+    "Baixo",
+    "Violão",
+    "Bateria",
+    "Cajon",
+    "Teclado",
+  ],
+  MEDIA: ["Mídia", "Mesa de som", "Luzes"],
+};
 
 const baseTabs = [
   { label: "Visão geral", value: "overview", icon: Info },
@@ -2100,7 +2157,7 @@ const tabs = computed(() => {
     items.splice(1, 0, { label: "Líder", value: "leader", icon: BarChart3 });
   }
 
-  if (["WORSHIP", "MUSIC"].includes(department.value?.type || "")) {
+  if (["WORSHIP", "MUSIC", "MEDIA"].includes(department.value?.type || "")) {
     items.push({ label: "Músicas", value: "songs", icon: Music });
   }
 
@@ -2129,11 +2186,21 @@ const resourceMaterials = computed(() =>
   resources.value.filter((resource) => resource.category !== "ACTIVITY"),
 );
 
+const resourceCategoryOptions = computed(() =>
+  department.value?.type === "MEDIA"
+    ? ["Mídia", "Mesa de som", "Luzes", "Geral"]
+    : ["Geral", "Link", "PDF", "Material"],
+);
+
 const resourceOptions = computed(() =>
   resourceMaterials.value.map((resource) => ({
     label: `${resource.title} (${resource.category})`,
     value: resource.id,
   })),
+);
+
+const assignmentRoleOptions = computed(
+  () => departmentRoleOptions[department.value?.type || ""] || ["Voluntário"],
 );
 
 const activityResources = computed(() =>
@@ -2307,6 +2374,9 @@ const selectedSongToneText = computed(() => {
   const items = [
     selectedSong.value.metadata?.key ? `Tom: ${selectedSong.value.metadata.key}` : "",
     selectedSong.value.metadata?.bpm ? `BPM: ${selectedSong.value.metadata.bpm}` : "",
+    selectedSong.value.metadata?.keyboardChords
+      ? "Teclado: cifra própria cadastrada para esta música."
+      : "Teclado: usando a cifra principal.",
     selectedSong.value.metadata?.notes || "",
   ].filter(Boolean);
 
@@ -2317,6 +2387,27 @@ const songViewerCurrentKey = computed(() => {
   const key = personalSongForm.personalKey || selectedSong.value?.metadata?.key || "";
   return key ? `Tom ${key}` : "Tom não cadastrado";
 });
+
+const selectedSongChordsText = computed(() => {
+  if (!selectedSong.value) return "";
+
+  if (songViewerInstrument.value === "keyboard") {
+    return (
+      selectedSong.value.metadata?.keyboardChords ||
+      personalSongForm.chords ||
+      selectedSong.value.metadata?.chords ||
+      ""
+    );
+  }
+
+  return personalSongForm.chords || selectedSong.value.metadata?.chords || "";
+});
+
+const personalChordsSummary = computed(() =>
+  songViewerInstrument.value === "keyboard"
+    ? "Editar minha cifra de teclado"
+    : "Editar minha cifra",
+);
 
 const songViewerScrollSpeedLabel = computed(() =>
   songViewerAutoScrollSpeed.value > 0
@@ -2555,6 +2646,7 @@ const resetSongForm = () => {
   songForm.notes = "";
   songForm.lyrics = "";
   songForm.chords = "";
+  songForm.keyboardChords = "";
   songForm.pdfUrl = "";
   songForm.pdfKey = "";
   songForm.pdfFileName = "";
@@ -2595,6 +2687,7 @@ const closeActivityDialog = () => {
 
 const openSongViewer = (song: DepartmentSong) => {
   selectedSong.value = song;
+  songViewerInstrument.value = "default";
   songViewerTab.value = song.metadata?.lyrics
     ? "lyrics"
     : song.metadata?.chords
@@ -2616,6 +2709,7 @@ const closeSongViewer = () => {
   songPreferenceError.value = "";
   personalSongForm.personalKey = "";
   personalSongForm.chords = "";
+  songViewerInstrument.value = "default";
 };
 
 const loadSongPreference = async (song: DepartmentSong) => {
@@ -2641,7 +2735,12 @@ const loadSongPreference = async (song: DepartmentSong) => {
 
 const useOfficialChords = () => {
   personalSongForm.personalKey = selectedSong.value?.metadata?.key || "";
-  personalSongForm.chords = selectedSong.value?.metadata?.chords || "";
+  personalSongForm.chords =
+    songViewerInstrument.value === "keyboard"
+      ? selectedSong.value?.metadata?.keyboardChords ||
+        selectedSong.value?.metadata?.chords ||
+        ""
+      : selectedSong.value?.metadata?.chords || "";
 };
 
 const saveSongPreference = async () => {
@@ -2916,6 +3015,7 @@ const openSongEditDialog = (song: DepartmentSong) => {
   songForm.notes = song.metadata?.notes || "";
   songForm.lyrics = song.metadata?.lyrics || "";
   songForm.chords = song.metadata?.chords || "";
+  songForm.keyboardChords = song.metadata?.keyboardChords || "";
   songForm.pdfUrl = song.metadata?.pdf?.url || "";
   songForm.pdfKey = song.metadata?.pdf?.key || "";
   songForm.pdfFileName = song.metadata?.pdf?.fileName || "";
@@ -2963,6 +3063,7 @@ const handleSaveSong = async () => {
       notes: songForm.notes,
       lyrics: songForm.lyrics,
       chords: songForm.chords,
+      keyboardChords: songForm.keyboardChords,
       ...(songForm.pdfUrl
         ? {
             pdfUrl: songForm.pdfUrl,

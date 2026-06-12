@@ -35,7 +35,7 @@
 
     <v-card
       v-if="departments.length === 0 && !departmentsError"
-      class="rounded-xl pa-8 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
     >
       <Building size="32" color="#9CA3AF" class="mb-3" />
       <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">

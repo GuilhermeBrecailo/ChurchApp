@@ -80,7 +80,7 @@
 
       <v-card
         v-else-if="adminChurches.length === 0"
-        class="platform-empty rounded-lg pa-8 elevation-0 bg-white border-subtle"
+        class="platform-empty rounded-lg pa-6 elevation-0 bg-white border-subtle"
       >
         <Church size="34" color="#9CA3AF" class="mb-3" />
         <p class="text-body-2 text-grey-darken-1 font-weight-medium mb-0 text-center">
@@ -857,7 +857,7 @@
 
       <v-card
         v-if="members.length === 0"
-        class="rounded-xl pa-8 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
       >
         <UserCheck size="32" color="#9CA3AF" class="mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -939,7 +939,7 @@
 
       <v-card
         v-if="departments.length === 0"
-        class="rounded-xl pa-8 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
       >
         <Building size="32" color="#9CA3AF" class="mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -1446,7 +1446,7 @@
 
   <div v-else class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
     <v-card
-      class="rounded-xl pa-8 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle permission-empty"
+      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle permission-empty"
     >
       <UserCheck size="34" color="#9CA3AF" class="mb-3" />
       <h1 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">

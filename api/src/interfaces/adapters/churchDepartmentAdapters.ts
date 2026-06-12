@@ -1458,13 +1458,20 @@ export class ChurchDepartmentAdapters {
 
     const updatedSchedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
 
-    await pushNotificationService.sendToUsers(newlyAssignedUserIds, {
-      title: "Nova escala publicada",
-      body: `${updatedSchedule.department.name} - ${updatedSchedule.description}`,
-      url: `/scale?schedule=${updatedSchedule.id}`,
-      type: "schedule-assigned",
-      scheduleId: updatedSchedule.id,
-    });
+    await Promise.all(
+      newlyAssignedUserIds.map((userId) => {
+        const assignment = normalizedAssignments.find((item) => item.userId === userId);
+        const roleText = assignment?.role ? ` como ${assignment.role}` : "";
+
+        return pushNotificationService.sendToUsers([userId], {
+          title: "Nova escala publicada",
+          body: `${updatedSchedule.department.name} - ${updatedSchedule.description}${roleText}`,
+          url: `/scale?schedule=${updatedSchedule.id}`,
+          type: "schedule-assigned",
+          scheduleId: updatedSchedule.id,
+        });
+      }),
+    );
 
     return updatedSchedule;
   }
@@ -1703,6 +1710,7 @@ export class ChurchDepartmentAdapters {
       notes?: string;
       lyrics?: string;
       chords?: string;
+      keyboardChords?: string;
       pdfUrl?: string | null;
       pdfKey?: string | null;
       pdfFileName?: string | null;
@@ -1728,6 +1736,7 @@ export class ChurchDepartmentAdapters {
       notes: body.notes?.trim() || "",
       lyrics: body.lyrics?.trim() || "",
       chords: body.chords?.trim() || "",
+      keyboardChords: body.keyboardChords?.trim() || "",
       ...this.normalizePdfMetadata(body),
     };
 
@@ -1760,6 +1769,7 @@ export class ChurchDepartmentAdapters {
       notes?: string | null;
       lyrics?: string | null;
       chords?: string | null;
+      keyboardChords?: string | null;
       pdfUrl?: string | null;
       pdfKey?: string | null;
       pdfFileName?: string | null;
@@ -1801,6 +1811,9 @@ export class ChurchDepartmentAdapters {
       ...(body.notes !== undefined ? { notes: body.notes?.trim() || "" } : {}),
       ...(body.lyrics !== undefined ? { lyrics: body.lyrics?.trim() || "" } : {}),
       ...(body.chords !== undefined ? { chords: body.chords?.trim() || "" } : {}),
+      ...(body.keyboardChords !== undefined
+        ? { keyboardChords: body.keyboardChords?.trim() || "" }
+        : {}),
       ...this.normalizePdfMetadata(body),
     };
 

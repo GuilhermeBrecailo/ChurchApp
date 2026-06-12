@@ -332,6 +332,15 @@ body {
 .app-theme-dark .scale-details-stat,
 .app-theme-dark .scale-details-person,
 .app-theme-dark .scale-resource-item,
+.app-theme-dark .ministery-detail-summary-item,
+.app-theme-dark .ministery-summary-item,
+.app-theme-dark .leader-metric-card,
+.app-theme-dark .leader-list-row,
+.app-theme-dark .leader-schedule-row,
+.app-theme-dark .schedule-assignment-item,
+.app-theme-dark .sheet-summary-tile,
+.app-theme-dark .detail-tile,
+.app-theme-dark .detail-section,
 .app-theme-dark .schedule-summary-item,
 .app-theme-dark .report-kpi-card,
 .app-theme-dark .report-panel,
@@ -363,12 +372,18 @@ body {
 .app-theme-dark .scale-fullscreen-title,
 .app-theme-dark .song-viewer-title,
 .app-theme-dark .scale-details-stat span,
+.app-theme-dark .ministery-detail-summary-item span,
+.app-theme-dark .ministery-summary-item span,
+.app-theme-dark .leader-metric-card span,
 .app-theme-dark .scale-details-section-title h3,
 .app-theme-dark .scale-details-person-name,
 .app-theme-dark .scale-resource-item span,
 .app-theme-dark .scale-song-title,
 .app-theme-dark .scale-response-status,
 .app-theme-dark .schedule-assignment-name,
+.app-theme-dark .sheet-summary-tile strong,
+.app-theme-dark .detail-tile strong,
+.app-theme-dark .detail-section h3,
 .app-theme-dark .report-kpi-card span,
 .app-theme-dark .report-panel-title h3,
 .app-theme-dark .leadership-summary strong,
@@ -377,6 +392,10 @@ body {
 }
 
 .app-theme-dark .report-kpi-card small,
+.app-theme-dark .ministery-detail-summary-item small,
+.app-theme-dark .ministery-summary-item small,
+.app-theme-dark .leader-metric-card small,
+.app-theme-dark .detail-tile span,
 .app-theme-dark .report-row small,
 .app-theme-dark .report-row-top,
 .app-theme-dark .leadership-summary span,
@@ -392,9 +411,18 @@ body {
 .app-theme-dark .assignment-summary,
 .app-theme-dark .scale-song-card,
 .app-theme-dark .scale-song-reader,
+.app-theme-dark .pdf-current-card,
 .app-theme-dark .song-text-renderer {
   background: var(--app-color-surface-soft) !important;
   border-color: var(--app-color-border) !important;
+}
+
+.app-theme-dark .filter-strip::before {
+  background: linear-gradient(90deg, var(--app-color-background) 0%, rgba(13, 17, 23, 0) 100%) !important;
+}
+
+.app-theme-dark .filter-strip::after {
+  background: linear-gradient(270deg, var(--app-color-background) 0%, rgba(13, 17, 23, 0) 100%) !important;
 }
 
 .app-theme-dark .scale-song-card-active {

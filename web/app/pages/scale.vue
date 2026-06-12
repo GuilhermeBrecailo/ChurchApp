@@ -76,7 +76,7 @@
 
       <v-card
         v-if="filteredSchedules.length === 0 && !schedulesError"
-        class="rounded-xl pa-8 elevation-1 d-flex flex-column align-center justify-center"
+        class="rounded-xl pa-6 elevation-1 d-flex flex-column align-center justify-center"
       >
         <Calendar size="32" :color="isDark ? '#484f58' : '#9CA3AF'" class="mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -373,6 +373,20 @@
                 v-if="songTabs[activeDetailSong.id] === 'chords'"
                 class="scale-song-key-controls"
               >
+                <v-btn-toggle
+                  v-model="songInstrumentMode"
+                  density="compact"
+                  mandatory
+                  class="song-instrument-toggle"
+                >
+                  <v-btn value="auto" size="small" class="text-none">Auto</v-btn>
+                  <v-btn value="default" size="small" class="text-none">
+                    Cordas
+                  </v-btn>
+                  <v-btn value="keyboard" size="small" class="text-none">
+                    Teclado
+                  </v-btn>
+                </v-btn-toggle>
                 <v-btn
                   variant="tonal"
                   color="grey-darken-1"
@@ -479,6 +493,20 @@
               v-if="fullscreenSongTab === 'chords'"
               class="scale-fullscreen-key-controls"
             >
+              <v-btn-toggle
+                v-model="songInstrumentMode"
+                density="compact"
+                mandatory
+                class="song-instrument-toggle"
+              >
+                <v-btn value="auto" size="small" class="text-none">Auto</v-btn>
+                <v-btn value="default" size="small" class="text-none">
+                  Cordas
+                </v-btn>
+                <v-btn value="keyboard" size="small" class="text-none">
+                  Teclado
+                </v-btn>
+              </v-btn-toggle>
               <v-btn
                 variant="tonal"
                 color="grey-darken-1"
@@ -771,10 +799,11 @@
             hide-details="auto"
             :disabled="isSavingAssignments"
           />
-          <v-text-field
+          <v-combobox
             v-model="assignmentForm.role"
             label="Função"
-            placeholder="ex: Vocal"
+            :items="assignmentRoleOptions"
+            placeholder="ex: Teclado"
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
@@ -1005,6 +1034,7 @@ const isSongFullscreenOpen = ref(false);
 const fullscreenSong = ref<ScheduleEvent["mediaItems"][number] | null>(null);
 const fullscreenSongTab = ref("lyrics");
 const songAutoScrollSpeed = ref(24);
+const songInstrumentMode = ref<"auto" | "default" | "keyboard">("auto");
 const songTabs = reactive<Record<string, string>>({});
 const songTransposeSteps = reactive<Record<string, number>>({});
 
@@ -1063,6 +1093,44 @@ const departmentOptions = computed(() =>
     label: department.name,
     value: department.id,
   })),
+);
+
+const departmentRoleOptions: Record<string, string[]> = {
+  WORSHIP: [
+    "Ministro",
+    "Cantor(a)",
+    "Guitarra",
+    "Baixo",
+    "Violão",
+    "Bateria",
+    "Cajon",
+    "Teclado",
+  ],
+  MUSIC: [
+    "Ministro",
+    "Cantor(a)",
+    "Guitarra",
+    "Baixo",
+    "Violão",
+    "Bateria",
+    "Cajon",
+    "Teclado",
+  ],
+  MEDIA: ["Mídia", "Mesa de som", "Luzes"],
+};
+
+const selectedAssignmentDepartment = computed(() => {
+  const schedule = selectedSchedule.value;
+  return departments.value.find(
+    (department) => department.id === schedule?.departmentId,
+  );
+});
+
+const assignmentRoleOptions = computed(
+  () =>
+    departmentRoleOptions[selectedAssignmentDepartment.value?.type || ""] || [
+      "Voluntário",
+    ],
 );
 
 const memberOptions = computed(() =>
@@ -1182,6 +1250,7 @@ type ScheduleEvent = {
   }[];
   currentUserAssignment?: {
     id: string;
+    role: string;
     viewedAt?: string | null;
     confirmationStatus?: string;
     confirmedAt?: string | null;
@@ -1299,11 +1368,12 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
         (assignment) => assignment.confirmationStatus === "CONFIRMED",
       ).length || 0,
     currentUserAssignment: currentUserAssignment
-      ? {
-          id: currentUserAssignment.id,
-          viewedAt: currentUserAssignment.viewedAt,
-          confirmationStatus: currentUserAssignment.confirmationStatus,
-          confirmedAt: currentUserAssignment.confirmedAt,
+        ? {
+            id: currentUserAssignment.id,
+            role: currentUserAssignment.role,
+            viewedAt: currentUserAssignment.viewedAt,
+            confirmationStatus: currentUserAssignment.confirmationStatus,
+            confirmedAt: currentUserAssignment.confirmedAt,
         }
       : null,
     mediaItems:
@@ -1388,7 +1458,7 @@ const getSongTabText = (
 ) => {
   if (tab === "chords") {
     return transposeChords(
-      song.metadata?.chords || "Cifra não cadastrada.",
+      getSongChordsForCurrentRole(song) || "Cifra não cadastrada.",
       songTransposeSteps[song.id] || 0,
     );
   }
@@ -1407,6 +1477,23 @@ const getSongTabText = (
   }
 
   return song.metadata?.lyrics || "Letra não cadastrada.";
+};
+
+const isKeyboardAssignment = (event: ScheduleEvent | null) =>
+  event?.currentUserAssignment?.role
+    ?.toLocaleLowerCase("pt-BR")
+    .includes("teclado") || false;
+
+const getSongChordsForCurrentRole = (song: ScheduleEvent["mediaItems"][number]) => {
+  const shouldUseKeyboard =
+    songInstrumentMode.value === "keyboard" ||
+    (songInstrumentMode.value === "auto" && isKeyboardAssignment(selectedDetailEvent.value));
+
+  if (shouldUseKeyboard && song.metadata?.keyboardChords) {
+    return song.metadata.keyboardChords;
+  }
+
+  return song.metadata?.chords || "";
 };
 
 const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];

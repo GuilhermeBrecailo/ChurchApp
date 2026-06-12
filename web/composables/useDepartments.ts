@@ -97,6 +97,7 @@ export interface DepartmentSong {
     notes?: string;
     lyrics?: string;
     chords?: string;
+    keyboardChords?: string;
     pdf?: DepartmentPdfMetadata | null;
   } | null;
   departmentId: string;
@@ -214,6 +215,7 @@ interface CreateDepartmentSongDTO {
   notes?: string;
   lyrics?: string;
   chords?: string;
+  keyboardChords?: string;
   pdfUrl?: string;
   pdfKey?: string;
   pdfFileName?: string;
@@ -231,6 +233,7 @@ interface UpdateDepartmentSongDTO {
   notes?: string | null;
   lyrics?: string | null;
   chords?: string | null;
+  keyboardChords?: string | null;
   pdfUrl?: string | null;
   pdfKey?: string | null;
   pdfFileName?: string | null;

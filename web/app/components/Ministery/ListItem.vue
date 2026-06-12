@@ -1,6 +1,5 @@
 <template>
   <v-card
-    color="white"
     class="ministery-card rounded-lg pa-4 elevation-1 cursor-pointer"
     role="button"
     tabindex="0"
@@ -82,7 +81,7 @@ const stats = computed(() =>
   gap: 14px;
   align-items: center;
   border: 1px solid #eef2f7;
-  background-color: #ffffff !important;
+  background-color: var(--app-color-surface);
   color: #111827;
 }
 
