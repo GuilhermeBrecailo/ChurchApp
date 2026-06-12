@@ -341,7 +341,7 @@ export const useDepartments = () => {
       `${config.public.URL_BACKEND}/api/church/departments/${id}`,
       {
         method: "DELETE",
-        headers: authHeaders(),
+        headers: authOnlyHeaders(),
       },
     );
   };
@@ -395,7 +395,7 @@ export const useDepartments = () => {
       `${config.public.URL_BACKEND}/api/church/departments/${departmentId}/tasks/${taskId}`,
       {
         method: "DELETE",
-        headers: authHeaders(),
+        headers: authOnlyHeaders(),
       },
     );
   };
@@ -486,7 +486,7 @@ export const useDepartments = () => {
       `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}/reminders`,
       {
         method: "POST",
-        headers: authHeaders(),
+        headers: authOnlyHeaders(),
       },
     );
   };
@@ -527,7 +527,7 @@ export const useDepartments = () => {
       `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}`,
       {
         method: "DELETE",
-        headers: authHeaders(),
+        headers: authOnlyHeaders(),
       },
     );
   };
@@ -624,7 +624,7 @@ export const useDepartments = () => {
       `${config.public.URL_BACKEND}/api/church/departments/${departmentId}/songs/${songId}`,
       {
         method: "DELETE",
-        headers: authHeaders(),
+        headers: authOnlyHeaders(),
       },
     );
   };
@@ -678,7 +678,7 @@ export const useDepartments = () => {
       `${config.public.URL_BACKEND}/api/church/departments/${departmentId}/resources/${resourceId}`,
       {
         method: "DELETE",
-        headers: authHeaders(),
+        headers: authOnlyHeaders(),
       },
     );
   };
