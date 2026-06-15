@@ -26,6 +26,12 @@ export interface AdminChurchUser {
   role: string;
   canManageMembers: boolean;
   createdAt: string;
+  churchRoleId?: string | null;
+  churchRole?: {
+    id: string;
+    name: string;
+    permissions: string[];
+  } | null;
 }
 
 export interface AdminChurchDepartment {

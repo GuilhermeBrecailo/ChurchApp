@@ -257,13 +257,31 @@
                   <p class="scale-details-person-name mb-0">{{ volunteer.name }}</p>
                   <p class="scale-details-person-role mb-0">{{ volunteer.role }}</p>
                 </div>
-                <v-chip
-                  size="small"
-                  :color="responseStatusColor(volunteer.confirmationStatus)"
-                  variant="tonal"
-                >
-                  {{ responseStatusLabel(volunteer.confirmationStatus) }}
-                </v-chip>
+                <div class="d-flex align-center ga-1">
+                  <v-chip
+                    size="small"
+                    :color="responseStatusColor(volunteer.confirmationStatus)"
+                    variant="tonal"
+                  >
+                    {{ responseStatusLabel(volunteer.confirmationStatus) }}
+                  </v-chip>
+                  <v-tooltip
+                    v-if="selectedDetailEvent.canManage && volunteer.confirmationStatus === 'DECLINED' && volunteer.declineReason"
+                    :text="volunteer.declineReason"
+                    location="top"
+                    max-width="260"
+                  >
+                    <template #activator="{ props: tooltipProps }">
+                      <v-icon
+                        v-bind="tooltipProps"
+                        icon="mdi-information-outline"
+                        size="16"
+                        color="grey"
+                        style="cursor: pointer"
+                      />
+                    </template>
+                  </v-tooltip>
+                </div>
               </div>
             </div>
 
@@ -369,59 +387,82 @@
                 <v-tab value="chords" class="text-none">Cifra</v-tab>
               </v-tabs>
 
-              <div
-                v-if="songTabs[activeDetailSong.id] === 'chords'"
-                class="scale-song-key-controls"
-              >
-                <v-btn-toggle
-                  v-model="songInstrumentMode"
-                  density="compact"
-                  mandatory
-                  class="song-instrument-toggle"
+              <div class="scale-song-filter-row">
+                <v-menu
+                  v-model="songFilterOpen"
+                  :close-on-content-click="false"
+                  location="bottom start"
                 >
-                  <v-btn value="auto" size="small" class="text-none">Auto</v-btn>
-                  <v-btn value="default" size="small" class="text-none">
-                    Cordas
-                  </v-btn>
-                  <v-btn value="keyboard" size="small" class="text-none">
-                    Teclado
-                  </v-btn>
-                </v-btn-toggle>
-                <v-btn
-                  variant="tonal"
-                  color="grey-darken-1"
-                  size="small"
-                  class="text-none"
-                  @click="transposeSong(activeDetailSong.id, -1)"
-                >
-                  -1 tom
-                </v-btn>
-                <v-chip size="small" color="orange-darken-3" variant="tonal">
-                  {{ songCurrentKey(activeDetailSong) }}
-                </v-chip>
-                <v-btn
-                  variant="tonal"
-                  color="grey-darken-1"
-                  size="small"
-                  class="text-none"
-                  @click="transposeSong(activeDetailSong.id, 1)"
-                >
-                  +1 tom
-                </v-btn>
-              </div>
+                  <template #activator="{ props: menuProps }">
+                    <v-btn
+                      v-bind="menuProps"
+                      variant="tonal"
+                      color="purple-darken-3"
+                      size="small"
+                      class="text-none"
+                      prepend-icon="mdi-tune"
+                    >
+                      Filtro
+                    </v-btn>
+                  </template>
+                  <v-card min-width="272" rounded="lg" elevation="4">
+                    <v-card-text class="pa-4">
+                      <template v-if="songTabs[activeDetailSong.id] === 'chords'">
+                        <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">Instrumento</p>
+                        <v-btn-toggle
+                          v-model="songInstrumentMode"
+                          density="compact"
+                          mandatory
+                          class="song-instrument-toggle mb-4"
+                        >
+                          <v-btn value="auto" size="small" class="text-none">Auto</v-btn>
+                          <v-btn value="default" size="small" class="text-none">Cordas</v-btn>
+                          <v-btn value="keyboard" size="small" class="text-none">Teclado</v-btn>
+                        </v-btn-toggle>
 
-              <div class="song-autoscroll-controls">
-                <v-icon size="18">mdi-speedometer</v-icon>
-                <span>{{ songScrollSpeedLabel }}</span>
-                <v-slider
-                  v-model="songAutoScrollSpeed"
-                  min="0"
-                  max="80"
-                  step="4"
-                  density="compact"
-                  color="purple-darken-3"
-                  hide-details
-                />
+                        <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">Tom</p>
+                        <div class="d-flex align-center ga-2 mb-4">
+                          <v-btn
+                            variant="tonal"
+                            color="grey-darken-1"
+                            size="small"
+                            class="text-none"
+                            @click="transposeSong(activeDetailSong.id, -1)"
+                          >
+                            -1
+                          </v-btn>
+                          <v-chip size="small" color="orange-darken-3" variant="tonal">
+                            {{ songCurrentKey(activeDetailSong) }}
+                          </v-chip>
+                          <v-btn
+                            variant="tonal"
+                            color="grey-darken-1"
+                            size="small"
+                            class="text-none"
+                            @click="transposeSong(activeDetailSong.id, 1)"
+                          >
+                            +1
+                          </v-btn>
+                        </div>
+                      </template>
+
+                      <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">
+                        Rolagem automática
+                      </p>
+                      <span class="text-caption text-grey-darken-1">{{ songScrollSpeedLabel }}</span>
+                      <v-slider
+                        v-model="songAutoScrollSpeed"
+                        min="0"
+                        max="80"
+                        step="4"
+                        density="compact"
+                        color="purple-darken-3"
+                        hide-details
+                        class="mt-1"
+                      />
+                    </v-card-text>
+                  </v-card>
+                </v-menu>
               </div>
 
               <MusicSongTextRenderer
@@ -489,60 +530,81 @@
           </v-tabs>
 
           <div class="scale-fullscreen-controls">
-            <div
-              v-if="fullscreenSongTab === 'chords'"
-              class="scale-fullscreen-key-controls"
+            <v-menu
+              v-model="songFilterFullscreenOpen"
+              :close-on-content-click="false"
+              location="bottom end"
             >
-              <v-btn-toggle
-                v-model="songInstrumentMode"
-                density="compact"
-                mandatory
-                class="song-instrument-toggle"
-              >
-                <v-btn value="auto" size="small" class="text-none">Auto</v-btn>
-                <v-btn value="default" size="small" class="text-none">
-                  Cordas
+              <template #activator="{ props: menuProps }">
+                <v-btn
+                  v-bind="menuProps"
+                  variant="tonal"
+                  color="purple-darken-3"
+                  size="small"
+                  class="text-none"
+                  prepend-icon="mdi-tune"
+                >
+                  Filtro
                 </v-btn>
-                <v-btn value="keyboard" size="small" class="text-none">
-                  Teclado
-                </v-btn>
-              </v-btn-toggle>
-              <v-btn
-                variant="tonal"
-                color="grey-darken-1"
-                size="small"
-                class="text-none"
-                @click="transposeSong(fullscreenSong.id, -1)"
-              >
-                -1 tom
-              </v-btn>
-              <v-chip size="small" color="orange-darken-3" variant="tonal">
-                {{ songCurrentKey(fullscreenSong) }}
-              </v-chip>
-              <v-btn
-                variant="tonal"
-                color="grey-darken-1"
-                size="small"
-                class="text-none"
-                @click="transposeSong(fullscreenSong.id, 1)"
-              >
-                +1 tom
-              </v-btn>
-            </div>
+              </template>
+              <v-card min-width="272" rounded="lg" elevation="4">
+                <v-card-text class="pa-4">
+                  <template v-if="fullscreenSongTab === 'chords'">
+                    <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">Instrumento</p>
+                    <v-btn-toggle
+                      v-model="songInstrumentMode"
+                      density="compact"
+                      mandatory
+                      class="song-instrument-toggle mb-4"
+                    >
+                      <v-btn value="auto" size="small" class="text-none">Auto</v-btn>
+                      <v-btn value="default" size="small" class="text-none">Cordas</v-btn>
+                      <v-btn value="keyboard" size="small" class="text-none">Teclado</v-btn>
+                    </v-btn-toggle>
 
-            <div class="song-autoscroll-controls">
-              <v-icon size="18">mdi-speedometer</v-icon>
-              <span>{{ songScrollSpeedLabel }}</span>
-              <v-slider
-                v-model="songAutoScrollSpeed"
-                min="0"
-                max="80"
-                step="4"
-                density="compact"
-                color="purple-darken-3"
-                hide-details
-              />
-            </div>
+                    <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">Tom</p>
+                    <div class="d-flex align-center ga-2 mb-4">
+                      <v-btn
+                        variant="tonal"
+                        color="grey-darken-1"
+                        size="small"
+                        class="text-none"
+                        @click="transposeSong(fullscreenSong.id, -1)"
+                      >
+                        -1
+                      </v-btn>
+                      <v-chip size="small" color="orange-darken-3" variant="tonal">
+                        {{ songCurrentKey(fullscreenSong) }}
+                      </v-chip>
+                      <v-btn
+                        variant="tonal"
+                        color="grey-darken-1"
+                        size="small"
+                        class="text-none"
+                        @click="transposeSong(fullscreenSong.id, 1)"
+                      >
+                        +1
+                      </v-btn>
+                    </div>
+                  </template>
+
+                  <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">
+                    Rolagem automática
+                  </p>
+                  <span class="text-caption text-grey-darken-1">{{ songScrollSpeedLabel }}</span>
+                  <v-slider
+                    v-model="songAutoScrollSpeed"
+                    min="0"
+                    max="80"
+                    step="4"
+                    density="compact"
+                    color="purple-darken-3"
+                    hide-details
+                    class="mt-1"
+                  />
+                </v-card-text>
+              </v-card>
+            </v-menu>
           </div>
         </div>
 
@@ -720,6 +782,79 @@
             closable-chips
             :disabled="isCreatingSchedule"
           />
+
+          <div v-if="memberOptions.length" class="mb-4">
+            <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">
+              Voluntários
+            </p>
+
+            <div class="scale-field-grid mb-2">
+              <v-select
+                v-model="scheduleFormVolunteerUserId"
+                label="Voluntário"
+                :items="memberOptions"
+                item-title="label"
+                item-value="value"
+                prepend-inner-icon="mdi-account-outline"
+                variant="outlined"
+                density="comfortable"
+                color="purple-darken-3"
+                :bg-color="isDark ? 'transparent' : 'white'"
+                class="scale-input"
+                hide-details="auto"
+                :disabled="isCreatingSchedule"
+              />
+              <v-combobox
+                v-model="scheduleFormVolunteerRole"
+                label="Função"
+                :items="scheduleFormAssignmentRoleOptions"
+                placeholder="ex: Teclado"
+                variant="outlined"
+                density="comfortable"
+                color="purple-darken-3"
+                :bg-color="isDark ? 'transparent' : 'white'"
+                class="scale-input"
+                hide-details="auto"
+                :disabled="isCreatingSchedule"
+              />
+            </div>
+
+            <v-btn
+              variant="tonal"
+              :color="accentColor"
+              size="small"
+              class="text-none mb-3"
+              :disabled="isCreatingSchedule || !scheduleFormVolunteerUserId"
+              @click="addFormVolunteer"
+            >
+              <Plus size="16" class="mr-1" /> Adicionar voluntário
+            </v-btn>
+
+            <div v-if="scheduleForm.assignments.length" class="d-flex flex-column gap-2">
+              <div
+                v-for="volunteer in scheduleForm.assignments"
+                :key="volunteer.userId"
+                class="schedule-form-volunteer-row"
+              >
+                <div class="min-w-0">
+                  <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
+                    {{ volunteer.name }}
+                  </p>
+                  <p class="text-caption text-grey-darken-1 mb-0">{{ volunteer.role }}</p>
+                </div>
+                <v-btn
+                  icon
+                  variant="text"
+                  color="grey-darken-1"
+                  size="small"
+                  :disabled="isCreatingSchedule"
+                  @click="removeFormVolunteer(volunteer.userId)"
+                >
+                  <v-icon size="18">mdi-close</v-icon>
+                </v-btn>
+              </div>
+            </div>
+          </div>
 
           <v-alert
             v-if="createScheduleError"
@@ -958,11 +1093,46 @@
       @cancel="closeDeleteScheduleDialog"
       @confirm="confirmDeleteSchedule"
     />
+
+    <v-dialog v-model="declineDialog.open" max-width="440" persistent>
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold pt-5 px-5">
+          Por que você não pode ir?
+        </v-card-title>
+        <v-card-text class="px-5 pb-2">
+          <v-textarea
+            v-model="declineDialog.reason"
+            label="Motivo (opcional)"
+            placeholder="Ex: compromisso de trabalho, viagem..."
+            rows="3"
+            auto-grow
+            hide-details
+            variant="outlined"
+            density="compact"
+          />
+        </v-card-text>
+        <v-card-actions class="px-5 pb-4 pt-2 justify-end gap-2">
+          <v-btn
+            variant="text"
+            @click="declineDialog.open = false"
+          >
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="red-darken-2"
+            variant="tonal"
+            @click="confirmDecline"
+          >
+            Confirmar
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import {
   Calendar,
   CheckCircle2,
@@ -989,6 +1159,7 @@ import {
   type DepartmentSong,
 } from "../../composables/useDepartments";
 import { useMembers, type ChurchMember } from "../../composables/useMembers";
+import { usePermissions } from "../../composables/usePermissions";
 
 const {
   getDepartments,
@@ -1003,6 +1174,7 @@ const {
   getDepartmentSongs,
 } = useDepartments();
 const { getMembers } = useMembers();
+const { can } = usePermissions();
 const { user } = useAuth();
 const { isDark } = useThemeMode();
 const accentColor = computed(() => isDark.value ? "#818cf8" : "#A855F7");
@@ -1037,6 +1209,14 @@ const songAutoScrollSpeed = ref(24);
 const songInstrumentMode = ref<"auto" | "default" | "keyboard">("auto");
 const songTabs = reactive<Record<string, string>>({});
 const songTransposeSteps = reactive<Record<string, number>>({});
+const songFilterOpen = ref(false);
+const songFilterFullscreenOpen = ref(false);
+
+const declineDialog = reactive({
+  open: false,
+  event: null as ScheduleEvent | null,
+  reason: "",
+});
 
 const scheduleForm = reactive({
   title: "",
@@ -1048,7 +1228,11 @@ const scheduleForm = reactive({
   rehearsalNotes: "",
   songIds: [] as string[],
   resourceIds: [] as string[],
+  assignments: [] as { userId: string; name: string; role: string }[],
 });
+
+const scheduleFormVolunteerUserId = ref("");
+const scheduleFormVolunteerRole = ref("");
 
 const assignmentForm = reactive({
   userId: "",
@@ -1078,7 +1262,8 @@ const isChurchWideManager = computed(
     user.value?.role === "PASTOR" ||
     user.value?.role === "ADMIN" ||
     user.value?.role === "SUPER_ADMIN" ||
-    user.value?.is_admin === true,
+    user.value?.is_admin === true ||
+    can("MANAGE_SCHEDULES"),
 );
 const manageableDepartments = computed(() => {
   if (isChurchWideManager.value) {
@@ -1132,6 +1317,11 @@ const assignmentRoleOptions = computed(
       "Voluntário",
     ],
 );
+
+const scheduleFormAssignmentRoleOptions = computed(() => {
+  const dept = departments.value.find((d) => d.id === scheduleForm.departmentId);
+  return departmentRoleOptions[dept?.type || ""] || ["Voluntário"];
+});
 
 const memberOptions = computed(() =>
   members.value.map((member) => ({
@@ -1247,6 +1437,7 @@ type ScheduleEvent = {
     confirmationStatus?: string;
     attendanceStatus?: string;
     viewedAt?: string | null;
+    declineReason?: string | null;
   }[];
   currentUserAssignment?: {
     id: string;
@@ -1392,6 +1583,7 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
         confirmationStatus: assignment.confirmationStatus,
         attendanceStatus: assignment.attendanceStatus,
         viewedAt: assignment.viewedAt,
+        declineReason: assignment.declineReason,
         initials: assignment.user.name
           .split(" ")
           .filter(Boolean)
@@ -1423,6 +1615,26 @@ const selectDetailSong = (song: ScheduleEvent["mediaItems"][number]) => {
   if (!["lyrics", "chords"].includes(songTabs[song.id])) {
     songTabs[song.id] = defaultSongTab(song);
   }
+};
+
+const addFormVolunteer = () => {
+  if (!scheduleFormVolunteerUserId.value) return;
+  if (scheduleForm.assignments.some((a) => a.userId === scheduleFormVolunteerUserId.value)) return;
+
+  const member = members.value.find((m) => m.id === scheduleFormVolunteerUserId.value);
+  if (!member) return;
+
+  scheduleForm.assignments.push({
+    userId: member.id,
+    name: member.name,
+    role: scheduleFormVolunteerRole.value.trim() || "Voluntário",
+  });
+  scheduleFormVolunteerUserId.value = "";
+  scheduleFormVolunteerRole.value = "";
+};
+
+const removeFormVolunteer = (userId: string) => {
+  scheduleForm.assignments = scheduleForm.assignments.filter((a) => a.userId !== userId);
 };
 
 const assignmentStatusText = (event: ScheduleEvent) =>
@@ -1579,10 +1791,12 @@ const updateMyScheduleResponse = async (
   event: ScheduleEvent,
   action: "VIEWED" | "CONFIRMED" | "DECLINED" | "SWAP_REQUESTED",
   fallbackError: string,
+  declineReason?: string,
 ) => {
   schedulesError.value = "";
   const { data, error } = await updateMyScheduleAssignment(event.id, {
     action,
+    ...(action === "DECLINED" ? { declineReason: declineReason || undefined } : {}),
   });
 
   if (error || !data) {
@@ -1609,12 +1823,23 @@ const handleConfirmSchedule = async (event: ScheduleEvent) => {
   );
 };
 
-const handleDeclineSchedule = async (event: ScheduleEvent) => {
+const handleDeclineSchedule = (event: ScheduleEvent) => {
+  declineDialog.event = event;
+  declineDialog.reason = "";
+  declineDialog.open = true;
+};
+
+const confirmDecline = async () => {
+  if (!declineDialog.event) return;
+  declineDialog.open = false;
   await updateMyScheduleResponse(
-    event,
+    declineDialog.event,
     "DECLINED",
     "Não foi possível informar ausência.",
+    declineDialog.reason,
   );
+  declineDialog.event = null;
+  declineDialog.reason = "";
 };
 
 const handleRequestSwap = async (event: ScheduleEvent) => {
@@ -1709,6 +1934,9 @@ const resetScheduleForm = () => {
   scheduleForm.rehearsalNotes = "";
   scheduleForm.songIds = [];
   scheduleForm.resourceIds = [];
+  scheduleForm.assignments = [];
+  scheduleFormVolunteerUserId.value = "";
+  scheduleFormVolunteerRole.value = "";
   editingScheduleId.value = "";
 };
 
@@ -1754,6 +1982,14 @@ const openScheduleEditDialog = async (event: ScheduleEvent) => {
     schedule.mediaItems
       ?.filter((item) => item.mediaItem.category !== "MUSIC")
       .map((item) => item.mediaItemId) || [];
+  scheduleForm.assignments =
+    schedule.assignments?.map((a) => ({
+      userId: a.userId,
+      name: a.user.name,
+      role: a.role,
+    })) || [];
+  scheduleFormVolunteerUserId.value = "";
+  scheduleFormVolunteerRole.value = "";
   createScheduleError.value = "";
   isPrefillingScheduleForm.value = false;
   isScheduleDialogOpen.value = true;
@@ -1810,9 +2046,26 @@ const handleSaveSchedule = async () => {
       return;
     }
 
+    let finalSchedule = data;
+
+    const isCreating = !editingScheduleId.value;
+    const hasAssignments = scheduleForm.assignments.length > 0;
+
+    if (hasAssignments || !isCreating) {
+      const { data: scheduleWithAssignments } = await updateScheduleAssignments(data.id, {
+        assignments: scheduleForm.assignments.map((a) => ({
+          userId: a.userId,
+          role: a.role,
+        })),
+      });
+      if (scheduleWithAssignments) {
+        finalSchedule = scheduleWithAssignments;
+      }
+    }
+
     const nextSchedules = editingScheduleId.value
-      ? schedules.value.map((schedule) => (schedule.id === data.id ? data : schedule))
-      : [...schedules.value, data];
+      ? schedules.value.map((schedule) => (schedule.id === finalSchedule.id ? finalSchedule : schedule))
+      : [...schedules.value, finalSchedule];
 
     schedules.value = nextSchedules.sort(
       (current, next) =>
@@ -2022,9 +2275,20 @@ const saveAssignments = async () => {
   }
 };
 
+const handleVisibilityChange = () => {
+  if (document.visibilityState === "visible") {
+    loadSchedules();
+  }
+};
+
 onMounted(async () => {
   await Promise.all([loadDepartments(), loadSchedules(), loadMembers()]);
   await focusScheduleFromRoute();
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("visibilitychange", handleVisibilityChange);
 });
 
 watch(
@@ -2053,6 +2317,13 @@ watch(
 watch(schedules, async () => {
   if (focusedScheduleId.value) return;
   await focusScheduleFromRoute();
+
+  if (selectedDetailEvent.value) {
+    const updated = schedules.value.find((s) => s.id === selectedDetailEvent.value!.id);
+    if (updated) {
+      selectedDetailEvent.value = toScheduleEvent(updated);
+    }
+  }
 });
 </script>
 
@@ -2155,6 +2426,17 @@ watch(schedules, async () => {
 
 .stat-icon {
   display: block;
+}
+
+.schedule-form-volunteer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #fafafa;
+  padding: 10px 12px;
 }
 
 .scale-input :deep(.v-field) {
@@ -2454,26 +2736,11 @@ watch(schedules, async () => {
   align-items: start;
 }
 
-.scale-song-key-controls,
-.scale-fullscreen-key-controls,
-.song-autoscroll-controls {
+.scale-song-filter-row {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 8px;
-}
-
-.song-autoscroll-controls {
-  min-height: 34px;
-  color: #4b5563;
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.song-autoscroll-controls :deep(.v-slider) {
-  flex: 1 1 160px;
-  min-width: 140px;
-  max-width: 260px;
+  padding: 4px 0 2px;
 }
 
 .scale-song-text {
@@ -2505,9 +2772,8 @@ watch(schedules, async () => {
 }
 
 .scale-fullscreen-toolbar {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 10px 22px;

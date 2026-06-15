@@ -12,6 +12,12 @@ export interface ChurchMember {
   canManageMembers: boolean;
   unavailableDates?: string[];
   createdAt?: string;
+  churchRoleId?: string | null;
+  churchRole?: {
+    id: string;
+    name: string;
+    permissions: string[];
+  } | null;
 }
 
 interface CreateMemberDTO {

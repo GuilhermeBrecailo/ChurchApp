@@ -57,6 +57,7 @@ export interface DepartmentSchedule {
     viewedAt?: string | null;
     confirmationStatus?: "PENDING" | "CONFIRMED" | string;
     confirmedAt?: string | null;
+    declineReason?: string | null;
     attendanceStatus?: "PENDING" | "PRESENT" | "ABSENT" | string;
     attendedAt?: string | null;
     user: {
@@ -251,6 +252,7 @@ interface UpdateScheduleAssignmentsDTO {
 
 interface UpdateMyScheduleAssignmentDTO {
   action: "VIEWED" | "CONFIRMED" | "DECLINED" | "MAYBE" | "SWAP_REQUESTED";
+  declineReason?: string;
 }
 
 interface UpdateScheduleAssignmentAttendanceDTO {

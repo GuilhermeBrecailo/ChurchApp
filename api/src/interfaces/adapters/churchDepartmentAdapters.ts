@@ -112,6 +112,7 @@ export class ChurchDepartmentAdapters {
         viewedAt: true,
         confirmationStatus: true,
         confirmedAt: true,
+        declineReason: true,
         attendanceStatus: true,
         attendedAt: true,
         user: {
@@ -1481,6 +1482,7 @@ export class ChurchDepartmentAdapters {
     const { id } = request.params as { id?: string };
     const body = request.body as {
       action?: "VIEWED" | "CONFIRMED" | "DECLINED" | "MAYBE" | "SWAP_REQUESTED";
+      declineReason?: string;
     };
 
     if (!id) {
@@ -1531,11 +1533,20 @@ export class ChurchDepartmentAdapters {
               viewedAt: assignment.viewedAt || now,
               confirmationStatus: "CONFIRMED",
               confirmedAt: now,
+              declineReason: null,
+            }
+          : body.action === "DECLINED"
+          ? {
+              viewedAt: assignment.viewedAt || now,
+              confirmationStatus: "DECLINED",
+              confirmedAt: null,
+              declineReason: body.declineReason?.trim() || null,
             }
           : {
               viewedAt: assignment.viewedAt || now,
               confirmationStatus: body.action,
               confirmedAt: null,
+              declineReason: null,
             },
       select: {
         id: true,
@@ -1544,6 +1555,7 @@ export class ChurchDepartmentAdapters {
         viewedAt: true,
         confirmationStatus: true,
         confirmedAt: true,
+        declineReason: true,
         attendanceStatus: true,
         attendedAt: true,
         user: {
@@ -1560,9 +1572,13 @@ export class ChurchDepartmentAdapters {
       const adminRecipientIds = await this.getChurchAdminNotificationRecipientIds(
         user.crunchId!,
       );
+      const declinedLabel =
+        body.action === "DECLINED" && body.declineReason?.trim()
+          ? `marcou que nao pode ir: ${body.declineReason.trim()}`
+          : "marcou que nao pode ir";
       const actionLabels: Record<string, string> = {
         CONFIRMED: "confirmou presenca",
-        DECLINED: "marcou que nao pode ir",
+        DECLINED: declinedLabel,
         MAYBE: "marcou talvez",
         SWAP_REQUESTED: "pediu troca",
       };

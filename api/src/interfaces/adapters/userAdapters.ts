@@ -119,6 +119,7 @@ export class UserAdapters {
       },
       include: {
         crunch: true,
+        churchRole: { select: { id: true, name: true, permissions: true } },
       },
     });
 
@@ -155,6 +156,15 @@ export class UserAdapters {
       church,
       hasChurch: Boolean(user.crunchId),
       isTitularPastor: user.role === "PASTOR" && church?.userMainId === user.id,
+      churchRole: user.churchRole
+        ? {
+            id: user.churchRole.id,
+            name: user.churchRole.name,
+            permissions: user.churchRole.permissions,
+          }
+        : null,
+      permissions: user.churchRole?.permissions ?? [],
+      isDemoUser: user.isDemoUser,
     };
   }
 
@@ -337,11 +347,16 @@ export class UserAdapters {
       },
       select: {
         id: true,
+        isDemoUser: true,
       },
     });
 
     if (!user) {
       throw new DomainError("Usuário não encontrado");
+    }
+
+    if (user.isDemoUser) {
+      throw new DomainError("Não é possível alterar a senha do usuário demo");
     }
 
     const identityProvider = new KeycloakProvider();
@@ -574,6 +589,8 @@ export class UserAdapters {
         role: true,
         canManageMembers: true,
         createdAt: true,
+        churchRoleId: true,
+        churchRole: { select: { id: true, name: true, permissions: true } },
         unavailableDates: {
           select: {
             date: true,

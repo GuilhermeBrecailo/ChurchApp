@@ -14,6 +14,13 @@ interface AuthUser {
   mustChangePassword?: boolean;
   is_admin: boolean;
   role?: string;
+  isDemoUser?: boolean;
+  permissions?: string[];
+  churchRole?: {
+    id: string;
+    name: string;
+    permissions: string[];
+  } | null;
   phone?: string;
   church?: {
     id: string;

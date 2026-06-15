@@ -23,10 +23,25 @@ model Crunch {
     number       String?
 
     document String?
+    isDemoChurch Boolean @default(false)
 
     users         User[]
     departments   Department[]
     pastorHistory PastorMandate[]
+    churchRoles   ChurchRole[]
+}
+
+model ChurchRole {
+    id          String   @id @default(uuid())
+    name        String
+    description String?
+    permissions String[]
+    createdAt   DateTime @default(now())
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    users User[]
 }
 
 model User {
@@ -38,10 +53,14 @@ model User {
     createdAt DateTime @default(now())
     canManageMembers Boolean @default(false)
     mustChangePassword Boolean @default(false)
+    isDemoUser   Boolean @default(false)
     profileSuggestion String?
 
     crunchId String?
     crunch   Crunch? @relation(fields: [crunchId], references: [id])
+
+    churchRoleId String?
+    churchRole   ChurchRole? @relation(fields: [churchRoleId], references: [id], onDelete: SetNull)
 
     ledDepartments Department[]         @relation("Leader")
     assignments    ScheduleAssignment[]
@@ -223,6 +242,7 @@ model ScheduleAssignment {
     confirmedAt DateTime?
     attendanceStatus String @default("PENDING")
     attendedAt DateTime?
+    declineReason String?
 
     userId String
     user   User   @relation(fields: [userId], references: [id])

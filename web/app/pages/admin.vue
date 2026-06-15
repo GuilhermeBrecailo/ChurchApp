@@ -555,7 +555,7 @@
 
         <v-divider class="mb-4" />
 
-        <div class="d-flex align-center justify-space-between ga-4 mb-5">
+        <div class="d-flex align-center justify-space-between ga-4 mb-4">
           <div>
             <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
               Gerencia membros
@@ -571,6 +571,40 @@
           >
             {{ selectedAdminUser.canManageMembers ? "Sim" : "Não" }}
           </v-chip>
+        </div>
+
+        <v-divider class="mb-4" />
+
+        <div class="mb-5">
+          <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
+            Cargo
+          </h3>
+          <p class="text-caption text-grey-darken-1 mb-3">
+            Define as permissões granulares deste membro.
+          </p>
+          <div class="d-flex align-center gap-2">
+            <v-select
+              v-model="selectedMemberRoleId"
+              :items="roleOptions"
+              item-title="label"
+              item-value="value"
+              variant="outlined"
+              density="compact"
+              color="purple-darken-3"
+              hide-details
+              style="max-width: 220px"
+            />
+            <v-btn
+              size="small"
+              color="purple-darken-3"
+              variant="tonal"
+              class="text-none"
+              :loading="isAssigningRole"
+              @click="saveAssignRole"
+            >
+              Salvar
+            </v-btn>
+          </div>
         </div>
 
         <div class="d-flex justify-end">
@@ -1000,6 +1034,97 @@
         {{ departmentsError }}
       </v-alert>
     </section>
+    <section v-if="isChurchWideManager" class="church-admin-section mb-8">
+      <div class="section-heading mb-4">
+        <div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+            Cargos
+          </h2>
+          <p class="text-body-2 text-grey-darken-1 mb-0">
+            Crie cargos com permissões específicas e atribua aos membros.
+          </p>
+        </div>
+        <v-btn
+          color="#A855F7"
+          class="rounded-lg text-none px-4"
+          size="small"
+          elevation="1"
+          @click="openCreateRole"
+        >
+          <Shield size="16" class="mr-2" /> Novo cargo
+        </v-btn>
+      </div>
+
+      <div v-if="churchRoles.length" class="d-flex flex-column ministry-list">
+        <div
+          v-for="role in churchRoles"
+          :key="role.id"
+          class="role-item"
+        >
+          <div class="min-w-0 flex-1">
+            <div class="d-flex align-center gap-2 mb-1">
+              <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
+                {{ role.name }}
+              </p>
+              <v-chip size="x-small" color="grey" variant="tonal">
+                {{ role.userCount ?? 0 }} {{ (role.userCount ?? 0) === 1 ? "membro" : "membros" }}
+              </v-chip>
+            </div>
+            <p v-if="role.description" class="text-caption text-grey-darken-1 mb-1">
+              {{ role.description }}
+            </p>
+            <div class="d-flex flex-wrap gap-1 mt-1">
+              <v-chip
+                v-for="perm in role.permissions"
+                :key="perm"
+                size="x-small"
+                color="indigo-darken-2"
+                variant="tonal"
+              >
+                {{ permissionLabel(perm) }}
+              </v-chip>
+              <span
+                v-if="!role.permissions.length"
+                class="text-caption text-grey-darken-1"
+              >
+                Sem permissões
+              </span>
+            </div>
+          </div>
+          <div class="ministry-actions">
+            <v-btn
+              icon
+              variant="text"
+              color="grey-darken-1"
+              size="small"
+              @click="openEditRole(role)"
+            >
+              <Pencil size="16" />
+            </v-btn>
+            <v-btn
+              icon
+              variant="text"
+              color="red-darken-2"
+              size="small"
+              @click="pendingDeleteRoleId = role.id"
+            >
+              <Trash2 size="16" />
+            </v-btn>
+          </div>
+        </div>
+      </div>
+
+      <v-card
+        v-else
+        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+      >
+        <Shield size="32" color="#9CA3AF" class="mb-3" />
+        <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
+          Nenhum cargo criado ainda
+        </p>
+      </v-card>
+    </section>
+
     <UtilsResponsiveOverlay v-model="isMemberDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
@@ -1442,6 +1567,105 @@
       @cancel="closeDeleteDialog"
       @confirm="confirmDelete"
     />
+
+    <UtilsResponsiveOverlay v-model="isRoleDialogOpen" max-width="480">
+      <v-card class="rounded-xl pa-6" elevation="0">
+        <div class="d-flex align-center justify-space-between mb-5">
+          <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+            {{ editingRoleId ? "Editar cargo" : "Novo cargo" }}
+          </h2>
+          <v-btn
+            icon
+            variant="text"
+            color="grey-darken-1"
+            size="small"
+            @click="isRoleDialogOpen = false"
+          >
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <v-text-field
+          v-model="roleForm.name"
+          label="Nome do cargo"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+
+        <v-text-field
+          v-model="roleForm.description"
+          label="Descrição (opcional)"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-4"
+          hide-details="auto"
+        />
+
+        <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">
+          Permissões
+        </p>
+        <div class="d-flex flex-column gap-1 mb-4">
+          <v-checkbox
+            v-for="perm in ALL_PERMISSIONS"
+            :key="perm.key"
+            v-model="roleForm.permissions"
+            :value="perm.key"
+            density="compact"
+            color="purple-darken-3"
+            hide-details
+          >
+            <template #label>
+              <div class="ml-1">
+                <p class="text-body-2 font-weight-medium mb-0">{{ perm.label }}</p>
+                <p class="text-caption text-grey-darken-1 mb-0">{{ perm.description }}</p>
+              </div>
+            </template>
+          </v-checkbox>
+        </div>
+
+        <v-alert
+          v-if="roleError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ roleError }}
+        </v-alert>
+
+        <div class="d-flex justify-end gap-2">
+          <v-btn
+            variant="text"
+            color="grey-darken-1"
+            class="text-none"
+            @click="isRoleDialogOpen = false"
+          >
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="purple-darken-3"
+            class="text-none font-weight-bold"
+            :loading="isSavingRole"
+            @click="saveRole"
+          >
+            {{ editingRoleId ? "Salvar" : "Criar cargo" }}
+          </v-btn>
+        </div>
+      </v-card>
+    </UtilsResponsiveOverlay>
+
+    <UtilsConfirmDialog
+      v-model="isDeleteRoleDialogOpen"
+      title="Remover cargo"
+      message="O cargo será removido dos membros atribuídos. Esta ação não pode ser desfeita."
+      :loading="isDeletingRole"
+      @cancel="pendingDeleteRoleId = ''"
+      @confirm="confirmDeleteRole"
+    />
   </div>
 
   <div v-else class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
@@ -1472,6 +1696,9 @@ import {
   Church,
   ArrowRight,
   BarChart3,
+  Pencil,
+  Trash2,
+  Shield,
 } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
@@ -1489,6 +1716,13 @@ import {
   type AdminChurchSchedule,
   type AdminChurchUser,
 } from "../../composables/useAdmin";
+import {
+  useChurchRoles,
+  type ChurchRole,
+} from "../../../composables/useChurchRoles";
+import {
+  ALL_PERMISSIONS,
+} from "../../../composables/usePermissions";
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
@@ -1916,6 +2150,7 @@ const closeChurchDetails = () => {
 
 const openAdminUserDetails = (member: AdminChurchUser) => {
   selectedAdminUser.value = member;
+  selectedMemberRoleId.value = member.churchRoleId ?? null;
   isAdminUserDetailsOpen.value = true;
 };
 
@@ -2234,6 +2469,132 @@ const handleUpdateMemberPermissions = async (value: boolean | null) => {
   }
 };
 
+// ── Cargos (RBAC) ──────────────────────────────────────────────
+const { getRoles, createRole, updateRole, deleteRole, assignRole } =
+  useChurchRoles();
+
+const churchRoles = ref<ChurchRole[]>([]);
+const isRoleDialogOpen = ref(false);
+const editingRoleId = ref("");
+const roleForm = reactive({
+  name: "",
+  description: "",
+  permissions: [] as string[],
+});
+const isSavingRole = ref(false);
+const roleError = ref("");
+const isDeletingRole = ref(false);
+const pendingDeleteRoleId = ref("");
+const isAssigningRole = ref(false);
+const selectedMemberRoleId = ref<string | null>(null);
+
+const isDeleteRoleDialogOpen = computed({
+  get: () => Boolean(pendingDeleteRoleId.value),
+  set: (v: boolean) => { if (!v) pendingDeleteRoleId.value = ""; },
+});
+
+const roleOptions = computed(() => [
+  { label: "Sem cargo", value: null },
+  ...churchRoles.value.map((r) => ({ label: r.name, value: r.id })),
+]);
+
+const permissionLabel = (key: string) =>
+  ALL_PERMISSIONS.find((p) => p.key === key)?.label ?? key;
+
+const loadRoles = async () => {
+  const { data } = await getRoles();
+  churchRoles.value = data ?? [];
+};
+
+const openCreateRole = () => {
+  editingRoleId.value = "";
+  roleForm.name = "";
+  roleForm.description = "";
+  roleForm.permissions = [];
+  roleError.value = "";
+  isRoleDialogOpen.value = true;
+};
+
+const openEditRole = (role: ChurchRole) => {
+  editingRoleId.value = role.id;
+  roleForm.name = role.name;
+  roleForm.description = role.description ?? "";
+  roleForm.permissions = [...role.permissions];
+  roleError.value = "";
+  isRoleDialogOpen.value = true;
+};
+
+const saveRole = async () => {
+  roleError.value = "";
+  if (!roleForm.name.trim()) {
+    roleError.value = "Nome do cargo é obrigatório.";
+    return;
+  }
+
+  isSavingRole.value = true;
+  try {
+    const payload = {
+      name: roleForm.name.trim(),
+      description: roleForm.description.trim() || undefined,
+      permissions: roleForm.permissions,
+    };
+
+    if (editingRoleId.value) {
+      const { data, error } = await updateRole(editingRoleId.value, payload);
+      if (error || !data) { roleError.value = error || "Erro ao salvar cargo."; return; }
+      churchRoles.value = churchRoles.value.map((r) =>
+        r.id === data.id ? { ...data, userCount: r.userCount } : r,
+      );
+    } else {
+      const { data, error } = await createRole(payload);
+      if (error || !data) { roleError.value = error || "Erro ao criar cargo."; return; }
+      churchRoles.value = [...churchRoles.value, { ...data, userCount: 0 }];
+    }
+
+    isRoleDialogOpen.value = false;
+  } finally {
+    isSavingRole.value = false;
+  }
+};
+
+const confirmDeleteRole = async () => {
+  if (!pendingDeleteRoleId.value) return;
+  isDeletingRole.value = true;
+  try {
+    const { error } = await deleteRole(pendingDeleteRoleId.value);
+    if (error) { roleError.value = error; return; }
+    churchRoles.value = churchRoles.value.filter(
+      (r) => r.id !== pendingDeleteRoleId.value,
+    );
+    pendingDeleteRoleId.value = "";
+  } finally {
+    isDeletingRole.value = false;
+  }
+};
+
+const saveAssignRole = async () => {
+  if (!selectedAdminUser.value) return;
+  isAssigningRole.value = true;
+  try {
+    const { data, error } = await assignRole(
+      selectedAdminUser.value.id,
+      selectedMemberRoleId.value,
+    );
+    if (error || !data) return;
+    selectedAdminUser.value = {
+      ...selectedAdminUser.value,
+      churchRoleId: data.churchRoleId,
+    };
+    members.value = members.value.map((m) =>
+      m.id === selectedAdminUser.value?.id
+        ? { ...m, churchRoleId: data.churchRoleId }
+        : m,
+    );
+  } finally {
+    isAssigningRole.value = false;
+  }
+};
+
 onMounted(async () => {
   if (isPlatformAdmin.value) {
     await loadPlatformChurches();
@@ -2244,7 +2605,12 @@ onMounted(async () => {
     return;
   }
 
-  await Promise.all([loadMembers(), loadDepartments(), loadChurchSchedules()]);
+  await Promise.all([
+    loadMembers(),
+    loadDepartments(),
+    loadChurchSchedules(),
+    loadRoles(),
+  ]);
 });
 </script>
 
@@ -2840,6 +3206,20 @@ onMounted(async () => {
 .ministry-item {
   min-width: 0;
   cursor: pointer;
+}
+
+.role-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.role-item:last-child {
+  border-bottom: none;
 }
 
 .ministry-item:focus-visible,

@@ -13,7 +13,9 @@
     "prisma:migrate": "prisma migrate dev --schema=src/infrastructure/database/prisma/schema.prisma",
     "prisma:deploy": "prisma migrate deploy --schema=src/infrastructure/database/prisma/schema.prisma",
     "prisma:reset": "prisma migrate reset --schema=src/infrastructure/database/prisma/schema.prisma",
-    "prisma:studio": "prisma studio --schema=src/infrastructure/database/prisma/schema.prisma"
+    "prisma:studio": "prisma studio --schema=src/infrastructure/database/prisma/schema.prisma",
+    "demo:seed": "tsx --env-file=.env scripts/demo-seed.ts",
+    "demo:reset": "tsx --env-file=.env scripts/demo-reset.ts"
   },
   "keywords": [],
   "author": "",
