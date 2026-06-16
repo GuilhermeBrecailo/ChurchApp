@@ -1262,15 +1262,20 @@ const isChurchWideManager = computed(
     user.value?.role === "PASTOR" ||
     user.value?.role === "ADMIN" ||
     user.value?.role === "SUPER_ADMIN" ||
-    user.value?.is_admin === true ||
-    can("MANAGE_SCHEDULES"),
+    user.value?.is_admin === true,
 );
 const manageableDepartments = computed(() => {
   if (isChurchWideManager.value) {
     return departments.value;
   }
 
-  return departments.value.filter((department) => department.leaderId === user.value?.id);
+  if (!can("MANAGE_SCHEDULES")) {
+    return [];
+  }
+
+  return departments.value.filter(
+    (department) => department.leaderId === user.value?.id,
+  );
 });
 
 const departmentOptions = computed(() =>
@@ -1499,7 +1504,7 @@ const canCreateChurchSchedule = computed(
 
 const canManageSchedule = (schedule: DepartmentSchedule) =>
   isChurchWideManager.value ||
-  schedule.department?.leaderId === user.value?.id;
+  (can("MANAGE_SCHEDULES") && schedule.department?.leaderId === user.value?.id);
 
 const filteredSchedules = computed(() => {
   const visibleSchedules =

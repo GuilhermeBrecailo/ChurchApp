@@ -15,6 +15,21 @@
       </div>
     </div>
 
+    <div v-if="canAccessChurchAdmin" class="platform-switchbar mb-6">
+      <div class="min-w-0">
+        <strong>Administração pastoral disponível</strong>
+        <span>Veja também a mesma área operacional usada pelos pastores da sua igreja.</span>
+      </div>
+      <v-btn
+        variant="tonal"
+        color="indigo-darken-2"
+        class="text-none"
+        href="#pastoral-admin"
+      >
+        Abrir minha igreja
+      </v-btn>
+    </div>
+
     <v-alert
       v-if="platformError"
       type="error"
@@ -56,6 +71,50 @@
       />
     </div>
 
+    <section class="master-panel mb-6">
+      <v-card class="master-panel-card pa-4 bg-white elevation-0 border-subtle">
+        <div class="master-panel-heading mb-3">
+          <BarChart3 size="18" />
+          <h2>Saúde da plataforma</h2>
+        </div>
+        <div class="master-summary-grid">
+          <div>
+            <strong>{{ platformStatusSummary.active }}</strong>
+            <span>ativas</span>
+          </div>
+          <div>
+            <strong>{{ platformStatusSummary.inactive }}</strong>
+            <span>inativas</span>
+          </div>
+          <div>
+            <strong>{{ platformStatusSummary.withoutMembers }}</strong>
+            <span>sem membros</span>
+          </div>
+        </div>
+      </v-card>
+
+      <v-card class="master-panel-card pa-4 bg-white elevation-0 border-subtle">
+        <div class="master-panel-heading mb-3">
+          <Users size="18" />
+          <h2>Maiores igrejas</h2>
+        </div>
+        <div v-if="topChurches.length" class="master-ranking">
+          <button
+            v-for="church in topChurches"
+            :key="church.id"
+            type="button"
+            @click="selectChurch(church.id)"
+          >
+            <span>{{ church.name }}</span>
+            <strong>{{ church.membersCount }}</strong>
+          </button>
+        </div>
+        <p v-else class="text-caption text-grey-darken-1 mb-0">
+          Sem dados para exibir.
+        </p>
+      </v-card>
+    </section>
+
     <section class="platform-directory">
       <div class="directory-heading mb-4">
         <div>
@@ -67,8 +126,34 @@
           </p>
         </div>
         <v-chip size="small" color="indigo-darken-2" variant="tonal">
-          {{ adminChurches.length }} total
+          {{ filteredAdminChurches.length }} de {{ adminChurches.length }}
         </v-chip>
+      </div>
+
+      <div class="admin-filter-bar mb-4">
+        <v-text-field
+          v-model="platformSearch"
+          label="Buscar igreja"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="compact"
+          color="indigo-darken-2"
+          bg-color="white"
+          hide-details
+        />
+        <v-select
+          v-model="platformStatusFilter"
+          label="Status"
+          :items="platformStatusOptions"
+          item-title="label"
+          item-value="value"
+          prepend-inner-icon="mdi-filter-outline"
+          variant="outlined"
+          density="compact"
+          color="indigo-darken-2"
+          bg-color="white"
+          hide-details
+        />
       </div>
 
       <v-card
@@ -88,9 +173,19 @@
         </p>
       </v-card>
 
+      <v-card
+        v-else-if="filteredAdminChurches.length === 0"
+        class="platform-empty rounded-lg pa-6 elevation-0 bg-white border-subtle"
+      >
+        <Church size="34" color="#9CA3AF" class="mb-3" />
+        <p class="text-body-2 text-grey-darken-1 font-weight-medium mb-0 text-center">
+          Nenhuma igreja encontrada com os filtros atuais
+        </p>
+      </v-card>
+
       <div v-else class="church-directory-grid">
         <button
-          v-for="church in adminChurches"
+          v-for="church in filteredAdminChurches"
           :key="church.id"
           type="button"
           class="church-directory-card"
@@ -555,26 +650,6 @@
 
         <v-divider class="mb-4" />
 
-        <div class="d-flex align-center justify-space-between ga-4 mb-4">
-          <div>
-            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
-              Gerencia membros
-            </h3>
-            <p class="text-caption text-grey-darken-1 mb-0">
-              Indica se o usuário pode listar e cadastrar membros da igreja.
-            </p>
-          </div>
-          <v-chip
-            size="small"
-            :color="selectedAdminUser.canManageMembers ? 'teal-darken-2' : 'grey'"
-            variant="tonal"
-          >
-            {{ selectedAdminUser.canManageMembers ? "Sim" : "Não" }}
-          </v-chip>
-        </div>
-
-        <v-divider class="mb-4" />
-
         <div class="mb-5">
           <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
             Cargo
@@ -593,6 +668,7 @@
               color="purple-darken-3"
               hide-details
               style="max-width: 220px"
+              :disabled="!canAssignSelectedAdminUserRole || isAssigningRole"
             />
             <v-btn
               size="small"
@@ -600,11 +676,21 @@
               variant="tonal"
               class="text-none"
               :loading="isAssigningRole"
+              :disabled="!canAssignSelectedAdminUserRole || isAssigningRole"
               @click="saveAssignRole"
             >
               Salvar
             </v-btn>
           </div>
+          <v-alert
+            v-if="selectedAdminUserRoleLockedReason"
+            type="info"
+            variant="tonal"
+            density="compact"
+            class="mt-3"
+          >
+            {{ selectedAdminUserRoleLockedReason }}
+          </v-alert>
         </div>
 
         <div class="d-flex justify-end">
@@ -733,14 +819,19 @@
     </UtilsResponsiveOverlay>
   </div>
 
-  <div v-else-if="canAccessChurchAdmin" class="church-admin-page pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
+  <div
+    v-if="canAccessChurchAdmin"
+    id="pastoral-admin"
+    class="church-admin-page pa-4 bg-grey-lighten-4 min-vh-100 pb-20"
+  >
     <div class="church-admin-hero mb-6">
       <div class="min-w-0">
+        <p v-if="isPlatformAdmin" class="platform-kicker mb-2">Admin pastoral</p>
         <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
           Administração da igreja
         </h1>
         <p class="text-body-2 text-grey-darken-1 mb-0">
-          Gerencie membros, ministérios e dados operacionais da sua igreja
+          Gerencie membros, cargos, ministérios e dados operacionais da sua igreja
         </p>
       </div>
     </div>
@@ -878,7 +969,7 @@
           Membros
         </h2>
         <v-btn
-          v-if="canAddMembers"
+          v-if="canManageMembersByRole"
           color="primary"
           class="rounded-lg text-none px-4"
           size="small"
@@ -887,6 +978,45 @@
         >
           <UserPlus size="16" class="mr-2" /> Adicionar
         </v-btn>
+      </div>
+
+      <div class="admin-filter-bar mb-4">
+        <v-text-field
+          v-model="memberSearch"
+          label="Buscar membro"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="compact"
+          color="purple-darken-3"
+          bg-color="white"
+          hide-details
+        />
+        <v-select
+          v-model="memberTypeFilter"
+          label="Tipo"
+          :items="memberTypeOptions"
+          item-title="label"
+          item-value="value"
+          prepend-inner-icon="mdi-account-filter-outline"
+          variant="outlined"
+          density="compact"
+          color="purple-darken-3"
+          bg-color="white"
+          hide-details
+        />
+        <v-select
+          v-model="memberRoleFilter"
+          label="Cargo"
+          :items="roleFilterOptions"
+          item-title="label"
+          item-value="value"
+          prepend-inner-icon="mdi-shield-account-outline"
+          variant="outlined"
+          density="compact"
+          color="purple-darken-3"
+          bg-color="white"
+          hide-details
+        />
       </div>
 
       <v-card
@@ -899,9 +1029,19 @@
         </p>
       </v-card>
 
+      <v-card
+        v-else-if="filteredMembers.length === 0"
+        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+      >
+        <UserCheck size="32" color="#9CA3AF" class="mb-3" />
+        <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
+          Nenhum membro encontrado
+        </p>
+      </v-card>
+
       <div v-else class="church-list d-flex flex-column ga-3">
         <v-card
-          v-for="member in members"
+          v-for="member in filteredMembers"
           :key="member.id"
           class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
           @click="openMemberDetails(member)"
@@ -929,12 +1069,12 @@
               Líder
             </v-chip>
             <v-chip
-              v-if="member.canManageMembers"
+              v-if="member.churchRole"
               size="small"
               color="teal-darken-2"
               variant="tonal"
             >
-              Permissão
+              {{ member.churchRole.name }}
             </v-chip>
             <v-chip size="small" color="purple-darken-3" variant="tonal">
               {{ churchMemberRoleLabel(member) }}
@@ -971,6 +1111,32 @@
         </v-btn>
       </div>
 
+      <div class="admin-filter-bar mb-4">
+        <v-text-field
+          v-model="departmentSearch"
+          label="Buscar ministério"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="compact"
+          color="purple-darken-3"
+          bg-color="white"
+          hide-details
+        />
+        <v-select
+          v-model="departmentTypeFilter"
+          label="Tipo"
+          :items="departmentFilterOptions"
+          item-title="label"
+          item-value="value"
+          prepend-inner-icon="mdi-shape-outline"
+          variant="outlined"
+          density="compact"
+          color="purple-darken-3"
+          bg-color="white"
+          hide-details
+        />
+      </div>
+
       <v-card
         v-if="departments.length === 0"
         class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
@@ -981,9 +1147,19 @@
         </p>
       </v-card>
 
+      <v-card
+        v-else-if="filteredDepartments.length === 0"
+        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+      >
+        <Building size="32" color="#9CA3AF" class="mb-3" />
+        <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
+          Nenhum ministério encontrado
+        </p>
+      </v-card>
+
       <div v-else class="d-flex flex-column ministry-list">
         <div
-          v-for="department in departments"
+          v-for="department in filteredDepartments"
           :key="department.id"
           class="ministry-item"
           role="button"
@@ -1055,9 +1231,35 @@
         </v-btn>
       </div>
 
-      <div v-if="churchRoles.length" class="d-flex flex-column ministry-list">
+      <div class="admin-filter-bar mb-4">
+        <v-text-field
+          v-model="roleSearch"
+          label="Buscar cargo"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="compact"
+          color="purple-darken-3"
+          bg-color="white"
+          hide-details
+        />
+        <v-select
+          v-model="roleModuleFilter"
+          label="Módulo"
+          :items="permissionModuleFilterOptions"
+          item-title="label"
+          item-value="value"
+          prepend-inner-icon="mdi-view-module-outline"
+          variant="outlined"
+          density="compact"
+          color="purple-darken-3"
+          bg-color="white"
+          hide-details
+        />
+      </div>
+
+      <div v-if="filteredChurchRoles.length" class="d-flex flex-column ministry-list">
         <div
-          v-for="role in churchRoles"
+          v-for="role in filteredChurchRoles"
           :key="role.id"
           class="role-item"
         >
@@ -1075,13 +1277,13 @@
             </p>
             <div class="d-flex flex-wrap gap-1 mt-1">
               <v-chip
-                v-for="perm in role.permissions"
-                :key="perm"
+                v-for="module in rolePermissionModules(role.permissions)"
+                :key="module.key"
                 size="x-small"
                 color="indigo-darken-2"
                 variant="tonal"
               >
-                {{ permissionLabel(perm) }}
+                {{ module.label }}
               </v-chip>
               <span
                 v-if="!role.permissions.length"
@@ -1115,12 +1317,22 @@
       </div>
 
       <v-card
-        v-else
+        v-else-if="churchRoles.length === 0"
         class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
       >
         <Shield size="32" color="#9CA3AF" class="mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
           Nenhum cargo criado ainda
+        </p>
+      </v-card>
+
+      <v-card
+        v-else
+        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+      >
+        <Shield size="32" color="#9CA3AF" class="mb-3" />
+        <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
+          Nenhum cargo encontrado
         </p>
       </v-card>
     </section>
@@ -1376,7 +1588,7 @@
           bg-color="white"
           class="admin-input mb-3"
           hide-details="auto"
-          :readonly="!canAddMembers"
+          :readonly="!canManageMembersByRole || !canEditSelectedMember"
           :disabled="isUpdatingMember"
         />
 
@@ -1390,7 +1602,7 @@
           bg-color="white"
           class="admin-input mb-3"
           hide-details="auto"
-          :readonly="!canAddMembers"
+          :readonly="!canManageMembersByRole || !canEditSelectedMember"
           :disabled="isUpdatingMember"
         />
 
@@ -1403,14 +1615,14 @@
           bg-color="white"
           class="admin-input mb-4"
           hide-details="auto"
-          :readonly="!canAddMembers"
+          :readonly="!canManageMembersByRole || !canEditSelectedMember"
           :disabled="isUpdatingMember"
         />
 
         <v-select
-          v-model="selectedMemberForm.role"
+          v-model="selectedChurchMemberRoleId"
           label="Cargo"
-          :items="memberRoleOptions"
+          :items="roleOptions"
           item-title="label"
           item-value="value"
           prepend-inner-icon="mdi-badge-account-outline"
@@ -1420,8 +1632,7 @@
           bg-color="white"
           class="admin-input mb-4"
           hide-details="auto"
-          :readonly="!canEditMemberPermissions"
-          :disabled="isUpdatingMember"
+          :disabled="!canAssignSelectedMemberRole || isAssigningChurchMemberRole"
         />
 
         <v-alert
@@ -1434,27 +1645,6 @@
           Lidera: {{ leaderDepartmentNames(selectedMember.id).join(", ") }}
         </v-alert>
 
-        <v-divider class="mb-4" />
-
-        <div class="member-permission-row">
-          <div>
-            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
-              Pode adicionar pessoas
-            </h3>
-            <p class="text-caption text-grey-darken-1 mb-0">
-              Libera acesso para listar e cadastrar membros.
-            </p>
-          </div>
-          <v-switch
-            v-model="selectedMemberCanManageMembers"
-            color="purple-darken-3"
-            inset
-            hide-details
-            :disabled="!canEditMemberPermissions || isUpdatingPermissions"
-            @update:model-value="handleUpdateMemberPermissions"
-          />
-        </div>
-
         <v-alert
           v-if="permissionError"
           type="error"
@@ -1465,13 +1655,23 @@
           {{ permissionError }}
         </v-alert>
 
+        <v-alert
+          v-if="selectedMemberRoleLockedReason"
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="mt-4"
+        >
+          {{ selectedMemberRoleLockedReason }}
+        </v-alert>
+
         <div class="member-dialog-footer mt-6">
           <v-btn
-            v-if="canAddMembers"
+            v-if="canManageMembersByRole && canEditSelectedMember"
             variant="text"
             color="red-darken-2"
             class="text-none"
-            :disabled="isUpdatingMember || isUpdatingPermissions"
+            :disabled="isUpdatingMember || isAssigningChurchMemberRole"
             @click="handleDeleteMember"
           >
             Remover
@@ -1481,17 +1681,17 @@
               variant="text"
               color="grey-darken-1"
               class="text-none"
-              :disabled="isUpdatingMember || isUpdatingPermissions"
+              :disabled="isUpdatingMember || isAssigningChurchMemberRole"
               @click="closeMemberDetails"
             >
               Fechar
             </v-btn>
             <v-btn
-              v-if="canAddMembers"
+              v-if="canManageMembersByRole && canEditSelectedMember"
               color="purple-darken-3"
               class="text-none"
-              :loading="isUpdatingMember"
-              :disabled="isUpdatingMember || isUpdatingPermissions"
+              :loading="isUpdatingMember || isAssigningChurchMemberRole"
+              :disabled="isUpdatingMember || isAssigningChurchMemberRole"
               @click="handleUpdateMember"
             >
               Salvar
@@ -1605,26 +1805,52 @@
           hide-details="auto"
         />
 
-        <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">
-          Permissões
-        </p>
-        <div class="d-flex flex-column gap-1 mb-4">
-          <v-checkbox
-            v-for="perm in ALL_PERMISSIONS"
-            :key="perm.key"
-            v-model="roleForm.permissions"
-            :value="perm.key"
-            density="compact"
-            color="purple-darken-3"
-            hide-details
+        <div class="role-permission-header mb-3">
+          <div>
+            <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">
+              Permissões por módulo
+            </p>
+            <p class="text-caption text-grey-darken-1 mb-0">
+              Para líderes, essas permissões valem somente no ministério liderado.
+            </p>
+          </div>
+          <v-chip size="small" color="purple-darken-3" variant="tonal">
+            {{ roleForm.permissions.length }} selecionadas
+          </v-chip>
+        </div>
+        <div class="permission-module-list mb-4">
+          <div
+            v-for="module in PERMISSION_MODULES"
+            :key="module.key"
+            class="permission-module-card"
           >
-            <template #label>
-              <div class="ml-1">
-                <p class="text-body-2 font-weight-medium mb-0">{{ perm.label }}</p>
-                <p class="text-caption text-grey-darken-1 mb-0">{{ perm.description }}</p>
+            <div class="permission-module-title">
+              <div>
+                <strong>{{ module.label }}</strong>
+                <span>{{ module.description }}</span>
               </div>
-            </template>
-          </v-checkbox>
+              <v-chip size="x-small" color="indigo-darken-2" variant="tonal">
+                {{ selectedModulePermissionCount(module.key) }}/{{ module.permissions.length }}
+              </v-chip>
+            </div>
+
+            <v-checkbox
+              v-for="perm in module.permissions"
+              :key="perm.key"
+              v-model="roleForm.permissions"
+              :value="perm.key"
+              density="compact"
+              color="purple-darken-3"
+              hide-details
+            >
+              <template #label>
+                <div class="ml-1">
+                  <p class="text-body-2 font-weight-medium mb-0">{{ perm.label }}</p>
+                  <p class="text-caption text-grey-darken-1 mb-0">{{ perm.description }}</p>
+                </div>
+              </template>
+            </v-checkbox>
+          </div>
         </div>
 
         <v-alert
@@ -1668,7 +1894,7 @@
     />
   </div>
 
-  <div v-else class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
+  <div v-if="!isPlatformAdmin && !canAccessChurchAdmin" class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
     <v-card
       class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle permission-empty"
     >
@@ -1721,7 +1947,8 @@ import {
   type ChurchRole,
 } from "../../../composables/useChurchRoles";
 import {
-  ALL_PERMISSIONS,
+  PERMISSION_MODULES,
+  type PermissionModuleKey,
 } from "../../../composables/usePermissions";
 
 const { user } = useAuth();
@@ -1733,7 +1960,6 @@ const avatarBgPurple = computed(() => isDark.value ? "rgba(192,132,252,0.13)" : 
 const {
   getMembers,
   createMember,
-  updateMemberPermissions,
   updateMember,
   deleteMember,
 } = useMembers();
@@ -1769,7 +1995,6 @@ const isChurchDetailsOpen = ref(false);
 const isChurchDetailsSheetOpen = ref(false);
 const isDepartmentDialogOpen = ref(false);
 const isCreatingMember = ref(false);
-const isUpdatingPermissions = ref(false);
 const isUpdatingMember = ref(false);
 const isCreatingDepartment = ref(false);
 const createMemberError = ref("");
@@ -1781,7 +2006,6 @@ const selectedAdminUser = ref<AdminChurchUser | null>(null);
 const selectedAdminDepartment = ref<AdminChurchDepartment | null>(null);
 const selectedAdminSchedule = ref<AdminChurchSchedule | null>(null);
 const selectedChurchDepartment = ref<ChurchDepartment | null>(null);
-const selectedMemberCanManageMembers = ref(false);
 const editingDepartmentId = ref("");
 const pendingDeleteDepartment = ref<ChurchDepartment | null>(null);
 const pendingDeleteMember = ref<ChurchMember | null>(null);
@@ -1790,6 +2014,15 @@ const churchPreviewLimit = 3;
 const showAllChurchUsers = ref(false);
 const showAllChurchDepartments = ref(false);
 const showAllChurchSchedules = ref(false);
+const platformSearch = ref("");
+const platformStatusFilter = ref<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
+const memberSearch = ref("");
+const memberTypeFilter = ref<"ALL" | "PASTOR" | "MEMBER" | "ADMIN">("ALL");
+const memberRoleFilter = ref<string | null>("ALL");
+const departmentSearch = ref("");
+const departmentTypeFilter = ref("ALL");
+const roleSearch = ref("");
+const roleModuleFilter = ref<PermissionModuleKey | "ALL">("ALL");
 
 const isPlatformAdmin = computed(
   () =>
@@ -1800,13 +2033,15 @@ const isPlatformAdmin = computed(
 const isChurchWideManager = computed(
   () => user.value?.role === "PASTOR" || isPlatformAdmin.value,
 );
-const canAddMembers = computed(
-  () => isChurchWideManager.value || user.value?.canManageMembers === true,
+const canManageMembersByRole = computed(
+  () =>
+    isChurchWideManager.value ||
+    user.value?.canManageMembers === true,
 );
 const canAccessChurchAdmin = computed(
   () =>
     user.value?.hasChurch === true &&
-    (isChurchWideManager.value || user.value?.canManageMembers === true),
+    canManageMembersByRole.value,
 );
 const canEditMemberPermissions = computed(
   () =>
@@ -1814,6 +2049,63 @@ const canEditMemberPermissions = computed(
     selectedMember.value?.id !== user.value?.id,
 );
 const canManageDepartments = computed(() => isChurchWideManager.value);
+const isCurrentUserSuperAdmin = computed(() => user.value?.role === "SUPER_ADMIN");
+const isProtectedSuperAdmin = (member?: { role?: string } | null) =>
+  member?.role === "SUPER_ADMIN" && !isCurrentUserSuperAdmin.value;
+const isTitularMember = (member?: { id?: string } | null) =>
+  Boolean(member?.id && user.value?.church?.userMainId === member.id);
+const selectedChurchIsCurrentUserChurch = computed(
+  () => Boolean(selectedChurch.value?.id && selectedChurch.value.id === user.value?.church?.id),
+);
+const canEditSelectedMember = computed(
+  () =>
+    Boolean(selectedMember.value) &&
+    selectedMember.value?.id !== user.value?.id &&
+    !isTitularMember(selectedMember.value) &&
+    !isProtectedSuperAdmin(selectedMember.value),
+);
+const canAssignSelectedMemberRole = computed(
+  () =>
+    canEditMemberPermissions.value &&
+    canEditSelectedMember.value,
+);
+const canAssignSelectedAdminUserRole = computed(
+  () =>
+    isCurrentUserSuperAdmin.value &&
+    selectedChurchIsCurrentUserChurch.value &&
+    Boolean(selectedAdminUser.value) &&
+    selectedAdminUser.value?.id !== user.value?.id &&
+    !isProtectedSuperAdmin(selectedAdminUser.value),
+);
+const selectedMemberRoleLockedReason = computed(() => {
+  if (!selectedMember.value) return "";
+  if (selectedMember.value.id === user.value?.id) {
+    return "Você não pode alterar seu próprio cargo por esta tela.";
+  }
+  if (isTitularMember(selectedMember.value)) {
+    return "O pastor titular não pode ser alterado por este fluxo.";
+  }
+  if (isProtectedSuperAdmin(selectedMember.value)) {
+    return "Usuários super admin só podem ser alterados por outro super admin.";
+  }
+  return "";
+});
+const selectedAdminUserRoleLockedReason = computed(() => {
+  if (!selectedAdminUser.value) return "";
+  if (!isCurrentUserSuperAdmin.value) {
+    return "Somente super admins podem alterar cargos por esta visão master.";
+  }
+  if (!selectedChurchIsCurrentUserChurch.value) {
+    return "Nesta visão master, cargos de outras igrejas ficam somente para consulta.";
+  }
+  if (selectedAdminUser.value.id === user.value?.id) {
+    return "Você não pode alterar seu próprio cargo por esta tela.";
+  }
+  if (isProtectedSuperAdmin(selectedAdminUser.value)) {
+    return "Usuários super admin só podem ser alterados por outro super admin.";
+  }
+  return "";
+});
 const leaderOptions = computed(() =>
   members.value.map((member) => ({
     label: `${member.name} (${member.email})`,
@@ -1831,6 +2123,64 @@ const platformTotals = computed(() => ({
   ),
   activeChurches: adminChurches.value.filter((church) => church.isActive).length,
 }));
+
+const normalizeFilterText = (value?: string | null) =>
+  (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+const platformStatusOptions = [
+  { label: "Todos", value: "ALL" },
+  { label: "Ativas", value: "ACTIVE" },
+  { label: "Inativas", value: "INACTIVE" },
+];
+
+const memberTypeOptions = [
+  { label: "Todos", value: "ALL" },
+  { label: "Pastores", value: "PASTOR" },
+  { label: "Membros", value: "MEMBER" },
+  { label: "Admins", value: "ADMIN" },
+];
+
+const permissionModuleFilterOptions = computed(() => [
+  { label: "Todos", value: "ALL" },
+  ...PERMISSION_MODULES.map((module) => ({
+    label: module.label,
+    value: module.key,
+  })),
+]);
+
+const platformStatusSummary = computed(() => ({
+  active: adminChurches.value.filter((church) => church.isActive).length,
+  inactive: adminChurches.value.filter((church) => !church.isActive).length,
+  withoutMembers: adminChurches.value.filter((church) => church.membersCount === 0).length,
+}));
+
+const filteredAdminChurches = computed(() => {
+  const search = normalizeFilterText(platformSearch.value);
+
+  return adminChurches.value.filter((church) => {
+    const matchesStatus =
+      platformStatusFilter.value === "ALL" ||
+      (platformStatusFilter.value === "ACTIVE" && church.isActive) ||
+      (platformStatusFilter.value === "INACTIVE" && !church.isActive);
+    const matchesSearch =
+      !search ||
+      normalizeFilterText(
+        `${church.name} ${church.city || ""} ${church.state || ""} ${church.document || ""}`,
+      ).includes(search);
+
+    return matchesStatus && matchesSearch;
+  });
+});
+
+const topChurches = computed(() =>
+  [...adminChurches.value]
+    .sort((first, second) => second.membersCount - first.membersCount)
+    .slice(0, 4),
+);
 
 const selectedChurchAddress = computed(() => {
   if (!selectedChurch.value) return "Buscando informações";
@@ -2006,7 +2356,6 @@ const selectedMemberForm = reactive({
   name: "",
   email: "",
   phone: "",
-  role: "MEMBER",
 });
 
 const departmentTypes = [
@@ -2018,10 +2367,10 @@ const departmentTypes = [
   { label: "Intercessão", value: "INTERCESSION" },
   { label: "Outro", value: "OTHER" },
 ];
-const memberRoleOptions = [
-  { label: "Membro", value: "MEMBER" },
-  { label: "Pastor", value: "PASTOR" },
-];
+const departmentFilterOptions = computed(() => [
+  { label: "Todos", value: "ALL" },
+  ...departmentTypes,
+]);
 const departmentTypeLabel = (value: string) =>
   departmentTypes.find((type) => type.value === value)?.label || "Outro";
 
@@ -2039,7 +2388,8 @@ const churchMemberRoleLabel = (member: ChurchMember) => {
 
 const adminUserRoleLabel = (role: string) => {
   if (role === "PASTOR") return "Pastor";
-  if (["ADMIN", "SUPER_ADMIN"].includes(role)) return "Admin";
+  if (role === "SUPER_ADMIN") return "Super admin";
+  if (role === "ADMIN") return "Admin";
   return "Membro";
 };
 
@@ -2092,6 +2442,15 @@ const loadDepartments = async () => {
 const loadChurchSchedules = async () => {
   const { data } = await getChurchSchedules();
   churchSchedules.value = data ?? [];
+};
+
+const loadChurchAdminData = async () => {
+  await Promise.all([
+    loadMembers(),
+    loadDepartments(),
+    loadChurchSchedules(),
+    loadRoles(),
+  ]);
 };
 
 const loadPlatformChurches = async () => {
@@ -2157,6 +2516,7 @@ const openAdminUserDetails = (member: AdminChurchUser) => {
 const closeAdminUserDetails = () => {
   isAdminUserDetailsOpen.value = false;
   selectedAdminUser.value = null;
+  selectedMemberRoleId.value = null;
 };
 
 const openAdminDepartmentDetails = (department: AdminChurchDepartment) => {
@@ -2218,11 +2578,10 @@ const closeDepartmentDialog = () => {
 
 const openMemberDetails = (member: ChurchMember) => {
   selectedMember.value = member;
-  selectedMemberCanManageMembers.value = member.canManageMembers;
   selectedMemberForm.name = member.name;
   selectedMemberForm.email = member.email;
   selectedMemberForm.phone = member.phone || "";
-  selectedMemberForm.role = member.role || "MEMBER";
+  selectedChurchMemberRoleId.value = member.churchRoleId ?? null;
   permissionError.value = "";
   isMemberDetailsOpen.value = true;
 };
@@ -2234,7 +2593,7 @@ const closeMemberDetails = () => {
   selectedMemberForm.name = "";
   selectedMemberForm.email = "";
   selectedMemberForm.phone = "";
-  selectedMemberForm.role = "MEMBER";
+  selectedChurchMemberRoleId.value = null;
 };
 
 const handleCreateMember = async () => {
@@ -2372,6 +2731,13 @@ const handleUpdateMember = async () => {
   if (!selectedMember.value) return;
 
   permissionError.value = "";
+
+  if (!canEditSelectedMember.value) {
+    permissionError.value =
+      selectedMemberRoleLockedReason.value || "Sem permissão para editar este membro.";
+    return;
+  }
+
   const name = selectedMemberForm.name.trim();
   const email = selectedMemberForm.email.trim().toLowerCase();
 
@@ -2387,7 +2753,6 @@ const handleUpdateMember = async () => {
       name,
       email,
       phone: selectedMemberForm.phone.trim(),
-      ...(canEditMemberPermissions.value ? { role: selectedMemberForm.role } : {}),
     });
 
     if (error || !data) {
@@ -2395,18 +2760,61 @@ const handleUpdateMember = async () => {
       return;
     }
 
-    selectedMember.value = data;
-    selectedMemberCanManageMembers.value = data.canManageMembers;
+    let nextMember = data;
+    if (canAssignSelectedMemberRole.value) {
+      nextMember = await saveSelectedChurchMemberRole(data);
+      if (!nextMember) return;
+    }
+
+    selectedMember.value = nextMember;
     members.value = members.value.map((member) =>
-      member.id === data.id ? data : member,
+      member.id === nextMember.id ? nextMember : member,
     );
   } finally {
     isUpdatingMember.value = false;
   }
 };
 
+const saveSelectedChurchMemberRole = async (
+  member: ChurchMember,
+): Promise<ChurchMember | null> => {
+  isAssigningChurchMemberRole.value = true;
+  try {
+    const { data, error } = await assignRole(
+      member.id,
+      selectedChurchMemberRoleId.value,
+    );
+
+    if (error || !data) {
+      permissionError.value = error || "Não foi possível salvar o cargo.";
+      return null;
+    }
+
+    const role = churchRoles.value.find((item) => item.id === data.churchRoleId) ?? null;
+
+    return {
+      ...member,
+      churchRoleId: data.churchRoleId,
+      churchRole: role
+        ? {
+            id: role.id,
+            name: role.name,
+            permissions: role.permissions,
+          }
+        : null,
+    };
+  } finally {
+    isAssigningChurchMemberRole.value = false;
+  }
+};
+
 const handleDeleteMember = () => {
   if (!selectedMember.value) return;
+  if (!canEditSelectedMember.value) {
+    permissionError.value =
+      selectedMemberRoleLockedReason.value || "Sem permissão para remover este membro.";
+    return;
+  }
 
   pendingDeleteMember.value = selectedMember.value;
 };
@@ -2437,38 +2845,6 @@ const confirmDeleteMember = async () => {
   }
 };
 
-const handleUpdateMemberPermissions = async (value: boolean | null) => {
-  if (!selectedMember.value) return;
-
-  if (!canEditMemberPermissions.value) {
-    selectedMemberCanManageMembers.value = selectedMember.value.canManageMembers;
-    return;
-  }
-
-  permissionError.value = "";
-  isUpdatingPermissions.value = true;
-
-  try {
-    const { data, error } = await updateMemberPermissions(selectedMember.value.id, {
-      canManageMembers: value === true,
-    });
-
-    if (error || !data) {
-      permissionError.value = error || "Não foi possível atualizar as permissões.";
-      selectedMemberCanManageMembers.value = selectedMember.value.canManageMembers;
-      return;
-    }
-
-    selectedMember.value = data;
-    selectedMemberCanManageMembers.value = data.canManageMembers;
-    members.value = members.value.map((member) =>
-      member.id === data.id ? data : member,
-    );
-  } finally {
-    isUpdatingPermissions.value = false;
-  }
-};
-
 // ── Cargos (RBAC) ──────────────────────────────────────────────
 const { getRoles, createRole, updateRole, deleteRole, assignRole } =
   useChurchRoles();
@@ -2486,7 +2862,9 @@ const roleError = ref("");
 const isDeletingRole = ref(false);
 const pendingDeleteRoleId = ref("");
 const isAssigningRole = ref(false);
+const isAssigningChurchMemberRole = ref(false);
 const selectedMemberRoleId = ref<string | null>(null);
+const selectedChurchMemberRoleId = ref<string | null>(null);
 
 const isDeleteRoleDialogOpen = computed({
   get: () => Boolean(pendingDeleteRoleId.value),
@@ -2498,8 +2876,79 @@ const roleOptions = computed(() => [
   ...churchRoles.value.map((r) => ({ label: r.name, value: r.id })),
 ]);
 
-const permissionLabel = (key: string) =>
-  ALL_PERMISSIONS.find((p) => p.key === key)?.label ?? key;
+const roleFilterOptions = computed(() => [
+  { label: "Todos", value: "ALL" },
+  { label: "Sem cargo", value: null },
+  ...churchRoles.value.map((role) => ({ label: role.name, value: role.id })),
+]);
+
+const filteredMembers = computed(() => {
+  const search = normalizeFilterText(memberSearch.value);
+
+  return members.value.filter((member) => {
+    const matchesSearch =
+      !search ||
+      normalizeFilterText(`${member.name} ${member.email} ${member.phone || ""}`)
+        .includes(search);
+    const matchesType =
+      memberTypeFilter.value === "ALL" ||
+      (memberTypeFilter.value === "ADMIN" &&
+        ["ADMIN", "SUPER_ADMIN"].includes(member.role)) ||
+      member.role === memberTypeFilter.value;
+    const matchesRole =
+      memberRoleFilter.value === "ALL" ||
+      member.churchRoleId === memberRoleFilter.value;
+
+    return matchesSearch && matchesType && matchesRole;
+  });
+});
+
+const filteredDepartments = computed(() => {
+  const search = normalizeFilterText(departmentSearch.value);
+
+  return departments.value.filter((department) => {
+    const matchesSearch =
+      !search ||
+      normalizeFilterText(`${department.name} ${department.leader.name}`)
+        .includes(search);
+    const matchesType =
+      departmentTypeFilter.value === "ALL" ||
+      department.type === departmentTypeFilter.value;
+
+    return matchesSearch && matchesType;
+  });
+});
+
+const rolePermissionModules = (permissions: string[]) =>
+  PERMISSION_MODULES.filter((module) =>
+    module.permissions.some((permission) => permissions.includes(permission.key)),
+  );
+
+const filteredChurchRoles = computed(() => {
+  const search = normalizeFilterText(roleSearch.value);
+
+  return churchRoles.value.filter((role) => {
+    const matchesSearch =
+      !search ||
+      normalizeFilterText(`${role.name} ${role.description || ""}`).includes(search);
+    const matchesModule =
+      roleModuleFilter.value === "ALL" ||
+      rolePermissionModules(role.permissions).some(
+        (module) => module.key === roleModuleFilter.value,
+      );
+
+    return matchesSearch && matchesModule;
+  });
+});
+
+const selectedModulePermissionCount = (moduleKey: PermissionModuleKey) => {
+  const module = PERMISSION_MODULES.find((item) => item.key === moduleKey);
+  if (!module) return 0;
+
+  return module.permissions.filter((permission) =>
+    roleForm.permissions.includes(permission.key),
+  ).length;
+};
 
 const loadRoles = async () => {
   const { data } = await getRoles();
@@ -2574,6 +3023,8 @@ const confirmDeleteRole = async () => {
 
 const saveAssignRole = async () => {
   if (!selectedAdminUser.value) return;
+  if (!canAssignSelectedAdminUserRole.value) return;
+
   isAssigningRole.value = true;
   try {
     const { data, error } = await assignRole(
@@ -2584,10 +3035,29 @@ const saveAssignRole = async () => {
     selectedAdminUser.value = {
       ...selectedAdminUser.value,
       churchRoleId: data.churchRoleId,
+      churchRole: data.churchRole ?? null,
     };
+    if (selectedChurch.value) {
+      selectedChurch.value = {
+        ...selectedChurch.value,
+        users: selectedChurch.value.users.map((member) =>
+          member.id === selectedAdminUser.value?.id
+            ? {
+                ...member,
+                churchRoleId: data.churchRoleId,
+                churchRole: data.churchRole ?? null,
+              }
+            : member,
+        ),
+      };
+    }
     members.value = members.value.map((m) =>
       m.id === selectedAdminUser.value?.id
-        ? { ...m, churchRoleId: data.churchRoleId }
+        ? {
+            ...m,
+            churchRoleId: data.churchRoleId,
+            churchRole: data.churchRole ?? null,
+          }
         : m,
     );
   } finally {
@@ -2596,20 +3066,9 @@ const saveAssignRole = async () => {
 };
 
 onMounted(async () => {
-  if (isPlatformAdmin.value) {
-    await loadPlatformChurches();
-    return;
-  }
-
-  if (!canAccessChurchAdmin.value) {
-    return;
-  }
-
   await Promise.all([
-    loadMembers(),
-    loadDepartments(),
-    loadChurchSchedules(),
-    loadRoles(),
+    isPlatformAdmin.value ? loadPlatformChurches() : Promise.resolve(),
+    canAccessChurchAdmin.value ? loadChurchAdminData() : Promise.resolve(),
   ]);
 });
 </script>
@@ -2677,6 +3136,101 @@ onMounted(async () => {
 
 .platform-directory {
   min-width: 0;
+}
+
+.master-panel {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.master-panel-card {
+  border-radius: 8px !important;
+  min-width: 0;
+}
+
+.master-panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #4f46e5;
+}
+
+.master-panel-heading h2 {
+  color: #111827;
+  font-size: 0.94rem;
+  font-weight: 850;
+  margin: 0;
+}
+
+.master-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.master-summary-grid div {
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  background: #f9fafb;
+  display: grid;
+  gap: 4px;
+  min-height: 64px;
+  align-content: center;
+  padding: 10px;
+}
+
+.master-summary-grid strong {
+  color: #111827;
+  font-size: 1.18rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.master-summary-grid span {
+  color: #6b7280;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.master-ranking {
+  display: grid;
+  gap: 8px;
+}
+
+.master-ranking button {
+  appearance: none;
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.master-ranking span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.master-ranking strong {
+  color: #4f46e5;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.admin-filter-bar {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
 .directory-heading {
@@ -3222,6 +3776,50 @@ onMounted(async () => {
   border-bottom: none;
 }
 
+.role-permission-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.permission-module-list {
+  display: grid;
+  gap: 10px;
+}
+
+.permission-module-card {
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  background: #f9fafb;
+  padding: 12px;
+}
+
+.permission-module-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.permission-module-title strong,
+.permission-module-title span {
+  display: block;
+}
+
+.permission-module-title strong {
+  color: #111827;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.permission-module-title span {
+  color: #6b7280;
+  font-size: 0.74rem;
+  font-weight: 650;
+}
+
 .ministry-item:focus-visible,
 .clickable-row:focus-visible {
   outline: 3px solid rgba(168, 85, 247, 0.28);
@@ -3314,6 +3912,14 @@ onMounted(async () => {
 
   .church-stats-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .master-panel {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  }
+
+  .admin-filter-bar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .pastoral-report-grid {

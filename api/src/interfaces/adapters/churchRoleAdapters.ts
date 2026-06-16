@@ -28,21 +28,25 @@ function getAuthUserId(request: FastifyRequest): string {
 export class ChurchRoleAdapters {
   private async getCurrentUser(request: FastifyRequest) {
     const userId = getAuthUserId(request);
-    const user = await $prismaClient.user.findUnique({ where: { id: userId } });
+    const user = await $prismaClient.user.findUnique({
+      where: { id: userId },
+      include: { churchRole: true },
+    });
     if (!user) throw new DomainError("Usuário não encontrado");
     return user;
   }
 
   private assertIsChurchManager(user: {
+    id?: string;
     role: string;
     canManageMembers: boolean;
     crunchId: string | null;
+    churchRole?: { permissions: string[] } | null;
   }) {
     const isManager =
       user.role === "PASTOR" ||
       user.role === "ADMIN" ||
-      user.role === "SUPER_ADMIN" ||
-      user.canManageMembers;
+      user.role === "SUPER_ADMIN";
     if (!isManager) throw new DomainError("Sem permissão para gerenciar cargos");
     if (!user.crunchId) throw new DomainError("Usuário sem igreja vinculada");
   }
@@ -163,6 +167,25 @@ export class ChurchRoleAdapters {
 
     const body = request.body as { churchRoleId?: string | null };
 
+    const member = await $prismaClient.user.findFirst({
+      where: { id, crunchId: user.crunchId! },
+      include: { crunch: true },
+    });
+
+    if (!member) throw new DomainError("Membro não encontrado nesta igreja");
+
+    if (member.id === user.id) {
+      throw new DomainError("Nao e possivel alterar o proprio cargo");
+    }
+
+    if (member.crunch?.userMainId === member.id) {
+      throw new DomainError("Nao e possivel alterar o cargo do pastor titular");
+    }
+
+    if (member.role === "SUPER_ADMIN" && user.role !== "SUPER_ADMIN") {
+      throw new DomainError("Nao e possivel alterar um usuario super admin");
+    }
+
     if (body.churchRoleId) {
       const role = await $prismaClient.churchRole.findFirst({
         where: { id: body.churchRoleId, crunchId: user.crunchId! },
@@ -171,7 +194,7 @@ export class ChurchRoleAdapters {
     }
 
     const updated = await $prismaClient.user.update({
-      where: { id },
+      where: { id: member.id },
       data: { churchRoleId: body.churchRoleId ?? null },
       select: {
         id: true,

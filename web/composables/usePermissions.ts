@@ -8,37 +8,95 @@ export type AppPermission =
   | "MANAGE_SONGS"
   | "SEND_NOTIFICATIONS";
 
-export const ALL_PERMISSIONS: {
+export type PermissionModuleKey =
+  | "members"
+  | "departments"
+  | "schedules"
+  | "content"
+  | "communication";
+
+export type PermissionDefinition = {
   key: AppPermission;
   label: string;
   description: string;
+  module: PermissionModuleKey;
+};
+
+export const PERMISSION_MODULES: {
+  key: PermissionModuleKey;
+  label: string;
+  description: string;
+  permissions: PermissionDefinition[];
 }[] = [
   {
-    key: "MANAGE_MEMBERS",
-    label: "Gerenciar membros",
-    description: "Adicionar, editar e remover membros da igreja",
+    key: "members",
+    label: "Membros",
+    description: "Cadastro e manutenção de pessoas da igreja",
+    permissions: [
+      {
+        key: "MANAGE_MEMBERS",
+        label: "Gerenciar membros",
+        description: "Adicionar, editar e remover membros da igreja",
+        module: "members",
+      },
+    ],
   },
   {
-    key: "MANAGE_SCHEDULES",
-    label: "Gerenciar escalas",
-    description: "Criar, editar e excluir escalas e gerenciar voluntários",
+    key: "departments",
+    label: "Ministérios",
+    description: "Organização, tarefas e recursos do ministério liderado",
+    permissions: [
+      {
+        key: "MANAGE_DEPARTMENTS",
+        label: "Gerenciar ministérios",
+        description: "Criar tarefas, editar recursos e ajustar dados do ministério",
+        module: "departments",
+      },
+    ],
   },
   {
-    key: "MANAGE_DEPARTMENTS",
-    label: "Gerenciar ministérios",
-    description: "Criar e editar ministérios e suas configurações",
+    key: "schedules",
+    label: "Escalas",
+    description: "Escalas e voluntários do ministério liderado",
+    permissions: [
+      {
+        key: "MANAGE_SCHEDULES",
+        label: "Gerenciar escalas",
+        description: "Criar, editar e excluir escalas e gerenciar voluntários",
+        module: "schedules",
+      },
+    ],
   },
   {
-    key: "MANAGE_SONGS",
-    label: "Gerenciar músicas",
-    description: "Adicionar, editar e remover músicas e recursos",
+    key: "content",
+    label: "Músicas",
+    description: "Repertório, letras, cifras e PDFs do ministério liderado",
+    permissions: [
+      {
+        key: "MANAGE_SONGS",
+        label: "Gerenciar músicas",
+        description: "Adicionar, editar e remover músicas",
+        module: "content",
+      },
+    ],
   },
   {
-    key: "SEND_NOTIFICATIONS",
-    label: "Enviar notificações",
-    description: "Enviar lembretes e notificações push para membros",
+    key: "communication",
+    label: "Comunicação",
+    description: "Lembretes e avisos do ministério liderado",
+    permissions: [
+      {
+        key: "SEND_NOTIFICATIONS",
+        label: "Enviar notificações",
+        description: "Enviar lembretes e notificações push para membros escalados",
+        module: "communication",
+      },
+    ],
   },
 ];
+
+export const ALL_PERMISSIONS: PermissionDefinition[] =
+  PERMISSION_MODULES.flatMap((module) => module.permissions);
 
 export const usePermissions = () => {
   const { user } = useAuth();

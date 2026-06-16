@@ -535,6 +535,7 @@ export class UserAdapters {
       },
       include: {
         crunch: true,
+        churchRole: true,
       },
     });
 
@@ -548,8 +549,11 @@ export class UserAdapters {
 
     const isPlatformAdmin =
       user.role === "ADMIN" || user.role === "SUPER_ADMIN";
-
-    if (!isPlatformAdmin && user.role !== "PASTOR" && !user.canManageMembers) {
+    if (
+      !isPlatformAdmin &&
+      user.role !== "PASTOR" &&
+      !user.canManageMembers
+    ) {
       throw new DomainError("Usuário não possui permissão para gerenciar membros");
     }
 
@@ -715,6 +719,10 @@ export class UserAdapters {
       throw new DomainError("Não é possível alterar as permissões do pastor titular");
     }
 
+    if (member.role === "SUPER_ADMIN" && manager.role !== "SUPER_ADMIN") {
+      throw new DomainError("Nao e possivel alterar um usuario super admin");
+    }
+
     const updatedMember = await $prismaClient.user.update({
       where: {
         id: member.id,
@@ -767,6 +775,10 @@ export class UserAdapters {
 
     if (member.crunch?.userMainId === member.id) {
       throw new DomainError("Nao e possivel editar o pastor titular por este fluxo");
+    }
+
+    if (member.role === "SUPER_ADMIN" && manager.role !== "SUPER_ADMIN") {
+      throw new DomainError("Nao e possivel editar um usuario super admin");
     }
 
     if (body.name !== undefined && !body.name.trim()) {
@@ -854,6 +866,10 @@ export class UserAdapters {
 
     if (member.crunch?.userMainId === member.id) {
       throw new DomainError("Nao e possivel remover o pastor titular");
+    }
+
+    if (member.role === "SUPER_ADMIN" && manager.role !== "SUPER_ADMIN") {
+      throw new DomainError("Nao e possivel remover um usuario super admin");
     }
 
     await $prismaClient.user.delete({

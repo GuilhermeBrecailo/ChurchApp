@@ -10,10 +10,18 @@ import { pushNotificationService } from "../../infrastructure/notifications/Push
 type CurrentUser = Prisma.UserGetPayload<{
   include: {
     crunch: true;
+    churchRole: true;
   };
 }> & {
   isPlatformAdmin: boolean;
 };
+
+type AppPermission =
+  | "MANAGE_MEMBERS"
+  | "MANAGE_SCHEDULES"
+  | "MANAGE_DEPARTMENTS"
+  | "MANAGE_SONGS"
+  | "SEND_NOTIFICATIONS";
 
 type AuthPayload = {
   sub?: string;
@@ -272,6 +280,7 @@ export class ChurchDepartmentAdapters {
       },
       include: {
         crunch: true,
+        churchRole: true,
       },
     });
 
@@ -298,35 +307,109 @@ export class ChurchDepartmentAdapters {
     );
   }
 
-  private async assertCanManageDepartment(user: CurrentUser, departmentId: string) {
-    const department = await this.getDepartmentFromCurrentChurch(
-      departmentId,
-      user.crunchId!,
-    );
-
-    if (!this.isChurchWideManager(user) && department.leaderId !== user.id) {
-      throw new DomainError("Usuario nao possui permissao para gerenciar este ministerio");
-    }
-
-    return department;
+  private hasPermission(user: CurrentUser, permission: AppPermission) {
+    return user.churchRole?.permissions.includes(permission) === true;
   }
 
-  private async assertCanManageScheduleDepartment(
+  private async assertCanManageDepartmentWithPermission(
     user: CurrentUser,
     departmentId: string,
+    permission: AppPermission,
+    message = "Usuario nao possui permissao para gerenciar este ministerio",
   ) {
     const department = await this.getDepartmentFromCurrentChurch(
       departmentId,
       user.crunchId!,
     );
 
-    if (!this.isChurchWideManager(user) && department.leaderId !== user.id) {
-      throw new DomainError(
-        "Apenas pastores, admins ou o lider do ministerio podem gerenciar escalas",
-      );
+    if (this.isChurchWideManager(user)) {
+      return department;
+    }
+
+    if (department.leaderId !== user.id || !this.hasPermission(user, permission)) {
+      throw new DomainError(message);
     }
 
     return department;
+  }
+
+  private async assertCanManageDepartmentWithAnyPermission(
+    user: CurrentUser,
+    departmentId: string,
+    permissions: AppPermission[],
+    message: string,
+  ) {
+    const department = await this.getDepartmentFromCurrentChurch(
+      departmentId,
+      user.crunchId!,
+    );
+
+    if (this.isChurchWideManager(user)) {
+      return department;
+    }
+
+    const hasAnyPermission = permissions.some((permission) =>
+      this.hasPermission(user, permission),
+    );
+
+    if (department.leaderId !== user.id || !hasAnyPermission) {
+      throw new DomainError(message);
+    }
+
+    return department;
+  }
+
+  private async assertCanManageDepartment(user: CurrentUser, departmentId: string) {
+    return await this.assertCanManageDepartmentWithPermission(
+      user,
+      departmentId,
+      "MANAGE_DEPARTMENTS",
+    );
+  }
+
+  private async assertCanManageScheduleDepartment(
+    user: CurrentUser,
+    departmentId: string,
+  ) {
+    return await this.assertCanManageDepartmentWithPermission(
+      user,
+      departmentId,
+      "MANAGE_SCHEDULES",
+      "Apenas pastores, admins ou lideres com permissao podem gerenciar escalas deste ministerio",
+    );
+  }
+
+  private async assertCanSendScheduleNotifications(
+    user: CurrentUser,
+    departmentId: string,
+  ) {
+    return await this.assertCanManageDepartmentWithPermission(
+      user,
+      departmentId,
+      "SEND_NOTIFICATIONS",
+      "Apenas pastores, admins ou lideres com permissao podem enviar notificacoes deste ministerio",
+    );
+  }
+
+  private async assertCanManageSongs(user: CurrentUser, departmentId: string) {
+    return await this.assertCanManageDepartmentWithPermission(
+      user,
+      departmentId,
+      "MANAGE_SONGS",
+      "Apenas pastores, admins ou lideres com permissao podem gerenciar musicas deste ministerio",
+    );
+  }
+
+  private async assertCanUploadDepartmentPdf(
+    user: CurrentUser,
+    departmentId: string,
+  ) {
+    return await this.assertCanManageDepartmentWithAnyPermission(
+      user,
+      departmentId,
+      ["MANAGE_DEPARTMENTS", "MANAGE_SONGS"],
+      "Apenas pastores, admins ou lideres com permissao podem enviar arquivos neste ministerio",
+    );
   }
 
   private async getChurchAdminNotificationRecipientIds(crunchId: string) {
@@ -372,7 +455,7 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Ministério não informado");
     }
 
-    await this.assertCanManageDepartment(user, id);
+    await this.assertCanUploadDepartmentPdf(user, id);
 
     const multipartRequest = request as FastifyRequest & {
       file: (options?: unknown) => Promise<{
@@ -1273,7 +1356,7 @@ export class ChurchDepartmentAdapters {
     }
 
     const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
-    await this.assertCanManageScheduleDepartment(user, schedule.departmentId);
+    await this.assertCanSendScheduleNotifications(user, schedule.departmentId);
 
     const assignedUserIds =
       schedule.assignments?.map((assignment) => assignment.userId) || [];
@@ -1742,7 +1825,7 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Titulo da musica e obrigatorio");
     }
 
-    await this.assertCanManageDepartment(user, id);
+    await this.assertCanManageSongs(user, id);
 
     const metadata = {
       artist: body.artist?.trim() || "",
@@ -1798,7 +1881,7 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Musica nao informada");
     }
 
-    await this.assertCanManageDepartment(user, departmentId);
+    await this.assertCanManageSongs(user, departmentId);
     const song = await this.getResourceFromCurrentChurch(
       songId,
       departmentId,
@@ -1869,7 +1952,7 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Musica nao informada");
     }
 
-    await this.assertCanManageDepartment(user, departmentId);
+    await this.assertCanManageSongs(user, departmentId);
     const song = await this.getResourceFromCurrentChurch(
       songId,
       departmentId,

@@ -53,7 +53,11 @@ export const useChurchRoles = () => {
     );
 
   const assignRole = async (memberId: string, churchRoleId: string | null) =>
-    await $customFetch<{ id: string; churchRoleId: string | null }>(
+    await $customFetch<{
+      id: string;
+      churchRoleId: string | null;
+      churchRole: Pick<ChurchRole, "id" | "name" | "permissions"> | null;
+    }>(
       `${config.public.URL_BACKEND}/api/church/members/${memberId}/church-role`,
       { method: "PATCH", headers: authHeaders(), body: { churchRoleId } },
     );

@@ -240,6 +240,7 @@
               </div>
 
               <v-btn
+                v-if="canSendNotifications"
                 variant="tonal"
                 color="purple-darken-3"
                 class="text-none leader-reminder-btn"
@@ -381,7 +382,7 @@
       <section v-if="activeTab === 'tasks'">
         <div class="ministery-section-actions mb-4">
           <v-btn
-            v-if="canManageDepartment"
+            v-if="canManageSongs"
             color="#A855F7"
             class="rounded-lg text-none"
             @click="isTaskDialogOpen = true"
@@ -425,7 +426,7 @@
                 {{ priorityLabel(task.priority) }}
               </v-chip>
             </div>
-            <div v-if="canManageDepartment" class="ministery-card-actions mt-3">
+            <div v-if="canManageSongs" class="ministery-card-actions mt-3">
               <v-btn
                 icon
                 variant="text"
@@ -1925,6 +1926,7 @@ import {
 } from "../../../composables/useDepartments";
 import { useAuth } from "../../../composables/useAuth";
 import { useMembers, type ChurchMember } from "../../../composables/useMembers";
+import { usePermissions } from "../../../composables/usePermissions";
 
 const route = useRoute();
 const router = useRouter();
@@ -1956,6 +1958,7 @@ const {
 } = useDepartments();
 const { getMembers } = useMembers();
 const { user } = useAuth();
+const { can } = usePermissions();
 
 const department = ref<ChurchDepartment | null>(null);
 const tasks = ref<DepartmentTask[]>([]);
@@ -2016,15 +2019,28 @@ const isChurchWideManager = computed(
     user.value?.role === "SUPER_ADMIN" ||
     user.value?.is_admin === true,
 );
+const isDepartmentLeader = computed(
+  () => department.value?.leaderId === user.value?.id,
+);
 const canManageDepartment = computed(
   () =>
     isChurchWideManager.value ||
-    department.value?.leaderId === user.value?.id,
+    (isDepartmentLeader.value && can("MANAGE_DEPARTMENTS")),
 );
 const canManageSchedules = computed(
   () =>
     isChurchWideManager.value ||
-    department.value?.leaderId === user.value?.id,
+    (isDepartmentLeader.value && can("MANAGE_SCHEDULES")),
+);
+const canManageSongs = computed(
+  () =>
+    isChurchWideManager.value ||
+    (isDepartmentLeader.value && can("MANAGE_SONGS")),
+);
+const canSendNotifications = computed(
+  () =>
+    isChurchWideManager.value ||
+    (isDepartmentLeader.value && can("SEND_NOTIFICATIONS")),
 );
 
 const taskForm = reactive({
