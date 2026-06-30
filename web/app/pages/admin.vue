@@ -871,6 +871,225 @@
       <div class="section-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+            Conteúdo
+          </h2>
+          <p class="text-caption text-grey-darken-1 mb-0">
+            Publique versículos, avisos e devocionais para a igreja.
+          </p>
+        </div>
+      </div>
+
+      <v-alert v-if="contentError" type="error" variant="tonal" density="compact" class="mb-4">
+        {{ contentError }}
+      </v-alert>
+
+      <div class="content-admin-grid mb-4">
+        <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
+          <div class="d-flex align-center mb-4">
+            <BookMarked size="18" color="#6366F1" class="mr-2" />
+            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+              Versículo
+            </h3>
+          </div>
+          <v-textarea
+            v-model="verseForm.text"
+            label="Texto"
+            variant="outlined"
+            color="purple-darken-3"
+            auto-grow
+            rows="2"
+            class="mb-3"
+            hide-details="auto"
+          />
+          <v-text-field
+            v-model="verseForm.reference"
+            label="Referência"
+            variant="outlined"
+            color="purple-darken-3"
+            class="mb-3"
+            hide-details="auto"
+          />
+          <v-textarea
+            v-model="verseForm.commentary"
+            label="Comentário"
+            variant="outlined"
+            color="purple-darken-3"
+            auto-grow
+            rows="2"
+            class="mb-4"
+            hide-details="auto"
+          />
+          <v-btn
+            color="purple-darken-3"
+            class="text-none font-weight-bold"
+            :loading="isPublishingVerse"
+            @click="publishDailyVerse"
+          >
+            Publicar versículo
+          </v-btn>
+        </v-card>
+
+        <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
+          <div class="d-flex align-center mb-4">
+            <Megaphone size="18" color="#6366F1" class="mr-2" />
+            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+              Avisos
+            </h3>
+          </div>
+          <v-text-field
+            v-model="announcementForm.title"
+            label="Título"
+            variant="outlined"
+            color="purple-darken-3"
+            class="mb-3"
+            hide-details="auto"
+          />
+          <v-textarea
+            v-model="announcementForm.body"
+            label="Texto"
+            variant="outlined"
+            color="purple-darken-3"
+            auto-grow
+            rows="2"
+            class="mb-3"
+            hide-details="auto"
+          />
+          <div class="content-inline-fields mb-4">
+            <v-checkbox
+              v-model="announcementForm.pinned"
+              label="Fixar"
+              color="purple-darken-3"
+              hide-details
+            />
+            <v-text-field
+              v-model="announcementForm.expiresAt"
+              label="Expira em"
+              type="date"
+              variant="outlined"
+              color="purple-darken-3"
+              hide-details="auto"
+            />
+          </div>
+          <v-btn
+            color="purple-darken-3"
+            class="text-none font-weight-bold mb-4"
+            :loading="isSavingAnnouncement"
+            @click="publishAnnouncement"
+          >
+            Publicar aviso
+          </v-btn>
+          <div class="content-admin-list">
+            <div
+              v-for="announcement in announcements"
+              :key="announcement.id"
+              class="content-admin-row"
+            >
+              <span>{{ announcement.title }}</span>
+              <v-btn icon variant="text" color="red-darken-2" size="small" @click="removeAnnouncement(announcement.id)">
+                <Trash2 size="16" />
+              </v-btn>
+            </div>
+          </div>
+        </v-card>
+      </div>
+
+      <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
+        <div class="d-flex align-center justify-space-between mb-4">
+          <div class="d-flex align-center">
+            <Heart size="18" color="#F43F5E" class="mr-2" />
+            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+              Devocionais
+            </h3>
+          </div>
+          <v-btn variant="tonal" color="purple-darken-3" size="small" class="text-none" @click="addDevotionalChapter">
+            <Plus size="16" class="mr-1" /> Adicionar capítulo
+          </v-btn>
+        </div>
+        <div class="content-admin-grid">
+          <div>
+            <v-text-field
+              v-model="devotionalForm.title"
+              label="Título"
+              variant="outlined"
+              color="purple-darken-3"
+              class="mb-3"
+              hide-details="auto"
+            />
+            <v-textarea
+              v-model="devotionalForm.description"
+              label="Descrição"
+              variant="outlined"
+              color="purple-darken-3"
+              auto-grow
+              rows="2"
+              class="mb-3"
+              hide-details="auto"
+            />
+            <div
+              v-for="(chapter, index) in devotionalForm.chapters"
+              :key="index"
+              class="chapter-admin-box mb-3"
+            >
+              <v-text-field
+                v-model="chapter.title"
+                :label="`Capítulo ${index + 1}`"
+                variant="outlined"
+                color="purple-darken-3"
+                class="mb-2"
+                hide-details="auto"
+              />
+              <v-text-field
+                v-model="chapter.bibleRef"
+                label="Referência bíblica"
+                variant="outlined"
+                color="purple-darken-3"
+                class="mb-2"
+                hide-details="auto"
+              />
+              <v-textarea
+                v-model="chapter.content"
+                label="Texto"
+                variant="outlined"
+                color="purple-darken-3"
+                auto-grow
+                rows="3"
+                hide-details="auto"
+              />
+            </div>
+            <v-btn
+              color="purple-darken-3"
+              class="text-none font-weight-bold"
+              :loading="isSavingDevotional"
+              @click="publishDevotional"
+            >
+              Criar devocional
+            </v-btn>
+          </div>
+          <div class="content-admin-list">
+            <div
+              v-for="devotional in devotionals"
+              :key="devotional.id"
+              class="content-admin-row"
+            >
+              <span>{{ devotional.title }}</span>
+              <v-btn icon variant="text" color="red-darken-2" size="small" @click="removeDevotional(devotional.id)">
+                <Trash2 size="16" />
+              </v-btn>
+            </div>
+          </div>
+        </div>
+      </v-card>
+    </section>
+
+    <AdminReports
+      v-if="isChurchWideManager"
+      :departments="departments"
+    />
+
+    <section v-if="isChurchWideManager" class="church-admin-section mb-8">
+      <div class="section-heading mb-4">
+        <div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
             Relatório pastoral
           </h2>
           <p class="text-caption text-grey-darken-1 mb-0">
@@ -1925,6 +2144,10 @@ import {
   Pencil,
   Trash2,
   Shield,
+  BookMarked,
+  Megaphone,
+  Heart,
+  Plus,
 } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
@@ -1950,6 +2173,15 @@ import {
   PERMISSION_MODULES,
   type PermissionModuleKey,
 } from "../../../composables/usePermissions";
+import { useDailyVerse } from "../../composables/useDailyVerse";
+import {
+  useAnnouncements,
+  type Announcement,
+} from "../../composables/useAnnouncements";
+import {
+  useDevotionals,
+  type Devotional,
+} from "../../composables/useDevotionals";
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
@@ -1974,10 +2206,23 @@ const {
   getChurches,
   getChurchById,
 } = useAdmin();
+const { publishVerse } = useDailyVerse();
+const {
+  getAnnouncements,
+  createAnnouncement,
+  deleteAnnouncement,
+} = useAnnouncements();
+const {
+  listDevotionals,
+  createDevotional,
+  deleteDevotional,
+} = useDevotionals();
 
 const members = ref<ChurchMember[]>([]);
 const departments = ref<ChurchDepartment[]>([]);
 const churchSchedules = ref<DepartmentSchedule[]>([]);
+const announcements = ref<Announcement[]>([]);
+const devotionals = ref<Devotional[]>([]);
 const adminChurches = ref<AdminChurch[]>([]);
 const selectedChurch = ref<AdminChurchDetails | null>(null);
 const membersError = ref("");
@@ -2023,6 +2268,10 @@ const departmentSearch = ref("");
 const departmentTypeFilter = ref("ALL");
 const roleSearch = ref("");
 const roleModuleFilter = ref<PermissionModuleKey | "ALL">("ALL");
+const contentError = ref("");
+const isPublishingVerse = ref(false);
+const isSavingAnnouncement = ref(false);
+const isSavingDevotional = ref(false);
 
 const isPlatformAdmin = computed(
   () =>
@@ -2352,6 +2601,31 @@ const departmentForm = reactive({
   leaderId: "",
 });
 
+const verseForm = reactive({
+  text: "",
+  reference: "",
+  commentary: "",
+});
+
+const announcementForm = reactive({
+  title: "",
+  body: "",
+  pinned: false,
+  expiresAt: "",
+});
+
+const devotionalForm = reactive({
+  title: "",
+  description: "",
+  chapters: [
+    {
+      title: "",
+      content: "",
+      bibleRef: "",
+    },
+  ],
+});
+
 const selectedMemberForm = reactive({
   name: "",
   email: "",
@@ -2444,12 +2718,24 @@ const loadChurchSchedules = async () => {
   churchSchedules.value = data ?? [];
 };
 
+const loadAnnouncements = async () => {
+  const { data } = await getAnnouncements();
+  announcements.value = data ?? [];
+};
+
+const loadDevotionals = async () => {
+  const { data } = await listDevotionals();
+  devotionals.value = data ?? [];
+};
+
 const loadChurchAdminData = async () => {
   await Promise.all([
     loadMembers(),
     loadDepartments(),
     loadChurchSchedules(),
     loadRoles(),
+    loadAnnouncements(),
+    loadDevotionals(),
   ]);
 };
 
@@ -2843,6 +3129,126 @@ const confirmDeleteMember = async () => {
   } finally {
     isConfirmingDelete.value = false;
   }
+};
+
+const publishDailyVerse = async () => {
+  contentError.value = "";
+
+  if (!verseForm.text.trim() || !verseForm.reference.trim()) {
+    contentError.value = "Informe o texto e a referência do versículo.";
+    return;
+  }
+
+  isPublishingVerse.value = true;
+  try {
+    const { error } = await publishVerse({
+      text: verseForm.text.trim(),
+      reference: verseForm.reference.trim(),
+      commentary: verseForm.commentary.trim(),
+    });
+    if (error) {
+      contentError.value = error;
+      return;
+    }
+    verseForm.text = "";
+    verseForm.reference = "";
+    verseForm.commentary = "";
+  } finally {
+    isPublishingVerse.value = false;
+  }
+};
+
+const publishAnnouncement = async () => {
+  contentError.value = "";
+
+  if (!announcementForm.title.trim() || !announcementForm.body.trim()) {
+    contentError.value = "Informe o título e o texto do aviso.";
+    return;
+  }
+
+  isSavingAnnouncement.value = true;
+  try {
+    const { data, error } = await createAnnouncement({
+      title: announcementForm.title.trim(),
+      body: announcementForm.body.trim(),
+      pinned: announcementForm.pinned,
+      expiresAt: announcementForm.expiresAt || null,
+    });
+    if (error || !data) {
+      contentError.value = error || "Não foi possível publicar o aviso.";
+      return;
+    }
+    announcements.value = [data, ...announcements.value];
+    announcementForm.title = "";
+    announcementForm.body = "";
+    announcementForm.pinned = false;
+    announcementForm.expiresAt = "";
+  } finally {
+    isSavingAnnouncement.value = false;
+  }
+};
+
+const removeAnnouncement = async (id: string) => {
+  contentError.value = "";
+  const { error } = await deleteAnnouncement(id);
+  if (error) {
+    contentError.value = error;
+    return;
+  }
+  announcements.value = announcements.value.filter((announcement) => announcement.id !== id);
+};
+
+const addDevotionalChapter = () => {
+  devotionalForm.chapters.push({
+    title: "",
+    content: "",
+    bibleRef: "",
+  });
+};
+
+const publishDevotional = async () => {
+  contentError.value = "";
+  const chapters = devotionalForm.chapters
+    .map((chapter) => ({
+      title: chapter.title.trim(),
+      content: chapter.content.trim(),
+      bibleRef: chapter.bibleRef.trim(),
+    }))
+    .filter((chapter) => chapter.title && chapter.content);
+
+  if (!devotionalForm.title.trim() || chapters.length === 0) {
+    contentError.value = "Informe o título e ao menos um capítulo.";
+    return;
+  }
+
+  isSavingDevotional.value = true;
+  try {
+    const { data, error } = await createDevotional({
+      title: devotionalForm.title.trim(),
+      description: devotionalForm.description.trim(),
+      chapters,
+    });
+    if (error || !data) {
+      contentError.value = error || "Não foi possível criar o devocional.";
+      return;
+    }
+    devotionals.value = [data, ...devotionals.value];
+    devotionalForm.title = "";
+    devotionalForm.description = "";
+    devotionalForm.chapters = [{ title: "", content: "", bibleRef: "" }];
+  } finally {
+    isSavingDevotional.value = false;
+  }
+};
+
+const removeDevotional = async (id: string) => {
+  contentError.value = "";
+  const { error } = await deleteDevotional(id);
+  if (error) {
+    contentError.value = error;
+    return;
+  }
+  devotionals.value = devotionals.value.filter((devotional) => devotional.id !== id);
 };
 
 // ── Cargos (RBAC) ──────────────────────────────────────────────
@@ -3783,6 +4189,50 @@ onMounted(async () => {
   gap: 12px;
 }
 
+.content-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.content-inline-fields {
+  display: grid;
+  grid-template-columns: minmax(120px, auto) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.content-admin-list {
+  display: grid;
+  gap: 8px;
+}
+
+.content-admin-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.content-admin-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.chapter-admin-box {
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  padding: 12px;
+}
+
 .permission-module-list {
   display: grid;
   gap: 10px;
@@ -3944,6 +4394,11 @@ onMounted(async () => {
 }
 
 @media (max-width: 520px) {
+  .content-admin-grid,
+  .content-inline-fields {
+    grid-template-columns: 1fr;
+  }
+
   .platform-admin-page {
     padding-right: 12px !important;
     padding-left: 12px !important;

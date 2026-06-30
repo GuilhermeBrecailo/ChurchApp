@@ -1691,6 +1691,14 @@
                   >
                     {{ attendanceStatusLabel(assignment.attendanceStatus) }}
                   </v-chip>
+                  <v-chip
+                    v-if="unavailableMemberIds.has(assignment.userId)"
+                    size="x-small"
+                    color="red-darken-3"
+                    variant="tonal"
+                  >
+                    <AlertTriangle size="11" class="mr-1" /> Indisponível
+                  </v-chip>
                 </div>
               </div>
               <div class="d-flex align-center ga-1">
@@ -2226,6 +2234,16 @@ const activityResources = computed(() =>
 const selectedSchedule = computed(() =>
   schedules.value.find((schedule) => schedule.id === selectedScheduleId.value),
 );
+
+const unavailableMemberIds = computed(() => {
+  if (!selectedSchedule.value?.date) return new Set<string>();
+  const scheduleDay = selectedSchedule.value.date.slice(0, 10);
+  return new Set(
+    members.value
+      .filter((m) => m.unavailableDates?.includes(scheduleDay))
+      .map((m) => m.id),
+  );
+});
 
 const allAssignments = computed(() =>
   schedules.value.flatMap((schedule) =>

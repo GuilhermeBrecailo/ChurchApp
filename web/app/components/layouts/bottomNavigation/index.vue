@@ -10,9 +10,9 @@
       <span class="nav-label">Início</span>
     </v-btn>
 
-    <v-btn v-if="hasChurch" to="/scale" class="flex-col custom-btn">
-      <CalendarDays class="nav-icon" />
-      <span class="nav-label">Escalas</span>
+    <v-btn v-if="hasChurch" to="/content" class="flex-col custom-btn">
+      <BookOpen class="nav-icon" />
+      <span class="nav-label">Conteúdo</span>
     </v-btn>
 
     <v-btn
@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { House, CalendarDays, User, Users, Cog } from "lucide-vue-next";
+import { House, BookOpen, User, Users, Cog } from "lucide-vue-next";
 import { computed } from "vue";
 import { useAuth } from "../../../../composables/useAuth";
 

@@ -2080,6 +2080,50 @@ export class ChurchDepartmentAdapters {
     return preference;
   }
 
+  async getMyChurchSongPreferences(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+
+    const preferences = await $prismaClient.userSongPreference.findMany({
+      where: {
+        userId: user.id,
+        mediaItem: {
+          category: "MUSIC",
+          department: {
+            crunchId: user.crunchId!,
+          },
+        },
+      },
+      select: {
+        id: true,
+        personalKey: true,
+        chords: true,
+        updatedAt: true,
+        mediaItem: {
+          select: {
+            id: true,
+            title: true,
+            url: true,
+            category: true,
+            metadata: true,
+            department: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        mediaItem: {
+          title: "asc",
+        },
+      },
+    });
+
+    return preferences;
+  }
+
   async createChurchDepartmentResource(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
     const { id } = request.params as { id?: string };

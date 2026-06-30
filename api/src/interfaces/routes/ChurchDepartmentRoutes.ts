@@ -133,6 +133,11 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
   );
 
   app.get(
+    "/api/church/my-song-preferences",
+    controllerHandler(adapters.getMyChurchSongPreferences.bind(adapters)),
+  );
+
+  app.get(
     "/api/church/songs/:songId/preference",
     controllerHandler(adapters.getChurchSongPreference.bind(adapters)),
   );

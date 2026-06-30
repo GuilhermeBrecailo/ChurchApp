@@ -29,6 +29,10 @@ model Crunch {
     departments   Department[]
     pastorHistory PastorMandate[]
     churchRoles   ChurchRole[]
+    dailyVerses   DailyVerse[]
+    announcements Announcement[]
+    devotionals Devotional[]
+    devotionalProgresses DevotionalProgress[]
 }
 
 model ChurchRole {
@@ -71,6 +75,82 @@ model User {
     pushSubscriptions PushSubscription[]
     songPreferences UserSongPreference[]
     notifications AppNotification[]
+    dailyVerses DailyVerse[]
+    announcements Announcement[]
+    devotionals Devotional[]
+    devotionalProgresses DevotionalProgress[]
+}
+
+model DailyVerse {
+    id          String   @id @default(uuid())
+    text        String
+    reference   String
+    commentary  String?
+    publishedAt DateTime @default(now())
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    authorId String
+    author   User   @relation(fields: [authorId], references: [id])
+}
+
+model Announcement {
+    id          String   @id @default(uuid())
+    title       String
+    body        String
+    pinned      Boolean  @default(false)
+    publishedAt DateTime @default(now())
+    expiresAt   DateTime?
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    authorId String
+    author   User   @relation(fields: [authorId], references: [id])
+}
+
+model Devotional {
+    id          String   @id @default(uuid())
+    title       String
+    description String?
+    publishedAt DateTime @default(now())
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    authorId String
+    author   User   @relation(fields: [authorId], references: [id])
+
+    chapters   DevotionalChapter[]
+    progresses DevotionalProgress[]
+}
+
+model DevotionalChapter {
+    id           String @id @default(uuid())
+    title        String
+    content      String
+    bibleRef     String?
+    order        Int
+    devotionalId String
+    devotional   Devotional @relation(fields: [devotionalId], references: [id], onDelete: Cascade)
+    progresses   DevotionalProgress[]
+}
+
+model DevotionalProgress {
+    id            String   @id @default(uuid())
+    updatedAt     DateTime @updatedAt
+    userId        String
+    user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    devotionalId  String
+    devotional    Devotional @relation(fields: [devotionalId], references: [id], onDelete: Cascade)
+    lastChapterId String
+    lastChapter   DevotionalChapter @relation(fields: [lastChapterId], references: [id], onDelete: Cascade)
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, devotionalId])
 }
 
 model PushSubscription {

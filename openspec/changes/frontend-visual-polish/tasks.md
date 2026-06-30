@@ -1,23 +1,23 @@
 ## 1. Avatar Dinâmico no AppBar
 
-- [ ] 1.1 Em `web/app/components/layouts/appBar/index.vue`, criar computed `userInitials` que extrai as iniciais do `user.value.name` (primeira + última parte, max 2 letras, fallback `"U"`)
-- [ ] 1.2 Substituir o texto hardcoded `"GB"` no template pelo `{{ userInitials }}`
+- [x] 1.1 Em `web/app/components/layouts/appBar/index.vue`, criar computed `userInitials` que extrai as iniciais do `user.value.name` (primeira + última parte, max 2 letras, fallback `"U"`)
+- [x] 1.2 Substituir o texto hardcoded `"GB"` no template pelo `{{ userInitials }}`
 
 ## 2. Gradiente no Fundo do Login
 
-- [ ] 2.1 Em `web/app/pages/login.vue`, atualizar o background da `.auth-page` no `<style scoped>` de `#f8fafc` sólido para `linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%)`
-- [ ] 2.2 Adicionar override no dark mode: dentro do seletor `:global(.app-theme-dark) .auth-page`, usar `background: var(--app-color-background)` para não sobrepor o gradiente claro no tema escuro
+- [x] 2.1 Em `web/app/pages/login.vue`, atualizar o background da `.auth-page` no `<style scoped>` de `#f8fafc` sólido para `linear-gradient(150deg, #eef2ff 0%, #f5f3ff 60%, #fdf4ff 100%)`
+- [x] 2.2 Override no dark mode: `:global(.app-theme-dark) .auth-page` usa `background: var(--app-color-background)`
 
 ## 3. Ícones nos Cards de Stats (Escalas)
 
-- [ ] 3.1 Em `web/app/pages/scale.vue`, importar os ícones `Clock`, `EyeOff` e `Repeat2` do `lucide-vue-next` (adicionar ao import existente de lucide)
-- [ ] 3.2 Atualizar o template dos `.leader-summary-card` para incluir o ícone Lucide acima do número: `Clock` em "Pendentes", `EyeOff` em "Não viram", `Repeat2` em "Trocas"
-- [ ] 3.3 Estilizar os ícones nos cards com cor `#A855F7` (accent) e tamanho `20px`
+- [x] 3.1 Em `web/app/pages/scale.vue`, `Clock`, `EyeOff` e `Repeat2` já importados de `lucide-vue-next`
+- [x] 3.2 Ícone `Clock`, `EyeOff`, `Repeat2` já presentes nos `.leader-summary-card` (Pendentes, Não viram, Trocas)
+- [x] 3.3 Ícones estilizados com `color="#A855F7"` e `size="20"`
 
 ## 4. CTA no Empty State do NextScheduleCard
 
-- [ ] 4.1 Em `web/app/components/Dashboard/NextScheduleCard/index.vue`, adicionar um `<NuxtLink to="/scale">` com botão Vuetify (`v-btn`) dentro do card de empty state ("Nenhuma escala cadastrada")
-- [ ] 4.2 Estilizar o botão com `color="purple-darken-3"`, `variant="tonal"`, `size="small"` e label "Ver escalas"
+- [x] 4.1 `<NuxtLink to="/scale">` com `v-btn` já existe em `web/app/components/Dashboard/NextScheduleCard/index.vue`
+- [x] 4.2 Botão com `color="purple-darken-3"`, `variant="tonal"`, `size="small"`, label "Ver escalas"
 
 ## 5. Documentação do Padrão de Design Tokens (próximos passos)
 

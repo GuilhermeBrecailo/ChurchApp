@@ -10,6 +10,10 @@ import { ChurchDepartmentRoutes } from "./src/interfaces/routes/ChurchDepartment
 import { AdminRoutes } from "./src/interfaces/routes/AdminRoutes.ts";
 import { NotificationRoutes } from "./src/interfaces/routes/NotificationRoutes.ts";
 import { ChurchRoleRoutes } from "./src/interfaces/routes/ChurchRoleRoutes.ts";
+import { DailyVerseRoutes } from "./src/interfaces/routes/DailyVerseRoutes.ts";
+import { AnnouncementRoutes } from "./src/interfaces/routes/AnnouncementRoutes.ts";
+import { ReportRoutes } from "./src/interfaces/routes/ReportRoutes.ts";
+import { DevotionalRoutes } from "./src/interfaces/routes/DevotionalRoutes.ts";
 import TenantHandler from "./src/interfaces/plugins/TenantHandler.ts";
 
 const port = Number(process.env.API_PORT || 8000);
@@ -50,6 +54,10 @@ await server.register(ChurchDepartmentRoutes, { prefix: "/" });
 await server.register(AdminRoutes, { prefix: "/" });
 await server.register(NotificationRoutes, { prefix: "/" });
 await server.register(ChurchRoleRoutes, { prefix: "/" });
+await server.register(DailyVerseRoutes, { prefix: "/" });
+await server.register(AnnouncementRoutes, { prefix: "/" });
+await server.register(ReportRoutes, { prefix: "/" });
+await server.register(DevotionalRoutes, { prefix: "/" });
 
 await server.listen({ port, host: "0.0.0.0" });
 

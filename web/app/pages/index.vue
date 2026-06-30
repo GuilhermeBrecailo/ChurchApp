@@ -3,6 +3,10 @@
     <template v-if="hasChurch">
       <DashboardNextScheduleCard :schedule="nextSchedule" />
 
+      <DashboardDailyVerseCard />
+
+      <DashboardAnnouncementsSection />
+
       <DashboardQuickAccess />
 
       <v-alert
