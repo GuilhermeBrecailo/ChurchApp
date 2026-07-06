@@ -4,6 +4,18 @@ import session from "express-session";
 import Keycloak from "keycloak-connect";
 import { FastifyPluginAsync } from "fastify";
 
+type KeycloakRequest = {
+  kauth?: {
+    grant?: {
+      access_token?: {
+        content?: {
+          sub?: string;
+        };
+      };
+    };
+  };
+};
+
 // Configuração do Keycloak
 const memoryStore = new session.MemoryStore();
 const keycloak = new Keycloak({ store: memoryStore });
@@ -48,7 +60,7 @@ const KeycloakPlugin: FastifyPluginAsync = async (fastify) => {
     }
 
     // pega o token do Keycloak
-    const kcToken = (request as any).kauth?.grant?.access_token?.content;
+    const kcToken = (request as KeycloakRequest).kauth?.grant?.access_token?.content;
     if (!kcToken) {
       reply.code(401).send({ error: "Token não fornecido" });
       return;

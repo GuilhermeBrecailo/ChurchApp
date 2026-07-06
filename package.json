@@ -1,12 +1,13 @@
 {
   "scripts": {
     "api:dev": "npm --prefix api run dev",
+    "api:lint": "npm --prefix api run lint",
     "api:test": "npm --prefix api run test:ci",
     "api:typecheck": "npm --prefix api run typecheck",
     "api:prisma:generate": "npm --prefix api run prisma:generate",
     "web:dev": "npm --prefix web run dev",
     "web:build": "npm --prefix web run build",
-    "validate": "npm run api:typecheck && npm run api:test && npm run web:build"
+    "validate": "npm run api:lint && npm run api:typecheck && npm run api:test && npm run web:build"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",

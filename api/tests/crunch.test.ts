@@ -119,12 +119,12 @@ describe("Crunch (Church) Entity - Casos atualizados com Zod e DDD", () => {
     });
 
     it("should throw error during restore if id is missing", () => {
-      const props = makeValidCrunchProps() as any;
+      const props: Partial<Omit<CrunchDTO, "createdAt">> = makeValidCrunchProps();
       delete props.id;
 
       expect(() =>
         Crunch.restore(
-          props,
+          props as Omit<CrunchDTO, "createdAt">,
           mockUsers,
           mockAddress,
           mockDocument,

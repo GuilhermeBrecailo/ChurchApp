@@ -56,7 +56,7 @@ async function seed() {
       false,
     );
     console.log("✅ Pastor Demo criado no Keycloak");
-  } catch (e) {
+  } catch {
     console.warn("⚠️  Keycloak indisponível. Pastor criado apenas no banco.");
   }
 
@@ -99,7 +99,7 @@ async function seed() {
       false,
     );
     console.log("✅ Usuário Demo criado no Keycloak");
-  } catch (e) {
+  } catch {
     console.warn("⚠️  Keycloak indisponível. Usuário demo criado apenas no banco.");
   }
 

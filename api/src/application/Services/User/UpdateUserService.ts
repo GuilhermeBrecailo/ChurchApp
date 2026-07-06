@@ -1,4 +1,3 @@
-import { User } from "../../../domain/entities/User";
 import { DomainError } from "../../../domain/value-objects/utils/DomainError";
 import { GetUserByIdUseCase } from "../../use-cases/User/GetUserByIdUseCase";
 import { UpdateUserUseCase } from "../../use-cases/User/UpdateUserUseCase";

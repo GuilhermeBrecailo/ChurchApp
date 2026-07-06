@@ -1,5 +1,5 @@
 import fp from "fastify-plugin";
-import { FastifyPluginAsync, FastifyRequest, FastifyReply } from "fastify";
+import { FastifyPluginAsync, FastifyRequest } from "fastify";
 
 // contador global de IDs
 let nextId = 1;
@@ -12,7 +12,7 @@ export interface JwtDecoded {
 const FakeAuth: FastifyPluginAsync = async (fastify) => {
   fastify.addHook(
     "preHandler",
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: FastifyRequest) => {
       const publicRoutes = [
         "/status",
         "/api/pastor/signup",

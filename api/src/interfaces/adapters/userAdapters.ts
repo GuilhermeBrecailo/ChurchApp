@@ -8,7 +8,6 @@ import { UserRepository } from "../../infrastructure/repositories/UserRepository
 import { FastifyRequest } from "fastify/types/request";
 import crypto from "node:crypto";
 import { User, UserDTO } from "../../domain/entities/User";
-import { JwtDecoded } from "../../application/use-cases/Auth/JwtValidationUseCase";
 import { KeycloakProvider } from "../../infrastructure/identity/KeycloakProvider";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";

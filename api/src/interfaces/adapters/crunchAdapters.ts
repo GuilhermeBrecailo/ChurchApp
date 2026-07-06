@@ -8,7 +8,7 @@ import { CrunchRepository } from "../../infrastructure/repositories/CrunchReposi
 import { FastifyRequest } from "fastify/types/request";
 
 // Adicione os imports da sua Entidade e DTO referentes ao Crunch
-import { Crunch, CrunchDTO } from "../../domain/entities/Crunch";
+import { Crunch } from "../../domain/entities/Crunch";
 
 import { Address } from "../../domain/value-objects/Address";
 import { Document } from "../../domain/value-objects/Document";

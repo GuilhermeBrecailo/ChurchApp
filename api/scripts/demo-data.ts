@@ -278,7 +278,7 @@ export async function createDemoSchedules(
   ];
 
   for (const s of scheduleData) {
-    const schedule = await $prismaClient.schedule.create({
+    await $prismaClient.schedule.create({
       data: {
         id: crypto.randomUUID(),
         description: s.description,

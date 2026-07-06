@@ -1,5 +1,4 @@
 import { User } from "../src/domain/entities/User";
-import { ZodError } from "zod";
 
 describe("User Entity - Casos atualizados com Zod e DDD", () => {
   const validProps = {
