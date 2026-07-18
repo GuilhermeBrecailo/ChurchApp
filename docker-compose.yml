@@ -11,8 +11,8 @@ services:
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public
       - NODE_ENV=${NODE_ENV}
       - API_PORT=${API_PORT}
-      - KEYCLOAK_BASE_URL=${KEYCLOAK_BASE_URL:-http://keycloak:8080}
-      - KEYCLOAK_ENDPOINT_BASE=${KEYCLOAK_ENDPOINT_BASE:-http://keycloak:8080}
+      - KEYCLOAK_BASE_URL=http://keycloak:8080
+      - KEYCLOAK_ENDPOINT_BASE=http://keycloak:8080
       - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-admin-cli}
       - KEYCLOAK_REALM=${KEYCLOAK_REALM}
       - KEYCLOAK_ADMIN_REALM=${KEYCLOAK_ADMIN_REALM:-master}
