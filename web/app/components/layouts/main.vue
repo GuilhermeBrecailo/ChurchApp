@@ -8,10 +8,6 @@
 
 <style scoped>
 .app-main {
-  background-color: #f6f7f9;
-}
-
-:global(.app-theme-dark) .app-main {
   background-color: var(--app-color-background);
 }
 </style>

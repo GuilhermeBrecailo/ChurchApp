@@ -66,7 +66,7 @@ onMounted(loadAnnouncements);
 }
 
 .announcement-body {
-  color: #4b5563;
+  color: var(--app-color-text-soft);
   display: -webkit-box;
   line-clamp: 2;
   -webkit-line-clamp: 2;
@@ -76,7 +76,7 @@ onMounted(loadAnnouncements);
 }
 
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border);
 }
 
 .gap-3 {

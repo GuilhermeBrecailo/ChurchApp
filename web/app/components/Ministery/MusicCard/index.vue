@@ -69,15 +69,11 @@ const getBadgeColor = (categoria) => {
 .music-icon-wrapper {
   width: 48px;
   height: 48px;
-  background-color: #f7e2d3;
+  background-color: rgba(240, 151, 90, 0.16) !important;
 }
 
 .music-card {
   background-color: #ffffff !important;
   color: #111827;
-}
-
-:global(.app-theme-dark) .music-icon-wrapper {
-  background-color: rgba(240, 151, 90, 0.16) !important;
 }
 </style>

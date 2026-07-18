@@ -179,10 +179,6 @@ const statusLabel = computed(() => {
 }
 
 .confirmation-card--confirmed {
-  border-color: #bbf7d0 !important;
-}
-
-:global(.app-theme-dark) .confirmation-card--confirmed {
   border-color: rgba(74, 222, 128, 0.3) !important;
 }
 

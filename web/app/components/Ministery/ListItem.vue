@@ -130,11 +130,6 @@ const stats = computed(() =>
   height: 42px;
   flex: 0 0 auto;
   border-radius: 9px;
-  color: #b5472a;
-  background: #f7e2d3;
-}
-
-:global(.app-theme-dark) .ministery-icon {
   color: #f0975a;
   background: rgba(240, 151, 90, 0.16);
 }
@@ -165,19 +160,14 @@ const stats = computed(() =>
 .ministery-stats span {
   border: 1px solid #f3f4f6;
   border-radius: 999px;
-  background: #fafafa;
-  color: #6b7280;
+  background: var(--app-color-surface-soft);
+  color: var(--app-color-text-soft);
   font-size: 0.8rem;
   font-weight: 800;
   line-height: 1.1;
   padding: 7px 10px;
   white-space: nowrap;
-}
-
-:global(.app-theme-dark) .ministery-stats span {
   border-color: var(--app-color-border);
-  background: var(--app-color-surface-soft);
-  color: var(--app-color-text-soft);
 }
 
 @media (max-width: 560px) {

@@ -197,7 +197,7 @@ onMounted(async () => {
 
 <style scoped>
 .my-assignment-card {
-  background: linear-gradient(135deg, #b5472a 0%, #e07a45 100%) !important;
+  background: linear-gradient(135deg, var(--app-color-accent) 0%, var(--app-color-accent-muted) 100%) !important;
   color: #fff;
 }
 
@@ -238,7 +238,7 @@ onMounted(async () => {
 }
 
 .confirm-btn {
-  color: #b5472a !important;
+  color: var(--app-color-accent) !important;
   background: #fff !important;
   border-radius: 8px;
 }

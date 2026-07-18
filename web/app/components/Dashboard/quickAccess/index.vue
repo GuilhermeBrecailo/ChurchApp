@@ -107,12 +107,12 @@ const goToRoute = (route: string) => {
 .quick-access-label {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--app-color-text);
 }
 
 .cursor-pointer {
   cursor: pointer;
-  border: 1px solid #f3f4f6 !important;
+  border: 1px solid var(--app-color-border) !important;
   transition:
     transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
     box-shadow 0.2s ease,
@@ -122,7 +122,7 @@ const goToRoute = (route: string) => {
 .cursor-pointer:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(17, 24, 39, 0.09) !important;
-  border-color: #f2d3bd !important;
+  border-color: var(--app-color-accent-tint) !important;
 }
 
 .cursor-pointer:active {

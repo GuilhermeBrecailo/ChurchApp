@@ -3627,8 +3627,7 @@ onMounted(async () => {
 
 .platform-admin-page {
   background:
-    linear-gradient(180deg, #F7E2D3 0, rgba(247, 226, 211, 0) 260px),
-    #f9fafb;
+    var(--app-color-background);
   max-width: 1180px;
   margin: 0 auto;
 }
@@ -3641,7 +3640,7 @@ onMounted(async () => {
 }
 
 .platform-kicker {
-  color: var(--app-color-accent, #B5472A);
+  color: var(--app-color-accent);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -3662,11 +3661,12 @@ onMounted(async () => {
   height: 54px;
   border: 1px solid var(--app-color-accent-tint, #F7E2D3);
   border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 12px 28px rgba(181, 71, 42, 0.12);
+  background: var(--app-color-surface-soft);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
+  border-color: var(--app-color-border);
 }
 
 .platform-directory {
@@ -3707,17 +3707,13 @@ onMounted(async () => {
 .master-summary-grid div {
   border: 1px solid #eef2f7;
   border-radius: 8px;
-  background: #f9fafb;
+  background: var(--app-color-surface-soft);
   display: grid;
   gap: 4px;
   min-height: 64px;
   align-content: center;
   padding: 10px;
-}
-
-:global(.app-theme-dark) .master-summary-grid div {
   border-color: var(--app-color-border);
-  background: var(--app-color-surface-soft);
 }
 
 .master-summary-grid strong {
@@ -3742,8 +3738,8 @@ onMounted(async () => {
   appearance: none;
   border: 1px solid #eef2f7;
   border-radius: 8px;
-  background: #ffffff;
-  color: #111827;
+  background: var(--app-color-surface);
+  color: var(--app-color-text);
   cursor: pointer;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -3751,6 +3747,7 @@ onMounted(async () => {
   min-height: 42px;
   padding: 9px 10px;
   text-align: left;
+  border-color: var(--app-color-border);
 }
 
 .master-ranking span {
@@ -3765,12 +3762,6 @@ onMounted(async () => {
   color: var(--app-color-accent, #B5472A);
   font-size: 0.82rem;
   font-weight: 900;
-}
-
-:global(.app-theme-dark) .master-ranking button {
-  background: var(--app-color-surface);
-  border-color: var(--app-color-border);
-  color: var(--app-color-text);
 }
 
 .admin-filter-bar {
@@ -3809,8 +3800,8 @@ onMounted(async () => {
   appearance: none;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  background: #ffffff;
-  color: #111827;
+  background: var(--app-color-surface);
+  color: var(--app-color-text);
   cursor: pointer;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -3822,11 +3813,12 @@ onMounted(async () => {
     border-color 0.18s ease,
     box-shadow 0.18s ease,
     transform 0.18s ease;
+  border-color: var(--app-color-border);
 }
 
 .church-directory-card:hover {
-  border-color: var(--app-color-accent-muted, #E07A45);
-  box-shadow: 0 14px 36px rgba(31, 41, 55, 0.08);
+  border-color: var(--app-color-accent);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.3);
   transform: translateY(-1px);
 }
 
@@ -3835,8 +3827,8 @@ onMounted(async () => {
 }
 
 .church-directory-card-active {
-  border-color: var(--app-color-accent, #B5472A);
-  box-shadow: 0 14px 32px rgba(181, 71, 42, 0.14);
+  border-color: var(--app-color-accent);
+  box-shadow: 0 14px 32px rgba(240, 151, 90, 0.2);
 }
 
 .church-card-top {
@@ -3849,10 +3841,11 @@ onMounted(async () => {
   width: 44px;
   height: 44px;
   border-radius: 8px;
-  background: var(--app-color-accent-tint, #F7E2D3);
+  background: rgba(240, 151, 90, 0.16);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  color: var(--app-color-accent);
 }
 
 .church-status-dot {
@@ -3900,8 +3893,8 @@ onMounted(async () => {
 
 .church-metrics span {
   border-radius: 8px;
-  background: #f9fafb;
-  color: #6b7280;
+  background: var(--app-color-surface-soft);
+  color: var(--app-color-text-muted);
   font-size: 0.72rem;
   font-weight: 700;
   min-height: 46px;
@@ -3910,15 +3903,12 @@ onMounted(async () => {
   justify-items: center;
   text-align: center;
   padding: 5px 6px;
+  border-color: var(--app-color-border);
 }
 
 .church-metrics strong {
-  color: #111827;
-  font-size: 0.875rem;
-}
-
-:global(.app-theme-dark) .church-metrics strong {
   color: var(--app-color-text);
+  font-size: 0.875rem;
 }
 
 .church-open-action {
@@ -3934,6 +3924,7 @@ onMounted(async () => {
 .church-details-sheet {
   border-radius: 8px !important;
   overflow: hidden;
+  background: var(--app-color-surface) !important;
 }
 
 .church-details-sheet {
@@ -4128,11 +4119,12 @@ onMounted(async () => {
 }
 
 .admin-tabs-bar {
-  background: var(--app-color-surface, #fff);
+  background: var(--app-color-surface);
   border-radius: 14px;
   border: 1px solid var(--app-color-border, #e5e7eb);
   padding: 4px;
   overflow: hidden;
+  border-color: var(--app-color-border);
 }
 
 .admin-tabs {
@@ -4249,6 +4241,8 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+  background: var(--app-color-surface-soft);
+  border-color: var(--app-color-border);
 }
 
 .leadership-summary div {
@@ -4280,6 +4274,7 @@ onMounted(async () => {
   border-radius: 8px;
   background: #ffffff;
   padding: 10px 11px;
+  border-color: var(--app-color-border);
 }
 
 .leadership-row span {
@@ -4695,63 +4690,4 @@ onMounted(async () => {
 }
 
 /* ── Dark mode ── */
-:global(.app-theme-dark) .platform-admin-page {
-  background: var(--app-color-background);
-}
-
-:global(.app-theme-dark) .admin-tabs-bar {
-  background: var(--app-color-surface);
-  border-color: var(--app-color-border);
-}
-
-:global(.app-theme-dark) .platform-kicker {
-  color: var(--app-color-accent);
-}
-
-:global(.app-theme-dark) .platform-hero-mark {
-  background: var(--app-color-surface-soft);
-  border-color: var(--app-color-border);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
-}
-
-:global(.app-theme-dark) .church-directory-card {
-  background: var(--app-color-surface);
-  border-color: var(--app-color-border);
-  color: var(--app-color-text);
-}
-
-:global(.app-theme-dark) .church-directory-card:hover {
-  border-color: var(--app-color-accent);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.3);
-}
-
-:global(.app-theme-dark) .church-directory-card-active {
-  border-color: var(--app-color-accent);
-  box-shadow: 0 14px 32px rgba(240, 151, 90, 0.2);
-}
-
-:global(.app-theme-dark) .church-avatar {
-  background: rgba(240, 151, 90, 0.16);
-  color: var(--app-color-accent);
-}
-
-:global(.app-theme-dark) .church-metrics span {
-  background: var(--app-color-surface-soft);
-  border-color: var(--app-color-border);
-  color: var(--app-color-text-muted);
-}
-
-:global(.app-theme-dark) .church-details-surface,
-:global(.app-theme-dark) .church-details-sheet {
-  background: var(--app-color-surface) !important;
-}
-
-:global(.app-theme-dark) .leadership-summary {
-  background: var(--app-color-surface-soft);
-  border-color: var(--app-color-border);
-}
-
-:global(.app-theme-dark) .leadership-row {
-  border-color: var(--app-color-border);
-}
 </style>

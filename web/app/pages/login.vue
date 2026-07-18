@@ -163,10 +163,6 @@ const handleLogin = async () => {
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-  background: linear-gradient(150deg, #fdf3ec 0%, #fbe8da 55%, #f7e2d3 100%);
-}
-
-:global(.app-theme-dark) .auth-page {
   background: var(--app-color-background) !important;
   background-image: none !important;
 }
@@ -174,15 +170,10 @@ const handleLogin = async () => {
 .auth-card {
   border-radius: 28px !important;
   border: 1px solid rgba(229, 231, 235, 0.9) !important;
-  box-shadow: 0 8px 40px rgba(181, 71, 42, 0.12), 0 2px 8px rgba(17, 24, 39, 0.06) !important;
-  background: #ffffff;
-  overflow: hidden;
-}
-
-:global(.app-theme-dark) .auth-card {
-  background: var(--app-color-surface) !important;
-  border-color: var(--app-color-border) !important;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+  background: var(--app-color-surface) !important;
+  overflow: hidden;
+  border-color: var(--app-color-border) !important;
 }
 
 .auth-card-inner {
@@ -193,37 +184,25 @@ const handleLogin = async () => {
   width: 76px;
   height: 76px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #fdf3ec 0%, #f7e2d3 100%);
+  background: rgba(240, 151, 90, 0.16) !important;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-:global(.app-theme-dark) .auth-icon-circle {
-  background: rgba(240, 151, 90, 0.16) !important;
 }
 
 .auth-title {
   font-size: 2.125rem;
   font-weight: 800;
   letter-spacing: -0.03em;
-  color: #7c2d12;
-  margin: 0 0 6px;
-}
-
-:global(.app-theme-dark) .auth-title {
   color: var(--app-color-text);
+  margin: 0 0 6px;
 }
 
 .auth-subtitle {
   font-size: 1rem;
   font-weight: 500;
-  color: var(--app-color-accent);
-  margin: 0;
-}
-
-:global(.app-theme-dark) .auth-subtitle {
   color: var(--app-color-accent-soft);
+  margin: 0;
 }
 
 .auth-input :deep(.v-field) {
@@ -268,36 +247,20 @@ const handleLogin = async () => {
 }
 
 .auth-link:hover {
-  color: #7c2d12;
-}
-
-:global(.app-theme-dark) .auth-link {
-  color: var(--app-color-accent);
-}
-
-:global(.app-theme-dark) .auth-link:hover {
   color: var(--app-color-accent-soft);
 }
 
 .auth-meta {
   font-size: 0.95rem;
-  color: #6b7280;
-  margin: 0;
-}
-
-:global(.app-theme-dark) .auth-meta {
   color: var(--app-color-text-muted);
+  margin: 0;
 }
 
 .auth-hint {
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   text-align: center;
   margin: 0;
   line-height: 1.5;
-}
-
-:global(.app-theme-dark) .auth-hint {
-  color: var(--app-color-text-muted);
 }
 </style>

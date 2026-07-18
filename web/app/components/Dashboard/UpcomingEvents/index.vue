@@ -38,7 +38,7 @@
             {{ event.department }} &bull; {{ event.time }}
           </p>
         </div>
-        <ChevronRight size="20" color="#9CA3AF" />
+        <ChevronRight size="20" :color="isDark ? '#8b949e' : '#9CA3AF'" />
       </v-card>
 
       <v-card
@@ -60,6 +60,7 @@ import { ChevronRight } from "lucide-vue-next";
 import type { DepartmentSchedule } from "../../../../composables/useDepartments";
 
 const router = useRouter();
+const { isDark } = useThemeMode();
 
 const props = defineProps<{
   schedules?: DepartmentSchedule[];
@@ -113,13 +114,13 @@ const goToSchedule = (id: string) => {
 }
 
 .upcoming-link:hover {
-  color: #7c2d12;
+  color: var(--app-color-accent-soft);
 }
 
 .date-badge {
   width: 52px;
   height: 52px;
-  background: linear-gradient(135deg, #fdf3ec, #f7e2d3);
+  background: rgba(240, 151, 90, 0.18);
   color: var(--app-color-accent);
   border-radius: 12px !important;
   flex: 0 0 auto;
@@ -142,17 +143,18 @@ const goToSchedule = (id: string) => {
 
 .event-card {
   cursor: pointer;
-  border: 1px solid #f3f4f6 !important;
+  border: 1px solid var(--app-color-border) !important;
   transition:
     transform 0.16s cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 0.16s ease,
     border-color 0.16s ease;
+  border-color: var(--app-color-border) !important;
 }
 
 .event-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(17, 24, 39, 0.08) !important;
-  border-color: #f2d3bd !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3) !important;
+  border-color: var(--app-color-accent) !important;
 }
 
 .event-card:active {
@@ -162,27 +164,5 @@ const goToSchedule = (id: string) => {
 .event-card:focus-visible {
   outline: 3px solid rgba(181, 71, 42, 0.32);
   outline-offset: 2px;
-}
-
-:global(.app-theme-dark) .upcoming-link {
-  color: var(--app-color-accent);
-}
-
-:global(.app-theme-dark) .upcoming-link:hover {
-  color: var(--app-color-accent-soft);
-}
-
-:global(.app-theme-dark) .date-badge {
-  background: rgba(240, 151, 90, 0.18);
-  color: var(--app-color-accent);
-}
-
-:global(.app-theme-dark) .event-card {
-  border-color: var(--app-color-border) !important;
-}
-
-:global(.app-theme-dark) .event-card:hover {
-  border-color: var(--app-color-accent) !important;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3) !important;
 }
 </style>

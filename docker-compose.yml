@@ -11,8 +11,8 @@ services:
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public
       - NODE_ENV=${NODE_ENV}
       - API_PORT=${API_PORT}
-      - KEYCLOAK_BASE_URL=https://auth.appcunch.shop
-      - KEYCLOAK_ENDPOINT_BASE=https://auth.appcunch.shop
+      - KEYCLOAK_BASE_URL=${KEYCLOAK_BASE_URL:-http://keycloak:8080}
+      - KEYCLOAK_ENDPOINT_BASE=${KEYCLOAK_ENDPOINT_BASE:-http://keycloak:8080}
       - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-admin-cli}
       - KEYCLOAK_REALM=${KEYCLOAK_REALM}
       - KEYCLOAK_ADMIN_REALM=${KEYCLOAK_ADMIN_REALM:-master}
@@ -101,10 +101,7 @@ services:
     command: >-
       start-dev
       --http-enabled=true
-      --proxy-headers=xforwarded
-      --hostname=auth.appcunch.shop
-      --hostname-admin=auth.appcunch.shop
-      --hostname-strict=true
+      --hostname-strict=false
     ports:
       - "8080:8080"
     environment:
@@ -115,10 +112,7 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HTTP_ENABLED: "true"
-      KC_PROXY_HEADERS: xforwarded
-      KC_HOSTNAME: auth.appcunch.shop
-      KC_HOSTNAME_ADMIN: auth.appcunch.shop
-      KC_HOSTNAME_STRICT: "true"
+      KC_HOSTNAME_STRICT: "false"
     depends_on:
       keycloak-db:
         condition: service_healthy

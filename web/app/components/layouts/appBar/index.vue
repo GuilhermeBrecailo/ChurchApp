@@ -307,12 +307,12 @@ onMounted(async () => {
 
 <style scoped>
 .appbar {
-  background: rgba(255, 255, 255, 0.88) !important;
+  background: var(--app-color-appbar-bg) !important;
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   padding: 5px 20px;
-  border-bottom: 1px solid rgba(229, 231, 235, 0.7) !important;
-  box-shadow: 0 1px 0 rgba(17, 24, 39, 0.04) !important;
+  border-bottom: 1px solid var(--app-color-appbar-border) !important;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04) !important;
 }
 
 .church-switcher {
@@ -325,15 +325,8 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-:global(.app-theme-dark) .appbar {
-  background: rgba(21, 27, 35, 0.88) !important;
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border-bottom-color: rgba(45, 55, 70, 0.6) !important;
-}
-
 .user-avatar {
-  background: linear-gradient(135deg, #b5472a, #e07a45);
+  background: linear-gradient(135deg, var(--app-color-accent), var(--app-color-accent-muted));
   box-shadow: 0 2px 8px rgba(181, 71, 42, 0.3);
 }
 
@@ -344,49 +337,27 @@ onMounted(async () => {
   letter-spacing: 0.03em;
 }
 
-:global(.app-theme-dark) .user-avatar {
-  background: linear-gradient(135deg, #f0975a, #f0a875);
-  box-shadow: 0 2px 8px rgba(240, 151, 90, 0.3);
-}
-
 .greeting-text {
   padding-bottom: 5px;
   font-size: 0.95rem;
-  color: #6b7280; /* Cinza médio */
-  line-height: 1.2;
-}
-
-:global(.app-theme-dark) .greeting-text {
   color: var(--app-color-text-muted);
+  line-height: 1.2;
 }
 
 .church-icon {
   color: var(--app-color-accent);
 }
 
-:global(.app-theme-dark) .church-icon {
-  color: var(--app-color-accent);
-}
-
 .church-text {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #1f2937; /* Cinza quase preto */
-  line-height: 1.2;
-}
-
-:global(.app-theme-dark) .church-text {
   color: var(--app-color-text);
+  line-height: 1.2;
 }
 
 .notification-card {
   width: min(320px, calc(100vw - 32px));
   border-radius: 8px;
-  background: #ffffff;
-  color: #111827;
-}
-
-:global(.app-theme-dark) .notification-card {
   background: var(--app-color-surface);
   color: var(--app-color-text);
   border: 1px solid var(--app-color-border);
@@ -415,10 +386,10 @@ onMounted(async () => {
 .notification-item {
   appearance: none;
   width: 100%;
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border);
   border-radius: 8px;
-  background: #ffffff;
-  color: #111827;
+  background: var(--app-color-surface);
+  color: var(--app-color-text);
   cursor: pointer;
   display: grid;
   grid-template-columns: 8px minmax(0, 1fr);
@@ -428,8 +399,8 @@ onMounted(async () => {
 }
 
 .notification-item-unread {
-  border-color: #f2d3bd;
-  background: #f7e2d3;
+  border-color: var(--app-color-accent-tint);
+  background: var(--app-color-accent-tint);
 }
 
 .notification-item-dot {
@@ -451,7 +422,7 @@ onMounted(async () => {
 }
 
 .notification-item-title {
-  color: #111827;
+  color: var(--app-color-text);
   font-size: 0.84rem;
   font-weight: 800;
   line-height: 1.25;
@@ -459,7 +430,7 @@ onMounted(async () => {
 
 .notification-item-body,
 .notification-item-date {
-  color: #4b5563;
+  color: var(--app-color-text-soft);
   font-size: 0.78rem;
   line-height: 1.3;
 }
@@ -473,32 +444,7 @@ onMounted(async () => {
   align-items: flex-start;
   gap: 10px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e5e7eb;
-  color: #6b7280;
-}
-
-:global(.app-theme-dark) .notification-list-empty {
-  border-bottom-color: var(--app-color-border);
-  color: var(--app-color-text-muted);
-}
-
-:global(.app-theme-dark) .notification-item {
-  background: var(--app-color-surface);
-  border-color: var(--app-color-border);
-  color: var(--app-color-text);
-}
-
-:global(.app-theme-dark) .notification-item-unread {
-  background: rgba(240, 151, 90, 0.16);
-  border-color: rgba(240, 151, 90, 0.42);
-}
-
-:global(.app-theme-dark) .notification-item-title {
-  color: var(--app-color-text);
-}
-
-:global(.app-theme-dark) .notification-item-body,
-:global(.app-theme-dark) .notification-item-date {
+  border-bottom: 1px solid var(--app-color-border);
   color: var(--app-color-text-muted);
 }
 
@@ -511,10 +457,6 @@ onMounted(async () => {
   margin: 0 0 4px;
   font-size: 0.95rem;
   font-weight: 700;
-  color: #111827 !important;
-}
-
-:global(.app-theme-dark) .notification-title {
   color: var(--app-color-text) !important;
 }
 
@@ -522,10 +464,6 @@ onMounted(async () => {
   margin: 0;
   font-size: 0.86rem;
   font-weight: 700;
-  color: #111827 !important;
-}
-
-:global(.app-theme-dark) .notification-settings-title {
   color: var(--app-color-text) !important;
 }
 
@@ -534,11 +472,6 @@ onMounted(async () => {
   margin: 0;
   font-size: 0.84rem;
   line-height: 1.35;
-  color: #4b5563 !important;
-}
-
-:global(.app-theme-dark) .notification-description,
-:global(.app-theme-dark) .notification-message {
   color: var(--app-color-text-muted) !important;
 }
 </style>

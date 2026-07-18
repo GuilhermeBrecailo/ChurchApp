@@ -81,21 +81,15 @@ const adminLabel = computed(() => "Admin");
 .bottom-nav {
   width: 100%;
   max-width: 100vw;
-  background: rgba(255, 255, 255, 0.92) !important;
+  background: var(--app-color-shell-bg) !important;
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-top: 1px solid rgba(229, 231, 235, 0.6) !important;
+  border-top: 1px solid var(--app-color-shell-border) !important;
   border-radius: 20px 20px 0 0 !important;
   padding: 4px max(4px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom))
     max(4px, env(safe-area-inset-left));
   overflow: hidden;
-  box-shadow: 0 -4px 24px rgba(17, 24, 39, 0.06) !important;
-}
-
-:global(.app-theme-dark) .bottom-nav {
-  background: rgba(21, 27, 35, 0.92) !important;
-  border-top-color: rgba(45, 55, 70, 0.5) !important;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06) !important;
 }
 
 .nav-label {
@@ -126,7 +120,7 @@ const adminLabel = computed(() => "Admin");
   flex: 1 1 0;
   min-width: 0 !important;
   max-width: none;
-  color: #6b7280 !important;
+  color: var(--app-color-text-muted) !important;
   border-radius: 14px !important;
   margin: 0 2px;
   height: 58px !important;
@@ -134,14 +128,6 @@ const adminLabel = computed(() => "Admin");
   transition:
     color 0.2s ease !important;
   background-color: transparent !important;
-}
-
-:global(.app-theme-dark) .custom-btn {
-  color: var(--app-color-text-muted) !important;
-}
-
-:global(html.app-theme-dark) :deep(.custom-btn) {
-  color: var(--app-color-text-muted) !important;
 }
 
 .custom-btn :deep(.v-btn__content) {
@@ -165,16 +151,6 @@ const adminLabel = computed(() => "Admin");
 
 .custom-btn.v-btn--active .nav-icon {
   transform: scale(1.18) !important;
-}
-
-:global(.app-theme-dark) .custom-btn.v-btn--active {
-  color: var(--app-color-accent) !important;
-  background-color: transparent !important;
-}
-
-:global(html.app-theme-dark) :deep(.custom-btn.v-btn--active) {
-  color: var(--app-color-accent) !important;
-  background-color: transparent !important;
 }
 
 .custom-btn:hover > .v-btn__overlay {

@@ -205,10 +205,6 @@ onMounted(() => {
 .bible-reference-text {
   font-size: 1rem;
   font-weight: 700;
-  color: #111827;
-}
-
-:global(.app-theme-dark) .bible-reference-text {
   color: var(--app-color-text);
 }
 
@@ -219,12 +215,8 @@ onMounted(() => {
 .bible-verse {
   font-size: 1rem;
   line-height: 1.85;
-  color: #1f2937;
-  margin-bottom: 0;
-}
-
-:global(.app-theme-dark) .bible-verse {
   color: var(--app-color-text);
+  margin-bottom: 0;
 }
 
 .bible-verse-num {

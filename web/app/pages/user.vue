@@ -75,21 +75,21 @@
     <template v-else>
       <section class="profile-overview mb-4">
         <div class="profile-info-tile">
-          <Church size="18" color="#B5472A" />
+          <Church size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
           <div class="min-w-0">
             <span>{{ churchDisplayName }}</span>
             <small>Igreja</small>
           </div>
         </div>
         <div class="profile-info-tile">
-          <BadgeCheck size="18" color="#0F766E" />
+          <BadgeCheck size="18" :color="isDark ? '#2dd4bf' : '#0F766E'" />
           <div class="min-w-0">
             <span>{{ primaryDepartmentName }}</span>
             <small>Ministério</small>
           </div>
         </div>
         <div class="profile-info-tile">
-          <CalendarDays size="18" color="#B45309" />
+          <CalendarDays size="18" :color="isDark ? '#fbbf24' : '#B45309'" />
           <div class="min-w-0">
             <span>{{ nextUnavailableLabel }}</span>
             <small>Próximo bloqueio</small>
@@ -787,7 +787,7 @@ onMounted(loadPageData);
 .profile-hero-banner {
   position: relative;
   height: 80px;
-  background: linear-gradient(135deg, #b5472a 0%, #c2542c 60%, #e07a45 100%);
+  background: linear-gradient(135deg, var(--app-color-accent) 0%, var(--app-color-accent-soft) 60%, var(--app-color-accent-muted) 100%);
   overflow: hidden;
 }
 
@@ -827,8 +827,8 @@ onMounted(loadPageData);
 
 .profile-avatar {
   flex: 0 0 auto;
-  background: linear-gradient(135deg, #b5472a, #e07a45) !important;
-  border: 3px solid #ffffff !important;
+  background: linear-gradient(135deg, var(--app-color-accent), var(--app-color-accent-muted)) !important;
+  border: 3px solid var(--app-color-surface) !important;
   box-shadow: 0 4px 16px rgba(181, 71, 42, 0.3) !important;
 }
 
@@ -869,8 +869,8 @@ onMounted(loadPageData);
 
 .profile-info-tile {
   align-items: center;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--app-color-surface-soft);
+  border: 1px solid var(--app-color-border);
   border-radius: 8px;
   display: flex;
   gap: 10px;
@@ -888,13 +888,13 @@ onMounted(loadPageData);
 }
 
 .profile-info-tile span {
-  color: #111827;
+  color: var(--app-color-text);
   font-size: 0.875rem;
   font-weight: 700;
 }
 
 .profile-info-tile small {
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   font-size: 0.75rem;
 }
 
@@ -911,7 +911,7 @@ onMounted(loadPageData);
 }
 
 .profile-card {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--app-color-border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -932,23 +932,23 @@ onMounted(loadPageData);
 }
 
 .section-icon-indigo {
-  background: #f7e2d3;
-  color: #b5472a;
+  background: var(--app-color-accent-tint);
+  color: var(--app-color-accent);
 }
 
 .section-icon-amber {
-  background: #fffbeb;
-  color: #b45309;
+  background: var(--app-color-warning-tint);
+  color: var(--app-color-warning);
 }
 
 .section-icon-teal {
-  background: #f0fdfa;
-  color: #0f766e;
+  background: var(--app-color-success-tint);
+  color: var(--app-color-success);
 }
 
 .section-icon-purple {
-  background: #f7e2d3;
-  color: #b5472a;
+  background: var(--app-color-accent-tint);
+  color: var(--app-color-accent);
 }
 
 .profile-input :deep(.v-field) {
@@ -973,10 +973,10 @@ onMounted(loadPageData);
 
 .readiness-item {
   align-items: center;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--app-color-surface-soft);
+  border: 1px solid var(--app-color-border);
   border-radius: 8px;
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   display: inline-flex;
   font-size: 0.75rem;
   font-weight: 700;
@@ -986,13 +986,16 @@ onMounted(loadPageData);
 }
 
 .readiness-item-done {
-  background: #f0fdfa;
-  border-color: #99f6e4;
-  color: #0f766e;
+  background: var(--app-color-success-tint);
+  border-color: var(--app-color-success-soft);
+  color: var(--app-color-success);
 }
 
 .profile-icon-btn {
+  background: var(--app-color-surface-soft) !important;
+  border: 1px solid var(--app-color-border) !important;
   border-radius: 8px !important;
+  color: var(--app-color-text-soft) !important;
   flex: 0 0 auto;
   height: 48px !important;
   min-width: 48px !important;
@@ -1048,7 +1051,7 @@ onMounted(loadPageData);
 }
 
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border);
 }
 
 .responsive-dialog-header {
@@ -1109,68 +1112,4 @@ onMounted(loadPageData);
   }
 }
 
-/* Dark mode overrides */
-:global(.app-theme-dark) .section-icon-indigo {
-  background: rgba(240, 151, 90, 0.16);
-  color: #f0975a;
-}
-
-:global(.app-theme-dark) .section-icon-amber {
-  background: rgba(180, 83, 9, 0.16);
-  color: #fbbf24;
-}
-
-:global(.app-theme-dark) .section-icon-teal {
-  background: rgba(15, 118, 110, 0.18);
-  color: #2dd4bf;
-}
-
-:global(.app-theme-dark) .section-icon-purple {
-  background: rgba(240, 151, 90, 0.16);
-  color: #f0975a;
-}
-
-:global(.app-theme-dark) .readiness-item {
-  background: var(--app-color-surface-soft);
-  border-color: var(--app-color-border);
-  color: var(--app-color-text-muted);
-}
-
-:global(.app-theme-dark) .readiness-item-done {
-  background: rgba(15, 118, 110, 0.14);
-  border-color: rgba(45, 212, 191, 0.25);
-  color: #2dd4bf;
-}
-
-:global(.app-theme-dark) .profile-icon-btn {
-  background: var(--app-color-surface-soft) !important;
-  border-color: var(--app-color-border) !important;
-  color: var(--app-color-text-soft) !important;
-}
-
-:global(.app-theme-dark) .profile-hero-banner {
-  background: linear-gradient(135deg, #3a2a20 0%, #7c2d12 60%, #f0975a 100%);
-}
-
-:global(.app-theme-dark) .profile-avatar {
-  border-color: var(--app-color-surface) !important;
-  box-shadow: 0 4px 16px rgba(240, 151, 90, 0.25) !important;
-}
-
-:global(.app-theme-dark) .profile-info-tile {
-  background: var(--app-color-surface-soft);
-  border-color: var(--app-color-border);
-}
-
-:global(.app-theme-dark) .profile-info-tile span {
-  color: var(--app-color-text);
-}
-
-:global(.app-theme-dark) .profile-info-tile small {
-  color: var(--app-color-text-muted);
-}
-
-:global(.app-theme-dark) .border-subtle {
-  border-color: var(--app-color-border) !important;
-}
 </style>

@@ -162,10 +162,6 @@ onMounted(() => {
 <style scoped>
 .onboarding-card {
   padding: 32px 24px 24px;
-  background: #fff;
-}
-
-:global(.app-theme-dark) .onboarding-card {
   background: var(--app-color-surface);
 }
 
@@ -195,24 +191,16 @@ onMounted(() => {
 .onboarding-title {
   font-size: 1.2rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--app-color-text);
   margin-bottom: 12px;
   line-height: 1.3;
 }
 
-:global(.app-theme-dark) .onboarding-title {
-  color: var(--app-color-text);
-}
-
 .onboarding-desc {
   font-size: 0.95rem;
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   line-height: 1.6;
   margin: 0;
-}
-
-:global(.app-theme-dark) .onboarding-desc {
-  color: var(--app-color-text-muted);
 }
 
 .onboarding-dots {

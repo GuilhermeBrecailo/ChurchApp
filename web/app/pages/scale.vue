@@ -2782,7 +2782,7 @@ watch(schedules, async () => {
 }
 
 .scale-song-title {
-  color: #111827;
+  color: var(--app-color-text) !important;
   font-size: 1rem;
   font-weight: 850;
   line-height: 1.2;
@@ -2807,21 +2807,9 @@ watch(schedules, async () => {
   gap: 12px;
   border: 1px solid #f2d3bd;
   border-radius: 8px;
-  background: #ffffff;
-  padding: 14px;
-}
-
-:global(.app-theme-dark) .scale-song-reader {
   background: var(--app-color-surface);
+  padding: 14px;
   border-color: var(--app-color-border);
-}
-
-:global(.app-theme-dark) .scale-song-title {
-  color: var(--app-color-text) !important;
-}
-
-:global(.app-theme-dark) .scale-song-category {
-  color: var(--app-color-accent) !important;
 }
 
 .scale-song-reader-header {
@@ -2857,12 +2845,8 @@ watch(schedules, async () => {
   grid-template-rows: auto auto minmax(0, 1fr);
   max-height: 100vh;
   min-height: 100vh;
-  background: #fff;
-  overflow: hidden;
-}
-
-:global(.app-theme-dark) .scale-fullscreen-song {
   background: #0f0d1a;
+  overflow: hidden;
 }
 
 .scale-fullscreen-header {
@@ -2871,15 +2855,14 @@ watch(schedules, async () => {
   gap: 16px;
   align-items: start;
   padding: 18px 22px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid #2d2640;
 }
 
-:global(.app-theme-dark) .scale-fullscreen-header {
-  border-color: #2d2640;
-}
-
-:global(.app-theme-dark) .scale-fullscreen-header h4,
-:global(.app-theme-dark) .scale-fullscreen-header p {
+/* .scale-fullscreen-song tem fundo escuro fixo (#0f0d1a) em qualquer tema —
+   modo apresentação pensado pra tela de palco — então o texto aqui precisa
+   ser sempre claro, independente do app estar em light ou dark mode. */
+.scale-fullscreen-header h4,
+.scale-fullscreen-header p {
   color: #e2e8f0 !important;
 }
 
@@ -2890,9 +2873,6 @@ watch(schedules, async () => {
   gap: 12px;
   padding: 10px 22px;
   border-bottom: 1px solid #f3f4f6;
-}
-
-:global(.app-theme-dark) .scale-fullscreen-toolbar {
   border-color: #2d2640;
 }
 

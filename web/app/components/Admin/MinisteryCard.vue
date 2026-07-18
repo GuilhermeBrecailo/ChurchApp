@@ -51,6 +51,8 @@ defineProps({
 
 .ministry-avatar {
   align-self: start;
+  background: rgba(240, 151, 90, 0.16) !important;
+  color: #f0975a !important;
 }
 
 .ministry-copy {
@@ -94,10 +96,5 @@ defineProps({
     grid-column: 2;
     justify-content: flex-start;
   }
-}
-
-:global(.app-theme-dark) .ministry-avatar {
-  background: rgba(240, 151, 90, 0.16) !important;
-  color: #f0975a !important;
 }
 </style>

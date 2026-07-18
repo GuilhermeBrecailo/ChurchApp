@@ -238,12 +238,8 @@ const userAssignmentStatusLabel = computed(() => {
 }
 
 .schedule-card:hover {
-  box-shadow: 0 12px 26px rgba(17, 24, 39, 0.07) !important;
-  transform: translateY(-1px);
-}
-
-:global(.app-theme-dark) .schedule-card:hover {
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45) !important;
+  transform: translateY(-1px);
 }
 
 .schedule-card:focus-visible {

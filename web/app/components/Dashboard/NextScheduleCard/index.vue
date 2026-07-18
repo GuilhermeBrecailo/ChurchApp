@@ -169,6 +169,6 @@ const goToSchedule = () => {
 }
 
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border);
 }
 </style>

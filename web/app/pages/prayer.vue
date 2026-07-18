@@ -287,11 +287,6 @@ onMounted(loadPrayers);
 }
 
 .prayer-card--answered {
-  border-color: #bbf7d0 !important;
-  background: #f0fdf4 !important;
-}
-
-:global(.app-theme-dark) .prayer-card--answered {
   border-color: rgba(74, 222, 128, 0.25) !important;
   background: rgba(74, 222, 128, 0.06) !important;
 }

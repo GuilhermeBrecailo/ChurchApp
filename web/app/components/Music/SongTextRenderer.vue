@@ -178,8 +178,8 @@ onBeforeUnmount(stopAutoScroll);
 .song-text-renderer {
   border: 1px solid #f3f4f6;
   border-radius: 8px;
-  background: #ffffff;
-  color: #111111;
+  background: var(--app-color-surface);
+  color: var(--app-color-text-soft);
   font-family: "Courier New", "Roboto Mono", monospace;
   font-size: 0.95rem;
   line-height: 1.75;
@@ -189,24 +189,7 @@ onBeforeUnmount(stopAutoScroll);
   overflow-y: auto;
   padding: 14px;
   tab-size: 4;
-}
-
-:global(.app-theme-dark) .song-text-renderer {
-  background: var(--app-color-surface);
   border-color: var(--app-color-border);
-  color: var(--app-color-text-soft);
-}
-
-:global(.app-theme-dark) .song-text-renderer--lyrics {
-  color: var(--app-color-text-soft);
-}
-
-:global(.app-theme-dark) .song-section {
-  color: var(--app-color-accent);
-}
-
-:global(.app-theme-dark) .song-chord {
-  color: #fb923c;
 }
 
 .song-text-renderer--chords {
@@ -214,7 +197,7 @@ onBeforeUnmount(stopAutoScroll);
 }
 
 .song-text-renderer--lyrics {
-  color: #1f2937;
+  color: var(--app-color-text-soft);
   font-family: inherit;
   white-space: pre-wrap;
 }
@@ -241,12 +224,12 @@ onBeforeUnmount(stopAutoScroll);
 }
 
 .song-section {
-  color: #111827;
+  color: var(--app-color-accent);
   font-weight: 800;
 }
 
 .song-chord {
-  color: #ea580c;
+  color: #fb923c;
   font-weight: 900;
 }
 </style>

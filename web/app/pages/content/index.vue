@@ -128,32 +128,20 @@ const contentItems = [
 .content-card-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--app-color-text);
   line-height: 1.3;
 }
 
 .content-card-desc {
   font-size: 0.78rem;
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   line-height: 1.4;
   margin-top: 2px;
 }
 
-:global(.app-theme-dark) .content-card-title {
-  color: var(--app-color-text);
-}
-
-:global(.app-theme-dark) .content-card-desc {
-  color: var(--app-color-text-muted);
-}
-
 .content-card-chevron {
-  color: #d1d5db;
-  flex-shrink: 0;
-}
-
-:global(.app-theme-dark) .content-card-chevron {
   color: var(--app-color-text-muted);
+  flex-shrink: 0;
 }
 
 .gap-3 {

@@ -216,30 +216,18 @@ onMounted(async () => {
 }
 
 .playlist-card-main:hover {
-  background: #f9fafb;
-}
-
-:global(.app-theme-dark) .playlist-card-main:hover {
   background: rgba(255, 255, 255, 0.04);
 }
 
 .playlist-card-title {
   font-size: 0.92rem;
   font-weight: 700;
-  color: #111827;
-  line-height: 1.3;
-}
-
-:global(.app-theme-dark) .playlist-card-title {
   color: var(--app-color-text);
+  line-height: 1.3;
 }
 
 .playlist-card-dept {
   font-size: 0.75rem;
-  color: #6b7280;
-}
-
-:global(.app-theme-dark) .playlist-card-dept {
   color: var(--app-color-text-muted);
 }
 
@@ -253,12 +241,8 @@ onMounted(async () => {
 }
 
 .playlist-chevron {
-  color: #d1d5db;
-  flex-shrink: 0;
-}
-
-:global(.app-theme-dark) .playlist-chevron {
   color: var(--app-color-text-muted);
+  flex-shrink: 0;
 }
 
 .playlist-empty {
@@ -280,9 +264,6 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid #f3f4f6;
-}
-
-:global(.app-theme-dark) .song-overlay-header {
   border-bottom-color: var(--app-color-border);
 }
 

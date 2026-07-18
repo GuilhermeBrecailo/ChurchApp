@@ -2,8 +2,8 @@
   <v-card class="daily-verse-card rounded-xl pa-5 mb-8 elevation-1 border-subtle">
     <div class="d-flex align-center justify-space-between mb-4">
       <div class="d-flex align-center min-w-0">
-        <v-avatar color="#F7E2D3" size="42" class="mr-3">
-          <BookMarked size="20" color="#B5472A" />
+        <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="42" class="mr-3">
+          <BookMarked size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
         </v-avatar>
         <div class="min-w-0">
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
@@ -49,6 +49,7 @@ import { onMounted, ref } from "vue";
 import { BookMarked } from "lucide-vue-next";
 import { useDailyVerse, type DailyVerse } from "../../../../composables/useDailyVerse";
 
+const { isDark } = useThemeMode();
 const { getLatestVerse } = useDailyVerse();
 
 const verse = ref<DailyVerse | null>(null);
@@ -66,13 +67,13 @@ onMounted(loadVerse);
 
 <style scoped>
 .daily-verse-card {
-  background: #ffffff;
+  background: var(--app-color-surface);
 }
 
 .daily-verse-text {
   font-size: 1rem;
   line-height: 1.7;
-  color: #1f2937;
+  color: var(--app-color-text);
   white-space: pre-line;
 }
 
@@ -85,12 +86,12 @@ onMounted(loadVerse);
 .daily-verse-commentary {
   font-size: 0.85rem;
   line-height: 1.5;
-  color: #4b5563;
+  color: var(--app-color-text-soft);
   white-space: pre-line;
 }
 
 .daily-verse-empty {
-  border: 1px dashed #e5e7eb;
+  border: 1px dashed var(--app-color-border);
   border-radius: 8px;
   padding: 14px;
 }
@@ -103,6 +104,6 @@ onMounted(loadVerse);
 }
 
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border);
 }
 </style>

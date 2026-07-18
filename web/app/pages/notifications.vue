@@ -170,13 +170,8 @@ onMounted(() => startInboxSync());
 }
 
 .notif-item--unread {
-  border-color: rgba(181, 71, 42, 0.32);
-  background: rgba(181, 71, 42, 0.08);
-}
-
-:global(.app-theme-dark) .notif-item--unread {
-  background: rgba(240, 151, 90, 0.16);
   border-color: rgba(240, 151, 90, 0.42);
+  background: rgba(240, 151, 90, 0.16);
 }
 
 .notif-dot {
@@ -206,10 +201,6 @@ onMounted(() => startInboxSync());
 }
 
 .notif-item--unread .notif-title {
-  color: var(--app-color-accent, #b5472a);
-}
-
-:global(.app-theme-dark) .notif-item--unread .notif-title {
   color: var(--app-color-accent);
 }
 

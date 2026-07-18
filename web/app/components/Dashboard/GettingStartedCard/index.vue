@@ -58,7 +58,7 @@
 
           <v-btn
             v-if="departmentsCount === 0"
-            color="#B5472A"
+            color="purple-darken-3"
             variant="flat"
             size="small"
             class="text-none font-weight-bold"
@@ -153,7 +153,7 @@ onMounted(async () => {
 }
 
 .setup-step-done .setup-step-icon {
-  background: #16a34a;
+  background: var(--app-color-success);
   color: #fff;
 }
 
@@ -177,7 +177,7 @@ onMounted(async () => {
 .setup-step-done-text {
   font-size: 0.82rem;
   font-weight: 600;
-  color: #16a34a;
+  color: var(--app-color-success);
 }
 
 .setup-step-hint {

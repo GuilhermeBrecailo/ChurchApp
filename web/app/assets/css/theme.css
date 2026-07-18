@@ -30,6 +30,34 @@
   --app-shadow-md: 0 4px 16px rgba(17,24,39,0.08), 0 2px 6px rgba(17,24,39,0.04);
   --app-shadow-lg: 0 12px 32px rgba(17,24,39,0.1), 0 4px 12px rgba(17,24,39,0.06);
   --app-shadow-accent: 0 8px 24px rgba(181,71,42,0.22);
+
+  /* Paleta semântica "success" (presença, status positivo) — separada do accent terracota */
+  --app-color-success: #0f766e;
+  --app-color-success-soft: #14b8a6;
+  --app-color-success-tint: #f0fdfa;
+
+  /*
+   * Shell (AppBar / BottomNav) — vidro translúcido com blur.
+   * Usa var() direto em vez do padrão :global(.app-theme-dark) .seletor porque
+   * esse padrão não estava sendo compilado nesses dois componentes (bug de
+   * scoped CSS + :global() quando o elemento raiz herda o data-v do componente
+   * pai) — o override dark simplesmente não existia no CSS final, então a
+   * AppBar e a BottomNav ficavam sempre com o fundo claro, mesmo no dark mode.
+   */
+  --app-color-appbar-bg: rgba(255, 255, 255, 0.88);
+  --app-color-appbar-border: rgba(229, 231, 235, 0.7);
+  --app-color-shell-bg: rgba(255, 255, 255, 0.92);
+  --app-color-shell-border: rgba(229, 231, 235, 0.6);
+
+  /* Paleta semântica "warning" (âmbar — pendências, indisponibilidade, alertas leves) */
+  --app-color-warning: #b45309;
+  --app-color-warning-soft: #d97706;
+  --app-color-warning-tint: #fffbeb;
+
+  /* Paleta semântica "danger" (vermelho — erros, itens críticos) */
+  --app-color-danger: #b91c1c;
+  --app-color-danger-soft: #dc2626;
+  --app-color-danger-tint: #fef2f2;
 }
 
 /* Tipografia global */
@@ -96,6 +124,27 @@ body {
   --app-shadow-md: 0 4px 16px rgba(0,0,0,0.52), 0 2px 6px rgba(0,0,0,0.32);
   --app-shadow-lg: 0 12px 32px rgba(0,0,0,0.62), 0 4px 12px rgba(0,0,0,0.4);
   --app-shadow-accent: 0 8px 24px rgba(240,151,90,0.3);
+
+  /* Paleta semântica "success" no dark — mesmo valor já usado em text-teal-darken-2 */
+  --app-color-success: #2dd4bf;
+  --app-color-success-soft: #5eead4;
+  --app-color-success-tint: rgba(45, 212, 191, 0.14);
+
+  /* Shell (AppBar / BottomNav) no dark — ver comentário no bloco :root */
+  --app-color-appbar-bg: rgba(21, 27, 35, 0.88);
+  --app-color-appbar-border: rgba(45, 55, 70, 0.6);
+  --app-color-shell-bg: rgba(21, 27, 35, 0.92);
+  --app-color-shell-border: rgba(45, 55, 70, 0.5);
+
+  /* Paleta semântica "warning" no dark — mesmo padrão de conversão do accent/success */
+  --app-color-warning: #fbbf24;
+  --app-color-warning-soft: #fcd34d;
+  --app-color-warning-tint: rgba(180, 83, 9, 0.16);
+
+  /* Paleta semântica "danger" no dark */
+  --app-color-danger: #f87171;
+  --app-color-danger-soft: #fca5a5;
+  --app-color-danger-tint: rgba(185, 28, 28, 0.16);
 }
 
 .app-theme-light,

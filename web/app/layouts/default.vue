@@ -22,8 +22,8 @@ const { user } = useAuth();
 
 <style scoped>
 .demo-banner {
-  background: #f59e0b;
-  color: #1c1917;
+  background: #92400e;
+  color: #fef3c7;
   font-size: 0.8rem;
   font-weight: 600;
   text-align: center;
@@ -32,10 +32,5 @@ const { user } = useAuth();
   top: 0;
   z-index: 100;
   letter-spacing: 0.01em;
-}
-
-:global(.app-theme-dark) .demo-banner {
-  background: #92400e;
-  color: #fef3c7;
 }
 </style>
