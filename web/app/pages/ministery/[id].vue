@@ -1115,7 +1115,7 @@
             bg-color="white"
             class="ministery-input mb-4"
             hide-details="auto"
-            :disabled="isCreatingSong"
+            :disabled="isCreatingSong || isImportingCifraClubSong"
           />
 
           <v-text-field
@@ -1128,7 +1128,7 @@
             bg-color="white"
             class="ministery-input mb-4"
             hide-details="auto"
-            :disabled="isCreatingSong"
+            :disabled="isCreatingSong || isImportingCifraClubSong"
           />
 
           <div class="d-flex ga-3 mb-4">
@@ -1142,7 +1142,7 @@
               bg-color="white"
               class="ministery-input"
               hide-details="auto"
-              :disabled="isCreatingSong"
+              :disabled="isCreatingSong || isImportingCifraClubSong"
             />
             <v-text-field
               v-model="songForm.bpm"
@@ -1154,7 +1154,7 @@
               bg-color="white"
               class="ministery-input"
               hide-details="auto"
-              :disabled="isCreatingSong"
+              :disabled="isCreatingSong || isImportingCifraClubSong"
             />
           </div>
 
@@ -1168,7 +1168,7 @@
             bg-color="white"
             class="ministery-input mb-4"
             hide-details="auto"
-            :disabled="isCreatingSong"
+            :disabled="isCreatingSong || isImportingCifraClubSong"
           />
 
           <v-text-field
@@ -1181,8 +1181,20 @@
             bg-color="white"
             class="ministery-input mb-4"
             hide-details="auto"
-            :disabled="isCreatingSong"
+            :disabled="isCreatingSong || isImportingCifraClubSong"
           />
+          <div class="d-flex justify-end mb-4">
+            <v-btn
+              variant="tonal"
+              color="deep-purple-darken-2"
+              class="text-none font-weight-bold"
+              :loading="isImportingCifraClubSong"
+              :disabled="isCreatingSong || isImportingCifraClubSong || (!songForm.url && (!songForm.title || !songForm.artist))"
+              @click="handleImportCifraClubSong"
+            >
+              Buscar no Cifra Club
+            </v-btn>
+          </div>
 
           <v-text-field
             v-model="songForm.notes"
@@ -1194,7 +1206,7 @@
             bg-color="white"
             class="ministery-input mb-4"
             hide-details="auto"
-            :disabled="isCreatingSong"
+            :disabled="isCreatingSong || isImportingCifraClubSong"
           />
 
           <v-textarea
@@ -1209,7 +1221,7 @@
             hide-details="auto"
             rows="5"
             auto-grow
-            :disabled="isCreatingSong"
+            :disabled="isCreatingSong || isImportingCifraClubSong"
           />
 
           <v-textarea
@@ -1224,7 +1236,7 @@
             hide-details="auto"
             rows="6"
             auto-grow
-            :disabled="isCreatingSong"
+            :disabled="isCreatingSong || isImportingCifraClubSong"
           />
 
           <v-textarea
@@ -1239,7 +1251,7 @@
             hide-details="auto"
             rows="6"
             auto-grow
-            :disabled="isCreatingSong"
+            :disabled="isCreatingSong || isImportingCifraClubSong"
           />
 
           <div v-if="songForm.pdfUrl && !songForm.removePdf" class="pdf-current-card mb-4">
@@ -1261,7 +1273,7 @@
               color="red-darken-2"
               size="small"
               class="text-none"
-              :disabled="isCreatingSong"
+              :disabled="isCreatingSong || isImportingCifraClubSong"
               @click="removeSongPdf"
             >
               Remover
@@ -1281,7 +1293,7 @@
             hide-details="auto"
             show-size
             clearable
-            :disabled="isCreatingSong"
+            :disabled="isCreatingSong || isImportingCifraClubSong"
           />
 
           <v-alert
@@ -1299,7 +1311,7 @@
               variant="text"
               color="grey-darken-1"
               class="text-none"
-              :disabled="isCreatingSong"
+              :disabled="isCreatingSong || isImportingCifraClubSong"
               @click="closeSongDialog"
             >
               Cancelar
@@ -1309,7 +1321,7 @@
               color="purple-darken-3"
               class="text-none font-weight-bold"
               :loading="isCreatingSong"
-              :disabled="isCreatingSong"
+              :disabled="isCreatingSong || isImportingCifraClubSong"
             >
               {{ editingSongId ? "Salvar música" : "Criar música" }}
             </v-btn>
@@ -1958,6 +1970,7 @@ const {
   createDepartmentSong,
   updateDepartmentSong,
   deleteDepartmentSong,
+  importCifraClubSong,
   uploadDepartmentPdf,
   getSongPreference,
   updateSongPreference,
@@ -2001,6 +2014,7 @@ const isCreatingTask = ref(false);
 const isCreatingSchedule = ref(false);
 const isCreatingResource = ref(false);
 const isCreatingSong = ref(false);
+const isImportingCifraClubSong = ref(false);
 const isCreatingActivity = ref(false);
 const isLoadingSongPreference = ref(false);
 const isSavingSongPreference = ref(false);
@@ -3039,6 +3053,44 @@ const handleSaveResource = async () => {
   }
 };
 
+const handleImportCifraClubSong = async () => {
+  createSongError.value = "";
+
+  if (!songForm.url.trim() && (!songForm.title.trim() || !songForm.artist.trim())) {
+    createSongError.value = "Informe o link do Cifra Club ou titulo e artista.";
+    return;
+  }
+
+  isImportingCifraClubSong.value = true;
+
+  try {
+    const { data, error } = await importCifraClubSong(departmentId, {
+      title: songForm.title,
+      artist: songForm.artist,
+      url: songForm.url,
+    });
+
+    if (error || !data) {
+      createSongError.value = error || "Nao foi possivel buscar a cifra.";
+      return;
+    }
+
+    songForm.title = data.title || songForm.title;
+    songForm.artist = data.artist || songForm.artist;
+    songForm.key = data.key || songForm.key;
+    songForm.bpm = data.bpm || songForm.bpm;
+    songForm.songCategory = data.songCategory || songForm.songCategory;
+    songForm.url = data.url || songForm.url;
+    songForm.notes = data.notes || songForm.notes;
+    songForm.lyrics = data.lyrics || songForm.lyrics;
+    songForm.chords = data.chords || songForm.chords;
+    songForm.keyboardChords = data.keyboardChords || songForm.keyboardChords;
+  } catch (error: any) {
+    createSongError.value = error?.message || "Nao foi possivel buscar a cifra.";
+  } finally {
+    isImportingCifraClubSong.value = false;
+  }
+};
 const openSongEditDialog = (song: DepartmentSong) => {
   editingSongId.value = song.id;
   songForm.title = song.title;

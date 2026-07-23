@@ -127,6 +127,11 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
     controllerHandler(adapters.createChurchDepartmentSong.bind(adapters)),
   );
 
+  app.post(
+    "/api/church/departments/:id/songs/cifraclub",
+    controllerHandler(adapters.importCifraClubSong.bind(adapters)),
+  );
+
   app.patch(
     "/api/church/departments/:departmentId/songs/:songId",
     controllerHandler(adapters.updateChurchDepartmentSong.bind(adapters)),

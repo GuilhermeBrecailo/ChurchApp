@@ -119,6 +119,21 @@ export interface UploadedDepartmentPdf extends DepartmentPdfMetadata {
   size: number;
 }
 
+export interface CifraClubSongImport {
+  title: string;
+  artist: string;
+  key: string;
+  bpm: string;
+  songCategory: string;
+  url: string;
+  notes: string;
+  lyrics: string;
+  chords: string;
+  keyboardChords: string;
+  source: "cifraclub";
+  youtubeUrl?: string;
+}
+
 export interface SongPreference {
   id: string | null;
   personalKey?: string | null;
@@ -262,6 +277,12 @@ interface UpdateScheduleAssignmentAttendanceDTO {
 interface SendScheduleReminderResponse {
   success: boolean;
   notifiedCount: number;
+}
+
+interface ImportCifraClubSongDTO {
+  title?: string;
+  artist?: string;
+  url?: string;
 }
 
 interface UpdateSongPreferenceDTO {
@@ -621,6 +642,19 @@ export const useDepartments = () => {
     );
   };
 
+  const importCifraClubSong = async (
+    departmentId: string,
+    payload: ImportCifraClubSongDTO,
+  ): Promise<ApiResponse<CifraClubSongImport>> => {
+    return await $customFetch<CifraClubSongImport>(
+      `${config.public.URL_BACKEND}/api/church/departments/${departmentId}/songs/cifraclub`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+        body: payload,
+      },
+    );
+  };
   const deleteDepartmentSong = async (
     departmentId: string,
     songId: string,
@@ -731,6 +765,7 @@ export const useDepartments = () => {
     createDepartmentSong,
     updateDepartmentSong,
     deleteDepartmentSong,
+    importCifraClubSong,
     getSongPreference,
     updateSongPreference,
     reorderScheduleMediaItems,

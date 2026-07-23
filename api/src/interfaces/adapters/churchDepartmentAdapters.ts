@@ -64,6 +64,156 @@ type UploadedPdf = {
 
 const PDF_MAX_SIZE_BYTES = 10 * 1024 * 1024;
 
+type CifraClubSongImport = {
+  title: string;
+  artist: string;
+  key: string;
+  bpm: string;
+  songCategory: string;
+  url: string;
+  notes: string;
+  lyrics: string;
+  chords: string;
+  keyboardChords: string;
+  source: "cifraclub";
+  youtubeUrl?: string;
+};
+
+const CIFRA_CLUB_BASE_URL = "https://www.cifraclub.com.br";
+
+function decodeHtmlEntities(value: string) {
+  return value
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+}
+
+function stripHtml(value: string) {
+  return decodeHtmlEntities(
+    value
+      .replace(/<br\s*\/?\s*>/gi, "\n")
+      .replace(/<\/p>/gi, "\n")
+      .replace(/<[^>]+>/g, ""),
+  );
+}
+
+function normalizeTextBlock(value: string) {
+  return value
+    .replace(/\r\n/g, "\n")
+    .replace(/\t/g, "  ")
+    .split("\n")
+    .map((line) => line.replace(/\s+$/g, ""))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function slugifyCifraClubPart(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/&/g, " e ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function isCifraClubUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.hostname === "www.cifraclub.com.br" || url.hostname === "cifraclub.com.br";
+  } catch {
+    return false;
+  }
+}
+
+function resolveCifraClubUrl(input: { url?: string; artist?: string; title?: string }) {
+  const rawUrl = input.url?.trim();
+
+  if (rawUrl) {
+    if (!isCifraClubUrl(rawUrl)) {
+      throw new DomainError("Informe um link valido do Cifra Club");
+    }
+
+    return rawUrl;
+  }
+
+  const artist = input.artist?.trim();
+  const title = input.title?.trim();
+
+  if (!artist || !title) {
+    throw new DomainError("Informe artista e titulo ou cole o link do Cifra Club");
+  }
+
+  return `${CIFRA_CLUB_BASE_URL}/${slugifyCifraClubPart(artist)}/${slugifyCifraClubPart(title)}/`;
+}
+
+function extractHtmlAttribute(html: string, pattern: RegExp) {
+  const match = html.match(pattern);
+  return match?.[1] ? decodeHtmlEntities(match[1]).trim() : "";
+}
+
+function extractCifraClubText(html: string) {
+  const preMatch = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
+  if (preMatch?.[1]) {
+    return normalizeTextBlock(stripHtml(preMatch[1]));
+  }
+
+  const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+  if (articleMatch?.[1]) {
+    return normalizeTextBlock(stripHtml(articleMatch[1]));
+  }
+
+  return "";
+}
+
+function looksLikeChordLine(line: string) {
+  const cleaned = line.trim();
+  if (!cleaned) return false;
+  if (/^\[[^\]]+\]$/.test(cleaned)) return false;
+
+  const chordToken = /\b[A-G](?:#|b)?(?:m|maj|min|dim|aug|sus|add)?\d*(?:\/[A-G](?:#|b)?)?\b/;
+  const onlyChordSymbols = /^[\sA-G#bmmajindugsadto/()0-9+\-.|:]+$/i;
+
+  return chordToken.test(cleaned) && onlyChordSymbols.test(cleaned);
+}
+
+function deriveLyricsFromChords(chords: string) {
+  return normalizeTextBlock(
+    chords
+      .split("\n")
+      .filter((line) => !looksLikeChordLine(line))
+      .join("\n"),
+  );
+}
+
+function parseCifraClubTitle(html: string, fallbackTitle: string, fallbackArtist: string) {
+  const pageTitle = stripHtml(extractHtmlAttribute(html, /<title[^>]*>([\s\S]*?)<\/title>/i));
+  const cleanTitle = pageTitle
+    .replace(/\s*-\s*Cifra Club\s*$/i, "")
+    .replace(/\s*Cifra Club\s*$/i, "")
+    .trim();
+
+  if (!cleanTitle) {
+    return { title: fallbackTitle, artist: fallbackArtist };
+  }
+
+  const parts = cleanTitle.split(" - ").map((part) => part.trim()).filter(Boolean);
+
+  if (parts.length >= 2) {
+    return {
+      title: fallbackTitle || parts[0],
+      artist: fallbackArtist || parts.slice(1).join(" - "),
+    };
+  }
+
+  return { title: fallbackTitle || cleanTitle, artist: fallbackArtist };
+}
+
 function getAuthPayload(request: FastifyRequest): AuthPayload {
   const authHeader = request.headers.authorization;
   const token = authHeader?.replace("Bearer ", "");
@@ -1822,6 +1972,71 @@ export class ChurchDepartmentAdapters {
     });
   }
 
+  async importCifraClubSong(request: FastifyRequest): Promise<CifraClubSongImport> {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+    const body = request.body as {
+      title?: string;
+      artist?: string;
+      url?: string;
+    };
+
+    if (!id) {
+      throw new DomainError("Ministerio nao informado");
+    }
+
+    await this.assertCanManageSongs(user, id);
+
+    const targetUrl = resolveCifraClubUrl(body);
+    const response = await fetch(targetUrl, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+    });
+
+    if (!response.ok) {
+      throw new DomainError("Musica nao encontrada no Cifra Club");
+    }
+
+    const html = await response.text();
+    const chords = extractCifraClubText(html);
+
+    if (!chords) {
+      throw new DomainError("Nao foi possivel ler a cifra no Cifra Club");
+    }
+
+    const canonicalUrl =
+      extractHtmlAttribute(
+        html,
+        /<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["'][^>]*>/i,
+      ) || targetUrl;
+    const youtubeUrl = extractHtmlAttribute(
+      html,
+      /(https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]+)/i,
+    );
+    const parsed = parseCifraClubTitle(
+      html,
+      body.title?.trim() || "",
+      body.artist?.trim() || "",
+    );
+
+    return {
+      title: parsed.title,
+      artist: parsed.artist,
+      key: "",
+      bpm: "",
+      songCategory: "Louvor",
+      url: canonicalUrl,
+      notes: youtubeUrl ? `YouTube: ${youtubeUrl}` : "",
+      lyrics: deriveLyricsFromChords(chords),
+      chords,
+      keyboardChords: "",
+      source: "cifraclub",
+      ...(youtubeUrl ? { youtubeUrl } : {}),
+    };
+  }
   async getChurchDepartmentSongs(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
     const { id } = request.params as { id?: string };
