@@ -12,6 +12,7 @@ const mockDepartments: Department[] = [];
 const makeValidCrunchProps = (): Omit<CrunchDTO, "createdAt"> => ({
   id: "any_id",
   name: "Igreja Central",
+  slug: "igreja-central",
   userMainId: "user_123",
   logo: "https://minhalogo.com/logo.png",
   isActive: true,

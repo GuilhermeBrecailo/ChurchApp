@@ -33,6 +33,9 @@ O foco do MVP foi demonstrar um produto realista, com regras de permissao no bac
 - Estrutura de backend separada por dominio, aplicacao, infraestrutura e interfaces.
 - Testes unitarios de dominio e entidades.
 - PWA com manifest, service worker, cache basico e suporte inicial a notificacoes push.
+- Landing publica por igreja (`/c/:slug`), sem autenticacao, com identidade visual propria (logo e cor de destaque), proximos cultos e feed de avisos/palavra do pastor/oracoes.
+- Inscricao de notificacoes push anonima para visitantes da landing publica, sem exigir conta.
+- Delegacao de gestao de escala e repertorio por ministerio: pastor ou lider titular pode designar outros membros do proprio ministerio como gestores, alem do lider unico.
 
 ## Stack
 
@@ -78,7 +81,9 @@ O foco do MVP foi demonstrar um produto realista, com regras de permissao no bac
 | Admin da plataforma | Visualizar igrejas cadastradas, detalhes, usuarios e ministerios na tela administrativa global. |
 | Pastor | Administrar a igreja dele, criar usuarios, criar ministerios, definir lideres e gerenciar escalas. |
 | Lider de ministerio | Gerenciar informacoes e escalas do ministerio em que lidera. |
+| Gestor delegado | Membro designado pelo pastor ou pelo lider titular para gerenciar escala e repertorio de um ministerio especifico, sem ser o lider titular dele. |
 | Membro | Visualizar suas informacoes, ministerios e escalas, sem alterar escalas ou ministerios. |
+| Visitante (publico) | Acessa a landing publica da igreja (`/c/:slug`) sem login: ve proximos cultos, avisos publicos e pode ativar notificacoes daquela igreja. |
 
 ## Arquitetura
 

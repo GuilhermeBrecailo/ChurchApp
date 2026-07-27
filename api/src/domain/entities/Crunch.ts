@@ -10,9 +10,13 @@ export const crunchSchema = z.object({
 
   name: z.string().trim().min(1, "Nome é obrigatório"),
 
+  slug: z.string().trim().min(1, "Slug e obrigatorio"),
+
   userMainId: z.string().trim().min(1, "Id do usuário principal é obrigatório"),
 
   logo: z.string().trim().min(1, "Logo é obrigatório"),
+
+  accentColor: z.string().nullable().optional(),
 
   isActive: z.boolean().default(false),
   createdAt: z.date().optional(),
@@ -32,8 +36,10 @@ export type CrunchDTO = z.infer<typeof crunchSchema>;
 export class Crunch {
   private _id: string;
   private _name: string;
+  private _slug: string;
   private _userMainId: string;
   private _logo: string;
+  private _accentColor?: string | null;
   private _isActive: boolean;
   private _createdAt: Date;
 
@@ -45,8 +51,10 @@ export class Crunch {
   private constructor(props: CrunchProps) {
     this._id = props.id;
     this._name = props.name;
+    this._slug = props.slug;
     this._userMainId = props.userMainId;
     this._logo = props.logo;
+    this._accentColor = props.accentColor;
     this._isActive = props.isActive;
     this._users = props.users ?? [];
     this._departaments = props.departaments ?? [];
@@ -111,12 +119,20 @@ export class Crunch {
     return this._name;
   }
 
+  get slug() {
+    return this._slug;
+  }
+
   get userMainId() {
     return this._userMainId;
   }
 
   get logo() {
     return this._logo;
+  }
+
+  get accentColor() {
+    return this._accentColor;
   }
 
   get isActive() {
@@ -151,12 +167,20 @@ export class Crunch {
     this._name = value;
   }
 
+  set slug(value: string) {
+    this._slug = value;
+  }
+
   set userMainId(value: string) {
     this._userMainId = value;
   }
 
   set logo(value: string) {
     this._logo = value;
+  }
+
+  set accentColor(value: string | null | undefined) {
+    this._accentColor = value;
   }
 
   set isActive(value: boolean) {

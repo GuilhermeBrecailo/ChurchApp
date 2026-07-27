@@ -62,7 +62,7 @@ export default defineNuxtConfig({
       link: [
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" },
-        { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" },
+        { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,750&family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" },
         { rel: "manifest", href: "/manifest.webmanifest" },
         { rel: "icon", href: "/pwa-icon.svg", type: "image/svg+xml" },
         { rel: "apple-touch-icon", href: "/pwa-icon-192.png" },

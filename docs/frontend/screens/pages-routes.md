@@ -145,6 +145,24 @@ Estado atual:
 - permite atualizar perfil, telefone, ministerio principal, funcao, indisponibilidades e sugestao;
 - ainda precisa de refinamento de validacoes e estados de feedback.
 
+## `/c/[slug]`
+
+Arquivo:
+
+- `web/app/pages/c/[slug].vue`
+
+Landing pública da igreja, sem autenticação, usando o layout `public` (sem appbar autenticado nem bottom nav). Rota liberada explicitamente em `web/app/middleware/auth.global.ts` (prefixo `/c`).
+
+Mostra:
+
+- hero com logo, nome e cor de destaque (`accentColor`) da igreja;
+- "quadro de horários" com os próximos cultos (semana/mês), calculado a partir dos `ServiceTime` cadastrados;
+- feed público de avisos, palavra do pastor e orações (`Announcement` com `isPublic = true`);
+- prompt discreto para o visitante ativar notificações push da igreja sem precisar de conta (`components/Public/NotificationPrompt.vue`);
+- estado amigável de "igreja não encontrada" para slug inválido ou igreja inativa.
+
+Dados vêm do composable `useChurchLanding.ts`, consumindo `GET /public/church/:slug` e `GET /public/church/:slug/service-times`.
+
 ## `/admin`
 
 Arquivo:

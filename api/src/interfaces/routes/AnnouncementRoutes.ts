@@ -15,6 +15,8 @@ export async function AnnouncementRoutes(app: FastifyInstance) {
     controllerHandler(adapters.createAnnouncement.bind(adapters)),
   );
 
+  app.patch("/api/church/announcements/:id", controllerHandler(adapters.updateAnnouncement.bind(adapters)));
+
   app.delete(
     "/api/church/announcements/:id",
     controllerHandler(adapters.deleteAnnouncement.bind(adapters)),

@@ -8,6 +8,8 @@ import { Department } from "../../../domain/entities/Departament";
 interface UpdateCrunchProps {
   id: string;
   name: string;
+  slug: string;
+  accentColor?: string | null;
   userMainId: string;
   logo: string;
   isActive: boolean;
@@ -34,6 +36,8 @@ export class UpdateCrunchService {
     }
 
     crunch.name = props.name;
+    crunch.slug = props.slug;
+    crunch.accentColor = props.accentColor;
     crunch.userMainId = props.userMainId;
     crunch.logo = props.logo;
     crunch.isActive = props.isActive;

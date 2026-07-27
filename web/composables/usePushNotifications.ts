@@ -338,6 +338,113 @@ export const usePushNotifications = () => {
     }
   };
 
+
+  const anonymousPromptDismissed = (slug: string) => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem(`public-push-dismissed:${slug}`) === "true";
+  };
+
+  const dismissAnonymousPrompt = (slug: string) => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(`public-push-dismissed:${slug}`, "true");
+  };
+
+  const canShowAnonymousPrompt = async (slug: string) => {
+    if (!slug || access_token.value || anonymousPromptDismissed(slug)) return false;
+    if (!isPushSupported()) return false;
+    await refreshStatus();
+    return Notification.permission === "default" && status.value !== "enabled";
+  };
+
+  const enableAnonymous = async (slug: string) => {
+    if (!slug) return;
+
+    if (!isPushSupported()) {
+      status.value = "unsupported";
+      dismissAnonymousPrompt(slug);
+      return;
+    }
+
+    loading.value = true;
+    message.value = null;
+
+    try {
+      const { data, error } = await $customFetch<PublicKeyResponse>(
+        `${config.public.URL_BACKEND}/api/notifications/public-key`,
+        {
+          method: "GET",
+        },
+      );
+
+      if (error || !data?.publicKey || !data.configured) {
+        message.value = "Notificacoes ainda nao estao configuradas no servidor.";
+        return;
+      }
+
+      const permission = await Notification.requestPermission();
+
+      if (permission !== "granted") {
+        status.value = permission === "denied" ? "denied" : "default";
+        dismissAnonymousPrompt(slug);
+        return;
+      }
+
+      const registration = await registerServiceWorker();
+      const existingSubscription = await registration.pushManager.getSubscription();
+      const subscription =
+        existingSubscription ||
+        (await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(data.publicKey),
+        }));
+
+      await $customFetch(
+        `${config.public.URL_BACKEND}/public/church/${encodeURIComponent(slug)}/notifications/subscribe`,
+        {
+          method: "POST",
+          body: subscription.toJSON(),
+        },
+      );
+
+      status.value = "enabled";
+      message.value = "Notificacoes ativadas.";
+    } catch {
+      message.value = "Nao foi possivel ativar as notificacoes.";
+      await refreshStatus();
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const disableAnonymous = async (slug: string) => {
+    if (!slug || !isPushSupported()) return;
+
+    loading.value = true;
+    message.value = null;
+
+    try {
+      const registration = await navigator.serviceWorker.getRegistration("/sw.js");
+      const subscription = await registration?.pushManager.getSubscription();
+
+      if (subscription) {
+        await $customFetch(
+          `${config.public.URL_BACKEND}/public/church/${encodeURIComponent(slug)}/notifications/subscribe`,
+          {
+            method: "DELETE",
+            body: {
+              endpoint: subscription.endpoint,
+            },
+          },
+        );
+
+        await subscription.unsubscribe();
+      }
+
+      status.value = "disabled";
+    } finally {
+      loading.value = false;
+    }
+  };
   return {
     status,
     message,
@@ -353,7 +460,13 @@ export const usePushNotifications = () => {
     startInboxSync,
     markNotificationRead,
     markAllNotificationsRead,
+    anonymousPromptDismissed,
+    dismissAnonymousPrompt,
+    canShowAnonymousPrompt,
+    enableAnonymous,
+    disableAnonymous,
     enable,
     disable,
   };
 };
+

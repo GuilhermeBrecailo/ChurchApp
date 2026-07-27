@@ -27,6 +27,75 @@ class PushNotificationService {
     return this.configured;
   }
 
+
+  async sendPublicChurchContent(crunchId: string, payload: PushPayload) {
+    const members = await $prismaClient.churchMembership.findMany({
+      where: {
+        crunchId,
+        isActive: true,
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    await this.sendToUsers(
+      members.map((member) => member.userId),
+      payload,
+    );
+
+    if (!this.configured) {
+      return;
+    }
+
+    const subscriptions = await $prismaClient.pushSubscription.findMany({
+      where: {
+        crunchId,
+        userId: null,
+      },
+      select: {
+        id: true,
+        endpoint: true,
+        p256dh: true,
+        auth: true,
+      },
+    });
+
+    await Promise.all(
+      subscriptions.map(async (subscription) => {
+        try {
+          await webpush.sendNotification(
+            {
+              endpoint: subscription.endpoint,
+              keys: {
+                p256dh: subscription.p256dh,
+                auth: subscription.auth,
+              },
+            },
+            JSON.stringify({
+              ...payload,
+              createdAt: new Date().toISOString(),
+            }),
+          );
+        } catch (error) {
+          if (
+            error instanceof WebPushError &&
+            (error.statusCode === 404 || error.statusCode === 410)
+          ) {
+            await $prismaClient.pushSubscription.deleteMany({
+              where: {
+                id: subscription.id,
+              },
+            });
+            return;
+          }
+
+          console.error("Erro ao enviar notificacao push anonima", error);
+        }
+      }),
+    );
+  }
+
   async sendToUsers(userIds: string[], payload: PushPayload) {
     const uniqueUserIds = [...new Set(userIds)].filter(Boolean);
 
@@ -88,7 +157,7 @@ class PushNotificationService {
             },
             JSON.stringify({
               ...payload,
-              notificationId: notificationIdByUserId.get(subscription.userId),
+              notificationId: subscription.userId ? notificationIdByUserId.get(subscription.userId) : undefined,
               createdAt: new Date().toISOString(),
             }),
           );

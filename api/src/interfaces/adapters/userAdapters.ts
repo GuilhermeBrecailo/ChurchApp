@@ -12,6 +12,7 @@ import { KeycloakProvider } from "../../infrastructure/identity/KeycloakProvider
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { resolveActiveChurchContext } from "../utils/churchContext";
+import { assertChurchSlugAvailable, ensureUniqueChurchSlug } from "../utils/churchSlug";
 
 const userRepository = new UserRepository();
 const createUserUseCase = new CreateUserUseCase(userRepository);
@@ -28,6 +29,7 @@ const updateUserService = new UpdateUserService(
 function formatChurch(church: {
   id: string;
   name: string;
+  slug: string;
   city: string;
   road: string;
   number: string | null;
@@ -36,12 +38,14 @@ function formatChurch(church: {
   complement: string | null;
   document: string | null;
   logo: string | null;
+  accentColor: string | null;
   isActive: boolean;
   userMainId: string | null;
 }) {
   return {
     id: church.id,
     name: church.name,
+    slug: church.slug,
     city: church.city,
     road: church.road,
     number: church.number,
@@ -50,6 +54,7 @@ function formatChurch(church: {
     complement: church.complement,
     document: church.document,
     logo: church.logo,
+    accentColor: church.accentColor,
     isActive: church.isActive,
     userMainId: church.userMainId,
   };
@@ -436,6 +441,8 @@ export class UserAdapters {
       complement?: string;
       document?: string;
       logo?: string;
+      slug?: string;
+      accentColor?: string | null;
     };
 
     if (!body.name?.trim()) {
@@ -456,12 +463,16 @@ export class UserAdapters {
       throw new DomainError("Apenas pastor pode criar uma igreja");
     }
 
+    const slug = await ensureUniqueChurchSlug(body.slug?.trim() || body.name.trim());
+
     const church = await $prismaClient.$transaction(async (tx) => {
       const createdChurch = await tx.crunch.create({
         data: {
           name: body.name!.trim(),
+          slug,
           userMainId: user.id,
           logo: body.logo ?? "",
+          accentColor: body.accentColor?.trim() || null,
           city: body.city ?? "",
           road: body.road ?? "",
           localZipCode: body.localZipCode ?? "",
@@ -510,6 +521,8 @@ export class UserAdapters {
       id: church.id,
       name: church.name,
       userMainId: church.userMainId,
+      slug: church.slug,
+      accentColor: church.accentColor,
     };
   }
 
@@ -526,6 +539,8 @@ export class UserAdapters {
       document?: string | null;
       logo?: string | null;
       isActive?: boolean;
+      slug?: string;
+      accentColor?: string | null;
     };
 
     const user = await $prismaClient.user.findUnique({
@@ -558,12 +573,17 @@ export class UserAdapters {
         throw new DomainError("Nome da igreja e obrigatorio");
       }
 
+      const slug = body.slug !== undefined
+        ? await assertChurchSlugAvailable(body.slug, context.activeChurchId)
+        : undefined;
+
       return await $prismaClient.crunch.update({
         where: {
           id: context.activeChurchId,
         },
         data: {
           ...(body.name !== undefined ? { name: body.name.trim() } : {}),
+          ...(slug !== undefined ? { slug } : {}),
           ...(body.city !== undefined ? { city: body.city.trim() } : {}),
           ...(body.road !== undefined ? { road: body.road.trim() } : {}),
           ...(body.number !== undefined ? { number: body.number?.trim() || null } : {}),
@@ -578,11 +598,13 @@ export class UserAdapters {
             ? { document: body.document?.trim() || null }
             : {}),
           ...(body.logo !== undefined ? { logo: body.logo?.trim() || null } : {}),
+          ...(body.accentColor !== undefined ? { accentColor: body.accentColor?.trim() || null } : {}),
           ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
         },
         select: {
           id: true,
           name: true,
+          slug: true,
           city: true,
           road: true,
           number: true,
@@ -591,6 +613,7 @@ export class UserAdapters {
           complement: true,
           document: true,
           logo: true,
+          accentColor: true,
           isActive: true,
           userMainId: true,
         },
@@ -617,12 +640,17 @@ export class UserAdapters {
       throw new DomainError("Nome da igreja e obrigatorio");
     }
 
+    const slug = body.slug !== undefined
+      ? await assertChurchSlugAvailable(body.slug, context.activeChurchId)
+      : undefined;
+
     const updatedChurch = await $prismaClient.crunch.update({
       where: {
         id: context.activeChurchId,
       },
       data: {
         ...(body.name !== undefined ? { name: body.name.trim() } : {}),
+        ...(slug !== undefined ? { slug } : {}),
         ...(body.city !== undefined ? { city: body.city.trim() } : {}),
         ...(body.road !== undefined ? { road: body.road.trim() } : {}),
         ...(body.number !== undefined ? { number: body.number?.trim() || null } : {}),
@@ -637,11 +665,13 @@ export class UserAdapters {
           ? { document: body.document?.trim() || null }
           : {}),
         ...(body.logo !== undefined ? { logo: body.logo?.trim() || null } : {}),
+        ...(body.accentColor !== undefined ? { accentColor: body.accentColor?.trim() || null } : {}),
         ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
       },
       select: {
         id: true,
         name: true,
+        slug: true,
         city: true,
         road: true,
         number: true,
@@ -650,6 +680,7 @@ export class UserAdapters {
         complement: true,
         document: true,
         logo: true,
+        accentColor: true,
         isActive: true,
         userMainId: true,
       },

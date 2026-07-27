@@ -15,6 +15,8 @@ interface AuthChurch {
   logo?: string | null;
   isActive?: boolean;
   userMainId?: string | null;
+  slug?: string | null;
+  accentColor?: string | null;
 }
 
 interface AuthMembership {

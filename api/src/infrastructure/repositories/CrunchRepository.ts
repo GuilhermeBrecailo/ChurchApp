@@ -26,6 +26,7 @@ export class CrunchRepository implements ICrunchRepository {
         data: {
           id: crunch.id,
           name: crunch.name,
+          slug: crunch.slug,
           city: crunch.address.getCity(),
           road: crunch.address.getRoad(),
           localZipCode: crunch.address.getLocalZipCode(),
@@ -33,6 +34,7 @@ export class CrunchRepository implements ICrunchRepository {
           complement: crunch.address.getComplement(),
           number: crunch.address.getNumber(),
           logo: crunch.logo,
+          accentColor: crunch.accentColor ?? null,
           userMainId: crunch.userMainId,
           document: crunch.document?.documento,
           isActive: crunch.isActive,
@@ -56,7 +58,9 @@ export class CrunchRepository implements ICrunchRepository {
     try {
       const data: Prisma.CrunchUpdateInput = {
         name: crunch.name,
+        slug: crunch.slug,
         logo: crunch.logo,
+        accentColor: crunch.accentColor ?? null,
         userMainId: crunch.userMainId,
         document: crunch.document?.documento,
         isActive: crunch.isActive,
@@ -182,6 +186,7 @@ export class CrunchRepository implements ICrunchRepository {
       {
         id: crunch.id,
         name: crunch.name,
+        slug: crunch.slug,
         logo: crunch.logo ?? "",
         userMainId: crunch.userMainId ?? "",
         isActive: crunch.isActive,

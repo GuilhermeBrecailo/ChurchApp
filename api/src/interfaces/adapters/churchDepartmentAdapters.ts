@@ -7,6 +7,7 @@ import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { pushNotificationService } from "../../infrastructure/notifications/PushNotificationService";
 import { resolveActiveChurchContext } from "../utils/churchContext";
+import { canManageDepartmentSchedule } from "../../application/Services/Department/DepartmentSchedulePermission";
 
 type CurrentUser = Prisma.UserGetPayload<{
   include: {
@@ -542,11 +543,40 @@ export class ChurchDepartmentAdapters {
     user: CurrentUser,
     departmentId: string,
   ) {
-    return await this.assertCanManageDepartmentWithPermission(
-      user,
+    const department = await this.getDepartmentFromCurrentChurch(
       departmentId,
-      "MANAGE_SCHEDULES",
-      "Apenas pastores, admins ou lideres com permissao podem gerenciar escalas deste ministerio",
+      user.crunchId!,
+    );
+
+    if (this.isChurchWideManager(user)) {
+      return department;
+    }
+
+    const membership = await $prismaClient.userDepartmentMembership.findUnique({
+      where: {
+        userId_departmentId: {
+          userId: user.id,
+          departmentId,
+        },
+      },
+      select: {
+        canManageSchedule: true,
+      },
+    });
+
+    if (
+      canManageDepartmentSchedule({
+        isChurchWideManager: false,
+        isDepartmentLeader: department.leaderId === user.id,
+        hasGlobalPermission: this.hasPermission(user, "MANAGE_SCHEDULES"),
+        canManageSchedule: membership?.canManageSchedule === true,
+      })
+    ) {
+      return department;
+    }
+
+    throw new DomainError(
+      "Apenas pastores, admins, lideres ou gestores delegados podem gerenciar escalas deste ministerio",
     );
   }
 
@@ -563,11 +593,40 @@ export class ChurchDepartmentAdapters {
   }
 
   private async assertCanManageSongs(user: CurrentUser, departmentId: string) {
-    return await this.assertCanManageDepartmentWithPermission(
-      user,
+    const department = await this.getDepartmentFromCurrentChurch(
       departmentId,
-      "MANAGE_SONGS",
-      "Apenas pastores, admins ou lideres com permissao podem gerenciar musicas deste ministerio",
+      user.crunchId!,
+    );
+
+    if (this.isChurchWideManager(user)) {
+      return department;
+    }
+
+    const membership = await $prismaClient.userDepartmentMembership.findUnique({
+      where: {
+        userId_departmentId: {
+          userId: user.id,
+          departmentId,
+        },
+      },
+      select: {
+        canManageSchedule: true,
+      },
+    });
+
+    if (
+      canManageDepartmentSchedule({
+        isChurchWideManager: false,
+        isDepartmentLeader: department.leaderId === user.id,
+        hasGlobalPermission: this.hasPermission(user, "MANAGE_SONGS"),
+        canManageSchedule: membership?.canManageSchedule === true,
+      })
+    ) {
+      return department;
+    }
+
+    throw new DomainError(
+      "Apenas pastores, admins, lideres ou gestores delegados podem gerenciar musicas deste ministerio",
     );
   }
 
@@ -1946,6 +2005,124 @@ export class ChurchDepartmentAdapters {
     return { ok: true };
   }
 
+  async listChurchDepartmentScheduleManagers(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+
+    if (!id) {
+      throw new DomainError("Ministerio nao informado");
+    }
+
+    const department = await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+    if (!this.isChurchWideManager(user) && department.leaderId !== user.id) {
+      throw new DomainError("Apenas pastores, admins ou lideres podem listar gestores de escala");
+    }
+
+    return await $prismaClient.userDepartmentMembership.findMany({
+      where: {
+        departmentId: id,
+        department: {
+          crunchId: user.crunchId!,
+        },
+      },
+      orderBy: {
+        user: {
+          name: "asc",
+        },
+      },
+      select: {
+        id: true,
+        function: true,
+        isPrimary: true,
+        canManageSchedule: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+  }
+
+  async updateChurchDepartmentScheduleManager(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id, userId } = request.params as { id?: string; userId?: string };
+    const body = request.body as { canManageSchedule?: boolean };
+
+    if (!id || !userId) {
+      throw new DomainError("Membro do ministerio nao informado");
+    }
+
+    if (typeof body.canManageSchedule !== "boolean") {
+      throw new DomainError("Permissao de escala invalida");
+    }
+
+    const department = await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+    if (!this.isChurchWideManager(user) && department.leaderId !== user.id) {
+      throw new DomainError("Apenas pastores, admins ou lideres podem alterar gestores de escala");
+    }
+
+    const membership = await $prismaClient.userDepartmentMembership.findUnique({
+      where: {
+        userId_departmentId: {
+          userId,
+          departmentId: id,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        department: {
+          select: {
+            crunchId: true,
+            leaderId: true,
+          },
+        },
+      },
+    });
+
+    if (!membership || membership.department.crunchId !== user.crunchId) {
+      throw new DomainError("Membro nao encontrado neste ministerio");
+    }
+
+    if (membership.department.leaderId === userId && body.canManageSchedule === false) {
+      throw new DomainError("Nao e necessario revogar o lider titular por este fluxo");
+    }
+
+    const updated = await $prismaClient.userDepartmentMembership.update({
+      where: {
+        id: membership.id,
+      },
+      data: {
+        canManageSchedule: body.canManageSchedule,
+      },
+      select: {
+        id: true,
+        function: true,
+        isPrimary: true,
+        canManageSchedule: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    return updated;
+  }
   async getChurchDepartmentResources(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
     const { id } = request.params as { id?: string };

@@ -28,10 +28,14 @@ interface ChurchResponse {
   document?: string | null;
   logo?: string | null;
   isActive?: boolean;
+  slug?: string | null;
+  accentColor?: string | null;
 }
 
 type UpdateChurchDTO = Partial<CreateOwnChurchDTO> & {
   isActive?: boolean;
+  slug?: string | null;
+  accentColor?: string | null;
 };
 
 export const useChurch = () => {

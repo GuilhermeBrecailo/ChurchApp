@@ -2239,6 +2239,10 @@ import {
   Plus,
   QrCode,
   RefreshCw,
+  Clock,
+  Globe,
+  Palette,
+  Save,
 } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
@@ -2274,6 +2278,8 @@ import {
   type Devotional,
 } from "../../composables/useDevotionals";
 import { useChurchInvite } from "../../composables/useChurchInvite";
+import { useChurch } from "../../composables/useChurch";
+import { useServiceTimes, type ServiceTime } from "../../composables/useServiceTimes";
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
@@ -2300,6 +2306,14 @@ const {
 } = useAdmin();
 const { publishVerse } = useDailyVerse();
 const { getInviteCode, regenerateInviteCode } = useChurchInvite();
+const { updateOwnChurch } = useChurch();
+const {
+  serviceTimes,
+  loadServiceTimes,
+  createServiceTime,
+  updateServiceTime,
+  deactivateServiceTime,
+} = useServiceTimes();
 
 const inviteCodeValue = ref("");
 const inviteCodeLoading = ref(false);
@@ -2400,6 +2414,10 @@ const contentError = ref("");
 const isPublishingVerse = ref(false);
 const isSavingAnnouncement = ref(false);
 const isSavingDevotional = ref(false);
+const isSavingServiceTime = ref(false);
+const isSavingPublicChurch = ref(false);
+const editingServiceTimeId = ref("");
+const publicChurchMessage = ref("");
 
 const isPlatformAdmin = computed(
   () =>
@@ -2589,6 +2607,12 @@ const visibleChurchSchedules = computed(() => {
     : schedules.slice(0, churchPreviewLimit);
 });
 
+const publicLandingUrl = computed(() => {
+  if (!publicChurchForm.slug) return "";
+  if (typeof window === "undefined") return `/c/${publicChurchForm.slug}`;
+  return `${window.location.origin}/c/${publicChurchForm.slug}`;
+});
+
 const churchTotals = computed(() => ({
   schedules: departments.value.reduce(
     (total, department) => total + (department.schedulesCount || 0),
@@ -2740,6 +2764,20 @@ const announcementForm = reactive({
   body: "",
   pinned: false,
   expiresAt: "",
+  isPublic: false,
+  kind: "ANNOUNCEMENT" as "ANNOUNCEMENT" | "PASTOR_MESSAGE" | "PRAYER",
+});
+
+const publicChurchForm = reactive({
+  slug: "",
+  accentColor: "#4F46E5",
+});
+
+const serviceTimeForm = reactive({
+  label: "",
+  weekday: 0,
+  time: "",
+  isActive: true,
 });
 
 const devotionalForm = reactive({
@@ -2759,6 +2797,22 @@ const selectedMemberForm = reactive({
   email: "",
   phone: "",
 });
+
+const announcementKindOptions = [
+  { label: "Aviso", value: "ANNOUNCEMENT" },
+  { label: "Palavra do Pastor", value: "PASTOR_MESSAGE" },
+  { label: "Oracao", value: "PRAYER" },
+];
+
+const weekdayOptions = [
+  { label: "Domingo", value: 0 },
+  { label: "Segunda", value: 1 },
+  { label: "Terca", value: 2 },
+  { label: "Quarta", value: 3 },
+  { label: "Quinta", value: 4 },
+  { label: "Sexta", value: 5 },
+  { label: "Sabado", value: 6 },
+];
 
 const departmentTypes = [
   { label: "Louvor", value: "WORSHIP" },
@@ -3316,6 +3370,101 @@ const publishAnnouncement = async () => {
   }
 };
 
+
+const resetServiceTimeForm = () => {
+  editingServiceTimeId.value = "";
+  serviceTimeForm.label = "";
+  serviceTimeForm.weekday = 0;
+  serviceTimeForm.time = "";
+  serviceTimeForm.isActive = true;
+};
+
+const editServiceTime = (time: ServiceTime) => {
+  editingServiceTimeId.value = time.id;
+  serviceTimeForm.label = time.label;
+  serviceTimeForm.weekday = time.weekday;
+  serviceTimeForm.time = time.time;
+  serviceTimeForm.isActive = time.isActive;
+};
+
+const saveServiceTime = async () => {
+  contentError.value = "";
+
+  if (!serviceTimeForm.label.trim() || serviceTimeForm.weekday === null || !serviceTimeForm.time) {
+    contentError.value = "Informe rotulo, dia e horario do culto.";
+    return;
+  }
+
+  isSavingServiceTime.value = true;
+
+  try {
+    const payload = {
+      label: serviceTimeForm.label.trim(),
+      weekday: Number(serviceTimeForm.weekday),
+      time: serviceTimeForm.time,
+      isActive: serviceTimeForm.isActive,
+    };
+
+    const { data, error } = editingServiceTimeId.value
+      ? await updateServiceTime(editingServiceTimeId.value, payload)
+      : await createServiceTime(payload);
+
+    if (error || !data) {
+      contentError.value = error || "Nao foi possivel salvar o horario.";
+      return;
+    }
+
+    serviceTimes.value = editingServiceTimeId.value
+      ? serviceTimes.value.map((item) => (item.id === data.id ? data : item))
+      : [...serviceTimes.value, data];
+    resetServiceTimeForm();
+  } finally {
+    isSavingServiceTime.value = false;
+  }
+};
+
+const disableServiceTime = async (id: string) => {
+  contentError.value = "";
+  const { data, error } = await deactivateServiceTime(id);
+
+  if (error || !data) {
+    contentError.value = error || "Nao foi possivel desativar o horario.";
+    return;
+  }
+
+  serviceTimes.value = serviceTimes.value.map((item) =>
+    item.id === data.id ? data : item,
+  );
+};
+
+const savePublicChurchSettings = async () => {
+  contentError.value = "";
+  publicChurchMessage.value = "";
+
+  if (!publicChurchForm.slug.trim()) {
+    contentError.value = "Informe o slug publico da igreja.";
+    return;
+  }
+
+  isSavingPublicChurch.value = true;
+
+  try {
+    const { error } = await updateOwnChurch({
+      slug: publicChurchForm.slug.trim().toLowerCase(),
+      accentColor: publicChurchForm.accentColor || null,
+    });
+
+    if (error) {
+      contentError.value = error;
+      return;
+    }
+
+    publicChurchMessage.value = "Landing publica atualizada.";
+    syncPublicChurchForm();
+  } finally {
+    isSavingPublicChurch.value = false;
+  }
+};
 const removeAnnouncement = async (id: string) => {
   contentError.value = "";
   const { error } = await deleteAnnouncement(id);
@@ -4389,6 +4538,22 @@ onMounted(async () => {
   align-items: center;
 }
 
+.public-church-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 180px);
+  gap: 12px;
+}
+
+.public-url-preview {
+  border: 1px dashed var(--app-color-border);
+  border-radius: 8px;
+  background: var(--app-color-background);
+  color: var(--app-color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+  padding: 12px;
+}
 .content-admin-list {
   display: grid;
   gap: 8px;
@@ -4581,6 +4746,10 @@ onMounted(async () => {
 }
 
 @media (max-width: 520px) {
+  .public-church-grid {
+    grid-template-columns: 1fr;
+  }
+
   .content-admin-grid,
   .content-inline-fields {
     grid-template-columns: 1fr;
@@ -4691,3 +4860,13 @@ onMounted(async () => {
 
 /* ── Dark mode ── */
 </style>
+
+
+
+
+
+
+
+
+
+

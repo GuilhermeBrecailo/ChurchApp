@@ -3,6 +3,8 @@ import type { ApiResponse } from "./useTypes";
 import { useNuxtApp, useRuntimeConfig } from "#app";
 import { useAuth } from "./useAuth";
 
+export type AnnouncementKind = "ANNOUNCEMENT" | "PASTOR_MESSAGE" | "PRAYER";
+
 export interface Announcement {
   id: string;
   title: string;
@@ -10,6 +12,8 @@ export interface Announcement {
   pinned: boolean;
   publishedAt: string;
   expiresAt?: string | null;
+  isPublic?: boolean;
+  kind?: AnnouncementKind;
 }
 
 interface CreateAnnouncementDTO {
@@ -17,6 +21,8 @@ interface CreateAnnouncementDTO {
   body: string;
   pinned?: boolean;
   expiresAt?: string | null;
+  isPublic?: boolean;
+  kind?: AnnouncementKind;
 }
 
 export const useAnnouncements = () => {

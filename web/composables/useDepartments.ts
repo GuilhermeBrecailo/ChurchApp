@@ -21,6 +21,15 @@ export interface ChurchDepartment {
   };
 }
 
+
+export interface DepartmentMember {
+  id: string;
+  name: string;
+  email: string;
+  role?: string;
+  membershipId?: string;
+  canManageSchedule?: boolean;
+}
 export interface DepartmentTask {
   id: string;
   title: string;
@@ -372,6 +381,33 @@ export const useDepartments = () => {
     );
   };
 
+
+  const getDepartmentMembers = async (
+    id: string,
+  ): Promise<ApiResponse<DepartmentMember[]>> => {
+    return await $customFetch<DepartmentMember[]>(
+      `${config.public.URL_BACKEND}/api/church/departments/${id}/members`,
+      {
+        method: "GET",
+        headers: authHeaders(),
+      },
+    );
+  };
+
+  const updateDepartmentMemberScheduleManager = async (
+    departmentId: string,
+    userId: string,
+    canManageSchedule: boolean,
+  ): Promise<ApiResponse<DepartmentMember>> => {
+    return await $customFetch<DepartmentMember>(
+      `${config.public.URL_BACKEND}/api/church/departments/${departmentId}/members/${userId}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: { canManageSchedule },
+      },
+    );
+  };
   const getDepartmentTasks = async (
     id: string,
   ): Promise<ApiResponse<DepartmentTask[]>> => {
@@ -742,6 +778,8 @@ export const useDepartments = () => {
     getDepartmentById,
     updateDepartment,
     deleteDepartment,
+    getDepartmentMembers,
+    updateDepartmentMemberScheduleManager,
     getDepartmentTasks,
     createDepartmentTask,
     updateDepartmentTask,
@@ -771,3 +809,5 @@ export const useDepartments = () => {
     reorderScheduleMediaItems,
   };
 };
+
+

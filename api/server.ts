@@ -16,6 +16,8 @@ import { ReportRoutes } from "./src/interfaces/routes/ReportRoutes.ts";
 import { DevotionalRoutes } from "./src/interfaces/routes/DevotionalRoutes.ts";
 import { PrayerRoutes } from "./src/interfaces/routes/PrayerRoutes.ts";
 import { ChurchInviteRoutes } from "./src/interfaces/routes/ChurchInviteRoutes.ts";
+import { PublicChurchRoutes } from "./src/interfaces/routes/PublicChurchRoutes.ts";
+import { ServiceTimeRoutes } from "./src/interfaces/routes/ServiceTimeRoutes.ts";
 import TenantHandler from "./src/interfaces/plugins/TenantHandler.ts";
 
 const port = Number(process.env.API_PORT || 8000);
@@ -62,6 +64,8 @@ await server.register(ReportRoutes, { prefix: "/" });
 await server.register(DevotionalRoutes, { prefix: "/" });
 await server.register(PrayerRoutes, { prefix: "/" });
 await server.register(ChurchInviteRoutes, { prefix: "/" });
+await server.register(PublicChurchRoutes, { prefix: "/" });
+await server.register(ServiceTimeRoutes, { prefix: "/" });
 
 await server.listen({ port, host: "0.0.0.0" });
 

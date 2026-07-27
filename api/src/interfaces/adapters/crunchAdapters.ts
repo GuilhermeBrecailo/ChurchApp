@@ -6,6 +6,7 @@ import { GetCrunchByIdUseCase } from "../../application/use-cases/Crunch/GetCrun
 import { UpdateCrunchUseCase } from "../../application/use-cases/Crunch/UpdateCrunchUseCase";
 import { CrunchRepository } from "../../infrastructure/repositories/CrunchRepository";
 import { FastifyRequest } from "fastify/types/request";
+import { ensureUniqueChurchSlug, assertChurchSlugAvailable } from "../utils/churchSlug";
 
 // Adicione os imports da sua Entidade e DTO referentes ao Crunch
 import { Crunch } from "../../domain/entities/Crunch";
@@ -30,6 +31,8 @@ const updateCrunchService = new UpdateCrunchService(
 export interface CreateCrunchHttpBody {
   id: string;
   name: string;
+  slug?: string;
+  accentColor?: string | null;
   userMainId: string;
   logo: string;
   isActive: boolean;
@@ -66,6 +69,8 @@ export class CrunchAdapters {
     const props = {
       ...bodyData,
       id: novoId,
+      slug: await ensureUniqueChurchSlug(bodyData.slug?.trim() || bodyData.name),
+      accentColor: bodyData.accentColor ?? null,
     };
 
     const address = Address.create({
@@ -157,6 +162,8 @@ export class CrunchAdapters {
 
     const props = {
       ...bodyData,
+      slug: bodyData.slug ? await assertChurchSlugAvailable(bodyData.slug, bodyData.id) : await ensureUniqueChurchSlug(bodyData.name, bodyData.id),
+      accentColor: bodyData.accentColor ?? null,
     };
 
     const address = Address.create({

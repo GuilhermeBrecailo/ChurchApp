@@ -129,6 +129,57 @@
           {{ leaderError }}
         </v-alert>
 
+
+        <v-card
+          v-if="canManageScheduleDelegation"
+          class="ministery-content-card pa-4 elevation-1 bg-white mb-4"
+        >
+          <div class="leader-card-title mb-3">
+            <Users size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
+            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+              Gestores de escala
+            </h3>
+          </div>
+
+          <v-alert
+            v-if="scheduleManagersError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            {{ scheduleManagersError }}
+          </v-alert>
+
+          <div v-if="departmentMembers.length" class="schedule-manager-list">
+            <div
+              v-for="member in departmentMembers"
+              :key="member.id"
+              class="schedule-manager-row"
+            >
+              <div class="min-w-0">
+                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                  {{ member.name }}
+                </p>
+                <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
+                  {{ member.email }}
+                </p>
+              </div>
+              <v-switch
+                :model-value="member.canManageSchedule === true"
+                color="purple-darken-3"
+                density="compact"
+                hide-details
+                :loading="updatingScheduleManagerId === member.id"
+                :disabled="member.id === department.leaderId || Boolean(updatingScheduleManagerId)"
+                @update:model-value="toggleScheduleManager(member, Boolean($event))"
+              />
+            </div>
+          </div>
+          <p v-else class="text-caption text-grey-darken-1 mb-0">
+            Nenhum membro listado para este ministerio.
+          </p>
+        </v-card>
         <div class="leader-metric-grid mb-4">
           <v-card
             v-for="metric in leaderMetrics"
@@ -1939,6 +1990,7 @@ import {
 import {
   useDepartments,
   type ChurchDepartment,
+  type DepartmentMember,
   type DepartmentResource,
   type DepartmentSchedule,
   type DepartmentSong,
@@ -1954,6 +2006,8 @@ const { isDark } = useThemeMode();
 const departmentId = String(route.params.id);
 const {
   getDepartmentById,
+  getDepartmentMembers,
+  updateDepartmentMemberScheduleManager,
   getDepartmentTasks,
   createDepartmentTask,
   updateDepartmentTask,
@@ -1988,6 +2042,7 @@ const schedules = ref<DepartmentSchedule[]>([]);
 const resources = ref<DepartmentResource[]>([]);
 const songs = ref<DepartmentSong[]>([]);
 const members = ref<ChurchMember[]>([]);
+const departmentMembers = ref<DepartmentMember[]>([]);
 const departmentError = ref("");
 const tasksError = ref("");
 const schedulesError = ref("");
@@ -2002,6 +2057,8 @@ const songPreferenceError = ref("");
 const assignmentsError = ref("");
 const leaderError = ref("");
 const leaderMessage = ref("");
+const scheduleManagersError = ref("");
+const updatingScheduleManagerId = ref("");
 const activeTab = ref("overview");
 const isTaskDialogOpen = ref(false);
 const isScheduleDialogOpen = ref(false);
@@ -2050,15 +2107,24 @@ const canManageDepartment = computed(
     isChurchWideManager.value ||
     (isDepartmentLeader.value && can("MANAGE_DEPARTMENTS")),
 );
-const canManageSchedules = computed(
-  () =>
+const canManageScheduleDelegation = computed(
+  () => isChurchWideManager.value || isDepartmentLeader.value,
+);
+const isDelegatedScheduleManager = computed(() =>
+  departmentMembers.value.some(
+    (member) => member.id === user.value?.id && member.canManageSchedule === true,
+  ),
+);
+const canManageSchedules = computed(  () =>
     isChurchWideManager.value ||
-    (isDepartmentLeader.value && can("MANAGE_SCHEDULES")),
+    (isDepartmentLeader.value && can("MANAGE_SCHEDULES")) ||
+    isDelegatedScheduleManager.value,
 );
 const canManageSongs = computed(
   () =>
     isChurchWideManager.value ||
-    (isDepartmentLeader.value && can("MANAGE_SONGS")),
+    (isDepartmentLeader.value && can("MANAGE_SONGS")) ||
+    isDelegatedScheduleManager.value,
 );
 const canSendNotifications = computed(
   () =>
@@ -2192,8 +2258,8 @@ const baseTabs = [
 const tabs = computed(() => {
   const items = [...baseTabs];
 
-  if (canManageDepartment.value) {
-    items.splice(1, 0, { label: "Líder", value: "leader", icon: BarChart3 });
+  if (canManageDepartment.value || canManageScheduleDelegation.value) {
+    items.splice(1, 0, { label: "Lider", value: "leader", icon: BarChart3 });
   }
 
   if (["WORSHIP", "MUSIC", "MEDIA"].includes(department.value?.type || "")) {
@@ -2613,6 +2679,42 @@ const loadMembers = async () => {
   members.value = data ?? [];
 };
 
+const loadDepartmentMembers = async () => {
+  scheduleManagersError.value = "";
+  const { data, error } = await getDepartmentMembers(departmentId);
+
+  if (error) {
+    scheduleManagersError.value = error;
+    return;
+  }
+
+  departmentMembers.value = data ?? [];
+};
+
+
+const toggleScheduleManager = async (member: DepartmentMember, canManageSchedule: boolean) => {
+  scheduleManagersError.value = "";
+  updatingScheduleManagerId.value = member.id;
+
+  try {
+    const { data, error } = await updateDepartmentMemberScheduleManager(
+      departmentId,
+      member.id,
+      canManageSchedule,
+    );
+
+    if (error || !data) {
+      scheduleManagersError.value = error || "Nao foi possivel atualizar o gestor.";
+      return;
+    }
+
+    departmentMembers.value = departmentMembers.value.map((item) =>
+      item.id === data.id ? { ...item, ...data } : item,
+    );
+  } finally {
+    updatingScheduleManagerId.value = "";
+  }
+};
 const resetTaskForm = () => {
   taskForm.title = "";
   taskForm.description = "";
@@ -3524,6 +3626,7 @@ onMounted(async () => {
     loadResources(),
     loadSongs(),
     loadMembers(),
+    loadDepartmentMembers(),
   ]);
 });
 </script>
@@ -3648,6 +3751,21 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   gap: 12px;
+}
+.schedule-manager-list {
+  display: grid;
+  gap: 10px;
+}
+
+.schedule-manager-row {
+  align-items: center;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 58px;
+  padding: 10px 12px;
 }
 .leader-list {
   display: grid;
@@ -4005,3 +4123,9 @@ onMounted(async () => {
   }
 }
 </style>
+
+
+
+
+
+

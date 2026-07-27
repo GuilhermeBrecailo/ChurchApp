@@ -119,3 +119,4 @@ export const usePermissions = () => {
 
   return { can, canRef, isPrivileged };
 };
+
