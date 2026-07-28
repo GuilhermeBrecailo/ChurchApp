@@ -1,5 +1,6 @@
 <template>
   <div class="auth-page flex items-center justify-center min-h-screen p-4">
+    <MotionFadeInUp class="w-full max-w-md">
     <v-card class="auth-card w-full max-w-md" elevation="0">
       <div class="auth-card-inner">
         <div class="flex flex-col items-center mb-8">
@@ -53,6 +54,7 @@
             {{ errorMessage }}
           </v-alert>
 
+          <MotionPressableScale>
           <v-btn
             type="submit"
             block
@@ -66,6 +68,7 @@
           >
             Entrar
           </v-btn>
+          </MotionPressableScale>
         </v-form>
 
         <div class="mt-6 flex flex-col items-center gap-3">
@@ -86,6 +89,7 @@
         </div>
       </div>
     </v-card>
+    </MotionFadeInUp>
   </div>
 </template>
 

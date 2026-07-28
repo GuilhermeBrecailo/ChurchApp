@@ -1,5 +1,6 @@
 <template>
   <div class="auth-page flex items-center justify-center min-h-screen p-4">
+    <MotionFadeInUp class="w-full max-w-md">
     <v-card class="auth-card w-full max-w-md" elevation="0">
       <div class="auth-card-inner">
         <div class="flex flex-col items-center mb-8 text-center">
@@ -16,6 +17,7 @@
           A recuperação automática de senha ainda não está disponível neste ambiente.
         </v-alert>
 
+        <MotionPressableScale>
         <v-btn
           to="/login"
           block
@@ -27,8 +29,10 @@
         >
           Voltar para login
         </v-btn>
+        </MotionPressableScale>
       </div>
     </v-card>
+    </MotionFadeInUp>
   </div>
 </template>
 
