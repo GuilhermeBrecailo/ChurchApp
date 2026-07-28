@@ -13,7 +13,7 @@
     </section>
 
     <template v-else-if="church">
-      <header class="landing-hero">
+      <MotionFadeInUp tag="header" class="landing-hero">
         <div class="prompt-slot">
           <PublicNotificationPrompt :slug="slug" />
         </div>
@@ -39,26 +39,27 @@
           Ver proximos cultos
           <ArrowDown size="16" />
         </a>
-      </header>
+      </MotionFadeInUp>
 
       <main class="landing-main">
-        <section id="proximos-cultos" class="schedule-board-section">
+        <MotionFadeInUp id="proximos-cultos" tag="section" class="schedule-board-section" in-view>
           <div class="section-rule-heading">
             <span>Proximos cultos</span>
           </div>
 
           <div class="schedule-board">
-            <div v-if="visibleOccurrences.length" class="schedule-board-list">
-              <article
+            <MotionStaggerGroup v-if="visibleOccurrences.length" class="schedule-board-list">
+              <MotionStaggerItem
                 v-for="occurrence in visibleOccurrences"
                 :key="occurrenceKey(occurrence)"
+                tag="article"
                 class="schedule-board-row"
               >
                 <time>{{ occurrence.time }}</time>
                 <strong>{{ occurrence.label }}</strong>
                 <span>{{ weekdayLabel(occurrence.weekday) }}</span>
-              </article>
-            </div>
+              </MotionStaggerItem>
+            </MotionStaggerGroup>
             <p v-else class="board-empty">
               Ainda nao ha horarios publicados. Volte em breve.
             </p>
@@ -80,18 +81,19 @@
               Este mes
             </button>
           </div>
-        </section>
+        </MotionFadeInUp>
 
-        <section class="feed-section">
+        <MotionFadeInUp tag="section" class="feed-section" in-view>
           <div class="section-heading-copy">
             <p class="landing-kicker">Feed publico</p>
             <h2>Avisos, palavras e oracoes</h2>
           </div>
 
-          <div v-if="feedItems.length" class="feed-list">
-            <article
+          <MotionStaggerGroup v-if="feedItems.length" class="feed-list">
+            <MotionStaggerItem
               v-for="item in feedItems"
               :key="item.id"
+              tag="article"
               class="feed-card"
               :class="{ pinned: item.pinned }"
             >
@@ -102,13 +104,13 @@
               </div>
               <h3>{{ item.title }}</h3>
               <p>{{ item.body }}</p>
-            </article>
-          </div>
+            </MotionStaggerItem>
+          </MotionStaggerGroup>
 
           <p v-else class="feed-empty">
             Ainda nao ha avisos publicados. Volte em breve.
           </p>
-        </section>
+        </MotionFadeInUp>
       </main>
     </template>
   </div>

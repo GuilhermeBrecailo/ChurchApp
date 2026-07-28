@@ -1,7 +1,7 @@
 <template>
   <v-app :theme="themeName" :class="themeClass">
     <main class="public-layout">
-      <NuxtPage />
+      <MotionPageTransition />
     </main>
   </v-app>
 </template>

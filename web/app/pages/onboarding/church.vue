@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 px-4 py-8">
-    <div class="mx-auto flex w-full max-w-2xl flex-col gap-6">
+    <MotionFadeInUp class="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <div>
         <p class="text-sm font-semibold text-purple-700">
           Configuração inicial
@@ -161,7 +161,7 @@
       >
         Sair
       </v-btn>
-    </div>
+    </MotionFadeInUp>
   </div>
 </template>
 

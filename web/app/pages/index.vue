@@ -14,19 +14,34 @@
       />
 
       <template v-else>
+        <MotionStaggerGroup>
+        <MotionStaggerItem>
         <DashboardTodayCard />
+        </MotionStaggerItem>
 
+        <MotionStaggerItem>
         <DashboardMyNextAssignmentCard />
+        </MotionStaggerItem>
 
+        <MotionStaggerItem>
         <DashboardNextScheduleCard :schedule="nextSchedule" />
+        </MotionStaggerItem>
 
+        <MotionStaggerItem>
         <DashboardDailyVerseCard />
+        </MotionStaggerItem>
 
+        <MotionStaggerItem>
         <DashboardAnnouncementsSection />
+        </MotionStaggerItem>
 
+        <MotionStaggerItem>
         <DashboardQuickAccess />
+        </MotionStaggerItem>
 
+        <MotionStaggerItem>
         <DashboardPrayerPreviewCard />
+        </MotionStaggerItem>
 
         <v-alert
           v-if="schedulesError"
@@ -38,7 +53,10 @@
           {{ schedulesError }}
         </v-alert>
 
+        <MotionStaggerItem>
         <DashboardUpcomingEvents :schedules="upcomingSchedules" />
+        </MotionStaggerItem>
+        </MotionStaggerGroup>
       </template>
     </template>
 

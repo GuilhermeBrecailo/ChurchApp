@@ -8,7 +8,7 @@
           Você está no <strong>modo demo</strong> — os dados são resetados diariamente
         </div>
         <v-container max-width="1200" class="page-wrapper">
-          <NuxtPage />
+          <MotionPageTransition />
         </v-container>
       </LayoutsMain>
     </v-locale-provider>
