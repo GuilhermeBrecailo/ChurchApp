@@ -40,36 +40,44 @@
       {{ platformError }}
     </v-alert>
 
-    <div class="stats-grid mb-6">
-      <AdminStatCard
-        title="Igrejas"
-        :value="adminChurches.length"
-        :icon="Church"
-        iconColor="#B5472A"
-        bgColor="#F7E2D3"
-      />
-      <AdminStatCard
-        title="Usuários"
-        :value="platformTotals.users"
-        :icon="Users"
-        iconColor="#14B8A6"
-        bgColor="#F0FDFA"
-      />
-      <AdminStatCard
-        title="Ministérios"
-        :value="platformTotals.departments"
-        :icon="Building"
-        iconColor="#C2542C"
-        bgColor="#F7E2D3"
-      />
-      <AdminStatCard
-        title="Ativas"
-        :value="platformTotals.activeChurches"
-        :icon="UserCheck"
-        iconColor="#EAB308"
-        bgColor="#FEFCE8"
-      />
-    </div>
+    <MotionStaggerGroup class="stats-grid mb-6">
+      <MotionStaggerItem>
+        <AdminStatCard
+          title="Igrejas"
+          :value="adminChurches.length"
+          :icon="Church"
+          iconColor="#B5472A"
+          bgColor="#F7E2D3"
+        />
+      </MotionStaggerItem>
+      <MotionStaggerItem>
+        <AdminStatCard
+          title="Usuários"
+          :value="platformTotals.users"
+          :icon="Users"
+          iconColor="#14B8A6"
+          bgColor="#F0FDFA"
+        />
+      </MotionStaggerItem>
+      <MotionStaggerItem>
+        <AdminStatCard
+          title="Ministérios"
+          :value="platformTotals.departments"
+          :icon="Building"
+          iconColor="#C2542C"
+          bgColor="#F7E2D3"
+        />
+      </MotionStaggerItem>
+      <MotionStaggerItem>
+        <AdminStatCard
+          title="Ativas"
+          :value="platformTotals.activeChurches"
+          :icon="UserCheck"
+          iconColor="#EAB308"
+          bgColor="#FEFCE8"
+        />
+      </MotionStaggerItem>
+    </MotionStaggerGroup>
 
     <section class="master-panel mb-6">
       <v-card class="master-panel-card pa-4 bg-white elevation-0 border-subtle">

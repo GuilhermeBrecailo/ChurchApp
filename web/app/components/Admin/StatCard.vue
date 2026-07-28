@@ -1,4 +1,5 @@
 <template>
+  <MotionPressableScale>
   <v-card class="stat-card rounded-xl pa-4 elevation-1 d-flex flex-column">
     <v-avatar size="40" :color="computedBgColor" class="mb-3 rounded-lg">
       <component :is="icon" size="20" :color="computedIconColor" />
@@ -13,6 +14,7 @@
       {{ title }}
     </p>
   </v-card>
+  </MotionPressableScale>
 </template>
 
 <script setup>
