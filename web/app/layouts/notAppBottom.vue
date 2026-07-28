@@ -1,7 +1,7 @@
 <template>
   <v-app :theme="themeName" :class="themeClass">
     <v-container fluid class="public-page-wrapper pa-0">
-      <NuxtPage />
+      <MotionPageTransition />
     </v-container>
   </v-app>
 </template>
