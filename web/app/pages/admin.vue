@@ -1106,7 +1106,7 @@
     </section>
 
     <!-- Invite code card -->
-    <section v-show="isChurchWideManager && activeAdminTab === 'geral'" class="church-admin-section mb-6">
+    <section v-show="canManageMembersByRole && activeAdminTab === 'geral'" class="church-admin-section mb-6">
       <div class="section-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Código de Convite</h2>
@@ -2330,7 +2330,7 @@ const inviteCodeCopied = ref(false);
 const inviteCodeError = ref("");
 
 const loadInviteCode = async () => {
-  if (!isChurchWideManager.value) return;
+  if (!canManageMembersByRole.value) return;
   inviteCodeLoading.value = true;
   inviteCodeError.value = "";
   const { data, error } = await getInviteCode();
@@ -2616,9 +2616,10 @@ const visibleChurchSchedules = computed(() => {
 });
 
 const publicLandingUrl = computed(() => {
-  if (!publicChurchForm.slug) return "";
-  if (typeof window === "undefined") return `/c/${publicChurchForm.slug}`;
-  return `${window.location.origin}/c/${publicChurchForm.slug}`;
+  const slug = publicChurchForm.slug.trim().toLowerCase();
+  if (!slug) return "";
+  if (typeof window === "undefined") return `/c/${slug}`;
+  return `${window.location.origin}/c/${slug}`;
 });
 
 const churchTotals = computed(() => ({
@@ -2781,6 +2782,14 @@ const publicChurchForm = reactive({
   accentColor: "#4F46E5",
 });
 
+const currentChurch = computed(() => user.value?.activeChurch ?? user.value?.church ?? null);
+
+const syncPublicChurchForm = () => {
+  const church = currentChurch.value;
+  publicChurchForm.slug = church?.slug ?? "";
+  publicChurchForm.accentColor = church?.accentColor || "#4F46E5";
+};
+
 const serviceTimeForm = reactive({
   label: "",
   weekday: 0,
@@ -2919,6 +2928,7 @@ const loadDevotionals = async () => {
 };
 
 const loadChurchAdminData = async () => {
+  syncPublicChurchForm();
   await Promise.all([
     loadMembers(),
     loadDepartments(),
@@ -3457,7 +3467,7 @@ const savePublicChurchSettings = async () => {
   isSavingPublicChurch.value = true;
 
   try {
-    const { error } = await updateOwnChurch({
+    const { data, error } = await updateOwnChurch({
       slug: publicChurchForm.slug.trim().toLowerCase(),
       accentColor: publicChurchForm.accentColor || null,
     });
@@ -3468,6 +3478,21 @@ const savePublicChurchSettings = async () => {
     }
 
     publicChurchMessage.value = "Landing publica atualizada.";
+    if (data && user.value) {
+      const activeChurch = user.value.activeChurch ?? user.value.church ?? data;
+      const church = user.value.church ?? user.value.activeChurch ?? data;
+      user.value = {
+        ...user.value,
+        activeChurch: {
+          ...activeChurch,
+          ...data,
+        },
+        church: {
+          ...church,
+          ...data,
+        },
+      };
+    }
     syncPublicChurchForm();
   } finally {
     isSavingPublicChurch.value = false;
@@ -3757,6 +3782,7 @@ const saveAssignRole = async () => {
 };
 
 onMounted(async () => {
+  syncPublicChurchForm();
   await Promise.all([
     isPlatformAdmin.value ? loadPlatformChurches() : Promise.resolve(),
     canAccessChurchAdmin.value ? loadChurchAdminData() : Promise.resolve(),
@@ -4868,12 +4894,6 @@ onMounted(async () => {
 
 /* ── Dark mode ── */
 </style>
-
-
-
-
-
-
 
 
 

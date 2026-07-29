@@ -1300,12 +1300,10 @@ const manageableDepartments = computed(() => {
     return departments.value;
   }
 
-  if (!can("MANAGE_SCHEDULES")) {
-    return [];
-  }
-
   return departments.value.filter(
-    (department) => department.leaderId === user.value?.id,
+    (department) =>
+      department.canManageSchedule === true ||
+      (can("MANAGE_SCHEDULES") && department.leaderId === user.value?.id),
   );
 });
 
@@ -1537,6 +1535,11 @@ const canCreateChurchSchedule = computed(
 
 const canManageSchedule = (schedule: DepartmentSchedule) =>
   isChurchWideManager.value ||
+  departments.value.some(
+    (department) =>
+      department.id === schedule.departmentId &&
+      department.canManageSchedule === true,
+  ) ||
   (can("MANAGE_SCHEDULES") && schedule.department?.leaderId === user.value?.id);
 
 const filteredSchedules = computed(() => {

@@ -118,7 +118,7 @@
 
 <script setup lang="ts">
 import { ArrowDown } from "lucide-vue-next";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import type { PublicAnnouncementKind, PublicServiceOccurrence } from "../../../composables/useChurchLanding";
 
 definePageMeta({
@@ -126,7 +126,7 @@ definePageMeta({
 });
 
 const route = useRoute();
-const slug = String(route.params.slug || "");
+const slug = computed(() => String(route.params.slug || ""));
 const {
   church,
   serviceTimes,
@@ -234,7 +234,13 @@ const relativeDate = (value: string) => {
 };
 
 onMounted(() => {
-  void loadLanding(slug);
+  void loadLanding(slug.value);
+});
+
+watch(slug, (nextSlug, previousSlug) => {
+  if (nextSlug && nextSlug !== previousSlug) {
+    void loadLanding(nextSlug);
+  }
 });
 </script>
 

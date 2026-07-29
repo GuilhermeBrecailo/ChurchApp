@@ -1,15 +1,14 @@
 export type DepartmentSchedulePermissionInput = {
   isChurchWideManager: boolean;
   isDepartmentLeader: boolean;
-  hasGlobalPermission?: boolean;
+  hasDepartmentPermission?: boolean;
   canManageSchedule?: boolean;
 };
 
 export function canManageDepartmentSchedule(input: DepartmentSchedulePermissionInput) {
   return (
     input.isChurchWideManager ||
-    input.isDepartmentLeader ||
-    input.hasGlobalPermission === true ||
+    (input.isDepartmentLeader && input.hasDepartmentPermission === true) ||
     input.canManageSchedule === true
   );
 }

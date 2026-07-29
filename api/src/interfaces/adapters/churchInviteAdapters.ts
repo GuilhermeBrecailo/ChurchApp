@@ -4,6 +4,12 @@ import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { resolveActiveChurchContext } from "../utils/churchContext";
 
+type InviteManagerContext = {
+  role: string;
+  canManageMembers: boolean;
+  permissions: string[];
+};
+
 function getAuthPayload(request: FastifyRequest) {
   const token = request.headers.authorization?.replace("Bearer ", "");
   if (!token) throw new DomainError("Token não fornecido");
@@ -17,12 +23,18 @@ function generateCode(): string {
 }
 
 export class ChurchInviteAdapters {
-  private isManager(user: { role: string }) {
-    return ["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(user.role);
+  private canManageInvites(context: InviteManagerContext) {
+    return (
+      ["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(context.role) ||
+      context.canManageMembers ||
+      context.permissions.includes("MANAGE_MEMBERS")
+    );
   }
 
-  private assertManager(user: { role: string }) {
-    if (!this.isManager(user)) throw new DomainError("Apenas pastores ou admins podem gerenciar convites");
+  private assertCanManageInvites(context: InviteManagerContext) {
+    if (!this.canManageInvites(context)) {
+      throw new DomainError("Apenas pastores, admins ou gestores de membros podem gerenciar convites");
+    }
   }
 
   private async generateUniqueCode() {
@@ -50,7 +62,7 @@ export class ChurchInviteAdapters {
     const user = await this.getCurrentUser(request);
     const context =
       request.churchContext ?? (await resolveActiveChurchContext(request, user.id));
-    this.assertManager({ role: context.role });
+    this.assertCanManageInvites(context);
     if (!context.activeChurchId) throw new DomainError("Usuário não possui igreja vinculada");
 
     const church = await $prismaClient.crunch.findUnique({
@@ -78,7 +90,7 @@ export class ChurchInviteAdapters {
       request.churchContext ?? (await resolveActiveChurchContext(request, user.id));
     if (!context.activeChurchId) throw new DomainError("Usuário não possui igreja vinculada");
 
-    this.assertManager({ role: context.role });
+    this.assertCanManageInvites(context);
 
     const inviteCode = await this.generateUniqueCode();
     await $prismaClient.crunch.update({

@@ -9,6 +9,7 @@ export interface ChurchDepartment {
   type: string;
   isActive: boolean;
   leaderId: string;
+  canManageSchedule?: boolean;
   membersCount?: number;
   schedulesCount?: number;
   tasksCount?: number;
@@ -24,11 +25,23 @@ export interface ChurchDepartment {
 
 export interface DepartmentMember {
   id: string;
+  membershipId?: string;
   name: string;
   email: string;
   role?: string;
-  membershipId?: string;
   canManageSchedule?: boolean;
+}
+
+interface DepartmentMemberResponse {
+  id: string;
+  function?: string | null;
+  isPrimary?: boolean;
+  canManageSchedule?: boolean;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 export interface DepartmentTask {
   id: string;
@@ -385,13 +398,25 @@ export const useDepartments = () => {
   const getDepartmentMembers = async (
     id: string,
   ): Promise<ApiResponse<DepartmentMember[]>> => {
-    return await $customFetch<DepartmentMember[]>(
-      `${config.public.URL_BACKEND}/api/church/departments/${id}/members`,
+    const response = await $customFetch<DepartmentMemberResponse[]>(
+      `${config.public.URL_BACKEND}/api/church/departments/${id}/schedule-managers`,
       {
         method: "GET",
         headers: authHeaders(),
       },
     );
+
+    return {
+      ...response,
+      data: response.data?.map((membership) => ({
+        id: membership.user?.id ?? membership.id,
+        membershipId: membership.id,
+        name: membership.user?.name ?? "",
+        email: membership.user?.email ?? "",
+        role: membership.function ?? undefined,
+        canManageSchedule: membership.canManageSchedule,
+      })),
+    };
   };
 
   const updateDepartmentMemberScheduleManager = async (
@@ -399,14 +424,28 @@ export const useDepartments = () => {
     userId: string,
     canManageSchedule: boolean,
   ): Promise<ApiResponse<DepartmentMember>> => {
-    return await $customFetch<DepartmentMember>(
-      `${config.public.URL_BACKEND}/api/church/departments/${departmentId}/members/${userId}`,
+    const response = await $customFetch<DepartmentMemberResponse>(
+      `${config.public.URL_BACKEND}/api/church/departments/${departmentId}/schedule-managers/${userId}`,
       {
         method: "PATCH",
         headers: authHeaders(),
         body: { canManageSchedule },
       },
     );
+
+    return {
+      ...response,
+      data: response.data
+        ? {
+            id: response.data.user?.id ?? userId,
+            membershipId: response.data.id,
+            name: response.data.user?.name ?? "",
+            email: response.data.user?.email ?? "",
+            role: response.data.function ?? undefined,
+            canManageSchedule: response.data.canManageSchedule,
+          }
+        : undefined,
+    };
   };
   const getDepartmentTasks = async (
     id: string,
@@ -809,5 +848,3 @@ export const useDepartments = () => {
     reorderScheduleMediaItems,
   };
 };
-
-

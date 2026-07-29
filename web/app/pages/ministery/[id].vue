@@ -433,7 +433,7 @@
       <section v-if="activeTab === 'tasks'">
         <div class="ministery-section-actions mb-4">
           <v-btn
-            v-if="canManageSongs"
+            v-if="canManageDepartment"
             color="purple-darken-3"
             class="rounded-lg text-none"
             @click="isTaskDialogOpen = true"
@@ -477,7 +477,7 @@
                 {{ priorityLabel(task.priority) }}
               </v-chip>
             </div>
-            <div v-if="canManageSongs" class="ministery-card-actions mt-3">
+            <div v-if="canManageDepartment" class="ministery-card-actions mt-3">
               <v-btn
                 icon
                 variant="text"
@@ -514,7 +514,7 @@
       <section v-if="activeTab === 'resources'">
         <div class="ministery-section-actions mb-4">
           <v-btn
-            v-if="canManageDepartment"
+            v-if="canManageSongs"
             color="purple-darken-3"
             class="rounded-lg text-none"
             @click="isResourceDialogOpen = true"
@@ -563,7 +563,7 @@
                 {{ resource.category }}
               </v-chip>
             </div>
-            <div v-if="canManageDepartment" class="ministery-card-actions mt-3">
+            <div v-if="canManageSongs" class="ministery-card-actions mt-3">
               <v-btn
                 icon
                 variant="text"
@@ -2111,11 +2111,13 @@ const canManageScheduleDelegation = computed(
   () => isChurchWideManager.value || isDepartmentLeader.value,
 );
 const isDelegatedScheduleManager = computed(() =>
+  department.value?.canManageSchedule === true ||
   departmentMembers.value.some(
     (member) => member.id === user.value?.id && member.canManageSchedule === true,
   ),
 );
-const canManageSchedules = computed(  () =>
+const canManageSchedules = computed(
+  () =>
     isChurchWideManager.value ||
     (isDepartmentLeader.value && can("MANAGE_SCHEDULES")) ||
     isDelegatedScheduleManager.value,
@@ -2123,8 +2125,7 @@ const canManageSchedules = computed(  () =>
 const canManageSongs = computed(
   () =>
     isChurchWideManager.value ||
-    (isDepartmentLeader.value && can("MANAGE_SONGS")) ||
-    isDelegatedScheduleManager.value,
+    (isDepartmentLeader.value && can("MANAGE_SONGS")),
 );
 const canSendNotifications = computed(
   () =>
@@ -4123,9 +4124,3 @@ onMounted(async () => {
   }
 }
 </style>
-
-
-
-
-
-

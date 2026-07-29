@@ -399,7 +399,10 @@ export class ChurchDepartmentAdapters {
     },
   };
 
-  private mapDepartment(department: DepartmentWithStats) {
+  private mapDepartment(
+    department: DepartmentWithStats,
+    options?: { canManageSchedule?: boolean },
+  ) {
     const songsCount = department.mediaItems.filter(
       (item) => item.category === "MUSIC",
     ).length;
@@ -411,6 +414,7 @@ export class ChurchDepartmentAdapters {
       isActive: department.isActive,
       leaderId: department.leaderId,
       leader: department.leader,
+      canManageSchedule: options?.canManageSchedule,
       membersCount: department._count.members,
       schedulesCount: department._count.schedules,
       tasksCount: department._count.tasks,
@@ -568,7 +572,7 @@ export class ChurchDepartmentAdapters {
       canManageDepartmentSchedule({
         isChurchWideManager: false,
         isDepartmentLeader: department.leaderId === user.id,
-        hasGlobalPermission: this.hasPermission(user, "MANAGE_SCHEDULES"),
+        hasDepartmentPermission: this.hasPermission(user, "MANAGE_SCHEDULES"),
         canManageSchedule: membership?.canManageSchedule === true,
       })
     ) {
@@ -593,40 +597,11 @@ export class ChurchDepartmentAdapters {
   }
 
   private async assertCanManageSongs(user: CurrentUser, departmentId: string) {
-    const department = await this.getDepartmentFromCurrentChurch(
+    return await this.assertCanManageDepartmentWithPermission(
+      user,
       departmentId,
-      user.crunchId!,
-    );
-
-    if (this.isChurchWideManager(user)) {
-      return department;
-    }
-
-    const membership = await $prismaClient.userDepartmentMembership.findUnique({
-      where: {
-        userId_departmentId: {
-          userId: user.id,
-          departmentId,
-        },
-      },
-      select: {
-        canManageSchedule: true,
-      },
-    });
-
-    if (
-      canManageDepartmentSchedule({
-        isChurchWideManager: false,
-        isDepartmentLeader: department.leaderId === user.id,
-        hasGlobalPermission: this.hasPermission(user, "MANAGE_SONGS"),
-        canManageSchedule: membership?.canManageSchedule === true,
-      })
-    ) {
-      return department;
-    }
-
-    throw new DomainError(
-      "Apenas pastores, admins, lideres ou gestores delegados podem gerenciar musicas deste ministerio",
+      "MANAGE_SONGS",
+      "Apenas pastores, admins ou lideres com permissao podem gerenciar musicas deste ministerio",
     );
   }
 
@@ -900,7 +875,29 @@ export class ChurchDepartmentAdapters {
       select: this.departmentSelect,
     });
 
-    return departments.map((department) => this.mapDepartment(department));
+    const memberships = await $prismaClient.userDepartmentMembership.findMany({
+      where: {
+        userId: user.id,
+        department: {
+          crunchId: user.crunchId!,
+        },
+      },
+      select: {
+        departmentId: true,
+        canManageSchedule: true,
+      },
+    });
+    const scheduleManagerDepartments = new Set(
+      memberships
+        .filter((membership) => membership.canManageSchedule)
+        .map((membership) => membership.departmentId),
+    );
+
+    return departments.map((department) =>
+      this.mapDepartment(department, {
+        canManageSchedule: scheduleManagerDepartments.has(department.id),
+      }),
+    );
   }
 
   async createChurchDepartment(request: FastifyRequest) {
@@ -956,7 +953,23 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Ministério não informado");
     }
 
-    return await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+    const department = await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+    const membership = await $prismaClient.userDepartmentMembership.findUnique({
+      where: {
+        userId_departmentId: {
+          userId: user.id,
+          departmentId: id,
+        },
+      },
+      select: {
+        canManageSchedule: true,
+      },
+    });
+
+    return {
+      ...department,
+      canManageSchedule: membership?.canManageSchedule === true,
+    };
   }
 
   async updateChurchDepartment(request: FastifyRequest) {
