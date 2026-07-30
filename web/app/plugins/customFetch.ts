@@ -77,10 +77,15 @@ export default defineNuxtPlugin(() => {
 
   const refreshAccessToken = async () => {
     if (!refreshPromise) {
+      const forwardedCookie = import.meta.server
+        ? useRequestHeaders(["cookie"]).cookie
+        : undefined;
+
       refreshPromise = $fetch<ApiResponse<RefreshResponse> | RefreshResponse>(
         `${config.public.URL_BACKEND}/public/auth/refresh-token`,
         {
           credentials: "include",
+          headers: forwardedCookie ? { cookie: forwardedCookie } : undefined,
         },
       )
         .then((response) => {
@@ -204,6 +209,7 @@ export default defineNuxtPlugin(() => {
   return {
     provide: {
       customFetch,
+      refreshSession: refreshAccessToken,
     },
   };
 });

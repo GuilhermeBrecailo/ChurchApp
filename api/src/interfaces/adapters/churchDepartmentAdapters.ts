@@ -848,6 +848,19 @@ export class ChurchDepartmentAdapters {
     };
   }
 
+  private toLocalDatePart(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  private toLocalTimePart(date: Date) {
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+  }
+
   private getOptionalDateTime(date?: string | null, time?: string | null) {
     if (!date) {
       return null;
@@ -1496,10 +1509,8 @@ export class ChurchDepartmentAdapters {
 
     if (body.date !== undefined || body.time !== undefined) {
       const currentDate = schedule.date;
-      const datePart = body.date ?? currentDate.toISOString().slice(0, 10);
-      const timePart =
-        body.time ??
-        currentDate.toISOString().slice(11, 16);
+      const datePart = body.date ?? this.toLocalDatePart(currentDate);
+      const timePart = body.time ?? this.toLocalTimePart(currentDate);
       const scheduleDate = new Date(`${datePart}T${timePart}:00.000`);
 
       if (Number.isNaN(scheduleDate.getTime())) {

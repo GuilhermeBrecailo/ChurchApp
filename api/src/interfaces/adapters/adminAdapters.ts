@@ -1,6 +1,11 @@
 import { FastifyRequest } from "fastify/types/request";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
+import { KeycloakProvider } from "../../infrastructure/identity/KeycloakProvider";
+
+function generateTempPassword() {
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+}
 
 function decodeAuthPayload(request: FastifyRequest) {
   const authHeader = request.headers.authorization;
@@ -298,5 +303,223 @@ export class AdminAdapters {
       })),
       pastorHistory: church.pastorHistory,
     };
+  }
+
+  private async getChurchMembershipForAdmin(churchId: string, userId: string) {
+    const membership = await $prismaClient.churchMembership.findUnique({
+      where: {
+        userId_crunchId: {
+          userId,
+          crunchId: churchId,
+        },
+      },
+      include: {
+        user: true,
+        crunch: true,
+      },
+    });
+
+    if (!membership) {
+      throw new DomainError("Usuário não encontrado nesta igreja");
+    }
+
+    return membership;
+  }
+
+  async updateChurchUserByAdmin(request: FastifyRequest) {
+    const manager = await assertPlatformAdmin(request);
+    const { churchId, userId } = request.params as {
+      churchId?: string;
+      userId?: string;
+    };
+    const body = request.body as {
+      name?: string;
+      email?: string;
+      phone?: string | null;
+      role?: string;
+    };
+
+    if (!churchId || !userId) {
+      throw new DomainError("Igreja ou usuário não informado");
+    }
+
+    const membership = await this.getChurchMembershipForAdmin(churchId, userId);
+
+    if (membership.crunch.userMainId === membership.userId) {
+      throw new DomainError(
+        "Não é possível editar o pastor titular por este fluxo",
+      );
+    }
+
+    if (membership.role === "SUPER_ADMIN" && manager?.role !== "SUPER_ADMIN") {
+      throw new DomainError("Não é possível editar um usuário super admin");
+    }
+
+    if (body.name !== undefined && !body.name.trim()) {
+      throw new DomainError("Nome é obrigatório");
+    }
+
+    if (body.email !== undefined && !body.email.trim()) {
+      throw new DomainError("Email é obrigatório");
+    }
+
+    if (
+      body.role !== undefined &&
+      !["MEMBER", "PASTOR"].includes(body.role.trim() || "MEMBER")
+    ) {
+      throw new DomainError("Cargo inválido");
+    }
+
+    const normalizedEmail = body.email?.trim().toLowerCase();
+
+    if (normalizedEmail && normalizedEmail !== membership.user.email) {
+      const existingUser = await $prismaClient.user.findUnique({
+        where: { email: normalizedEmail },
+      });
+
+      if (existingUser) {
+        throw new DomainError("Já existe um usuário com esse email");
+      }
+    }
+
+    const updated = await $prismaClient.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: {
+          ...(body.name !== undefined ? { name: body.name.trim() } : {}),
+          ...(normalizedEmail !== undefined ? { email: normalizedEmail } : {}),
+          ...(body.phone !== undefined
+            ? { phone: body.phone?.trim() || null }
+            : {}),
+          ...(body.role !== undefined && membership.user.crunchId === churchId
+            ? { role: body.role.trim() || "MEMBER" }
+            : {}),
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          createdAt: true,
+        },
+      });
+
+      const updatedMembership = await tx.churchMembership.update({
+        where: { id: membership.id },
+        data: {
+          ...(body.role !== undefined
+            ? { role: body.role.trim() || "MEMBER" }
+            : {}),
+        },
+        select: {
+          role: true,
+          canManageMembers: true,
+        },
+      });
+
+      return { updatedUser, updatedMembership };
+    });
+
+    return {
+      ...updated.updatedUser,
+      role: updated.updatedMembership.role,
+      canManageMembers: updated.updatedMembership.canManageMembers,
+    };
+  }
+
+  async resetChurchUserPasswordByAdmin(request: FastifyRequest) {
+    const manager = await assertPlatformAdmin(request);
+    const { churchId, userId } = request.params as {
+      churchId?: string;
+      userId?: string;
+    };
+    const body = request.body as { password?: string };
+
+    if (!churchId || !userId) {
+      throw new DomainError("Igreja ou usuário não informado");
+    }
+
+    const membership = await this.getChurchMembershipForAdmin(churchId, userId);
+
+    if (membership.user.isDemoUser) {
+      throw new DomainError("Não é possível alterar a senha do usuário demo");
+    }
+
+    if (membership.role === "SUPER_ADMIN" && manager?.role !== "SUPER_ADMIN") {
+      throw new DomainError("Não é possível alterar a senha de um super admin");
+    }
+
+    const password = body.password?.trim() || generateTempPassword();
+
+    if (password.length < 6) {
+      throw new DomainError("Senha deve ter pelo menos 6 caracteres");
+    }
+
+    const identityProvider = new KeycloakProvider();
+
+    try {
+      await identityProvider.updatePassword(userId, password);
+    } catch {
+      throw new DomainError(
+        "Não foi possível redefinir a senha deste usuário no provedor de identidade",
+      );
+    }
+
+    await $prismaClient.user.update({
+      where: { id: userId },
+      data: { mustChangePassword: true },
+    });
+
+    return { success: true, temporaryPassword: password };
+  }
+
+  async removeChurchUserByAdmin(request: FastifyRequest) {
+    const manager = await assertPlatformAdmin(request);
+    const { churchId, userId } = request.params as {
+      churchId?: string;
+      userId?: string;
+    };
+
+    if (!churchId || !userId) {
+      throw new DomainError("Igreja ou usuário não informado");
+    }
+
+    const membership = await this.getChurchMembershipForAdmin(churchId, userId);
+
+    if (membership.crunch.userMainId === membership.userId) {
+      throw new DomainError("Não é possível remover o pastor titular");
+    }
+
+    if (membership.role === "SUPER_ADMIN" && manager?.role !== "SUPER_ADMIN") {
+      throw new DomainError("Não é possível remover um usuário super admin");
+    }
+
+    await $prismaClient.$transaction(async (tx) => {
+      await tx.churchMembership.delete({
+        where: { id: membership.id },
+      });
+
+      if (membership.user.crunchId === churchId) {
+        const nextMembership = await tx.churchMembership.findFirst({
+          where: {
+            userId,
+            isActive: true,
+          },
+          orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+        });
+
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            crunchId: nextMembership?.crunchId ?? null,
+            role: nextMembership?.role ?? "MEMBER",
+            canManageMembers: nextMembership?.canManageMembers ?? false,
+            churchRoleId: nextMembership?.churchRoleId ?? null,
+          },
+        });
+      }
+    });
+
+    return { success: true };
   }
 }

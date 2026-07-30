@@ -25,6 +25,19 @@ export default defineNuxtRouteMiddleware(async (to) => {
       });
     }
 
+    if (!isPublicRoute && hasRefreshCookie) {
+      const { useAuth } = await import("../../composables/useAuth");
+      const { access_token, user, session, fetchMe } = useAuth();
+
+      if (!access_token.value) {
+        await session();
+      }
+
+      if (access_token.value && !user.value?.id) {
+        await fetchMe();
+      }
+    }
+
     return;
   }
 

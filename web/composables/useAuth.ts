@@ -194,18 +194,14 @@ export const useAuth = () => {
   };
 
   const session = async () => {
+    const { $refreshSession } = useNuxtApp() as unknown as {
+      $refreshSession: () => Promise<string | null>;
+    };
+
     try {
-      const { data, error } = await $customFetch<{ access_token?: string }>(
-        `${config.public.URL_BACKEND}/public/auth/refresh-token`,
-        {
-          credentials: "include",
-        },
-      );
+      const token = await $refreshSession();
 
-      if (error) throw new Error(error);
-
-      if (data?.access_token) {
-        setSessionFromToken(data.access_token);
+      if (token) {
         await fetchMe();
         return;
       }

@@ -139,9 +139,55 @@ export const useAdmin = () => {
     );
   };
 
+  const updateChurchUserByAdmin = async (
+    churchId: string,
+    userId: string,
+    payload: { name?: string; email?: string; phone?: string | null; role?: string },
+  ): Promise<ApiResponse<AdminChurchUser>> => {
+    return await $customFetch<AdminChurchUser>(
+      `${config.public.URL_BACKEND}/api/admin/churches/${churchId}/users/${userId}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: payload,
+      },
+    );
+  };
+
+  const resetChurchUserPasswordByAdmin = async (
+    churchId: string,
+    userId: string,
+    password?: string,
+  ): Promise<ApiResponse<{ success: boolean; temporaryPassword: string }>> => {
+    return await $customFetch<{ success: boolean; temporaryPassword: string }>(
+      `${config.public.URL_BACKEND}/api/admin/churches/${churchId}/users/${userId}/reset-password`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+        body: password ? { password } : {},
+      },
+    );
+  };
+
+  const removeChurchUserByAdmin = async (
+    churchId: string,
+    userId: string,
+  ): Promise<ApiResponse<{ success: boolean }>> => {
+    return await $customFetch<{ success: boolean }>(
+      `${config.public.URL_BACKEND}/api/admin/churches/${churchId}/users/${userId}`,
+      {
+        method: "DELETE",
+        headers: authHeaders(),
+      },
+    );
+  };
+
   return {
     getChurches,
     getDepartments,
     getChurchById,
+    updateChurchUserByAdmin,
+    resetChurchUserPasswordByAdmin,
+    removeChurchUserByAdmin,
   };
 };

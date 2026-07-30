@@ -19,4 +19,19 @@ export async function AdminRoutes(app: FastifyInstance) {
     "/api/admin/churches/:id",
     controllerHandler(adapters.getChurchById.bind(adapters)),
   );
+
+  app.patch(
+    "/api/admin/churches/:churchId/users/:userId",
+    controllerHandler(adapters.updateChurchUserByAdmin.bind(adapters)),
+  );
+
+  app.post(
+    "/api/admin/churches/:churchId/users/:userId/reset-password",
+    controllerHandler(adapters.resetChurchUserPasswordByAdmin.bind(adapters)),
+  );
+
+  app.delete(
+    "/api/admin/churches/:churchId/users/:userId",
+    controllerHandler(adapters.removeChurchUserByAdmin.bind(adapters)),
+  );
 }

@@ -701,6 +701,114 @@
           </v-alert>
         </div>
 
+        <v-divider class="mb-4" />
+
+        <div class="mb-5">
+          <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
+            Editar usuário
+          </h3>
+          <p class="text-caption text-grey-darken-1 mb-3">
+            Como admin da plataforma, você pode alterar os dados deste usuário em qualquer igreja.
+          </p>
+
+          <v-text-field
+            v-model="adminUserEditForm.name"
+            label="Nome"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            class="mb-3"
+            hide-details="auto"
+            :disabled="!canEditSelectedAdminUser"
+          />
+          <v-text-field
+            v-model="adminUserEditForm.phone"
+            label="Telefone"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            class="mb-3"
+            hide-details="auto"
+            :disabled="!canEditSelectedAdminUser"
+          />
+          <v-select
+            v-model="adminUserEditForm.role"
+            :items="[{ title: 'Membro', value: 'MEMBER' }, { title: 'Pastor', value: 'PASTOR' }]"
+            item-title="title"
+            item-value="value"
+            label="Papel"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            class="mb-3"
+            hide-details="auto"
+            :disabled="!canEditSelectedAdminUser"
+          />
+
+          <v-alert
+            v-if="adminUserEditError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            {{ adminUserEditError }}
+          </v-alert>
+
+          <v-alert
+            v-if="selectedAdminUserEditLockedReason"
+            type="info"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            {{ selectedAdminUserEditLockedReason }}
+          </v-alert>
+
+          <v-alert
+            v-if="adminUserResetPasswordResult"
+            type="success"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            Senha temporária gerada: <strong>{{ adminUserResetPasswordResult }}</strong>
+            — o usuário precisará trocá-la no próximo login.
+          </v-alert>
+
+          <div class="d-flex flex-wrap gap-2">
+            <v-btn
+              color="purple-darken-3"
+              variant="tonal"
+              class="text-none"
+              :loading="isSavingAdminUser"
+              :disabled="!canEditSelectedAdminUser"
+              @click="handleUpdateAdminUser"
+            >
+              Salvar alterações
+            </v-btn>
+            <v-btn
+              color="indigo-darken-2"
+              variant="tonal"
+              class="text-none"
+              :loading="isResettingAdminUserPassword"
+              :disabled="!canEditSelectedAdminUser"
+              @click="handleResetAdminUserPassword"
+            >
+              Redefinir senha
+            </v-btn>
+            <v-btn
+              color="red-darken-2"
+              variant="tonal"
+              class="text-none"
+              :disabled="!canEditSelectedAdminUser"
+              @click="handleRemoveAdminUser"
+            >
+              Remover da igreja
+            </v-btn>
+          </div>
+        </div>
+
         <div class="d-flex justify-end">
           <v-btn
             variant="text"
@@ -2311,6 +2419,9 @@ const {
 const {
   getChurches,
   getChurchById,
+  updateChurchUserByAdmin,
+  resetChurchUserPasswordByAdmin,
+  removeChurchUserByAdmin,
 } = useAdmin();
 const { publishVerse } = useDailyVerse();
 const { getInviteCode, regenerateInviteCode } = useChurchInvite();
@@ -2404,7 +2515,17 @@ const selectedChurchDepartment = ref<ChurchDepartment | null>(null);
 const editingDepartmentId = ref("");
 const pendingDeleteDepartment = ref<ChurchDepartment | null>(null);
 const pendingDeleteMember = ref<ChurchMember | null>(null);
+const pendingRemoveAdminUser = ref<AdminChurchUser | null>(null);
 const isConfirmingDelete = ref(false);
+const adminUserEditForm = reactive({
+  name: "",
+  phone: "",
+  role: "MEMBER",
+});
+const isSavingAdminUser = ref(false);
+const adminUserEditError = ref("");
+const isResettingAdminUserPassword = ref(false);
+const adminUserResetPasswordResult = ref("");
 const churchPreviewLimit = 3;
 const showAllChurchUsers = ref(false);
 const showAllChurchDepartments = ref(false);
@@ -2724,22 +2845,34 @@ const pastoralLeadership = computed(() => {
 });
 
 const isDeleteDialogOpen = computed({
-  get: () => Boolean(pendingDeleteDepartment.value || pendingDeleteMember.value),
+  get: () =>
+    Boolean(
+      pendingDeleteDepartment.value ||
+        pendingDeleteMember.value ||
+        pendingRemoveAdminUser.value,
+    ),
   set: (value: boolean) => {
     if (!value && !isConfirmingDelete.value) {
       pendingDeleteDepartment.value = null;
       pendingDeleteMember.value = null;
+      pendingRemoveAdminUser.value = null;
     }
   },
 });
 
-const deleteDialogTitle = computed(() =>
-  pendingDeleteDepartment.value ? "Remover ministério" : "Remover membro",
-);
+const deleteDialogTitle = computed(() => {
+  if (pendingDeleteDepartment.value) return "Remover ministério";
+  if (pendingRemoveAdminUser.value) return "Remover usuário da igreja";
+  return "Remover membro";
+});
 
 const deleteDialogMessage = computed(() => {
   if (pendingDeleteDepartment.value) {
     return `O ministério ${pendingDeleteDepartment.value.name} será removido com suas escalas, tarefas, recursos e músicas.`;
+  }
+
+  if (pendingRemoveAdminUser.value) {
+    return `${pendingRemoveAdminUser.value.name} será removido desta igreja.`;
   }
 
   if (pendingDeleteMember.value) {
@@ -2996,6 +3129,11 @@ const closeChurchDetails = () => {
 const openAdminUserDetails = (member: AdminChurchUser) => {
   selectedAdminUser.value = member;
   selectedMemberRoleId.value = member.churchRoleId ?? null;
+  adminUserEditForm.name = member.name;
+  adminUserEditForm.phone = member.phone || "";
+  adminUserEditForm.role = member.role === "PASTOR" ? "PASTOR" : "MEMBER";
+  adminUserEditError.value = "";
+  adminUserResetPasswordResult.value = "";
   isAdminUserDetailsOpen.value = true;
 };
 
@@ -3003,6 +3141,131 @@ const closeAdminUserDetails = () => {
   isAdminUserDetailsOpen.value = false;
   selectedAdminUser.value = null;
   selectedMemberRoleId.value = null;
+  adminUserEditError.value = "";
+  adminUserResetPasswordResult.value = "";
+};
+
+const isSelectedAdminUserTitularPastor = computed(
+  () =>
+    Boolean(selectedAdminUser.value) &&
+    selectedAdminUser.value?.id === selectedChurch.value?.userMainId,
+);
+
+const canEditSelectedAdminUser = computed(
+  () =>
+    Boolean(selectedAdminUser.value) &&
+    selectedAdminUser.value?.id !== user.value?.id &&
+    !isSelectedAdminUserTitularPastor.value &&
+    !isProtectedSuperAdmin(selectedAdminUser.value),
+);
+
+const selectedAdminUserEditLockedReason = computed(() => {
+  if (!selectedAdminUser.value) return "";
+  if (selectedAdminUser.value.id === user.value?.id) {
+    return "Você não pode editar sua própria conta por esta tela.";
+  }
+  if (isSelectedAdminUserTitularPastor.value) {
+    return "O pastor titular não pode ser editado por este fluxo.";
+  }
+  if (isProtectedSuperAdmin(selectedAdminUser.value)) {
+    return "Usuários super admin só podem ser alterados por outro super admin.";
+  }
+  return "";
+});
+
+const handleUpdateAdminUser = async () => {
+  if (!selectedAdminUser.value || !selectedChurch.value) return;
+
+  adminUserEditError.value = "";
+
+  if (!adminUserEditForm.name.trim()) {
+    adminUserEditError.value = "Informe o nome do usuário.";
+    return;
+  }
+
+  isSavingAdminUser.value = true;
+
+  try {
+    const { data, error } = await updateChurchUserByAdmin(
+      selectedChurch.value.id,
+      selectedAdminUser.value.id,
+      {
+        name: adminUserEditForm.name.trim(),
+        phone: adminUserEditForm.phone.trim() || null,
+        role: adminUserEditForm.role,
+      },
+    );
+
+    if (error || !data) {
+      adminUserEditError.value = error || "Não foi possível salvar as alterações.";
+      return;
+    }
+
+    selectedAdminUser.value = { ...selectedAdminUser.value, ...data };
+    selectedChurch.value = {
+      ...selectedChurch.value,
+      users: selectedChurch.value.users.map((item) =>
+        item.id === data.id ? { ...item, ...data } : item,
+      ),
+    };
+  } finally {
+    isSavingAdminUser.value = false;
+  }
+};
+
+const handleResetAdminUserPassword = async () => {
+  if (!selectedAdminUser.value || !selectedChurch.value) return;
+
+  adminUserEditError.value = "";
+  adminUserResetPasswordResult.value = "";
+  isResettingAdminUserPassword.value = true;
+
+  try {
+    const { data, error } = await resetChurchUserPasswordByAdmin(
+      selectedChurch.value.id,
+      selectedAdminUser.value.id,
+    );
+
+    if (error || !data) {
+      adminUserEditError.value = error || "Não foi possível redefinir a senha.";
+      return;
+    }
+
+    adminUserResetPasswordResult.value = data.temporaryPassword;
+  } finally {
+    isResettingAdminUserPassword.value = false;
+  }
+};
+
+const handleRemoveAdminUser = () => {
+  if (!selectedAdminUser.value) return;
+  pendingRemoveAdminUser.value = selectedAdminUser.value;
+};
+
+const confirmRemoveAdminUser = async () => {
+  if (!pendingRemoveAdminUser.value || !selectedChurch.value) return;
+
+  isConfirmingDelete.value = true;
+  const removedId = pendingRemoveAdminUser.value.id;
+  const churchId = selectedChurch.value.id;
+
+  try {
+    const { error } = await removeChurchUserByAdmin(churchId, removedId);
+
+    if (error) {
+      adminUserEditError.value = error;
+      return;
+    }
+
+    selectedChurch.value = {
+      ...selectedChurch.value,
+      users: selectedChurch.value.users.filter((item) => item.id !== removedId),
+    };
+    pendingRemoveAdminUser.value = null;
+    closeAdminUserDetails();
+  } finally {
+    isConfirmingDelete.value = false;
+  }
 };
 
 const openAdminDepartmentDetails = (department: AdminChurchDepartment) => {
@@ -3174,12 +3437,18 @@ const closeDeleteDialog = () => {
   if (!isConfirmingDelete.value) {
     pendingDeleteDepartment.value = null;
     pendingDeleteMember.value = null;
+    pendingRemoveAdminUser.value = null;
   }
 };
 
 const confirmDelete = async () => {
   if (pendingDeleteDepartment.value) {
     await confirmDeleteDepartment();
+    return;
+  }
+
+  if (pendingRemoveAdminUser.value) {
+    await confirmRemoveAdminUser();
     return;
   }
 
