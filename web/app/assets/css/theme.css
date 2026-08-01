@@ -658,3 +658,24 @@ body {
   align-self: flex-start;
   margin-left: auto;
 }
+
+/* ============================================================
+   IDENTIDADE TIPOGRÁFICA — mesma fonte serifada (Fraunces) e
+   labels em caixa alta com tracking usadas na landing pública
+   (/c/:slug), aplicadas aos títulos das telas principais do app
+   logado pra dar uma identidade visual coesa entre público/logado.
+   ============================================================ */
+.app-page-title {
+  font-family: "Fraunces", serif;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.app-page-kicker {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--app-color-text-muted);
+}

@@ -26,7 +26,7 @@
               Vinculado
             </v-chip>
           </div>
-          <h1 class="profile-name text-h5 font-weight-bold text-grey-darken-4 mb-1">
+          <h1 class="app-page-title profile-name text-h5 text-grey-darken-4 mb-1">
             {{ profile?.name || user?.name || "Usuário" }}
           </h1>
           <p class="profile-email text-body-2 text-grey-darken-1 mb-0">

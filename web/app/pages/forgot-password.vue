@@ -7,7 +7,7 @@
           <div class="auth-icon-circle mb-4">
             <v-icon size="40" color="purple-darken-3">mdi-lock-reset</v-icon>
           </div>
-          <h1 class="auth-title">Recuperar senha</h1>
+          <h1 class="app-page-title auth-title">Recuperar senha</h1>
           <p class="auth-subtitle mt-2">
             Fale com a liderança da sua igreja para redefinir seu acesso.
           </p>

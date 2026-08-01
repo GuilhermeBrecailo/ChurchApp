@@ -1,7 +1,7 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper">
     <div class="content-page-header mb-5">
-      <h1 class="text-h5 font-weight-bold">Conteúdo</h1>
+      <h1 class="app-page-title text-h5">Conteúdo</h1>
       <p class="text-body-2 text-grey mb-0">
         Bíblia, devocionais, versículo do dia e playlist
       </p>

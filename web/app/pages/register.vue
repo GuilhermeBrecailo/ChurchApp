@@ -5,11 +5,11 @@
       <div class="auth-card-inner">
         <div class="flex flex-col items-center mb-8">
           <div class="auth-icon-circle mb-4">
-            <v-icon size="40" :color="isDark ? 'accent-soft' : 'purple-darken-3'">
+            <v-icon size="40" color="purple-darken-3">
               mdi-account-plus-outline
             </v-icon>
           </div>
-          <h1 class="auth-title">Cadastrar igreja</h1>
+          <h1 class="app-page-title auth-title">Cadastrar igreja</h1>
           <p class="auth-subtitle text-center">
             Crie sua conta de pastor titular para iniciar sua igreja.
           </p>
