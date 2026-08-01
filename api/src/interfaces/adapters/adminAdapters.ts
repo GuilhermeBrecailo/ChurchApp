@@ -319,11 +319,36 @@ export class AdminAdapters {
       },
     });
 
-    if (!membership) {
+    if (membership) {
+      return membership;
+    }
+
+    // Usuarios criados antes da feature de multi-igreja (multi-church-membership)
+    // nao tem linha em ChurchMembership - o vinculo ainda e so o User.crunchId
+    // legado. Sem este fallback, todo usuario "antigo" (inclusive pastores
+    // titulares de igrejas seed/demo) aparecia como "nao encontrado" para
+    // qualquer acao do admin master, incluindo redefinir senha.
+    const user = await $prismaClient.user.findUnique({ where: { id: userId } });
+
+    if (!user || user.crunchId !== churchId) {
       throw new DomainError("Usuário não encontrado nesta igreja");
     }
 
-    return membership;
+    const crunch = await $prismaClient.crunch.findUnique({ where: { id: churchId } });
+
+    if (!crunch) {
+      throw new DomainError("Usuário não encontrado nesta igreja");
+    }
+
+    return {
+      id: null as string | null,
+      userId: user.id,
+      crunchId: churchId,
+      role: user.role,
+      canManageMembers: user.canManageMembers,
+      user,
+      crunch,
+    };
   }
 
   async updateChurchUserByAdmin(request: FastifyRequest) {
@@ -354,6 +379,14 @@ export class AdminAdapters {
     if (membership.role === "SUPER_ADMIN" && manager?.role !== "SUPER_ADMIN") {
       throw new DomainError("Não é possível editar um usuário super admin");
     }
+
+    if (!membership.id) {
+      throw new DomainError(
+        "Este usuário ainda não foi migrado para o novo vínculo de igreja — só é possível redefinir a senha dele por aqui.",
+      );
+    }
+
+    const membershipId = membership.id;
 
     if (body.name !== undefined && !body.name.trim()) {
       throw new DomainError("Nome é obrigatório");
@@ -405,7 +438,7 @@ export class AdminAdapters {
       });
 
       const updatedMembership = await tx.churchMembership.update({
-        where: { id: membership.id },
+        where: { id: membershipId },
         data: {
           ...(body.role !== undefined
             ? { role: body.role.trim() || "MEMBER" }
@@ -494,9 +527,17 @@ export class AdminAdapters {
       throw new DomainError("Não é possível remover um usuário super admin");
     }
 
+    if (!membership.id) {
+      throw new DomainError(
+        "Este usuário ainda não foi migrado para o novo vínculo de igreja — não é possível removê-lo por aqui.",
+      );
+    }
+
+    const membershipId = membership.id;
+
     await $prismaClient.$transaction(async (tx) => {
       await tx.churchMembership.delete({
-        where: { id: membership.id },
+        where: { id: membershipId },
       });
 
       if (membership.user.crunchId === churchId) {
