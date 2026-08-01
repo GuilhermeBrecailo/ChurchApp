@@ -1,37 +1,14 @@
 import { canManageDepartmentSchedule } from "../src/application/Services/Department/DepartmentSchedulePermission";
 
 describe("canManageDepartmentSchedule", () => {
-  it("allows the titular department leader with schedule permission", () => {
+  it("allows the titular department leader", () => {
     expect(
       canManageDepartmentSchedule({
         isChurchWideManager: false,
         isDepartmentLeader: true,
-        hasDepartmentPermission: true,
         canManageSchedule: false,
       }),
     ).toBe(true);
-  });
-
-  it("rejects the titular department leader without schedule permission", () => {
-    expect(
-      canManageDepartmentSchedule({
-        isChurchWideManager: false,
-        isDepartmentLeader: true,
-        hasDepartmentPermission: false,
-        canManageSchedule: false,
-      }),
-    ).toBe(false);
-  });
-
-  it("rejects a non-leader with only schedule permission", () => {
-    expect(
-      canManageDepartmentSchedule({
-        isChurchWideManager: false,
-        isDepartmentLeader: false,
-        hasDepartmentPermission: true,
-        canManageSchedule: false,
-      }),
-    ).toBe(false);
   });
 
   it("allows a church-wide manager", () => {
@@ -39,7 +16,6 @@ describe("canManageDepartmentSchedule", () => {
       canManageDepartmentSchedule({
         isChurchWideManager: true,
         isDepartmentLeader: false,
-        hasDepartmentPermission: false,
         canManageSchedule: false,
       }),
     ).toBe(true);

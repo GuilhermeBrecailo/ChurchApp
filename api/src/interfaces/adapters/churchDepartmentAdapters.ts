@@ -483,14 +483,20 @@ export class ChurchDepartmentAdapters {
     );
   }
 
-  private hasPermission(user: CurrentUser, permission: AppPermission) {
-    return user.churchRole?.permissions.includes(permission) === true;
-  }
-
+  // O "permission"/"permissions" aqui so era combinado com leaderId === user.id,
+  // nunca usado pra liberar alguem que nao seja o lider - ou seja, so
+  // funcionava como um gate extra em cima do proprio lider. Como nada no
+  // fluxo de "definir lider do ministerio" concede essas permissoes
+  // automaticamente, o lider titular ficava bloqueado de gerenciar o
+  // proprio ministerio (editar dados, musicas, PDFs, notificacoes) ate um
+  // pastor ir manualmente em Cargos conceder a permissao - quebrando o
+  // "lider gerencia o ministerio dele" documentado no README. O lider por
+  // si so ja basta; ver DepartmentSchedulePermission.ts pro mesmo fix nas
+  // escalas.
   private async assertCanManageDepartmentWithPermission(
     user: CurrentUser,
     departmentId: string,
-    permission: AppPermission,
+    _permission: AppPermission,
     message = "Usuario nao possui permissao para gerenciar este ministerio",
   ) {
     const department = await this.getDepartmentFromCurrentChurch(
@@ -498,21 +504,17 @@ export class ChurchDepartmentAdapters {
       user.crunchId!,
     );
 
-    if (this.isChurchWideManager(user)) {
+    if (this.isChurchWideManager(user) || department.leaderId === user.id) {
       return department;
     }
 
-    if (department.leaderId !== user.id || !this.hasPermission(user, permission)) {
-      throw new DomainError(message);
-    }
-
-    return department;
+    throw new DomainError(message);
   }
 
   private async assertCanManageDepartmentWithAnyPermission(
     user: CurrentUser,
     departmentId: string,
-    permissions: AppPermission[],
+    _permissions: AppPermission[],
     message: string,
   ) {
     const department = await this.getDepartmentFromCurrentChurch(
@@ -520,19 +522,11 @@ export class ChurchDepartmentAdapters {
       user.crunchId!,
     );
 
-    if (this.isChurchWideManager(user)) {
+    if (this.isChurchWideManager(user) || department.leaderId === user.id) {
       return department;
     }
 
-    const hasAnyPermission = permissions.some((permission) =>
-      this.hasPermission(user, permission),
-    );
-
-    if (department.leaderId !== user.id || !hasAnyPermission) {
-      throw new DomainError(message);
-    }
-
-    return department;
+    throw new DomainError(message);
   }
 
   private async assertCanManageDepartment(user: CurrentUser, departmentId: string) {
@@ -572,7 +566,6 @@ export class ChurchDepartmentAdapters {
       canManageDepartmentSchedule({
         isChurchWideManager: false,
         isDepartmentLeader: department.leaderId === user.id,
-        hasDepartmentPermission: this.hasPermission(user, "MANAGE_SCHEDULES"),
         canManageSchedule: membership?.canManageSchedule === true,
       })
     ) {
