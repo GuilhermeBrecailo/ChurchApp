@@ -138,7 +138,7 @@ const {
 } = useChurchLanding();
 
 const period = ref<"week" | "month">("week");
-const fallbackAccent = "#4F46E5";
+const fallbackAccent = "#B5472A";
 const accentColor = computed(() => church.value?.accentColor || fallbackAccent);
 const notFound = computed(() => Boolean(error.value));
 

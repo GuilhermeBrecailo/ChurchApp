@@ -11,7 +11,7 @@ export const useThemeMode = () => {
   const isDark = computed(() => themeMode.value === "dark");
   const themeName = computed(() => (isDark.value ? "dark" : "light"));
   const themeClass = computed(() => (isDark.value ? "app-theme-dark" : "app-theme-light"));
-  const themeColor = computed(() => (isDark.value ? "#0d1117" : "#4f46e5"));
+  const themeColor = computed(() => (isDark.value ? "#0d1117" : "#b5472a"));
 
   const setTheme = (mode: ThemeMode) => {
     themeMode.value = mode;
