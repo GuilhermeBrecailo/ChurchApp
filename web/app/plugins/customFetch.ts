@@ -2,6 +2,7 @@ import { defineNuxtPlugin } from "#app";
 import type { FetchOptions } from "ofetch";
 import type { ApiResponse } from "../../composables/useTypes";
 import { jwtDecode } from "jwt-decode";
+import { appendResponseHeader } from "h3";
 
 interface KeycloakPayload {
   sub: string;
@@ -86,13 +87,8 @@ export default defineNuxtPlugin(() => {
         ? useRequestHeaders(["cookie"]).cookie
         : undefined;
 
-<<<<<<< Updated upstream
-      refreshPromise = $fetch<ApiResponse<RefreshResponse> | RefreshResponse>(
-        `${apiBase()}/public/auth/refresh-token`,
-=======
       refreshPromise = $fetch.raw<ApiResponse<RefreshResponse> | RefreshResponse>(
-        `${config.public.URL_BACKEND}/public/auth/refresh-token`,
->>>>>>> Stashed changes
+        `${apiBase()}/public/auth/refresh-token`,
         {
           credentials: "include",
           headers: forwardedCookie ? { cookie: forwardedCookie } : undefined,
