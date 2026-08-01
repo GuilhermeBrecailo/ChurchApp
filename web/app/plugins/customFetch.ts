@@ -36,6 +36,11 @@ export default defineNuxtPlugin(() => {
   });
   let refreshPromise: Promise<string | null> | null = null;
 
+  // SSR roda dentro do container web: "localhost" ali nao alcanca o
+  // container api. O client (browser) usa a URL publica normalmente.
+  const apiBase = () =>
+    import.meta.server ? config.apiInternalBase : config.public.URL_BACKEND;
+
   const isBackendUrl = (url: string) =>
     url.startsWith(config.public.URL_BACKEND) || url.startsWith("/api/");
 
@@ -82,7 +87,7 @@ export default defineNuxtPlugin(() => {
         : undefined;
 
       refreshPromise = $fetch<ApiResponse<RefreshResponse> | RefreshResponse>(
-        `${config.public.URL_BACKEND}/public/auth/refresh-token`,
+        `${apiBase()}/public/auth/refresh-token`,
         {
           credentials: "include",
           headers: forwardedCookie ? { cookie: forwardedCookie } : undefined,

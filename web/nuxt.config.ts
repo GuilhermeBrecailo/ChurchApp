@@ -8,11 +8,13 @@ export default defineNuxtConfig({
   imports: {
     dirs: ["../composables"],
   },
-  routeRules: {
-    "/login": { prerender: true },
-    "/register": { prerender: true },
-    "/forgot-password": { prerender: true },
-  },
+  // Nao usar prerender:true aqui: paginas pre-renderizadas sao geradas em
+  // build-time, antes das env vars de runtime (NUXT_PUBLIC_URL_BACKEND etc.)
+  // estarem disponiveis, e ficam com o fallback de producao gravado no HTML
+  // estatico (bug: /login, /register e /forgot-password chamavam a API de
+  // producao mesmo em ambiente local). SSR normal ja e rapido o suficiente
+  // para essas paginas.
+  routeRules: {},
   nitro: {
     compressPublicAssets: true,
   },
@@ -50,7 +52,7 @@ export default defineNuxtConfig({
       title: "AppChurch",
       meta: [
         { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" },
-        { name: "theme-color", content: "#4f46e5" },
+        { name: "theme-color", content: "#b5472a" },
         { name: "apple-mobile-web-app-capable", content: "yes" },
         { name: "apple-mobile-web-app-title", content: "AppChurch" },
         { name: "apple-mobile-web-app-status-bar-style", content: "default" },
@@ -70,6 +72,11 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
+    // Server-only: usado pelo SSR (middleware de auth) para chamar a API de
+    // dentro do container. "localhost" dentro do container web NÃO alcança o
+    // container api (bug: refresh token falhava sempre que a pagina era
+    // renderizada no servidor, so funcionava em navegacao client-side).
+    apiInternalBase: process.env.NUXT_API_INTERNAL_BASE || process.env.NUXT_PUBLIC_URL_BACKEND || "https://api.appcunch.shop",
     public: {
       URL_BACKEND: process.env.NUXT_PUBLIC_URL_BACKEND || "https://api.appcunch.shop",
     },

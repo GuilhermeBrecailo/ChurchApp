@@ -77,6 +77,10 @@ export const useAuth = () => {
     sameSite: "lax",
   });
   const config = useRuntimeConfig();
+  // SSR roda dentro do container web: "localhost" ali nao alcanca o
+  // container api. O client (browser) usa a URL publica normalmente.
+  const apiBase = () =>
+    import.meta.server ? config.apiInternalBase : config.public.URL_BACKEND;
 
   const user = useState<AuthUser | null>("user", () => null);
 
@@ -112,7 +116,7 @@ export const useAuth = () => {
     if (!access_token.value) return null;
 
     const { data, error } = await $customFetch<AuthUser>(
-      `${config.public.URL_BACKEND}/api/me`,
+      `${apiBase()}/api/me`,
       {
         method: "GET",
         headers: {
@@ -174,7 +178,7 @@ export const useAuth = () => {
     role: "PASTOR" | "MEMBER";
   }) => {
     return await $customFetch<{ id: string }>(
-      `${config.public.URL_BACKEND}/api/pastor/signup`,
+      `${apiBase()}/api/pastor/signup`,
       {
         method: "POST",
         body: props,
@@ -184,7 +188,7 @@ export const useAuth = () => {
 
   const login = async (props: { email: string; password: string }) => {
     return await $customFetch<{ access_token?: string }>(
-      `${config.public.URL_BACKEND}/public/auth/login`,
+      `${apiBase()}/public/auth/login`,
       {
         method: "POST",
         body: props,
@@ -216,7 +220,7 @@ export const useAuth = () => {
 
   const logout = async () => {
     const response = await $customFetch(
-      `${config.public.URL_BACKEND}/public/auth/logout`,
+      `${apiBase()}/public/auth/logout`,
       {
         credentials: "include",
         headers: {

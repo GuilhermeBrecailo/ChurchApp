@@ -36,6 +36,21 @@ export default defineNuxtRouteMiddleware(async (to) => {
       if (access_token.value && !user.value?.id) {
         await fetchMe();
       }
+
+      // Refresh/fetchMe falharam (ex.: refresh token expirado/invalido): sem
+      // isso a pagina renderizava no servidor com user=null em vez de mandar
+      // para o login, e o cliente hidratava esse estado quebrado.
+      if (!access_token.value || !user.value?.id) {
+        return navigateTo({
+          path: "/login",
+          query:
+            to.fullPath === "/"
+              ? undefined
+              : {
+                  redirect: to.fullPath,
+                },
+        });
+      }
     }
 
     return;

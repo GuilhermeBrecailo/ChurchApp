@@ -54,6 +54,10 @@ services:
       - NUXT_HOST=0.0.0.0
       - NUXT_PORT=3000
       - NUXT_PUBLIC_URL_BACKEND=${NUXT_PUBLIC_URL_BACKEND}
+      # URL que o SSR (rodando dentro do container) usa para chamar a API.
+      # "localhost" dentro do container web nao e o container api - precisa
+      # do hostname do servico no compose.
+      - NUXT_API_INTERNAL_BASE=http://api:${API_PORT}
       - NUXT_PUBLIC_KEYCLOAK_URL=${NUXT_PUBLIC_KEYCLOAK_URL}
       - NUXT_PUBLIC_KEYCLOAK_REALM=${NUXT_PUBLIC_KEYCLOAK_REALM}
       - NUXT_PUBLIC_KEYCLOAK_CLIENT_ID=${NUXT_PUBLIC_KEYCLOAK_CLIENT_ID}
