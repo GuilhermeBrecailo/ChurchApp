@@ -617,6 +617,15 @@
           <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
             Nenhuma música no repertório
           </p>
+          <v-btn
+            v-if="canManageDepartment"
+            color="purple-darken-3"
+            variant="tonal"
+            class="rounded-lg text-none mt-4"
+            @click="isSongDialogOpen = true"
+          >
+            <Plus size="16" class="mr-1" /> Adicionar a primeira música
+          </v-btn>
         </v-card>
 
         <div v-else class="ministery-card-grid">
@@ -722,6 +731,13 @@
                 <FileText size="16" class="mr-2" /> Abrir PDF
               </v-btn>
             </div>
+
+            <MusicEmbedPlayer
+              v-if="song.metadata?.mediaLink"
+              :url="song.metadata.mediaLink"
+              :title="song.title"
+              class="mt-3"
+            />
 
             <div v-if="canManageDepartment" class="ministery-card-actions mt-3">
               <v-btn
@@ -866,18 +882,23 @@
 
     <UtilsResponsiveOverlay v-model="isScheduleDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
-        <div class="d-flex align-center mb-5">
-          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
-            <Calendar size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
-          </v-avatar>
-          <div>
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              {{ editingScheduleId ? "Editar escala" : "Nova escala" }}
-            </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0">
-              Crie uma escala para este ministério.
-            </p>
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
+              <Calendar size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+                {{ editingScheduleId ? "Editar escala" : "Nova escala" }}
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0">
+                Crie uma escala para este ministério.
+              </p>
+            </div>
           </div>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeScheduleDialog">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
         </div>
 
         <v-form autocomplete="off" @submit.prevent="handleSaveSchedule">
@@ -1037,18 +1058,23 @@
 
     <UtilsResponsiveOverlay v-model="isResourceDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
-        <div class="d-flex align-center mb-5">
-          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
-            <FileText size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
-          </v-avatar>
-          <div>
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              {{ editingResourceId ? "Editar recurso" : "Novo recurso" }}
-            </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0">
-              Adicione um link, arquivo ou material do ministério.
-            </p>
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
+              <FileText size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+                {{ editingResourceId ? "Editar recurso" : "Novo recurso" }}
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0">
+                Adicione um link, arquivo ou material do ministério.
+              </p>
+            </div>
           </div>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeResourceDialog">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
         </div>
 
         <v-form autocomplete="off" @submit.prevent="handleSaveResource">
@@ -1141,211 +1167,256 @@
 
     <UtilsResponsiveOverlay v-model="isSongDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
-        <div class="d-flex align-center mb-5">
-          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
-            <Music size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
-          </v-avatar>
-          <div>
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              {{ editingSongId ? "Editar música" : "Nova música" }}
-            </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0">
-              Organize o repertório do ministério de louvor.
-            </p>
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
+              <Music size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+                {{ editingSongId ? "Editar música" : "Nova música" }}
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0">
+                Organize o repertório do ministério de louvor.
+              </p>
+            </div>
           </div>
+          <v-btn
+            icon
+            variant="text"
+            color="grey-darken-1"
+            size="small"
+            :disabled="isCreatingSong || isImportingCifraClubSong"
+            @click="closeSongDialog"
+          >
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
         </div>
 
         <v-form autocomplete="off" @submit.prevent="handleSaveSong">
-          <v-text-field
-            v-model="songForm.title"
-            label="Título"
-            prepend-inner-icon="mdi-music-note-outline"
-            variant="outlined"
-            density="comfortable"
+          <v-tabs
+            v-model="songFormTab"
             color="purple-darken-3"
-            bg-color="white"
-            class="ministery-input mb-4"
-            hide-details="auto"
-            :disabled="isCreatingSong || isImportingCifraClubSong"
-          />
-
-          <v-text-field
-            v-model="songForm.artist"
-            label="Artista"
-            prepend-inner-icon="mdi-account-music-outline"
-            variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
-            class="ministery-input mb-4"
-            hide-details="auto"
-            :disabled="isCreatingSong || isImportingCifraClubSong"
-          />
+            class="mb-4 song-form-tabs"
+            grow
+          >
+            <v-tab value="info">Info básica</v-tab>
+            <v-tab value="lyrics">Letra & Cifra</v-tab>
+            <v-tab value="media">Mídia</v-tab>
+          </v-tabs>
 
-          <div class="d-flex ga-3 mb-4">
-            <v-text-field
-              v-model="songForm.key"
-              label="Tom"
-              placeholder="ex: G, Am"
-              variant="outlined"
-              density="comfortable"
-              color="purple-darken-3"
-              bg-color="white"
-              class="ministery-input"
-              hide-details="auto"
-              :disabled="isCreatingSong || isImportingCifraClubSong"
-            />
-            <v-text-field
-              v-model="songForm.bpm"
-              label="BPM"
-              placeholder="ex: 72"
-              variant="outlined"
-              density="comfortable"
-              color="purple-darken-3"
-              bg-color="white"
-              class="ministery-input"
-              hide-details="auto"
-              :disabled="isCreatingSong || isImportingCifraClubSong"
-            />
-          </div>
+          <v-window v-model="songFormTab">
+            <v-window-item value="info">
+              <v-text-field
+                v-model="songForm.title"
+                label="Título"
+                prepend-inner-icon="mdi-music-note-outline"
+                variant="outlined"
+                density="comfortable"
+                color="purple-darken-3"
+                bg-color="white"
+                class="ministery-input mb-4"
+                hide-details="auto"
+                :disabled="isCreatingSong || isImportingCifraClubSong"
+              />
 
-          <v-select
-            v-model="songForm.songCategory"
-            label="Categoria"
-            :items="songCategoryOptions"
-            variant="outlined"
-            density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
-            class="ministery-input mb-4"
-            hide-details="auto"
-            :disabled="isCreatingSong || isImportingCifraClubSong"
-          />
+              <v-text-field
+                v-model="songForm.artist"
+                label="Artista"
+                prepend-inner-icon="mdi-account-music-outline"
+                variant="outlined"
+                density="comfortable"
+                color="purple-darken-3"
+                bg-color="white"
+                class="ministery-input mb-4"
+                hide-details="auto"
+                :disabled="isCreatingSong || isImportingCifraClubSong"
+              />
 
-          <v-text-field
-            v-model="songForm.url"
-            label="Link da cifra"
-            prepend-inner-icon="mdi-link-variant"
-            variant="outlined"
-            density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
-            class="ministery-input mb-4"
-            hide-details="auto"
-            :disabled="isCreatingSong || isImportingCifraClubSong"
-          />
-          <div class="d-flex justify-end mb-4">
-            <v-btn
-              variant="tonal"
-              color="deep-purple-darken-2"
-              class="text-none font-weight-bold"
-              :loading="isImportingCifraClubSong"
-              :disabled="isCreatingSong || isImportingCifraClubSong || (!songForm.url && (!songForm.title || !songForm.artist))"
-              @click="handleImportCifraClubSong"
-            >
-              Buscar no Cifra Club
-            </v-btn>
-          </div>
+              <div class="d-flex ga-3 mb-4">
+                <v-text-field
+                  v-model="songForm.key"
+                  label="Tom"
+                  placeholder="ex: G, Am"
+                  variant="outlined"
+                  density="comfortable"
+                  color="purple-darken-3"
+                  bg-color="white"
+                  class="ministery-input"
+                  hide-details="auto"
+                  :disabled="isCreatingSong || isImportingCifraClubSong"
+                />
+                <v-text-field
+                  v-model="songForm.bpm"
+                  label="BPM"
+                  placeholder="ex: 72"
+                  variant="outlined"
+                  density="comfortable"
+                  color="purple-darken-3"
+                  bg-color="white"
+                  class="ministery-input"
+                  hide-details="auto"
+                  :disabled="isCreatingSong || isImportingCifraClubSong"
+                />
+              </div>
 
-          <v-text-field
-            v-model="songForm.notes"
-            label="Observações"
-            prepend-inner-icon="mdi-text"
-            variant="outlined"
-            density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
-            class="ministery-input mb-4"
-            hide-details="auto"
-            :disabled="isCreatingSong || isImportingCifraClubSong"
-          />
+              <v-select
+                v-model="songForm.songCategory"
+                label="Categoria"
+                :items="songCategoryOptions"
+                variant="outlined"
+                density="comfortable"
+                color="purple-darken-3"
+                bg-color="white"
+                class="ministery-input"
+                hide-details="auto"
+                :disabled="isCreatingSong || isImportingCifraClubSong"
+              />
+            </v-window-item>
 
-          <v-textarea
-            v-model="songForm.lyrics"
-            label="Letra"
-            prepend-inner-icon="mdi-format-text"
-            variant="outlined"
-            density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
-            class="ministery-input mb-4"
-            hide-details="auto"
-            rows="5"
-            auto-grow
-            :disabled="isCreatingSong || isImportingCifraClubSong"
-          />
+            <v-window-item value="lyrics">
+              <v-text-field
+                v-model="songForm.url"
+                label="Link da cifra"
+                prepend-inner-icon="mdi-link-variant"
+                variant="outlined"
+                density="comfortable"
+                color="purple-darken-3"
+                bg-color="white"
+                class="ministery-input mb-4"
+                hide-details="auto"
+                :disabled="isCreatingSong || isImportingCifraClubSong"
+              />
+              <div class="d-flex justify-end mb-4">
+                <v-btn
+                  variant="tonal"
+                  color="deep-purple-darken-2"
+                  class="text-none font-weight-bold"
+                  :loading="isImportingCifraClubSong"
+                  :disabled="isCreatingSong || isImportingCifraClubSong || (!songForm.url && (!songForm.title || !songForm.artist))"
+                  @click="handleImportCifraClubSong"
+                >
+                  Buscar no Cifra Club
+                </v-btn>
+              </div>
 
-          <v-textarea
-            v-model="songForm.chords"
-            label="Cifra"
-            prepend-inner-icon="mdi-guitar-acoustic"
-            variant="outlined"
-            density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
-            class="ministery-input mb-4 chords-input"
-            hide-details="auto"
-            rows="6"
-            auto-grow
-            :disabled="isCreatingSong || isImportingCifraClubSong"
-          />
+              <v-textarea
+                v-model="songForm.lyrics"
+                label="Letra"
+                prepend-inner-icon="mdi-format-text"
+                variant="outlined"
+                density="comfortable"
+                color="purple-darken-3"
+                bg-color="white"
+                class="ministery-input mb-4"
+                hide-details="auto"
+                rows="5"
+                auto-grow
+                :disabled="isCreatingSong || isImportingCifraClubSong"
+              />
 
-          <v-textarea
-            v-model="songForm.keyboardChords"
-            label="Cifra para teclado"
-            prepend-inner-icon="mdi-piano"
-            variant="outlined"
-            density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
-            class="ministery-input mb-4 chords-input"
-            hide-details="auto"
-            rows="6"
-            auto-grow
-            :disabled="isCreatingSong || isImportingCifraClubSong"
-          />
+              <v-textarea
+                v-model="songForm.chords"
+                label="Cifra"
+                prepend-inner-icon="mdi-guitar-acoustic"
+                variant="outlined"
+                density="comfortable"
+                color="purple-darken-3"
+                bg-color="white"
+                class="ministery-input mb-4 chords-input"
+                hide-details="auto"
+                rows="6"
+                auto-grow
+                :disabled="isCreatingSong || isImportingCifraClubSong"
+              />
 
-          <div v-if="songForm.pdfUrl && !songForm.removePdf" class="pdf-current-card mb-4">
-            <div class="min-w-0">
-              <p class="text-caption font-weight-bold text-grey-darken-4 mb-0">
-                PDF anexado
-              </p>
-              <a
-                :href="songForm.pdfUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-caption text-purple-darken-3"
-              >
-                {{ songForm.pdfFileName || "Abrir PDF" }}
-              </a>
-            </div>
-            <v-btn
-              variant="text"
-              color="red-darken-2"
-              size="small"
-              class="text-none"
-              :disabled="isCreatingSong || isImportingCifraClubSong"
-              @click="removeSongPdf"
-            >
-              Remover
-            </v-btn>
-          </div>
+              <v-textarea
+                v-model="songForm.keyboardChords"
+                label="Cifra para teclado"
+                prepend-inner-icon="mdi-piano"
+                variant="outlined"
+                density="comfortable"
+                color="purple-darken-3"
+                bg-color="white"
+                class="ministery-input chords-input"
+                hide-details="auto"
+                rows="6"
+                auto-grow
+                :disabled="isCreatingSong || isImportingCifraClubSong"
+              />
+            </v-window-item>
 
-          <v-file-input
-            v-model="songPdfFile"
-            label="PDF da música"
-            accept="application/pdf"
-            prepend-inner-icon="mdi-file-pdf-box"
-            variant="outlined"
-            density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
-            class="ministery-input mb-4"
-            hide-details="auto"
-            show-size
-            clearable
-            :disabled="isCreatingSong || isImportingCifraClubSong"
-          />
+            <v-window-item value="media">
+              <v-text-field
+                v-model="songForm.mediaLink"
+                label="Link do Spotify ou YouTube (opcional)"
+                hint="Cole o link da faixa/vídeo para tocar direto na tela do ministério"
+                persistent-hint
+                prepend-inner-icon="mdi-music-circle-outline"
+                variant="outlined"
+                density="comfortable"
+                color="purple-darken-3"
+                bg-color="white"
+                class="ministery-input mb-4"
+                :disabled="isCreatingSong || isImportingCifraClubSong"
+              />
+              <v-text-field
+                v-model="songForm.notes"
+                label="Observações"
+                prepend-inner-icon="mdi-text"
+                variant="outlined"
+                density="comfortable"
+                color="purple-darken-3"
+                bg-color="white"
+                class="ministery-input mb-4"
+                hide-details="auto"
+                :disabled="isCreatingSong || isImportingCifraClubSong"
+              />
+
+              <div v-if="songForm.pdfUrl && !songForm.removePdf" class="pdf-current-card mb-4">
+                <div class="min-w-0">
+                  <p class="text-caption font-weight-bold text-grey-darken-4 mb-0">
+                    PDF anexado
+                  </p>
+                  <a
+                    :href="songForm.pdfUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-caption text-purple-darken-3"
+                  >
+                    {{ songForm.pdfFileName || "Abrir PDF" }}
+                  </a>
+                </div>
+                <v-btn
+                  variant="text"
+                  color="red-darken-2"
+                  size="small"
+                  class="text-none"
+                  :disabled="isCreatingSong || isImportingCifraClubSong"
+                  @click="removeSongPdf"
+                >
+                  Remover
+                </v-btn>
+              </div>
+
+              <v-file-input
+                v-model="songPdfFile"
+                label="PDF da música"
+                accept="application/pdf"
+                prepend-inner-icon="mdi-file-pdf-box"
+                variant="outlined"
+                density="comfortable"
+                color="purple-darken-3"
+                bg-color="white"
+                class="ministery-input"
+                hide-details="auto"
+                show-size
+                clearable
+                :disabled="isCreatingSong || isImportingCifraClubSong"
+              />
+            </v-window-item>
+          </v-window>
 
           <v-alert
             v-if="createSongError"
@@ -1569,18 +1640,23 @@
 
     <UtilsResponsiveOverlay v-model="isActivityDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
-        <div class="d-flex align-center mb-5">
-          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
-            <BookOpen size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
-          </v-avatar>
-          <div>
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              Nova atividade
-            </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0">
-              Salve o material em PDF do ministério infantil.
-            </p>
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
+              <BookOpen size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+                Nova atividade
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0">
+                Salve o material em PDF do ministério infantil.
+              </p>
+            </div>
           </div>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeActivityDialog">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
         </div>
 
         <v-form autocomplete="off" @submit.prevent="handleSaveActivity">
@@ -1662,18 +1738,23 @@
 
     <UtilsResponsiveOverlay v-model="isAssignmentsDialogOpen" max-width="560">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
-        <div class="d-flex align-center mb-5">
-          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
-            <UserPlus size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
-          </v-avatar>
-          <div>
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              Voluntários da escala
-            </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0">
-              {{ selectedSchedule?.description || "Monte a equipe da escala." }}
-            </p>
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
+              <UserPlus size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+                Voluntários da escala
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0">
+                {{ selectedSchedule?.description || "Monte a equipe da escala." }}
+              </p>
+            </div>
           </div>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeAssignmentsDialog">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
         </div>
 
         <div class="ministery-field-grid mb-4">
@@ -1845,18 +1926,23 @@
 
     <UtilsResponsiveOverlay v-model="isTaskDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
-        <div class="d-flex align-center mb-5">
-          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
-            <CheckSquare size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
-          </v-avatar>
-          <div>
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              {{ editingTaskId ? "Editar tarefa" : "Nova tarefa" }}
-            </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0">
-              Crie uma tarefa para este ministério.
-            </p>
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
+              <CheckSquare size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+                {{ editingTaskId ? "Editar tarefa" : "Nova tarefa" }}
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0">
+                Crie uma tarefa para este ministério.
+              </p>
+            </div>
           </div>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeTaskDialog">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
         </div>
 
         <v-form autocomplete="off" @submit.prevent="handleSaveTask">
@@ -2064,6 +2150,7 @@ const isTaskDialogOpen = ref(false);
 const isScheduleDialogOpen = ref(false);
 const isResourceDialogOpen = ref(false);
 const isSongDialogOpen = ref(false);
+const songFormTab = ref("info");
 const isActivityDialogOpen = ref(false);
 const isSongViewerOpen = ref(false);
 const isAssignmentsDialogOpen = ref(false);
@@ -2169,6 +2256,7 @@ const songForm = reactive({
   lyrics: "",
   chords: "",
   keyboardChords: "",
+  mediaLink: "",
   pdfUrl: "",
   pdfKey: "",
   pdfFileName: "",
@@ -2799,6 +2887,7 @@ const resetSongForm = () => {
   songForm.lyrics = "";
   songForm.chords = "";
   songForm.keyboardChords = "";
+  songForm.mediaLink = "";
   songForm.pdfUrl = "";
   songForm.pdfKey = "";
   songForm.pdfFileName = "";
@@ -2807,6 +2896,7 @@ const resetSongForm = () => {
   songForm.removePdf = false;
   songPdfFile.value = null;
   editingSongId.value = "";
+  songFormTab.value = "info";
 };
 
 const closeSongDialog = () => {
@@ -3196,6 +3286,7 @@ const handleImportCifraClubSong = async () => {
 };
 const openSongEditDialog = (song: DepartmentSong) => {
   editingSongId.value = song.id;
+  songFormTab.value = "info";
   songForm.title = song.title;
   songForm.artist = song.metadata?.artist || "";
   songForm.key = song.metadata?.key || "";
@@ -3206,6 +3297,7 @@ const openSongEditDialog = (song: DepartmentSong) => {
   songForm.lyrics = song.metadata?.lyrics || "";
   songForm.chords = song.metadata?.chords || "";
   songForm.keyboardChords = song.metadata?.keyboardChords || "";
+  songForm.mediaLink = song.metadata?.mediaLink || "";
   songForm.pdfUrl = song.metadata?.pdf?.url || "";
   songForm.pdfKey = song.metadata?.pdf?.key || "";
   songForm.pdfFileName = song.metadata?.pdf?.fileName || "";
@@ -3254,6 +3346,7 @@ const handleSaveSong = async () => {
       lyrics: songForm.lyrics,
       chords: songForm.chords,
       keyboardChords: songForm.keyboardChords,
+      mediaLink: songForm.mediaLink,
       ...(songForm.pdfUrl
         ? {
             pdfUrl: songForm.pdfUrl,

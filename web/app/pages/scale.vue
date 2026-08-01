@@ -74,8 +74,13 @@
         @request-swap="handleRequestSwap"
       />
 
+      <div v-if="isLoadingSchedules" class="scale-loading">
+        <v-skeleton-loader type="card" class="mb-3" />
+        <v-skeleton-loader type="card" />
+      </div>
+
       <v-card
-        v-if="filteredSchedules.length === 0 && !schedulesError"
+        v-else-if="filteredSchedules.length === 0 && !schedulesError"
         class="rounded-xl pa-6 elevation-1 d-flex flex-column align-center justify-center"
       >
         <Calendar size="32" :color="isDark ? '#484f58' : '#9CA3AF'" class="mb-3" />
@@ -1215,6 +1220,7 @@ const route = useRoute();
 const activeFilter = ref("Todos");
 const departments = ref<ChurchDepartment[]>([]);
 const schedules = ref<DepartmentSchedule[]>([]);
+const isLoadingSchedules = ref(true);
 const members = ref<ChurchMember[]>([]);
 const resourcesByDepartment = ref<Record<string, DepartmentResource[]>>({});
 const songsByDepartment = ref<Record<string, DepartmentSong[]>>({});
@@ -1925,14 +1931,17 @@ const loadDepartments = async () => {
 
 const loadSchedules = async () => {
   schedulesError.value = "";
+  isLoadingSchedules.value = true;
   const { data, error } = await getChurchSchedules();
 
   if (error) {
     schedulesError.value = error;
+    isLoadingSchedules.value = false;
     return;
   }
 
   schedules.value = data ?? [];
+  isLoadingSchedules.value = false;
 };
 
 const focusScheduleFromRoute = async () => {

@@ -2,7 +2,7 @@
   <div class="pa-4 bg-grey-lighten-4 min-vh-100">
     <div class="ministery-page-header mb-5">
       <div>
-        <h1 class="text-h5 font-weight-bold text-grey-darken-4">Ministérios</h1>
+        <h1 class="app-page-title text-h5 text-grey-darken-4">Ministérios</h1>
         <p class="text-body-2 text-grey-darken-1 mb-0">
           Organize equipes, escalas e repertórios
         </p>
@@ -33,14 +33,28 @@
       </div>
     </div>
 
+    <div v-if="isLoadingDepartments" class="ministery-loading">
+      <v-skeleton-loader type="card" class="mb-3" />
+      <v-skeleton-loader type="card" />
+    </div>
+
     <v-card
-      v-if="departments.length === 0 && !departmentsError"
+      v-else-if="departments.length === 0 && !departmentsError"
       class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
     >
       <Building size="32" color="#9CA3AF" class="mb-3" />
       <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
         Nenhum ministério cadastrado ainda
       </p>
+      <v-btn
+        v-if="canCreateDepartment"
+        color="purple-darken-3"
+        variant="tonal"
+        class="rounded-lg text-none mt-4"
+        @click="isDepartmentDialogOpen = true"
+      >
+        <Plus size="16" class="mr-1" /> Criar o primeiro ministério
+      </v-btn>
     </v-card>
 
     <div v-else class="ministery-grid">
@@ -224,6 +238,7 @@ const { getMembers } = useMembers();
 const departments = ref<ChurchDepartment[]>([]);
 const members = ref<ChurchMember[]>([]);
 const departmentsError = ref("");
+const isLoadingDepartments = ref(true);
 const createDepartmentError = ref("");
 const isDepartmentDialogOpen = ref(false);
 const isCreatingDepartment = ref(false);
@@ -291,15 +306,18 @@ const goToMinisterio = (id: string) => {
 
 const loadDepartments = async () => {
   departmentsError.value = "";
+  isLoadingDepartments.value = true;
 
   const { data, error } = await getDepartments();
 
   if (error) {
     departmentsError.value = error;
+    isLoadingDepartments.value = false;
     return;
   }
 
   departments.value = data ?? [];
+  isLoadingDepartments.value = false;
 };
 
 const loadMembers = async () => {
