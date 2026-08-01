@@ -186,6 +186,12 @@ export function useBible() {
   const verses = ref<BibleVerse[]>([]);
   const loading = ref(false);
   const error = ref("");
+  // A API principal (abibliadigital.com.br) e uma API gratuita/comunitaria
+  // que cai com frequencia (erro 500 do lado dela). Quando isso acontece,
+  // caimos num fallback que so tem a versao Almeida - sem esta flag, a tela
+  // mostrava o texto Almeida com o chip da versao que o usuario escolheu
+  // (ex.: "NVI"), passando a versao errada como se fosse a certa.
+  const usedFallback = ref(false);
 
   const restoreState = () => {
     try {
@@ -222,6 +228,7 @@ export function useBible() {
     loading.value = true;
     error.value = "";
     verses.value = [];
+    usedFallback.value = false;
 
     try {
       const url = `https://www.abibliadigital.com.br/api/verses/${selectedVersion.value}/${encodeURIComponent(book.abbrev)}/${selectedChapter.value}`;
@@ -241,6 +248,7 @@ export function useBible() {
         const fallbackUrl = `https://bible-api.com/${fallbackBook}+${selectedChapter.value}?translation=almeida`;
         const response = await $fetch<BibleApiChapterResponse>(fallbackUrl);
         verses.value = response.verses ?? [];
+        usedFallback.value = true;
         saveState();
       } catch {
         error.value = "Não foi possível carregar os versículos agora. Tente novamente.";
@@ -286,6 +294,7 @@ export function useBible() {
     verses,
     loading,
     error,
+    usedFallback,
     restoreState,
     fetchChapter,
     currentBook,

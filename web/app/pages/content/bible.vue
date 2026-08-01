@@ -55,10 +55,25 @@
       <span class="bible-reference-text">
         {{ currentBook()?.pt }} {{ selectedChapter }}
       </span>
-      <v-chip size="x-small" variant="tonal" color="purple-darken-3" class="ml-2">
-        {{ versionLabel }}
+      <v-chip
+        size="x-small"
+        variant="tonal"
+        :color="usedFallback ? 'amber-darken-2' : 'purple-darken-3'"
+        class="ml-2"
+      >
+        {{ usedFallback ? "Almeida (alternativa)" : versionLabel }}
       </v-chip>
     </div>
+
+    <v-alert
+      v-if="!loading && !error && usedFallback"
+      type="warning"
+      variant="tonal"
+      density="compact"
+      class="mb-4"
+    >
+      A versão {{ versionLabel }} está indisponível no momento — mostrando a tradução Almeida como alternativa.
+    </v-alert>
 
     <div v-if="loading" class="bible-loading">
       <v-skeleton-loader type="paragraph" class="mb-3" />
@@ -126,6 +141,7 @@ const {
   verses,
   loading,
   error,
+  usedFallback,
   restoreState,
   fetchChapter,
   currentBook,
