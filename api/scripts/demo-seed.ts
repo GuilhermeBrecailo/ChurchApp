@@ -7,14 +7,20 @@ import { KeycloakProvider } from "../src/infrastructure/identity/KeycloakProvide
 import {
   DEMO_EMAIL,
   DEMO_PASTOR_EMAIL,
+  DEMO_MINISTER_EMAIL,
+  DEMO_PASSWORD,
   createDemoDepartments,
   createDemoSongs,
   createDemoSchedules,
+  createDemoOtherSchedules,
   createDemoMembers,
   createDemoDepartmentResources,
   createDemoTasks,
   createDemoContent,
   createDemoUserState,
+  ensureDemoChurchRoles,
+  ensureDemoMinister,
+  createDemoMinisterMembership,
 } from "./demo-data.ts";
 
 async function seed() {
@@ -77,16 +83,8 @@ async function seed() {
     data: { userMainId: pastorDemo.id },
   });
 
-  // 3. Cargo "Visitante"
-  const visitanteRole = await $prismaClient.churchRole.create({
-    data: {
-      id: crypto.randomUUID(),
-      name: "Visitante",
-      description: "Acesso limitado para demonstração",
-      permissions: [],
-      crunchId: demoCrunch.id,
-    },
-  });
+  // 3. Cargos "Visitante" e "Líder de Ministério"
+  const { visitanteRole, liderRole } = await ensureDemoChurchRoles(demoCrunch.id);
 
   // 4. Usuário Demo (no Keycloak + banco)
   let demoUserId = crypto.randomUUID();
@@ -95,7 +93,7 @@ async function seed() {
     demoUserId = await identityProvider.createUser(
       DEMO_EMAIL,
       "Usuário Demo",
-      "demo1234",
+      DEMO_PASSWORD,
       false,
     );
     console.log("✅ Usuário Demo criado no Keycloak");
@@ -115,12 +113,21 @@ async function seed() {
     },
   });
 
+  // 4b. Líder Demo - ministro com permissões reais sobre o Louvor
+  const minister = await ensureDemoMinister(demoCrunch.id, liderRole.id);
+
   // 5. Membros fictícios
   const members = await createDemoMembers(demoCrunch.id);
 
-  // 6. Departamentos
-  const departments = await createDemoDepartments(demoCrunch.id, pastorDemo.id);
+  // 6. Departamentos (Louvor liderado pelo Líder Demo, os demais pelo Pastor)
+  const departments = await createDemoDepartments(
+    demoCrunch.id,
+    pastorDemo.id,
+    minister.id,
+  );
   const { louvor } = departments;
+
+  await createDemoMinisterMembership(minister.id, louvor.id);
 
   // 7. Músicas
   const songItems = await createDemoSongs(louvor.id);
@@ -140,6 +147,15 @@ async function seed() {
     songIds,
   );
 
+  await createDemoOtherSchedules(
+    {
+      jovens: departments.jovens,
+      diaconato: departments.diaconato,
+      midia: departments.midia,
+    },
+    members.map((m) => m.id),
+  );
+
   // 9. Conteúdo, pedidos e estado do usuário
   await createDemoContent(demoCrunch.id, pastorDemo.id, [
     demoUser.id,
@@ -154,14 +170,15 @@ async function seed() {
 
   console.log(`
 ✅ Demo criado com sucesso!
-   Email:  demo@appquadrangular.com
-   Senha:  demo1234
+   Pastor:  ${DEMO_PASTOR_EMAIL} / ${DEMO_PASSWORD}
+   Líder:   ${DEMO_MINISTER_EMAIL} / ${DEMO_PASSWORD}
+   Membro:  ${DEMO_EMAIL} / ${DEMO_PASSWORD}
 
    Igreja: ${demoCrunch.name} (ID: ${demoCrunch.id})
    Membros fictícios: ${members.length}
-   Ministérios: 4
+   Ministérios: 4 (Louvor, Jovens, Diaconato, Mídia)
    Músicas: ${songItems.length}
-   Escalas: 3
+   Escalas: 6
    Devocionais: 1
    Versículos: 3
    Avisos: 2

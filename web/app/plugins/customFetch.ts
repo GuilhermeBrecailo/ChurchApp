@@ -86,18 +86,40 @@ export default defineNuxtPlugin(() => {
         ? useRequestHeaders(["cookie"]).cookie
         : undefined;
 
+<<<<<<< Updated upstream
       refreshPromise = $fetch<ApiResponse<RefreshResponse> | RefreshResponse>(
         `${apiBase()}/public/auth/refresh-token`,
+=======
+      refreshPromise = $fetch.raw<ApiResponse<RefreshResponse> | RefreshResponse>(
+        `${config.public.URL_BACKEND}/public/auth/refresh-token`,
+>>>>>>> Stashed changes
         {
           credentials: "include",
           headers: forwardedCookie ? { cookie: forwardedCookie } : undefined,
         },
       )
-        .then((response) => {
+        .then((rawResponse) => {
+          if (import.meta.server) {
+            const setCookies =
+              rawResponse.headers.getSetCookie?.() ??
+              (rawResponse.headers.get("set-cookie")
+                ? [rawResponse.headers.get("set-cookie") as string]
+                : []);
+
+            const event = useRequestEvent();
+
+            if (event) {
+              for (const setCookie of setCookies) {
+                appendResponseHeader(event, "set-cookie", setCookie);
+              }
+            }
+          }
+
+          const response = rawResponse._data;
           const token =
             response && "data" in response
               ? response.data?.access_token
-              : response.access_token;
+              : response?.access_token;
 
           if (!token) {
             clearSession();

@@ -26,6 +26,7 @@ const port = Number(process.env.API_PORT || 8000);
 
 const server = fastify({
   trustProxy: true,
+  logger: true,
 });
 const uploadsRoot = path.join(process.cwd(), "uploads");
 

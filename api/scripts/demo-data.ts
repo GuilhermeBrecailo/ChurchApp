@@ -2,9 +2,12 @@
  * Funções de criação de dados demo — compartilhadas entre seed e reset.
  */
 import { $prismaClient } from "../config/database.ts";
+import { KeycloakProvider } from "../src/infrastructure/identity/KeycloakProvider.ts";
 
 export const DEMO_EMAIL = "demo@appquadrangular.com";
 export const DEMO_PASTOR_EMAIL = "pastor-demo@appquadrangular.com";
+export const DEMO_MINISTER_EMAIL = "lider-demo@appquadrangular.com";
+export const DEMO_PASSWORD = "demo1234";
 
 const songs = [
   {
@@ -166,14 +169,18 @@ Hosana, hosana`,
   },
 ];
 
-export async function createDemoDepartments(crunchId: string, leaderId: string) {
+export async function createDemoDepartments(
+  crunchId: string,
+  leaderId: string,
+  musicLeaderId?: string,
+) {
   const louvor = await $prismaClient.department.create({
     data: {
       id: crypto.randomUUID(),
       name: "Louvor",
       type: "MUSIC",
       crunchId,
-      leaderId,
+      leaderId: musicLeaderId ?? leaderId,
     },
   });
 
@@ -208,6 +215,97 @@ export async function createDemoDepartments(crunchId: string, leaderId: string) 
   });
 
   return { louvor, jovens, diaconato, midia };
+}
+
+export async function ensureDemoChurchRoles(crunchId: string) {
+  let visitanteRole = await $prismaClient.churchRole.findFirst({
+    where: { crunchId, name: "Visitante" },
+  });
+
+  if (!visitanteRole) {
+    visitanteRole = await $prismaClient.churchRole.create({
+      data: {
+        id: crypto.randomUUID(),
+        name: "Visitante",
+        description: "Acesso limitado para demonstração",
+        permissions: [],
+        crunchId,
+      },
+    });
+  }
+
+  let liderRole = await $prismaClient.churchRole.findFirst({
+    where: { crunchId, name: "Líder de Ministério" },
+  });
+
+  if (!liderRole) {
+    liderRole = await $prismaClient.churchRole.create({
+      data: {
+        id: crypto.randomUUID(),
+        name: "Líder de Ministério",
+        description: "Gerencia escalas, músicas e tarefas do ministério que lidera",
+        permissions: ["MANAGE_SCHEDULES", "MANAGE_SONGS", "MANAGE_DEPARTMENTS"],
+        crunchId,
+      },
+    });
+  }
+
+  return { visitanteRole, liderRole };
+}
+
+export async function ensureDemoMinister(crunchId: string, churchRoleId: string) {
+  const existing = await $prismaClient.user.findFirst({
+    where: { email: DEMO_MINISTER_EMAIL },
+  });
+
+  if (existing) {
+    return $prismaClient.user.update({
+      where: { id: existing.id },
+      data: { crunchId, churchRoleId, role: "MEMBER" },
+    });
+  }
+
+  const identityProvider = new KeycloakProvider();
+  let ministerId = crypto.randomUUID();
+
+  try {
+    ministerId = await identityProvider.createUser(
+      DEMO_MINISTER_EMAIL,
+      "Líder Demo",
+      DEMO_PASSWORD,
+      false,
+    );
+    console.log("✅ Líder Demo criado no Keycloak");
+  } catch {
+    console.warn("⚠️  Keycloak indisponível. Líder demo criado apenas no banco.");
+  }
+
+  return $prismaClient.user.create({
+    data: {
+      id: ministerId,
+      name: "Líder Demo",
+      email: DEMO_MINISTER_EMAIL,
+      role: "MEMBER",
+      crunchId,
+      isDemoUser: false,
+      churchRoleId,
+    },
+  });
+}
+
+export async function createDemoMinisterMembership(
+  ministerId: string,
+  louvorDepartmentId: string,
+) {
+  await $prismaClient.userDepartmentMembership.create({
+    data: {
+      id: crypto.randomUUID(),
+      userId: ministerId,
+      departmentId: louvorDepartmentId,
+      function: "Líder de Louvor",
+      isPrimary: true,
+    },
+  });
 }
 
 export async function createDemoSongs(departmentId: string) {
@@ -299,6 +397,68 @@ export async function createDemoSchedules(
           create: s.songIndexes.map((idx) => ({
             id: crypto.randomUUID(),
             mediaItemId: songIds[idx],
+          })),
+        },
+      },
+    });
+  }
+}
+
+export async function createDemoOtherSchedules(
+  departments: {
+    jovens: { id: string };
+    diaconato: { id: string };
+    midia: { id: string };
+  },
+  memberIds: string[],
+) {
+  const now = new Date();
+
+  const makeDate = (daysAhead: number, hour: number, minute: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() + daysAhead);
+    d.setHours(hour, minute, 0, 0);
+    return d;
+  };
+
+  const scheduleData = [
+    {
+      departmentId: departments.jovens.id,
+      description: "Reunião de Jovens",
+      date: makeDate(5, 19, 30),
+      assignees: [memberIds[0], memberIds[2]],
+      role: "Líder de célula",
+    },
+    {
+      departmentId: departments.diaconato.id,
+      description: "Recepção - Culto Domingo",
+      date: makeDate(7, 8, 30),
+      assignees: [memberIds[1], memberIds[2]],
+      role: "Recepção",
+    },
+    {
+      departmentId: departments.midia.id,
+      description: "Transmissão ao vivo - Culto Domingo",
+      date: makeDate(7, 8, 30),
+      assignees: [memberIds[2], memberIds[0]],
+      role: "Operador de transmissão",
+    },
+  ];
+
+  for (const s of scheduleData) {
+    await $prismaClient.schedule.create({
+      data: {
+        id: crypto.randomUUID(),
+        description: s.description,
+        date: s.date,
+        departmentId: s.departmentId,
+        assignments: {
+          create: s.assignees.map((userId, index) => ({
+            id: crypto.randomUUID(),
+            role: s.role,
+            confirmationStatus: index === 0 ? "CONFIRMED" : "PENDING",
+            confirmedAt: index === 0 ? new Date() : null,
+            userId,
           })),
         },
       },
@@ -636,6 +796,13 @@ export async function createDemoUserState(
         userId: memberIds[1],
         departmentId: departmentIds[2],
         function: "Comunicação",
+        isPrimary: true,
+      },
+      {
+        id: crypto.randomUUID(),
+        userId: memberIds[2],
+        departmentId: departmentIds[2],
+        function: "Transmissão",
         isPrimary: true,
       },
     ],

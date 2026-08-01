@@ -329,7 +329,12 @@
                 v-for="(song, songIndex) in selectedDetailSongs"
                 :key="song.id"
                 class="scale-song-card"
-                :class="{ 'scale-song-card-active': activeDetailSong?.id === song.id }"
+                :class="{
+                  'scale-song-card-active': activeDetailSong?.id === song.id,
+                  'scale-song-card-dragging': draggedSongId === song.id,
+                  'scale-song-card-saving': isSavingSongOrder && draggedSongId === song.id,
+                }"
+                :data-scale-song-id="song.id"
               >
                 <div class="scale-song-row">
                   <div
@@ -364,23 +369,16 @@
                   <div v-if="selectedDetailEvent?.canManage" class="scale-song-order-btns">
                     <v-btn
                       icon
-                      size="x-small"
+                      size="small"
                       variant="text"
-                      :disabled="songIndex === 0"
-                      aria-label="Mover para cima"
-                      @click.stop="moveSong(songIndex, -1)"
+                      class="scale-song-drag-handle"
+                      :class="{ 'scale-song-drag-handle-active': draggedSongId === song.id }"
+                      :aria-label="'Reordenar ' + song.title"
+                      @pointerdown.stop.prevent="startSongDrag($event, song)"
+                      @keydown.up.prevent="moveSong(songIndex, -1)"
+                      @keydown.down.prevent="moveSong(songIndex, 1)"
                     >
-                      <ChevronUp size="16" />
-                    </v-btn>
-                    <v-btn
-                      icon
-                      size="x-small"
-                      variant="text"
-                      :disabled="songIndex === selectedDetailSongs.length - 1"
-                      aria-label="Mover para baixo"
-                      @click.stop="moveSong(songIndex, 1)"
-                    >
-                      <ChevronDown size="16" />
+                      <GripVertical size="18" />
                     </v-btn>
                   </div>
                 </div>
@@ -1169,8 +1167,7 @@ import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from
 import {
   Calendar,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
+  GripVertical,
   Clock,
   Eye,
   EyeOff,
@@ -1248,6 +1245,10 @@ const songTabs = reactive<Record<string, string>>({});
 const songTransposeSteps = reactive<Record<string, number>>({});
 const songFilterOpen = ref(false);
 const songFilterFullscreenOpen = ref(false);
+const draggedSongId = ref("");
+const isSavingSongOrder = ref(false);
+let songDragPointerId: number | null = null;
+let songDragHandle: HTMLElement | null = null;
 
 const declineDialog = reactive({
   open: false,
@@ -1666,6 +1667,48 @@ const selectDetailSong = (song: ScheduleEvent["mediaItems"][number]) => {
   }
 };
 
+const setEventSongOrder = (
+  event: ScheduleEvent,
+  orderedSongs: ScheduleEvent["mediaItems"],
+) => {
+  const resources = event.mediaItems.filter((item) => item.category !== "MUSIC");
+  event.mediaItems = [...orderedSongs, ...resources];
+};
+
+const persistSongOrder = async (
+  event: ScheduleEvent,
+  songs: ScheduleEvent["mediaItems"],
+) => {
+  isSavingSongOrder.value = true;
+  const items = songs.map((song, i) => ({
+    id: song.scheduleMediaItemId,
+    order: i,
+  }));
+
+  try {
+    const { error } = await reorderScheduleMediaItems(event.id, items);
+    if (error) await loadSchedules();
+  } finally {
+    isSavingSongOrder.value = false;
+  }
+};
+
+const reorderSongsLocally = (fromId: string, toId: string) => {
+  const event = selectedDetailEvent.value;
+  if (!event || fromId === toId) return null;
+
+  const songs = event.mediaItems.filter((item) => item.category === "MUSIC");
+  const fromIndex = songs.findIndex((song) => song.id === fromId);
+  const toIndex = songs.findIndex((song) => song.id === toId);
+  if (fromIndex < 0 || toIndex < 0) return null;
+
+  const reordered = [...songs];
+  const [moved] = reordered.splice(fromIndex, 1);
+  reordered.splice(toIndex, 0, moved);
+  setEventSongOrder(event, reordered);
+  return reordered;
+};
+
 const moveSong = async (index: number, direction: -1 | 1) => {
   const event = selectedDetailEvent.value;
   if (!event) return;
@@ -1676,19 +1719,61 @@ const moveSong = async (index: number, direction: -1 | 1) => {
 
   const reordered = [...songs];
   [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+  setEventSongOrder(event, reordered);
+  await persistSongOrder(event, reordered);
+};
 
-  const items = reordered.map((song, i) => ({
-    id: song.scheduleMediaItemId,
-    order: i,
-  }));
+const onSongDragMove = (event: PointerEvent) => {
+  if (!draggedSongId.value || event.pointerId !== songDragPointerId) return;
 
-  event.mediaItems = [
-    ...reordered,
-    ...event.mediaItems.filter((item) => item.category !== "MUSIC"),
-  ];
+  const target = document
+    .elementFromPoint(event.clientX, event.clientY)
+    ?.closest<HTMLElement>("[data-scale-song-id]");
+  const targetSongId = target?.dataset.scaleSongId;
 
-  const { error } = await reorderScheduleMediaItems(event.id, items);
-  if (error) await loadSchedules();
+  if (!targetSongId || targetSongId === draggedSongId.value) return;
+  reorderSongsLocally(draggedSongId.value, targetSongId);
+};
+
+const finishSongDrag = async (event?: PointerEvent) => {
+  if (event && event.pointerId !== songDragPointerId) return;
+
+  const scheduleEvent = selectedDetailEvent.value;
+  const songs = scheduleEvent?.mediaItems.filter((item) => item.category === "MUSIC") || [];
+
+  if (songDragHandle && songDragPointerId !== null) {
+    try {
+      songDragHandle.releasePointerCapture(songDragPointerId);
+    } catch {
+      // Pointer capture may already be released by the browser.
+    }
+  }
+
+  window.removeEventListener("pointermove", onSongDragMove);
+  window.removeEventListener("pointerup", finishSongDrag);
+  window.removeEventListener("pointercancel", finishSongDrag);
+  songDragPointerId = null;
+  songDragHandle = null;
+  draggedSongId.value = "";
+
+  if (scheduleEvent && songs.length) {
+    await persistSongOrder(scheduleEvent, songs);
+  }
+};
+
+const startSongDrag = (
+  event: PointerEvent,
+  song: ScheduleEvent["mediaItems"][number],
+) => {
+  if (!selectedDetailEvent.value?.canManage || isSavingSongOrder.value) return;
+
+  draggedSongId.value = song.id;
+  songDragPointerId = event.pointerId;
+  songDragHandle = event.currentTarget as HTMLElement;
+  songDragHandle.setPointerCapture(event.pointerId);
+  window.addEventListener("pointermove", onSongDragMove, { passive: true });
+  window.addEventListener("pointerup", finishSongDrag);
+  window.addEventListener("pointercancel", finishSongDrag);
 };
 
 const addFormVolunteer = () => {
@@ -2371,6 +2456,9 @@ onMounted(async () => {
 
 onUnmounted(() => {
   document.removeEventListener("visibilitychange", handleVisibilityChange);
+  window.removeEventListener("pointermove", onSongDragMove);
+  window.removeEventListener("pointerup", finishSongDrag);
+  window.removeEventListener("pointercancel", finishSongDrag);
 });
 
 watch(
@@ -2747,9 +2835,12 @@ watch(schedules, async () => {
   border: 1px solid #f2d3bd;
   border-radius: 8px;
   background: #fdfaf8;
+  touch-action: pan-y;
   transition:
     border-color 0.16s ease,
-    box-shadow 0.16s ease;
+    box-shadow 0.16s ease,
+    opacity 0.16s ease,
+    transform 0.18s ease;
 }
 
 .scale-song-row {
@@ -2768,11 +2859,31 @@ watch(schedules, async () => {
 
 .scale-song-order-btns {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 4px 6px 4px 0;
-  gap: 0;
+  justify-content: center;
+  padding: 4px 8px 4px 0;
   flex-shrink: 0;
+}
+
+.scale-song-drag-handle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.scale-song-drag-handle-active {
+  cursor: grabbing;
+}
+
+.scale-song-card-dragging {
+  border-color: var(--app-color-accent, #B5472A);
+  box-shadow: 0 10px 26px rgba(17, 24, 39, 0.14);
+  opacity: 0.9;
+  transform: scale(1.01);
+  z-index: 1;
+}
+
+.scale-song-card-saving {
+  opacity: 0.72;
 }
 
 .scale-song-card:has(.scale-song-info:hover) {
@@ -2862,8 +2973,11 @@ watch(schedules, async () => {
   grid-template-rows: auto auto minmax(0, 1fr);
   max-height: 100vh;
   min-height: 100vh;
+  max-height: 100dvh;
+  min-height: 100dvh;
   background: #0f0d1a;
   overflow: hidden;
+  min-width: 0;
 }
 
 .scale-fullscreen-header {
@@ -2904,7 +3018,11 @@ watch(schedules, async () => {
 
 .scale-fullscreen-text {
   min-height: 0;
+  height: 100%;
+  max-height: 100%;
   overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   border: 0;
   border-radius: 0;
   font-size: 1.16rem;
@@ -2912,9 +3030,23 @@ watch(schedules, async () => {
   padding: 24px;
 }
 
+.scale-song-mobile-sheet :deep(.v-overlay__content) {
+  top: 0 !important;
+  margin: 0 !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-height: 100vh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+}
+
 .scale-song-mobile-sheet :deep(.v-bottom-sheet__content) {
-  border-radius: 22px 22px 0 0 !important;
+  border-radius: 0 !important;
   overflow: hidden;
+  height: 100vh !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  background: #0f0d1a;
 }
 
 @media (min-width: 560px) {
@@ -2927,7 +3059,9 @@ watch(schedules, async () => {
   .scale-song-mobile-sheet .scale-fullscreen-song {
     max-height: 100vh;
     min-height: 100vh;
-    border-radius: 22px 22px 0 0 !important;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    border-radius: 0 !important;
   }
 
   .scale-fullscreen-toolbar {

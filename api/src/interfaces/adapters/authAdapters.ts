@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import jwt from "jsonwebtoken";
+import { createHash } from "node:crypto";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { DomainToken } from "../../domain/value-objects/utils/DomainToken";
@@ -15,6 +16,10 @@ const keycloakBaseUrl =
   "http://localhost:8080";
 const keycloakRealm = process.env.KEYCLOAK_REALM || "clientA";
 const keycloakClientId = process.env.KEYCLOAK_CLIENT_USER_ID || keycloakRealm;
+const refreshCookieDomain =
+  process.env.REFRESH_COOKIE_DOMAIN ||
+  (process.env.NODE_ENV === "production" ? ".appcunch.shop" : "");
+const refreshReplayTtlMs = 15_000;
 
 interface AuthToken {
   access_token: string;
@@ -25,18 +30,104 @@ interface AuthToken {
   scope: string;
 }
 
+class KeycloakTokenRequestError extends Error {
+  status: number;
+  body: unknown;
+
+  constructor(status: number, body: unknown) {
+    super("Keycloak token request failed");
+    this.status = status;
+    this.body = body;
+  }
+}
+
+const refreshReplayCache = new Map<
+  string,
+  { token: AuthToken; expiresAt: number }
+>();
+const refreshInflight = new Map<string, Promise<AuthToken>>();
+
+function tokenHash(token: string) {
+  return createHash("sha256").update(token).digest("hex").slice(0, 16);
+}
+
+function getKeycloakErrorBody(error: unknown) {
+  if (error instanceof KeycloakTokenRequestError) return error.body;
+  return undefined;
+}
+
+function getKeycloakErrorStatus(error: unknown) {
+  if (error instanceof KeycloakTokenRequestError) return error.status;
+  return undefined;
+}
+
+function pruneRefreshReplayCache() {
+  const now = Date.now();
+  for (const [key, value] of refreshReplayCache) {
+    if (value.expiresAt <= now) refreshReplayCache.delete(key);
+  }
+}
+
 function readCookie(request: FastifyRequest, name: string) {
   const cookieHeader = request.headers.cookie;
   if (!cookieHeader) return null;
 
   const cookies = cookieHeader.split(";").map((cookie) => cookie.trim());
-  const cookie = cookies.find((item) => item.startsWith(`${name}=`));
+  const cookie = [...cookies].reverse().find((item) => item.startsWith(`${name}=`));
 
   return cookie ? decodeURIComponent(cookie.slice(name.length + 1)) : null;
 }
 
 function refreshCookie(value: string, maxAge: number) {
-  return `${refreshCookieName}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`;
+  const attributes = [
+    `${refreshCookieName}=${encodeURIComponent(value)}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    `Max-Age=${maxAge}`,
+  ];
+
+  if (refreshCookieDomain) attributes.push(`Domain=${refreshCookieDomain}`);
+  if (process.env.NODE_ENV === "production") attributes.push("Secure");
+
+  return attributes.join("; ");
+}
+
+function clearRefreshCookie() {
+  const attributes = [
+    `${refreshCookieName}=`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    "Max-Age=0",
+  ];
+
+  if (refreshCookieDomain) attributes.push(`Domain=${refreshCookieDomain}`);
+  if (process.env.NODE_ENV === "production") attributes.push("Secure");
+
+  return attributes.join("; ");
+}
+
+function clearHostOnlyRefreshCookie() {
+  const attributes = [
+    `${refreshCookieName}=`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    "Max-Age=0",
+  ];
+
+  if (process.env.NODE_ENV === "production") attributes.push("Secure");
+
+  return attributes.join("; ");
+}
+
+function refreshCookieHeaders(value: string, maxAge: number) {
+  return [clearHostOnlyRefreshCookie(), refreshCookie(value, maxAge)];
+}
+
+function clearRefreshCookieHeaders() {
+  return [clearHostOnlyRefreshCookie(), clearRefreshCookie()];
 }
 
 function isDemoLoginEnabled() {
@@ -145,6 +236,10 @@ async function requestKeycloakToken(params: URLSearchParams) {
   const data = await response.json().catch(() => null);
 
   if (!response.ok || !data?.access_token) {
+    if (!response.ok) {
+      throw new KeycloakTokenRequestError(response.status, data);
+    }
+
     throw new DomainError("Verifique os dados e tente novamente");
   }
 
@@ -166,7 +261,7 @@ export class AuthAdapters {
     if (demoToken) {
       reply.header(
         "Set-Cookie",
-        refreshCookie(demoToken.refresh_token, demoToken.refresh_expires_in),
+        refreshCookieHeaders(demoToken.refresh_token, demoToken.refresh_expires_in),
       );
 
       return demoToken;
@@ -182,7 +277,7 @@ export class AuthAdapters {
 
     reply.header(
       "Set-Cookie",
-      refreshCookie(token.refresh_token, token.refresh_expires_in),
+      refreshCookieHeaders(token.refresh_token, token.refresh_expires_in),
     );
 
     return token;
@@ -190,19 +285,64 @@ export class AuthAdapters {
 
   async refreshToken(request: FastifyRequest, reply: FastifyReply) {
     const refreshToken = readCookie(request, refreshCookieName);
+    const requestId = request.id;
 
     if (!refreshToken) {
-      throw new DomainToken("Refresh token não encontrado");
+      request.log.warn(
+        {
+          event: "auth.refresh.missing_cookie",
+          requestId,
+          userAgent: request.headers["user-agent"],
+        },
+        "Refresh token cookie missing",
+      );
+      throw new DomainToken("Refresh token nao encontrado");
     }
+
+    const refreshTokenHash = tokenHash(refreshToken);
+    request.log.info(
+      {
+        event: "auth.refresh.start",
+        requestId,
+        refreshTokenHash,
+        userAgent: request.headers["user-agent"],
+      },
+      "Refresh token request started",
+    );
 
     const demoToken = await refreshDemoToken(refreshToken);
     if (demoToken) {
       reply.header(
         "Set-Cookie",
-        refreshCookie(demoToken.refresh_token, demoToken.refresh_expires_in),
+        refreshCookieHeaders(demoToken.refresh_token, demoToken.refresh_expires_in),
       );
 
+      request.log.info(
+        { event: "auth.refresh.success", requestId, refreshTokenHash, provider: "demo" },
+        "Refresh token request succeeded",
+      );
       return demoToken;
+    }
+
+    pruneRefreshReplayCache();
+
+    const replayed = refreshReplayCache.get(refreshTokenHash);
+    if (replayed) {
+      reply.header(
+        "Set-Cookie",
+        refreshCookieHeaders(replayed.token.refresh_token, replayed.token.refresh_expires_in),
+      );
+
+      request.log.info(
+        {
+          event: "auth.refresh.replay",
+          requestId,
+          refreshTokenHash,
+          provider: "keycloak",
+        },
+        "Replayed recent refresh token rotation",
+      );
+      return replayed.token;
     }
 
     const params = new URLSearchParams();
@@ -210,23 +350,69 @@ export class AuthAdapters {
     params.append("grant_type", "refresh_token");
     params.append("refresh_token", refreshToken);
 
-    const token = await requestKeycloakToken(params).catch(() => {
+    let refreshRequest = refreshInflight.get(refreshTokenHash);
+
+    if (refreshRequest) {
+      request.log.info(
+        {
+          event: "auth.refresh.coalesced",
+          requestId,
+          refreshTokenHash,
+          provider: "keycloak",
+        },
+        "Joined inflight refresh token request",
+      );
+    } else {
+      refreshRequest = requestKeycloakToken(params).finally(() => {
+        refreshInflight.delete(refreshTokenHash);
+      });
+      refreshInflight.set(refreshTokenHash, refreshRequest);
+    }
+
+    const token = await refreshRequest.catch((error) => {
+      request.log.warn(
+        {
+          event: "auth.refresh.failure",
+          requestId,
+          refreshTokenHash,
+          provider: "keycloak",
+          keycloakStatus: getKeycloakErrorStatus(error),
+          keycloakBody: getKeycloakErrorBody(error),
+        },
+        "Refresh token request failed",
+      );
+
       throw new DomainToken("Falha ao fazer Refresh token");
+    });
+
+    refreshReplayCache.set(refreshTokenHash, {
+      token,
+      expiresAt: Date.now() + refreshReplayTtlMs,
     });
 
     reply.header(
       "Set-Cookie",
-      refreshCookie(token.refresh_token, token.refresh_expires_in),
+      refreshCookieHeaders(token.refresh_token, token.refresh_expires_in),
     );
 
+    request.log.info(
+      {
+        event: "auth.refresh.success",
+        requestId,
+        refreshTokenHash,
+        provider: "keycloak",
+        expiresIn: token.expires_in,
+        refreshExpiresIn: token.refresh_expires_in,
+        cookieDomain: refreshCookieDomain || undefined,
+        cookieSecure: process.env.NODE_ENV === "production",
+      },
+      "Refresh token request succeeded",
+    );
     return token;
   }
 
   async logout(_request: FastifyRequest, reply: FastifyReply) {
-    reply.header(
-      "Set-Cookie",
-      `${refreshCookieName}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`,
-    );
+    reply.header("Set-Cookie", clearRefreshCookieHeaders());
 
     return { success: true };
   }
