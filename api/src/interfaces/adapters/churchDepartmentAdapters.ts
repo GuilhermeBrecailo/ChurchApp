@@ -2274,6 +2274,7 @@ export class ChurchDepartmentAdapters {
       lyrics?: string;
       chords?: string;
       keyboardChords?: string;
+      mediaLink?: string;
       pdfUrl?: string | null;
       pdfKey?: string | null;
       pdfFileName?: string | null;
@@ -2300,6 +2301,7 @@ export class ChurchDepartmentAdapters {
       lyrics: body.lyrics?.trim() || "",
       chords: body.chords?.trim() || "",
       keyboardChords: body.keyboardChords?.trim() || "",
+      mediaLink: body.mediaLink?.trim() || "",
       ...this.normalizePdfMetadata(body),
     };
 
@@ -2333,6 +2335,7 @@ export class ChurchDepartmentAdapters {
       lyrics?: string | null;
       chords?: string | null;
       keyboardChords?: string | null;
+      mediaLink?: string | null;
       pdfUrl?: string | null;
       pdfKey?: string | null;
       pdfFileName?: string | null;
@@ -2376,6 +2379,9 @@ export class ChurchDepartmentAdapters {
       ...(body.chords !== undefined ? { chords: body.chords?.trim() || "" } : {}),
       ...(body.keyboardChords !== undefined
         ? { keyboardChords: body.keyboardChords?.trim() || "" }
+        : {}),
+      ...(body.mediaLink !== undefined
+        ? { mediaLink: body.mediaLink?.trim() || "" }
         : {}),
       ...this.normalizePdfMetadata(body),
     };
