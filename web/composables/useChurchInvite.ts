@@ -15,17 +15,27 @@ export function useChurchInvite() {
       : {}),
   });
 
+  // Sem "Content-Type: application/json" aqui de proposito: essas duas
+  // chamadas nao mandam body, e o fastify rejeita com 400
+  // (FST_ERR_CTP_EMPTY_JSON_BODY) quando o content-type diz JSON mas o corpo
+  // vem vazio - era o "bad request" ao regenerar o codigo de convite.
+  const authHeadersNoBody = () => ({
+    ...(access_token.value
+      ? { Authorization: `Bearer ${access_token.value}` }
+      : {}),
+  });
+
   const getInviteCode = async (): Promise<ApiResponse<{ inviteCode: string }>> => {
     return await $customFetch<{ inviteCode: string }>(
       `${config.public.URL_BACKEND}/api/church/invite-code`,
-      { method: "GET", headers: authHeaders() },
+      { method: "GET", headers: authHeadersNoBody() },
     );
   };
 
   const regenerateInviteCode = async (): Promise<ApiResponse<{ inviteCode: string }>> => {
     return await $customFetch<{ inviteCode: string }>(
       `${config.public.URL_BACKEND}/api/church/invite-code/regenerate`,
-      { method: "POST", headers: authHeaders() },
+      { method: "POST", headers: authHeadersNoBody() },
     );
   };
 
