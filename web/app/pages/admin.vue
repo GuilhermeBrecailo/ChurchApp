@@ -3,7 +3,7 @@
     <div class="platform-hero mb-6">
       <div class="min-w-0">
         <p class="platform-kicker mb-2">Admin master</p>
-        <h1 class="platform-title font-weight-bold text-grey-darken-4 mb-2">
+        <h1 class="app-page-title platform-title text-grey-darken-4 mb-2">
           Visão geral da plataforma
         </h1>
         <p class="platform-subtitle text-body-2 text-grey-darken-1 mb-0">
@@ -615,18 +615,23 @@
         class="rounded-xl pa-6 bg-white"
         elevation="0"
       >
-        <div class="d-flex align-center mb-5">
-          <v-avatar :color="avatarBgIndigo" size="48" class="mr-3">
-            <Users size="22" :color="accentColor" />
-          </v-avatar>
-          <div class="min-w-0">
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
-              {{ selectedAdminUser.name }}
-            </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0 text-truncate">
-              {{ selectedAdminUser.email }}
-            </p>
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar :color="avatarBgIndigo" size="48" class="mr-3">
+              <Users size="22" :color="accentColor" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                {{ selectedAdminUser.name }}
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0 text-truncate">
+                {{ selectedAdminUser.email }}
+              </p>
+            </div>
           </div>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeAdminUserDetails">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
         </div>
 
         <div class="member-info mb-5">
@@ -792,7 +797,7 @@
               variant="tonal"
               class="text-none"
               :loading="isResettingAdminUserPassword"
-              :disabled="!canEditSelectedAdminUser"
+              :disabled="!canResetSelectedAdminUserPassword"
               @click="handleResetAdminUserPassword"
             >
               Redefinir senha
@@ -943,7 +948,7 @@
     <div class="church-admin-hero mb-6">
       <div class="min-w-0">
         <p v-if="isPlatformAdmin" class="platform-kicker mb-2">Admin pastoral</p>
-        <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
+        <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">
           Administração da igreja
         </h1>
         <p class="text-body-2 text-grey-darken-1 mb-0">
@@ -964,6 +969,7 @@
         <v-tab value="membros" class="text-none font-weight-medium admin-tab">Membros</v-tab>
         <v-tab value="ministerios" class="text-none font-weight-medium admin-tab">Ministérios</v-tab>
         <v-tab v-if="isChurchWideManager" value="conteudo" class="text-none font-weight-medium admin-tab">Conteúdo</v-tab>
+        <v-tab v-if="isChurchWideManager" value="relatorios" class="text-none font-weight-medium admin-tab">Relatórios</v-tab>
         <v-tab v-if="isChurchWideManager" value="cargos" class="text-none font-weight-medium admin-tab">Cargos</v-tab>
       </v-tabs>
     </div>
@@ -1086,7 +1092,20 @@
             class="mb-3"
             hide-details="auto"
           />
-          <div class="content-inline-fields mb-4">
+          <p class="text-caption font-weight-bold text-grey-darken-2 mb-2">Tipo</p>
+          <v-btn-toggle
+            v-model="announcementForm.kind"
+            color="purple-darken-3"
+            variant="outlined"
+            density="comfortable"
+            mandatory
+            class="mb-4 announcement-kind-toggle"
+          >
+            <v-btn value="ANNOUNCEMENT" class="text-none" size="small">Aviso</v-btn>
+            <v-btn value="PASTOR_MESSAGE" class="text-none" size="small">Palavra</v-btn>
+            <v-btn value="PRAYER" class="text-none" size="small">Oração</v-btn>
+          </v-btn-toggle>
+          <div class="content-inline-fields mb-2">
             <v-checkbox
               v-model="announcementForm.pinned"
               label="Fixar"
@@ -1102,6 +1121,14 @@
               hide-details="auto"
             />
           </div>
+          <v-switch
+            v-model="announcementForm.isPublic"
+            label="Publicar também na página pública da igreja"
+            color="purple-darken-3"
+            density="comfortable"
+            hide-details
+            class="mb-4"
+          />
           <v-btn
             color="purple-darken-3"
             class="text-none font-weight-bold mb-4"
@@ -1110,18 +1137,33 @@
           >
             Publicar aviso
           </v-btn>
-          <div class="content-admin-list">
-            <div
+          <MotionStaggerGroup class="content-admin-list">
+            <MotionStaggerItem
               v-for="announcement in announcements"
               :key="announcement.id"
+              tag="div"
               class="content-admin-row"
             >
-              <span>{{ announcement.title }}</span>
+              <div class="min-w-0">
+                <div class="d-flex align-center ga-2 mb-1">
+                  <v-chip size="x-small" variant="tonal" color="purple-darken-3">
+                    {{ announcementKindLabel(announcement.kind) }}
+                  </v-chip>
+                  <v-chip
+                    size="x-small"
+                    variant="tonal"
+                    :color="announcement.isPublic ? 'teal-darken-2' : 'grey-darken-1'"
+                  >
+                    {{ announcement.isPublic ? "Público" : "Interno" }}
+                  </v-chip>
+                </div>
+                <span>{{ announcement.title }}</span>
+              </div>
               <v-btn icon variant="text" color="red-darken-2" size="small" @click="removeAnnouncement(announcement.id)">
                 <Trash2 size="16" />
               </v-btn>
-            </div>
-          </div>
+            </MotionStaggerItem>
+          </MotionStaggerGroup>
         </v-card>
       </div>
 
@@ -1252,6 +1294,10 @@
             <span class="invite-code-text">{{ inviteCodeValue || "—" }}</span>
           </div>
 
+          <div v-if="inviteCodeValue" class="d-flex justify-center mb-4">
+            <AdminInviteQrCode :value="inviteJoinUrl" />
+          </div>
+
           <div class="d-flex gap-2 flex-wrap">
             <v-btn
               color="indigo-darken-2"
@@ -1281,11 +1327,11 @@
     </section>
 
     <AdminReports
-      v-if="isChurchWideManager && activeAdminTab === 'geral'"
+      v-if="isChurchWideManager && activeAdminTab === 'relatorios'"
       :departments="departments"
     />
 
-    <section v-show="isChurchWideManager && activeAdminTab === 'geral'" class="church-admin-section mb-8">
+    <section v-show="isChurchWideManager && activeAdminTab === 'relatorios'" class="church-admin-section mb-8">
       <div class="section-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
@@ -1762,18 +1808,23 @@
 
     <UtilsResponsiveOverlay v-model="isMemberDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
-        <div class="d-flex align-center mb-5">
-          <v-avatar :color="avatarBgIndigo" size="44" class="mr-3">
-            <UserPlus size="20" :color="accentColor" />
-          </v-avatar>
-          <div>
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              Adicionar membro
-            </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0">
-              Crie o acesso já vinculado a esta igreja.
-            </p>
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar :color="avatarBgIndigo" size="44" class="mr-3">
+              <UserPlus size="20" :color="accentColor" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+                Adicionar membro
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0">
+                Crie o acesso já vinculado a esta igreja.
+              </p>
+            </div>
           </div>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeMemberDialog">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
         </div>
 
         <v-form autocomplete="off" @submit.prevent="handleCreateMember">
@@ -1876,18 +1927,23 @@
 
     <UtilsResponsiveOverlay v-model="isDepartmentDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
-        <div class="d-flex align-center mb-5">
-          <v-avatar :color="avatarBgPurple" size="44" class="mr-3">
-            <Building size="20" :color="purpleAccent" />
-          </v-avatar>
-          <div>
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              {{ editingDepartmentId ? "Editar ministério" : "Novo ministério" }}
-            </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0">
-              Cadastre um ministério da sua igreja.
-            </p>
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar :color="avatarBgPurple" size="44" class="mr-3">
+              <Building size="20" :color="purpleAccent" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+                {{ editingDepartmentId ? "Editar ministério" : "Novo ministério" }}
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0">
+                Cadastre um ministério da sua igreja.
+              </p>
+            </div>
           </div>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeDepartmentDialog">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
         </div>
 
         <v-form autocomplete="off" @submit.prevent="handleCreateDepartment">
@@ -1973,18 +2029,23 @@
 
     <UtilsResponsiveOverlay v-model="isMemberDetailsOpen" max-width="520">
       <v-card v-if="selectedMember" class="rounded-xl pa-6 bg-white" elevation="0">
-        <div class="d-flex align-center mb-5">
-          <v-avatar :color="avatarBgIndigo" size="48" class="mr-3">
-            <Users size="22" :color="accentColor" />
-          </v-avatar>
-          <div class="min-w-0">
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
-              {{ selectedMember.name }}
-            </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0 text-truncate">
-              {{ selectedMember.email }}
-            </p>
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar :color="avatarBgIndigo" size="48" class="mr-3">
+              <Users size="22" :color="accentColor" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                {{ selectedMember.name }}
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0 text-truncate">
+                {{ selectedMember.email }}
+              </p>
+            </div>
           </div>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeMemberDetails">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
         </div>
 
         <div class="member-info mb-5">
@@ -2459,9 +2520,15 @@ const handleRegenerateCode = async () => {
   inviteCodeRegenerating.value = false;
 };
 
+const inviteJoinUrl = computed(() =>
+  inviteCodeValue.value
+    ? `${window.location.origin}/join?code=${inviteCodeValue.value}`
+    : "",
+);
+
 const handleCopyInviteLink = () => {
   if (!inviteCodeValue.value) return;
-  const url = `${window.location.origin}/join?code=${inviteCodeValue.value}`;
+  const url = inviteJoinUrl.value;
   navigator.clipboard.writeText(url).then(() => {
     inviteCodeCopied.value = true;
     setTimeout(() => { inviteCodeCopied.value = false; }, 2000);
@@ -2910,9 +2977,15 @@ const announcementForm = reactive({
   kind: "ANNOUNCEMENT" as "ANNOUNCEMENT" | "PASTOR_MESSAGE" | "PRAYER",
 });
 
+const announcementKindLabel = (kind?: Announcement["kind"]) => {
+  if (kind === "PASTOR_MESSAGE") return "Palavra";
+  if (kind === "PRAYER") return "Oração";
+  return "Aviso";
+};
+
 const publicChurchForm = reactive({
   slug: "",
-  accentColor: "#4F46E5",
+  accentColor: "#B5472A",
 });
 
 const currentChurch = computed(() => user.value?.activeChurch ?? user.value?.church ?? null);
@@ -2920,7 +2993,7 @@ const currentChurch = computed(() => user.value?.activeChurch ?? user.value?.chu
 const syncPublicChurchForm = () => {
   const church = currentChurch.value;
   publicChurchForm.slug = church?.slug ?? "";
-  publicChurchForm.accentColor = church?.accentColor || "#4F46E5";
+  publicChurchForm.accentColor = church?.accentColor || "#B5472A";
 };
 
 const serviceTimeForm = reactive({
@@ -3159,13 +3232,24 @@ const canEditSelectedAdminUser = computed(
     !isProtectedSuperAdmin(selectedAdminUser.value),
 );
 
+// Redefinir senha nao muda cargo/igreja nem remove ninguem, entao e seguro
+// permitir mesmo para o pastor titular (ex.: pastor perdeu o acesso e pediu
+// para o admin da plataforma resetar). Edicao de dados e remocao continuam
+// bloqueadas para o titular.
+const canResetSelectedAdminUserPassword = computed(
+  () =>
+    Boolean(selectedAdminUser.value) &&
+    selectedAdminUser.value?.id !== user.value?.id &&
+    !isProtectedSuperAdmin(selectedAdminUser.value),
+);
+
 const selectedAdminUserEditLockedReason = computed(() => {
   if (!selectedAdminUser.value) return "";
   if (selectedAdminUser.value.id === user.value?.id) {
     return "Você não pode editar sua própria conta por esta tela.";
   }
   if (isSelectedAdminUserTitularPastor.value) {
-    return "O pastor titular não pode ser editado por este fluxo.";
+    return "O pastor titular não pode ter dados editados nem ser removido por este fluxo — apenas a senha pode ser redefinida.";
   }
   if (isProtectedSuperAdmin(selectedAdminUser.value)) {
     return "Usuários super admin só podem ser alterados por outro super admin.";
@@ -3642,6 +3726,8 @@ const publishAnnouncement = async () => {
       body: announcementForm.body.trim(),
       pinned: announcementForm.pinned,
       expiresAt: announcementForm.expiresAt || null,
+      isPublic: announcementForm.isPublic,
+      kind: announcementForm.kind,
     });
     if (error || !data) {
       contentError.value = error || "Não foi possível publicar o aviso.";
@@ -3652,6 +3738,8 @@ const publishAnnouncement = async () => {
     announcementForm.body = "";
     announcementForm.pinned = false;
     announcementForm.expiresAt = "";
+    announcementForm.isPublic = false;
+    announcementForm.kind = "ANNOUNCEMENT";
   } finally {
     isSavingAnnouncement.value = false;
   }
