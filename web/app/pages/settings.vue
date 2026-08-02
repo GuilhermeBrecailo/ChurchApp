@@ -25,7 +25,7 @@
           <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="48" class="mr-3">
             <Church size="23" :color="isDark ? '#f0975a' : '#B5472A'" />
           </v-avatar>
-          <div class="min-w-0">
+          <div class="min-w-0 flex-grow-1">
             <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
               {{ user?.church?.name || "Igreja" }}
             </h2>
@@ -34,6 +34,18 @@
               {{ user?.church?.state ? `- ${user.church.state}` : "" }}
             </p>
           </div>
+          <v-btn
+            v-if="publicLandingUrl"
+            :href="publicLandingUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="tonal"
+            color="purple-darken-3"
+            size="small"
+            class="text-none flex-shrink-0"
+          >
+            <Globe size="15" class="mr-1" /> Ver página pública
+          </v-btn>
         </div>
 
         <v-text-field
@@ -131,7 +143,7 @@
 </template>
 
 <script setup lang="ts">
-import { Church } from "lucide-vue-next";
+import { Church, Globe } from "lucide-vue-next";
 import { computed, reactive, ref, watch } from "vue";
 import { useAuth } from "../../composables/useAuth";
 import { useChurch } from "../../composables/useChurch";
@@ -166,6 +178,13 @@ const isChurchWideManager = computed(
 const canEditChurch = computed(
   () => user.value?.hasChurch === true && isChurchWideManager.value,
 );
+
+const publicLandingUrl = computed(() => {
+  const slug = user.value?.church?.slug;
+  if (!slug) return "";
+  if (typeof window === "undefined") return `/c/${slug}`;
+  return `${window.location.origin}/c/${slug}`;
+});
 
 const fillForm = () => {
   const church = user.value?.church;

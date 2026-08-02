@@ -1324,6 +1324,99 @@
           </div>
         </template>
       </v-card>
+
+      <div class="section-heading mb-4 mt-6">
+        <div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Página Pública</h2>
+          <p class="text-caption text-grey-darken-1 mb-0">Vitrine da igreja para visitantes, sem precisar de login</p>
+        </div>
+      </div>
+
+      <v-card class="invite-code-card rounded-xl pa-5 elevation-1 border-subtle">
+        <div class="d-flex align-center gap-3 mb-4">
+          <v-avatar size="40" :color="avatarBgIndigo">
+            <Globe size="20" :color="accentColor" />
+          </v-avatar>
+          <div>
+            <p class="font-weight-bold mb-0" style="font-size:0.9rem;">Link público</p>
+            <p class="text-caption text-grey-darken-1 mb-0">Compartilhe com visitantes em redes sociais e WhatsApp</p>
+          </div>
+        </div>
+
+        <v-text-field
+          v-model="publicChurchForm.slug"
+          label="Slug da página pública"
+          placeholder="ex: comunidade-vida"
+          prepend-inner-icon="mdi-web"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
+          class="mb-3"
+          hide-details="auto"
+          :disabled="isSavingPublicChurch"
+        />
+
+        <v-text-field
+          v-model="publicChurchForm.accentColor"
+          label="Cor de destaque"
+          type="color"
+          variant="outlined"
+          density="comfortable"
+          class="mb-4"
+          hide-details="auto"
+          :disabled="isSavingPublicChurch"
+        >
+          <template #prepend-inner>
+            <Palette size="18" />
+          </template>
+        </v-text-field>
+
+        <v-alert
+          v-if="publicChurchMessage"
+          type="success"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ publicChurchMessage }}
+        </v-alert>
+
+        <v-alert
+          v-if="publicChurchError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ publicChurchError }}
+        </v-alert>
+
+        <div class="d-flex gap-2 flex-wrap">
+          <v-btn
+            color="purple-darken-3"
+            variant="flat"
+            size="small"
+            class="text-none font-weight-bold"
+            :loading="isSavingPublicChurch"
+            @click="savePublicChurchSettings"
+          >
+            <Save size="15" class="mr-1" /> Salvar
+          </v-btn>
+          <v-btn
+            :href="publicLandingUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            color="grey-darken-1"
+            variant="tonal"
+            size="small"
+            class="text-none"
+            :disabled="!publicLandingUrl"
+          >
+            <ArrowRight size="14" class="mr-1" /> Ver página pública
+          </v-btn>
+        </div>
+      </v-card>
     </section>
 
     <AdminReports
@@ -2614,6 +2707,7 @@ const isSavingServiceTime = ref(false);
 const isSavingPublicChurch = ref(false);
 const editingServiceTimeId = ref("");
 const publicChurchMessage = ref("");
+const publicChurchError = ref("");
 
 const isPlatformAdmin = computed(
   () =>
@@ -3813,11 +3907,11 @@ const disableServiceTime = async (id: string) => {
 };
 
 const savePublicChurchSettings = async () => {
-  contentError.value = "";
+  publicChurchError.value = "";
   publicChurchMessage.value = "";
 
   if (!publicChurchForm.slug.trim()) {
-    contentError.value = "Informe o slug publico da igreja.";
+    publicChurchError.value = "Informe o slug publico da igreja.";
     return;
   }
 
@@ -3830,7 +3924,7 @@ const savePublicChurchSettings = async () => {
     });
 
     if (error) {
-      contentError.value = error;
+      publicChurchError.value = error;
       return;
     }
 
