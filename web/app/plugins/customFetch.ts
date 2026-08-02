@@ -88,11 +88,7 @@ export default defineNuxtPlugin(() => {
         : undefined;
 
       refreshPromise = $fetch.raw<ApiResponse<RefreshResponse> | RefreshResponse>(
-<<<<<<< HEAD
         `${apiBase()}/public/auth/refresh-token`,
-=======
-        `${config.public.URL_BACKEND}/public/auth/refresh-token`,
->>>>>>> 68767f45 (teste)
         {
           credentials: "include",
           headers: forwardedCookie ? { cookie: forwardedCookie } : undefined,
@@ -240,4 +236,3 @@ export default defineNuxtPlugin(() => {
     },
   };
 });
-=
