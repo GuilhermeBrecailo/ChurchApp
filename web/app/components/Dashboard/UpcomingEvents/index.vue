@@ -1,12 +1,11 @@
 <template>
-  <div>
-    <div class="d-flex justify-space-between align-center mb-3">
+  <!-- Sem culto futuro a secao inteira some: um card "nenhuma escala cadastrada"
+       so ocupa espaco na home. -->
+  <div v-if="eventsList.length > 0">
+    <div class="d-flex align-center mb-3">
       <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
         Próximos Cultos
       </h3>
-      <NuxtLink to="/scale" class="upcoming-link">
-        Ver todos <ChevronRight size="14" class="ml-1" />
-      </NuxtLink>
     </div>
 
     <div class="d-flex flex-column gap-3 pb-4">
@@ -39,16 +38,6 @@
           </p>
         </div>
         <ChevronRight size="20" :color="isDark ? '#8b949e' : '#9CA3AF'" />
-      </v-card>
-
-      <v-card
-        v-if="eventsList.length === 0"
-        color="white"
-        class="rounded-xl pa-5 elevation-1 text-center"
-      >
-        <p class="text-caption text-grey-darken-1 mb-0">
-          Nenhuma escala futura cadastrada.
-        </p>
       </v-card>
     </div>
   </div>
@@ -99,22 +88,6 @@ const goToSchedule = (id: string) => {
 <style scoped>
 .gap-3 {
   gap: 12px;
-}
-
-.upcoming-link {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--app-color-accent);
-  text-decoration: none;
-  gap: 2px;
-  letter-spacing: 0.01em;
-  transition: color 0.15s ease;
-}
-
-.upcoming-link:hover {
-  color: var(--app-color-accent-soft);
 }
 
 .date-badge {

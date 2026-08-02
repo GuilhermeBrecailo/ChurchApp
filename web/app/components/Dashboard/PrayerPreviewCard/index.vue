@@ -1,78 +1,60 @@
 <template>
-  <div v-if="hasChurch" class="mb-6">
-    <div class="d-flex align-center justify-space-between mb-3">
-      <div class="d-flex align-center gap-2">
-        <Heart size="16" :color="isDark ? '#f0975a' : '#B5472A'" />
-        <span class="preview-title">Pedidos de Oração</span>
-      </div>
-      <v-btn
-        variant="text"
-        size="x-small"
-        color="purple-darken-3"
-        class="text-none"
-        to="/prayer"
-      >
-        Ver todos
-      </v-btn>
+  <!-- So aparece quando ha pedido dos ultimos 7 dias: pedido antigo parado na
+       home vira ruido, o historico completo fica em /prayer. -->
+  <div v-if="hasChurch && !loading && recentItems.length > 0" class="mb-6">
+    <div class="d-flex align-center gap-2 mb-3">
+      <Heart size="16" :color="isDark ? '#f0975a' : '#B5472A'" />
+      <span class="preview-title">Pedidos de Oração</span>
     </div>
 
-    <div v-if="loading">
-      <v-skeleton-loader type="list-item-two-line" class="mb-2 rounded-xl" />
-      <v-skeleton-loader type="list-item-two-line" class="rounded-xl" />
-    </div>
-
-    <div v-else-if="items.length === 0" class="prayer-empty">
-      <Heart size="18" class="prayer-empty-icon" />
-      <p class="prayer-empty-text mb-0">Nenhum pedido ainda</p>
-    </div>
-
-    <div v-else>
-      <v-card
-        v-for="item in items"
-        :key="item.id"
-        class="prayer-preview-card rounded-xl pa-3 mb-2 elevation-0 cursor-pointer"
-        to="/prayer"
-      >
-        <div class="d-flex align-center gap-3">
-          <v-avatar size="32" :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'">
-            <Heart size="14" :color="isDark ? '#f0975a' : '#B5472A'" />
-          </v-avatar>
-          <div class="flex-1 min-w-0">
-            <p class="prayer-item-title mb-0 text-truncate">{{ item.title }}</p>
-            <p class="prayer-item-meta mb-0">{{ item.authorName }}</p>
-          </div>
-          <v-chip
-            v-if="item.isAnswered"
-            size="x-small"
-            color="success"
-            variant="tonal"
-            class="text-none"
-          >
-            Respondido
-          </v-chip>
+    <v-card
+      v-for="item in recentItems"
+      :key="item.id"
+      class="prayer-preview-card rounded-xl pa-3 mb-2 elevation-0 cursor-pointer"
+      to="/prayer"
+    >
+      <div class="d-flex align-center gap-3">
+        <v-avatar size="32" :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'">
+          <Heart size="14" :color="isDark ? '#f0975a' : '#B5472A'" />
+        </v-avatar>
+        <div class="flex-1 min-w-0">
+          <p class="prayer-item-title mb-0 text-truncate">{{ item.title }}</p>
+          <p class="prayer-item-meta mb-0">{{ item.authorName }}</p>
         </div>
-      </v-card>
+        <v-chip
+          v-if="item.isAnswered"
+          size="x-small"
+          color="success"
+          variant="tonal"
+          class="text-none"
+        >
+          Respondido
+        </v-chip>
+      </div>
+    </v-card>
 
-      <v-btn
-        variant="tonal"
-        color="purple-darken-3"
-        size="small"
-        block
-        class="text-none mt-1 rounded-xl"
-        to="/prayer"
-      >
-        <Heart size="14" class="mr-1" /> Ir para orações
-      </v-btn>
-    </div>
+    <v-btn
+      variant="tonal"
+      color="purple-darken-3"
+      size="small"
+      block
+      class="text-none mt-1 rounded-xl"
+      to="/prayer"
+    >
+      <Heart size="14" class="mr-1" /> Ir para orações
+    </v-btn>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { Heart } from "lucide-vue-next";
 import { useAuth } from "../../../../composables/useAuth";
 import { usePrayerRequests } from "../../../../composables/usePrayerRequests";
 import type { PrayerRequest } from "../../../../composables/usePrayerRequests";
+
+const RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+const PREVIEW_LIMIT = 3;
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
@@ -82,11 +64,22 @@ const hasChurch = ref(user.value?.hasChurch === true);
 const items = ref<PrayerRequest[]>([]);
 const loading = ref(false);
 
+const recentItems = computed(() => {
+  const cutoff = Date.now() - RECENT_WINDOW_MS;
+
+  return items.value
+    .filter((item) => {
+      const createdAt = new Date(item.createdAt).getTime();
+      return !Number.isNaN(createdAt) && createdAt >= cutoff;
+    })
+    .slice(0, PREVIEW_LIMIT);
+});
+
 onMounted(async () => {
   if (!hasChurch.value) return;
   loading.value = true;
   const { data } = await getPrayerRequests(1);
-  items.value = (data?.items ?? []).slice(0, 3);
+  items.value = data?.items ?? [];
   loading.value = false;
 });
 </script>
@@ -96,25 +89,6 @@ onMounted(async () => {
   font-size: 0.88rem;
   font-weight: 700;
   color: var(--app-color-text);
-}
-
-.prayer-empty {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: var(--app-color-surface);
-  border: 1px solid var(--app-color-border);
-}
-
-.prayer-empty-icon {
-  color: var(--app-color-text-muted);
-}
-
-.prayer-empty-text {
-  font-size: 0.84rem;
-  color: var(--app-color-text-muted);
 }
 
 .prayer-preview-card {
