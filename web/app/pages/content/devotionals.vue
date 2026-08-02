@@ -1,12 +1,17 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper">
-    <div class="content-page-header mb-5">
-      <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
-        Devocionais
-      </h1>
-      <p class="text-body-2 text-grey-darken-1 mb-0">
-        Séries de estudo e reflexão da sua igreja
-      </p>
+    <div class="content-page-header mb-5 d-flex align-center">
+      <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+        <ChevronLeft size="20" />
+      </v-btn>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
+          Devocionais
+        </h1>
+        <p class="text-body-2 text-grey-darken-1 mb-0">
+          Séries de estudo e reflexão da sua igreja
+        </p>
+      </div>
     </div>
 
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
@@ -63,9 +68,11 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { Heart } from "lucide-vue-next";
+import { useRouter } from "vue-router";
+import { ChevronLeft, Heart } from "lucide-vue-next";
 import { useDevotionals, type Devotional } from "../../../composables/useDevotionals";
 
+const router = useRouter();
 const { listDevotionals } = useDevotionals();
 
 const devotionals = ref<Devotional[]>([]);

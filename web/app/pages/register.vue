@@ -3,6 +3,16 @@
     <MotionFadeInUp class="w-full max-w-md">
     <v-card class="auth-card w-full max-w-md my-8" elevation="0">
       <div class="auth-card-inner">
+        <v-btn
+          icon
+          variant="text"
+          size="small"
+          class="auth-back-btn"
+          aria-label="Voltar"
+          @click="router.back()"
+        >
+          <ChevronLeft size="20" />
+        </v-btn>
         <div class="flex flex-col items-center mb-8">
           <div class="auth-icon-circle mb-4">
             <v-icon size="40" color="purple-darken-3">
@@ -135,6 +145,7 @@
 <script setup lang="ts">
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
+import { ChevronLeft } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 
 definePageMeta({
@@ -220,6 +231,13 @@ const handleRegister = async () => {
 
 .auth-card-inner {
   padding: 40px 32px 32px;
+  position: relative;
+}
+
+.auth-back-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
 }
 
 .auth-icon-circle {

@@ -1,12 +1,17 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper">
-    <div class="content-page-header mb-5">
-      <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
-        Versículo do dia
-      </h1>
-      <p class="text-body-2 text-grey-darken-1 mb-0">
-        Histórico de palavras compartilhadas pela liderança
-      </p>
+    <div class="content-page-header mb-5 d-flex align-center">
+      <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+        <ChevronLeft size="20" />
+      </v-btn>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
+          Versículo do dia
+        </h1>
+        <p class="text-body-2 text-grey-darken-1 mb-0">
+          Histórico de palavras compartilhadas pela liderança
+        </p>
+      </div>
     </div>
 
     <v-alert
@@ -58,9 +63,11 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { BookMarked } from "lucide-vue-next";
+import { useRouter } from "vue-router";
+import { BookMarked, ChevronLeft } from "lucide-vue-next";
 import { useDailyVerse, type DailyVerse } from "../../../composables/useDailyVerse";
 
+const router = useRouter();
 const { listVerses } = useDailyVerse();
 
 const verses = ref<DailyVerse[]>([]);
