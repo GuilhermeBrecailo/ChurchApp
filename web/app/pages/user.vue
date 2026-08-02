@@ -116,19 +116,15 @@
       </div>
 
       <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
-        <div class="section-heading mb-4">
+        <div class="section-heading">
           <div class="section-icon section-icon-indigo">
             <UserRound size="18" />
           </div>
-          <div class="min-w-0">
-            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
-              Meus dados
-            </h2>
-            <p class="text-caption text-grey-darken-1 mb-0">
-              Informações da sua conta.
-            </p>
-          </div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+            Meus dados
+          </h2>
         </div>
+        <p class="section-subtitle mb-4">Informações da sua conta.</p>
 
         <div class="profile-data-list mb-4">
           <div class="profile-data-row">
@@ -164,19 +160,15 @@
       </v-card>
 
       <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
-        <div class="section-heading mb-4">
+        <div class="section-heading">
           <div class="section-icon section-icon-teal">
             <BadgeCheck size="18" />
           </div>
-          <div class="min-w-0">
-            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
-              Meus ministérios
-            </h2>
-            <p class="text-caption text-grey-darken-1 mb-0">
-              Equipes em que você serve.
-            </p>
-          </div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+            Meus ministérios
+          </h2>
         </div>
+        <p class="section-subtitle mb-4">Equipes em que você serve.</p>
 
         <v-skeleton-loader v-if="departmentsLoading" type="list-item-two-line" />
 
@@ -203,19 +195,15 @@
       </v-card>
 
       <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
-        <div class="section-heading mb-2">
+        <div class="section-heading">
           <div class="section-icon section-icon-amber">
             <CalendarX size="18" />
           </div>
-          <div class="min-w-0">
-            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
-              Indisponibilidade
-            </h2>
-            <p class="text-caption text-grey-darken-1 mb-0">
-              Marque datas em que você não poderá servir.
-            </p>
-          </div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+            Indisponibilidade
+          </h2>
         </div>
+        <p class="section-subtitle mb-3">Marque datas em que você não poderá servir.</p>
 
       <div class="unavailable-date-row mb-3">
         <v-text-field
@@ -865,9 +853,20 @@ onMounted(loadPageData);
   overflow: hidden;
 }
 
+/* O icone e o titulo ficam na mesma linha e a descricao desce pra baixo do
+   par. Antes o icone dividia a linha com o bloco titulo+descricao inteiro, e
+   qualquer alinhamento (center ou flex-start) deixava ele torto em relacao ao
+   titulo. Assim o alinhamento nao depende do tamanho da fonte. */
 .section-heading {
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
+}
+
+.section-subtitle {
+  color: var(--app-color-text-muted);
+  font-size: 0.78rem;
+  /* alinha com o texto do titulo, pulando a largura do icone + gap */
+  padding-left: 48px;
 }
 
 .section-icon {
