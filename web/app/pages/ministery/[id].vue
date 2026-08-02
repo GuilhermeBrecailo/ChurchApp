@@ -639,6 +639,21 @@
                 {{ resource.category }}
               </v-chip>
             </div>
+
+            <div v-if="resource.metadata?.pdf?.url" class="mt-3">
+              <v-btn
+                :href="resource.metadata.pdf.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="tonal"
+                color="purple-darken-3"
+                size="small"
+                class="text-none"
+              >
+                <FileText size="16" class="mr-2" /> Abrir PDF
+              </v-btn>
+            </div>
+
             <div v-if="canManageSongs" class="ministery-card-actions mt-3">
               <v-btn
                 icon
@@ -1204,6 +1219,48 @@
             bg-color="white"
             class="ministery-input mb-4"
             hide-details="auto"
+            :disabled="isCreatingResource"
+          />
+
+          <div v-if="resourceForm.pdfUrl && !resourceForm.removePdf" class="pdf-current-card mb-4">
+            <div class="min-w-0">
+              <p class="text-caption font-weight-bold text-grey-darken-4 mb-0">
+                PDF anexado
+              </p>
+              <a
+                :href="resourceForm.pdfUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-caption text-purple-darken-3"
+              >
+                {{ resourceForm.pdfFileName || "Abrir PDF" }}
+              </a>
+            </div>
+            <v-btn
+              variant="text"
+              color="red-darken-2"
+              size="small"
+              class="text-none"
+              :disabled="isCreatingResource"
+              @click="removeResourcePdf"
+            >
+              Remover
+            </v-btn>
+          </div>
+
+          <v-file-input
+            v-model="resourcePdfFile"
+            label="PDF do recurso"
+            accept="application/pdf"
+            prepend-inner-icon="mdi-file-pdf-box"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input mb-4"
+            hide-details="auto"
+            show-size
+            clearable
             :disabled="isCreatingResource"
           />
 
@@ -2324,6 +2381,12 @@ const resourceForm = reactive({
   url: "",
   category: "Geral",
   notes: "",
+  pdfUrl: "",
+  pdfKey: "",
+  pdfFileName: "",
+  pdfMimeType: "",
+  pdfSize: 0,
+  removePdf: false,
 });
 
 const songForm = reactive({
@@ -2353,6 +2416,7 @@ const activityForm = reactive({
 
 const songPdfFile = ref<File | File[] | null>(null);
 const activityPdfFile = ref<File | File[] | null>(null);
+const resourcePdfFile = ref<File | File[] | null>(null);
 
 const personalSongForm = reactive({
   personalKey: "",
@@ -2967,6 +3031,13 @@ const resetResourceForm = () => {
   resourceForm.url = "";
   resourceForm.category = "Geral";
   resourceForm.notes = "";
+  resourceForm.pdfUrl = "";
+  resourceForm.pdfKey = "";
+  resourceForm.pdfFileName = "";
+  resourceForm.pdfMimeType = "";
+  resourceForm.pdfSize = 0;
+  resourceForm.removePdf = false;
+  resourcePdfFile.value = null;
   editingResourceId.value = "";
 };
 
@@ -2974,6 +3045,16 @@ const closeResourceDialog = () => {
   isResourceDialogOpen.value = false;
   createResourceError.value = "";
   resetResourceForm();
+};
+
+const removeResourcePdf = () => {
+  resourceForm.pdfUrl = "";
+  resourceForm.pdfKey = "";
+  resourceForm.pdfFileName = "";
+  resourceForm.pdfMimeType = "";
+  resourceForm.pdfSize = 0;
+  resourceForm.removePdf = true;
+  resourcePdfFile.value = null;
 };
 
 const getSelectedFile = (value: File | File[] | null) =>
@@ -3318,6 +3399,13 @@ const openResourceEditDialog = (resource: DepartmentResource) => {
   resourceForm.url = resource.url;
   resourceForm.category = resource.category;
   resourceForm.notes = resource.metadata?.notes || "";
+  resourceForm.pdfUrl = resource.metadata?.pdf?.url || "";
+  resourceForm.pdfKey = resource.metadata?.pdf?.key || "";
+  resourceForm.pdfFileName = resource.metadata?.pdf?.fileName || "";
+  resourceForm.pdfMimeType = resource.metadata?.pdf?.mimeType || "";
+  resourceForm.pdfSize = resource.metadata?.pdf?.size || 0;
+  resourceForm.removePdf = false;
+  resourcePdfFile.value = null;
   createResourceError.value = "";
   isResourceDialogOpen.value = true;
 };
@@ -3325,33 +3413,69 @@ const openResourceEditDialog = (resource: DepartmentResource) => {
 const handleSaveResource = async () => {
   createResourceError.value = "";
   const title = resourceForm.title.trim();
-  const url = resourceForm.url.trim();
+  let url = resourceForm.url.trim();
 
   if (!title) {
     createResourceError.value = "Informe o título do recurso.";
     return;
   }
 
-  if (!url) {
-    createResourceError.value = "Informe o link do recurso.";
+  const hasExistingPdf = Boolean(resourceForm.pdfUrl) && !resourceForm.removePdf;
+  const hasNewPdf = Boolean(getSelectedFile(resourcePdfFile.value));
+
+  if (!url && !hasExistingPdf && !hasNewPdf) {
+    createResourceError.value = "Informe o link do recurso ou anexe um PDF.";
     return;
   }
 
   isCreatingResource.value = true;
 
   try {
+    const uploadedPdf = await uploadPdfFile(
+      resourcePdfFile.value,
+      "Não foi possível enviar o PDF do recurso.",
+    );
+
+    if (uploadedPdf) {
+      resourceForm.pdfUrl = uploadedPdf.url;
+      resourceForm.pdfKey = uploadedPdf.key;
+      resourceForm.pdfFileName = uploadedPdf.fileName;
+      resourceForm.pdfMimeType = uploadedPdf.mimeType;
+      resourceForm.pdfSize = uploadedPdf.size;
+      resourceForm.removePdf = false;
+    }
+
+    if (!url && resourceForm.pdfUrl) {
+      url = resourceForm.pdfUrl;
+    }
+
+    const pdfPayload = {
+      ...(resourceForm.pdfUrl
+        ? {
+            pdfUrl: resourceForm.pdfUrl,
+            pdfKey: resourceForm.pdfKey,
+            pdfFileName: resourceForm.pdfFileName,
+            pdfMimeType: resourceForm.pdfMimeType,
+            pdfSize: resourceForm.pdfSize,
+          }
+        : {}),
+      ...(resourceForm.removePdf ? { removePdf: true } : {}),
+    };
+
     const { data, error } = editingResourceId.value
       ? await updateDepartmentResource(departmentId, editingResourceId.value, {
           title,
           url,
           category: resourceForm.category,
           notes: resourceForm.notes,
+          ...pdfPayload,
         })
       : await createDepartmentResource(departmentId, {
           title,
           url,
           category: resourceForm.category,
           notes: resourceForm.notes,
+          ...pdfPayload,
         });
 
     if (error || !data) {
@@ -3367,6 +3491,8 @@ const handleSaveResource = async () => {
       current.title.localeCompare(next.title),
     );
     closeResourceDialog();
+  } catch (error: any) {
+    createResourceError.value = error?.message || "Não foi possível salvar o recurso.";
   } finally {
     isCreatingResource.value = false;
   }
