@@ -326,6 +326,10 @@ onMounted(loadVerses);
 
 .verse-header h1 {
   color: var(--app-color-text, #111827);
+  /* h1 herdava a margem do reset e descia em relacao ao botao de voltar,
+     deixando o par desalinhado mesmo com align-items:center. */
+  line-height: 1.2;
+  margin: 0;
 }
 
 .verse-hero {

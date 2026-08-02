@@ -8,6 +8,19 @@
       </h3>
     </div>
 
+    <!-- Um unico acesso pra tela dedicada; os cards abaixo abrem a escala
+         especifica. -->
+    <v-btn
+      variant="tonal"
+      color="purple-darken-3"
+      size="small"
+      block
+      class="text-none rounded-xl mb-3"
+      to="/cultos"
+    >
+      Ver próximos cultos
+    </v-btn>
+
     <div class="d-flex flex-column gap-3 pb-4">
       <v-card
         v-for="(event, index) in eventsList"

@@ -243,6 +243,9 @@ onMounted(loadPrayers);
 
 .prayer-header h1 {
   color: var(--app-color-text, #111827);
+  /* sem isso o h1 herda a margem do reset e desalinha do botao de voltar */
+  line-height: 1.2;
+  margin: 0;
 }
 
 .prayer-empty-state {
