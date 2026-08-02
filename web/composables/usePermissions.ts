@@ -6,6 +6,7 @@ export type AppPermission =
   | "MANAGE_SCHEDULES"
   | "MANAGE_DEPARTMENTS"
   | "MANAGE_SONGS"
+  | "PUBLISH_CONTENT"
   | "SEND_NOTIFICATIONS";
 
 export type PermissionModuleKey =
@@ -13,6 +14,7 @@ export type PermissionModuleKey =
   | "departments"
   | "schedules"
   | "content"
+  | "churchContent"
   | "communication";
 
 export type PermissionDefinition = {
@@ -77,6 +79,20 @@ export const PERMISSION_MODULES: {
         label: "Gerenciar músicas",
         description: "Adicionar, editar e remover músicas",
         module: "content",
+      },
+    ],
+  },
+  {
+    key: "churchContent",
+    label: "Conteúdo da igreja",
+    description: "Versículo do dia e devocionais publicados para toda a igreja",
+    permissions: [
+      {
+        key: "PUBLISH_CONTENT",
+        label: "Publicar conteúdo",
+        description:
+          "Publicar versículo do dia e devocionais sem precisar ser pastor ou admin",
+        module: "churchContent",
       },
     ],
   },

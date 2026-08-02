@@ -41,14 +41,24 @@ export class DailyVerseAdapters {
     };
   }
 
-  private assertChurchManager(user: { role: string }) {
+  // Pastor/admin publicam sempre; alem deles, qualquer membro a quem o pastor
+  // tenha concedido PUBLISH_CONTENT atraves de um cargo da igreja.
+  private assertCanPublishContent(user: {
+    role: string;
+    churchRole?: { permissions: string[] } | null;
+  }) {
     const isManager =
       user.role === "PASTOR" ||
       user.role === "ADMIN" ||
       user.role === "SUPER_ADMIN";
 
-    if (!isManager) {
-      throw new DomainError("Apenas pastores ou admins podem publicar conteúdo");
+    const hasPermission =
+      user.churchRole?.permissions?.includes("PUBLISH_CONTENT") === true;
+
+    if (!isManager && !hasPermission) {
+      throw new DomainError(
+        "Você não tem permissão para publicar conteúdo da igreja",
+      );
     }
   }
 
@@ -90,12 +100,13 @@ export class DailyVerseAdapters {
 
   async createDailyVerse(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    this.assertChurchManager(user);
+    this.assertCanPublishContent(user);
 
     const body = request.body as {
       text?: string;
       reference?: string;
       commentary?: string | null;
+      videoUrl?: string | null;
     };
 
     if (!body.text?.trim()) {
@@ -112,6 +123,7 @@ export class DailyVerseAdapters {
         text: body.text.trim(),
         reference: body.reference.trim(),
         commentary: body.commentary?.trim() || null,
+        videoUrl: body.videoUrl?.trim() || null,
         crunchId: user.crunchId!,
         authorId: user.id,
       },

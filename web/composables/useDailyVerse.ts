@@ -8,6 +8,8 @@ export interface DailyVerse {
   text: string;
   reference: string;
   commentary?: string | null;
+  /** link de video (YouTube/Instagram) opcional */
+  videoUrl?: string | null;
   publishedAt: string;
   author?: {
     id: string;
@@ -26,6 +28,7 @@ interface PublishDailyVerseDTO {
   text: string;
   reference: string;
   commentary?: string;
+  videoUrl?: string;
 }
 
 export const useDailyVerse = () => {

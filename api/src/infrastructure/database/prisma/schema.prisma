@@ -120,6 +120,9 @@ model DailyVerse {
     text        String
     reference   String
     commentary  String?
+    // Link de video (YouTube/Instagram) opcional. Nulo nos versiculos ja
+    // existentes - upload de arquivo fica pra uma etapa posterior.
+    videoUrl    String?
     publishedAt DateTime @default(now())
 
     crunchId String
