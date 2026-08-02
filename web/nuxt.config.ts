@@ -14,7 +14,22 @@ export default defineNuxtConfig({
   // estatico (bug: /login, /register e /forgot-password chamavam a API de
   // producao mesmo em ambiente local). SSR normal ja e rapido o suficiente
   // para essas paginas.
-  routeRules: {},
+  //
+  // Todas as rotas autenticadas ficam com ssr:false: em producao o front
+  // (churchapp.site) e a API (api.appcunch.shop) sao dominios diferentes, e
+  // o cookie refresh_token (Domain=.appcunch.shop) nunca chega numa
+  // requisicao de navegacao pro front - o servidor nunca teria como saber se
+  // o usuario esta logado. Renderizar client-side evita o SSR "adivinhar"
+  // isso errado e mandar gente logada de volta pro /login. As rotas publicas
+  // (login/register/forgot-password/pagina da igreja) continuam com SSR,
+  // que funciona bem pra elas por nao dependerem desse cookie.
+  routeRules: {
+    "/**": { ssr: false },
+    "/login": { ssr: true },
+    "/register": { ssr: true },
+    "/forgot-password": { ssr: true },
+    "/c/**": { ssr: true },
+  },
   nitro: {
     compressPublicAssets: true,
   },

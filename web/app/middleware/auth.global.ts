@@ -13,16 +13,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (import.meta.server) {
     const hasRefreshCookie = Boolean(useCookie(refreshCookieName).value);
 
+    // Em producao o front (churchapp.site) e a API (api.appcunch.shop) sao
+    // dominios diferentes: o refresh_token tem Domain=.appcunch.shop, entao
+    // o navegador NUNCA manda esse cookie numa navegacao pra churchapp.site
+    // - isso nao e SameSite, e escopo de Domain, nao tem como contornar em
+    // codigo. Ou seja hasRefreshCookie e sempre false em producao mesmo com
+    // usuario logado. Sem cookie pra tentar, so deixa renderizar sem user
+    // aqui - esse middleware roda de novo no client na hidratacao, e la sim
+    // o fetch cross-site (credentials include + SameSite=None) enxerga o
+    // cookie de verdade e decide se redireciona.
     if (!isPublicRoute && !hasRefreshCookie) {
-      return navigateTo({
-        path: "/login",
-        query:
-          to.fullPath === "/"
-            ? undefined
-            : {
-                redirect: to.fullPath,
-              },
-      });
+      return;
     }
 
     if (!isPublicRoute && hasRefreshCookie) {
