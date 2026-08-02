@@ -7,7 +7,7 @@
           <div class="auth-icon-circle mb-4">
             <v-icon size="40" color="purple-darken-3">mdi-account-lock</v-icon>
           </div>
-          <h1 class="app-page-title auth-title">AppChurch</h1>
+          <h1 class="app-page-title auth-title">ChurchApp</h1>
           <p class="auth-subtitle">Acesse sua conta para continuar</p>
         </div>
 

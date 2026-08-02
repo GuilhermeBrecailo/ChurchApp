@@ -269,7 +269,7 @@ Nomes das acoes:
 - Nao montar chamadas HTTP diretamente em paginas quando elas pertencem a um dominio reutilizavel.
 - Manter transformacoes de payload dentro do composable quando forem regra de integracao com API.
 
-## Aplicacao no AppChurch
+## Aplicacao no ChurchApp
 
 Com base no backend atual, os primeiros composables recomendados sao:
 

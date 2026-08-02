@@ -1,4 +1,4 @@
-# Fluxo do AppChurch
+# Fluxo do ChurchApp
 
 Diagrama geral de navegação e funcionalidades da plataforma.
 

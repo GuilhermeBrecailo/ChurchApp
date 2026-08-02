@@ -1,4 +1,4 @@
-# Documentacao do AppChurch
+# Documentacao do ChurchApp
 
 Esta pasta separa a documentacao por contexto da aplicacao.
 

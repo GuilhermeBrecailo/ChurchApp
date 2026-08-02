@@ -1,6 +1,6 @@
-# AppChurch
+# ChurchApp
 
-AppChurch e um MVP fullstack para gestao de igrejas, ministerios, membros e escalas. A ideia do projeto e resolver uma dor real de organizacao interna: centralizar cadastro de igreja, membros, liderancas, ministerios, escalas de servico, disponibilidade dos voluntarios, tarefas e administracao.
+ChurchApp e um MVP fullstack para gestao de igrejas, ministerios, membros e escalas. A ideia do projeto e resolver uma dor real de organizacao interna: centralizar cadastro de igreja, membros, liderancas, ministerios, escalas de servico, disponibilidade dos voluntarios, tarefas e administracao.
 
 O projeto foi construido como uma aplicacao real, com autenticacao, permissoes, banco relacional, frontend responsivo, API estruturada, integracao com Keycloak e ambiente local via Docker Compose.
 
@@ -266,6 +266,8 @@ Crie/configure:
 
 Depois disso, a API consegue autenticar usuarios e criar contas via Keycloak Admin.
 
+8. Sessao/login persistente por 7 dias: em Realm Settings -> Sessions, defina `SSO Session Idle` e `SSO Session Max` para 7 dias (604800 segundos). Sem isso o padrao do Keycloak (30 min de idle) derruba o usuario para o login com muito pouca inatividade, mesmo com o cookie de refresh do front configurado corretamente - o cookie so vale o que o Keycloak realmente emitir em `refresh_expires_in`.
+
 Se estiver acessando pela rede local, inclua tambem:
 
 ```text
@@ -398,4 +400,4 @@ Observacao: dependendo do ambiente, o build do Nuxt pode exibir warnings de CSS 
 
 Este projeto demonstra uma aplicacao fullstack em TypeScript com frontend moderno em Nuxt/Vue, backend em Fastify, ORM com Prisma, banco PostgreSQL, autenticacao externa com Keycloak, controle de permissoes, Docker Compose, testes automatizados e uma estrutura de codigo organizada por responsabilidades.
 
-Mais do que uma tela bonita, o AppChurch mostra regras reais de produto: pastor administra a propria igreja, lider gerencia apenas o ministerio dele, membro comum nao altera escalas, usuarios criados pelo pastor precisam redefinir senha no primeiro acesso e a experiencia funciona em desktop e mobile.
+Mais do que uma tela bonita, o ChurchApp mostra regras reais de produto: pastor administra a propria igreja, lider gerencia apenas o ministerio dele, membro comum nao altera escalas, usuarios criados pelo pastor precisam redefinir senha no primeiro acesso e a experiencia funciona em desktop e mobile.

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-AppChurch (`api/` + `web/`) — fullstack MVP for church/ministry management (members, ministries, service schedules "escalas", devotionals, prayer requests, announcements). Backend: Fastify + Prisma + PostgreSQL + Keycloak. Frontend: Nuxt 4 + Vue 3 + Vuetify + Tailwind. Local dev via Docker Compose (`docker-compose.yml`).
+ChurchApp (`api/` + `web/`) — fullstack MVP for church/ministry management (members, ministries, service schedules "escalas", devotionals, prayer requests, announcements). Backend: Fastify + Prisma + PostgreSQL + Keycloak. Frontend: Nuxt 4 + Vue 3 + Vuetify + Tailwind. Local dev via Docker Compose (`docker-compose.yml`).
 
 ## Commands
 

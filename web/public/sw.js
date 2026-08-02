@@ -54,7 +54,7 @@ self.addEventListener("fetch", (event) => {
             cachedPage ||
             cachedLogin ||
             cachedHome ||
-            new Response("AppChurch offline", {
+            new Response("ChurchApp offline", {
               status: 503,
               headers: {
                 "Content-Type": "text/plain; charset=utf-8",

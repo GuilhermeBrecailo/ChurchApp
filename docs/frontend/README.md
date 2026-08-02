@@ -1,6 +1,6 @@
 Indice: Documentacao do Frontend
 
-Esta documentacao descreve como o frontend do AppChurch esta organizado e como o usuario navega pela aplicacao.
+Esta documentacao descreve como o frontend do ChurchApp esta organizado e como o usuario navega pela aplicacao.
 
 O front fica na pasta `web` e usa Nuxt 4, Vue 3, Vuetify, Tailwind CSS e icones do `lucide-vue-next`.
 
