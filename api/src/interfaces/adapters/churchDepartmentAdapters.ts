@@ -2140,6 +2140,98 @@ export class ChurchDepartmentAdapters {
 
     return updated;
   }
+
+  async addChurchDepartmentMember(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+    const body = request.body as { userId?: string };
+
+    if (!id) {
+      throw new DomainError("Ministerio nao informado");
+    }
+
+    if (!body.userId) {
+      throw new DomainError("Membro nao informado");
+    }
+
+    const department = await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+    if (!this.isChurchWideManager(user) && department.leaderId !== user.id) {
+      throw new DomainError("Apenas pastores, admins ou lideres podem adicionar membros a este ministerio");
+    }
+
+    const member = await $prismaClient.user.findFirst({
+      where: { id: body.userId, crunchId: user.crunchId! },
+    });
+
+    if (!member) {
+      throw new DomainError("Membro nao encontrado nesta igreja");
+    }
+
+    const existing = await $prismaClient.userDepartmentMembership.findUnique({
+      where: {
+        userId_departmentId: {
+          userId: body.userId,
+          departmentId: id,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new DomainError("Este membro ja esta neste ministerio");
+    }
+
+    const hasPrimaryElsewhere = await $prismaClient.userDepartmentMembership.findFirst({
+      where: { userId: body.userId, isPrimary: true },
+    });
+
+    return await $prismaClient.userDepartmentMembership.create({
+      data: {
+        id: crypto.randomUUID(),
+        userId: body.userId,
+        departmentId: id,
+        isPrimary: !hasPrimaryElsewhere,
+      },
+      select: {
+        id: true,
+        function: true,
+        isPrimary: true,
+        canManageSchedule: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+  }
+
+  async removeChurchDepartmentMember(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id, userId } = request.params as { id?: string; userId?: string };
+
+    if (!id || !userId) {
+      throw new DomainError("Membro do ministerio nao informado");
+    }
+
+    const department = await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+    if (!this.isChurchWideManager(user) && department.leaderId !== user.id) {
+      throw new DomainError("Apenas pastores, admins ou lideres podem remover membros deste ministerio");
+    }
+
+    if (department.leaderId === userId) {
+      throw new DomainError("Nao e possivel remover o lider titular do ministerio por aqui");
+    }
+
+    await $prismaClient.userDepartmentMembership.deleteMany({
+      where: { userId, departmentId: id },
+    });
+
+    return { success: true };
+  }
+
   async getChurchDepartmentResources(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
     const { id } = request.params as { id?: string };

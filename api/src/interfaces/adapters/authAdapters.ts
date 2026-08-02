@@ -78,17 +78,29 @@ function readCookie(request: FastifyRequest, name: string) {
   return cookie ? decodeURIComponent(cookie.slice(name.length + 1)) : null;
 }
 
+// O front (churchapp.site) e a API (api.appcunch.shop) sao dominios
+// diferentes de verdade, nao subdominios de um dominio comum - Domain=
+// nunca vai fazer esse cookie atravessar de um pro outro, isso so
+// funciona entre subdominios do MESMO dominio registrável. Pra o
+// navegador mandar o cookie em fetch/XHR cross-site (login, refresh,
+// toda chamada da API feita pelo JS do front) o cookie precisa ser
+// SameSite=None (+Secure, exigido pelo navegador pra None) - com
+// SameSite=Lax ele so seria enviado em navegacao de topo, nunca em
+// fetch entre sites diferentes. Isso deixava o refresh completamente
+// quebrado em producao (cliente e servidor), mesmo com token valido.
+const crossSiteCookie = process.env.NODE_ENV === "production";
+
 function refreshCookie(value: string, maxAge: number) {
   const attributes = [
     `${refreshCookieName}=${encodeURIComponent(value)}`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    crossSiteCookie ? "SameSite=None" : "SameSite=Lax",
     `Max-Age=${maxAge}`,
   ];
 
   if (refreshCookieDomain) attributes.push(`Domain=${refreshCookieDomain}`);
-  if (process.env.NODE_ENV === "production") attributes.push("Secure");
+  if (crossSiteCookie) attributes.push("Secure");
 
   return attributes.join("; ");
 }
@@ -98,12 +110,12 @@ function clearRefreshCookie() {
     `${refreshCookieName}=`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    crossSiteCookie ? "SameSite=None" : "SameSite=Lax",
     "Max-Age=0",
   ];
 
   if (refreshCookieDomain) attributes.push(`Domain=${refreshCookieDomain}`);
-  if (process.env.NODE_ENV === "production") attributes.push("Secure");
+  if (crossSiteCookie) attributes.push("Secure");
 
   return attributes.join("; ");
 }
@@ -113,11 +125,11 @@ function clearHostOnlyRefreshCookie() {
     `${refreshCookieName}=`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    crossSiteCookie ? "SameSite=None" : "SameSite=Lax",
     "Max-Age=0",
   ];
 
-  if (process.env.NODE_ENV === "production") attributes.push("Secure");
+  if (crossSiteCookie) attributes.push("Secure");
 
   return attributes.join("; ");
 }
