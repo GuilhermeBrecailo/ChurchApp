@@ -12,7 +12,7 @@
         :color="accentColor"
         class="rounded-lg text-none px-4"
         elevation="2"
-        @click="isScheduleDialogOpen = true"
+        @click="openNewScheduleDialog"
       >
         <Plus size="18" class="mr-1" /> Novo
       </v-btn>
@@ -819,6 +819,16 @@
               Voluntários
             </p>
 
+            <v-alert
+              v-if="!scheduleForm.departmentId"
+              type="info"
+              variant="tonal"
+              density="compact"
+              class="mb-3"
+            >
+              Selecione um ministério para adicionar voluntários.
+            </v-alert>
+
             <div class="scale-field-grid mb-2">
               <v-select
                 v-model="scheduleFormVolunteerUserId"
@@ -833,7 +843,7 @@
                 :bg-color="isDark ? 'transparent' : 'white'"
                 class="scale-input"
                 hide-details="auto"
-                :disabled="isCreatingSchedule"
+                :disabled="isCreatingSchedule || !scheduleForm.departmentId"
               />
               <v-combobox
                 v-model="scheduleFormVolunteerRole"
@@ -846,7 +856,7 @@
                 :bg-color="isDark ? 'transparent' : 'white'"
                 class="scale-input"
                 hide-details="auto"
-                :disabled="isCreatingSchedule"
+                :disabled="isCreatingSchedule || !scheduleForm.departmentId"
               />
             </div>
 
@@ -855,7 +865,7 @@
               :color="accentColor"
               size="small"
               class="text-none mb-3"
-              :disabled="isCreatingSchedule || !scheduleFormVolunteerUserId"
+              :disabled="isCreatingSchedule || !scheduleForm.departmentId || !scheduleFormVolunteerUserId"
               @click="addFormVolunteer"
             >
               <Plus size="16" class="mr-1" /> Adicionar voluntário
@@ -2121,6 +2131,14 @@ const toDateInputValue = (value: string) => {
 const toTimeInputValue = (value: string) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "" : date.toTimeString().slice(0, 5);
+};
+
+const openNewScheduleDialog = () => {
+  resetScheduleForm();
+  if (manageableDepartments.value.length === 1) {
+    scheduleForm.departmentId = manageableDepartments.value[0].id;
+  }
+  isScheduleDialogOpen.value = true;
 };
 
 const openScheduleEditDialog = async (event: ScheduleEvent) => {
