@@ -30,11 +30,14 @@ Legenda: ⚠️ = decisão pendente ou mudança de banco necessária.
 
 `web/app/pages/content/verse.vue`
 
-- [ ] 2.1 Header enxuto: só botão voltar + título (remover a linha de descrição)
-- [ ] 2.2 Versículo do dia em destaque, em card maior no topo
-- [ ] 2.3 ⚠️ Suporte a vídeo no versículo (link vs. upload — ver Decisões)
-- [ ] 2.4 Histórico abaixo, com altura máxima e scroll interno
-- [ ] 2.5 ⚠️ Botão "Novo versículo" para pastor/admin e delegados (hoje só existe no `/admin`)
+- [x] 2.1 Header enxuto: só botão voltar + título (remover a linha de descrição)
+- [x] 2.2 Versículo do dia em destaque, em card maior no topo
+- [x] 2.3 Vídeo por **link** (campo `videoUrl` no `DailyVerse`, renderizado pelo
+      `MusicEmbedPlayer` que já existia). Upload de arquivo fica pra etapa 2.
+- [x] 2.4 Histórico abaixo, com altura máxima (420px) e scroll interno
+- [x] 2.5 Botão "Novo versículo" na própria tela. Permissão nova
+      `PUBLISH_CONTENT`: pastor/admin sempre; demais membros só se o pastor
+      conceder pelo cargo da igreja.
 
 ## Grupo 3 — Pedidos de oração
 
