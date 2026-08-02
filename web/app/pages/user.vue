@@ -122,54 +122,83 @@
           </div>
           <div class="min-w-0">
             <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
-              Serviço na igreja
+              Meus dados
             </h2>
             <p class="text-caption text-grey-darken-1 mb-0">
-              Dados usados por líderes ao montar escalas.
+              Informações da sua conta.
             </p>
           </div>
         </div>
 
-        <v-select
-          v-model="form.primaryDepartmentId"
-          :items="departmentOptions"
-          item-title="label"
-          item-value="value"
-          label="Ministério principal"
-          placeholder="Selecione seu ministério"
-          variant="outlined"
-          density="comfortable"
-          color="purple-darken-3"
-          bg-color="white"
-          class="profile-input mb-3"
-          hide-details="auto"
-          clearable
-          :disabled="isLoading || isSaving || departmentsLoading || departmentOptions.length === 0"
-        />
+        <div class="profile-data-list mb-4">
+          <div class="profile-data-row">
+            <span class="profile-data-label">Nome</span>
+            <span class="profile-data-value">{{ profile?.name || user?.name || "—" }}</span>
+          </div>
+          <div class="profile-data-row">
+            <span class="profile-data-label">E-mail</span>
+            <span class="profile-data-value">{{ profile?.email || user?.email || "—" }}</span>
+          </div>
+          <div class="profile-data-row">
+            <span class="profile-data-label">Perfil</span>
+            <span class="profile-data-value">{{ roleLabel }}</span>
+          </div>
+          <div class="profile-data-row">
+            <span class="profile-data-label">Igreja</span>
+            <span class="profile-data-value">{{ churchDisplayName }}</span>
+          </div>
+        </div>
 
         <v-text-field
-          v-model="form.ministryFunction"
-          label="Função principal"
-          placeholder="Ex.: vocal, mídia, recepção, intercessão"
+          v-model="form.phone"
+          label="Telefone / WhatsApp"
+          placeholder="(00) 00000-0000"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="teal-darken-2"
           bg-color="white"
           class="profile-input"
           hide-details="auto"
           :disabled="isLoading || isSaving"
         />
+      </v-card>
 
-        <div class="profile-readiness mt-4">
-          <div
-            v-for="item in profileStats"
-            :key="item.label"
-            class="readiness-item"
-            :class="{ 'readiness-item-done': item.done }"
-          >
-            <component :is="item.icon" size="16" />
-            <span>{{ item.label }}</span>
+      <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
+        <div class="section-heading mb-4">
+          <div class="section-icon section-icon-teal">
+            <BadgeCheck size="18" />
           </div>
+          <div class="min-w-0">
+            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+              Meus ministérios
+            </h2>
+            <p class="text-caption text-grey-darken-1 mb-0">
+              Equipes em que você serve.
+            </p>
+          </div>
+        </div>
+
+        <v-skeleton-loader v-if="departmentsLoading" type="list-item-two-line" />
+
+        <div v-else-if="myDepartments.length === 0" class="profile-empty-inline">
+          Você ainda não faz parte de nenhum ministério.
+        </div>
+
+        <div v-else class="my-ministry-list">
+          <NuxtLink
+            v-for="department in myDepartments"
+            :key="department.id"
+            :to="`/ministery/${department.id}`"
+            class="my-ministry-item"
+          >
+            <div class="min-w-0">
+              <p class="my-ministry-name mb-0">{{ department.name }}</p>
+              <p class="my-ministry-meta mb-0">
+                {{ department.leaderId === (profile?.id || user?.id) ? "Você lidera" : `Líder: ${department.leader?.name || "—"}` }}
+              </p>
+            </div>
+            <ChevronRight size="18" class="my-ministry-chevron" />
+          </NuxtLink>
         </div>
       </v-card>
 
@@ -237,64 +266,6 @@
       </div>
       </v-card>
 
-      <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
-        <div class="section-heading mb-4">
-          <div class="section-icon section-icon-teal">
-            <Phone size="18" />
-          </div>
-          <div class="min-w-0">
-            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
-              Contato
-            </h2>
-            <p class="text-caption text-grey-darken-1 mb-0">
-              Canal para avisos de escala e alinhamentos.
-            </p>
-          </div>
-        </div>
-
-        <v-text-field
-          v-model="form.phone"
-          label="Telefone / WhatsApp"
-          placeholder="(00) 00000-0000"
-          variant="outlined"
-          density="comfortable"
-          color="teal-darken-2"
-          bg-color="white"
-          class="profile-input"
-          hide-details="auto"
-          :disabled="isLoading || isSaving"
-        />
-      </v-card>
-
-      <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
-        <div class="section-heading mb-4">
-          <div class="section-icon section-icon-purple">
-            <MessageSquare size="18" />
-          </div>
-          <div class="min-w-0">
-            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
-              Sugestão pastoral
-            </h2>
-            <p class="text-caption text-grey-darken-1 mb-0">
-              Compartilhe pontos de cuidado, melhoria ou organização.
-            </p>
-          </div>
-        </div>
-
-        <v-textarea
-          v-model="form.profileSuggestion"
-          placeholder="Escreva uma sugestão para a liderança..."
-          variant="outlined"
-          density="comfortable"
-          color="purple-darken-3"
-          bg-color="white"
-          class="profile-input"
-          hide-details
-          rows="3"
-          auto-grow
-          :disabled="isLoading || isSaving"
-        />
-      </v-card>
 
     <v-card class="profile-card pa-4 mb-6 elevation-1 bg-white">
       <div class="security-row">
@@ -471,11 +442,10 @@ import {
   BadgeCheck,
   CalendarDays,
   CalendarX,
+  ChevronRight,
   Church,
   ClipboardList,
   LogOut,
-  MessageSquare,
-  Phone,
   Plus,
   Save,
   Shield,
@@ -547,13 +517,10 @@ const roleLabel = computed(() => {
   return "Membro";
 });
 
-const departmentOptions = computed(() =>
-  departments.value
-    .filter((department) => department.isActive)
-    .map((department) => ({
-      label: department.name,
-      value: department.id,
-    })),
+// getChurchDepartments devolve todos os ministerios da igreja marcando
+// isMember para o usuario logado - aqui so interessam os que ele participa.
+const myDepartments = computed(() =>
+  departments.value.filter((department) => department.isMember),
 );
 
 const selectedDepartment = computed(() => {
@@ -578,24 +545,6 @@ const nextUnavailableLabel = computed(() => {
   const nextDate = unavailableDates.value.find((date) => date >= today);
   return nextDate ? formatDate(nextDate) : "Livre";
 });
-
-const profileStats = computed(() => [
-  {
-    label: form.phone.trim() ? "Contato ok" : "Contato pendente",
-    done: Boolean(form.phone.trim()),
-    icon: Phone,
-  },
-  {
-    label: form.primaryDepartmentId ? "Ministério definido" : "Sem ministério",
-    done: Boolean(form.primaryDepartmentId),
-    icon: BadgeCheck,
-  },
-  {
-    label: form.ministryFunction.trim() ? "Função definida" : "Função pendente",
-    done: Boolean(form.ministryFunction.trim()),
-    icon: UserRound,
-  },
-]);
 
 const applyProfile = (data: MyProfileDTO) => {
   profile.value = data;
@@ -965,30 +914,87 @@ onMounted(loadPageData);
   min-height: 96px;
 }
 
-.profile-readiness {
+.profile-data-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-data-row {
+  align-items: baseline;
+  border-bottom: 1px solid var(--app-color-border);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 9px 0;
+}
+
+.profile-data-row:last-child {
+  border-bottom: none;
+}
+
+.profile-data-label {
+  color: var(--app-color-text-muted);
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.profile-data-value {
+  color: var(--app-color-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.profile-empty-inline {
+  color: var(--app-color-text-muted);
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.my-ministry-list {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
-.readiness-item {
+.my-ministry-item {
   align-items: center;
   background: var(--app-color-surface-soft);
   border: 1px solid var(--app-color-border);
-  border-radius: 8px;
-  color: var(--app-color-text-muted);
-  display: inline-flex;
-  font-size: 0.75rem;
-  font-weight: 700;
-  gap: 6px;
-  min-height: 32px;
-  padding: 6px 9px;
+  border-radius: 10px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px 14px;
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
-.readiness-item-done {
-  background: var(--app-color-success-tint);
-  border-color: var(--app-color-success-soft);
-  color: var(--app-color-success);
+.my-ministry-item:active {
+  transform: scale(0.99);
+}
+
+.my-ministry-item:hover {
+  border-color: var(--app-color-accent);
+}
+
+.my-ministry-name {
+  color: var(--app-color-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.my-ministry-meta {
+  color: var(--app-color-text-muted);
+  font-size: 0.75rem;
+}
+
+.my-ministry-chevron {
+  color: var(--app-color-text-muted);
+  flex-shrink: 0;
 }
 
 .profile-icon-btn {

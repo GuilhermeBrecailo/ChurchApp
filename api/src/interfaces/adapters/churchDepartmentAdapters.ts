@@ -401,7 +401,7 @@ export class ChurchDepartmentAdapters {
 
   private mapDepartment(
     department: DepartmentWithStats,
-    options?: { canManageSchedule?: boolean },
+    options?: { canManageSchedule?: boolean; isMember?: boolean },
   ) {
     const songsCount = department.mediaItems.filter(
       (item) => item.category === "MUSIC",
@@ -415,6 +415,7 @@ export class ChurchDepartmentAdapters {
       leaderId: department.leaderId,
       leader: department.leader,
       canManageSchedule: options?.canManageSchedule,
+      isMember: options?.isMember,
       membersCount: department._count.members,
       schedulesCount: department._count.schedules,
       tasksCount: department._count.tasks,
@@ -898,10 +899,17 @@ export class ChurchDepartmentAdapters {
         .filter((membership) => membership.canManageSchedule)
         .map((membership) => membership.departmentId),
     );
+    // A consulta de memberships ja existia so pra saber quem gerencia escala.
+    // Expor tambem "sou membro" evita o front ter que buscar os membros de
+    // cada ministerio (N requisicoes) so pra montar "meus ministerios".
+    const memberDepartments = new Set(
+      memberships.map((membership) => membership.departmentId),
+    );
 
     return departments.map((department) =>
       this.mapDepartment(department, {
         canManageSchedule: scheduleManagerDepartments.has(department.id),
+        isMember: memberDepartments.has(department.id),
       }),
     );
   }

@@ -10,6 +10,8 @@ export interface ChurchDepartment {
   isActive: boolean;
   leaderId: string;
   canManageSchedule?: boolean;
+  /** true quando o usuario logado e membro deste ministerio */
+  isMember?: boolean;
   membersCount?: number;
   schedulesCount?: number;
   tasksCount?: number;
