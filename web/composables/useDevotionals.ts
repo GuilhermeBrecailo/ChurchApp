@@ -15,6 +15,8 @@ export interface Devotional {
   id: string;
   title: string;
   description?: string | null;
+  /** link de video (YouTube/Instagram) opcional */
+  videoUrl?: string | null;
   publishedAt: string;
   chapters?: DevotionalChapter[];
   _count?: { chapters: number };
@@ -27,6 +29,7 @@ export interface Devotional {
 interface CreateDevotionalDTO {
   title: string;
   description?: string;
+  videoUrl?: string;
   chapters: {
     title: string;
     content: string;

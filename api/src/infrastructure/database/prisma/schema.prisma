@@ -170,6 +170,9 @@ model Devotional {
     id          String   @id @default(uuid())
     title       String
     description String?
+    // Link de video (YouTube/Instagram) opcional. Nulo nos devocionais ja
+    // existentes - upload de arquivo fica pra uma etapa posterior.
+    videoUrl    String?
     publishedAt DateTime @default(now())
 
     crunchId String

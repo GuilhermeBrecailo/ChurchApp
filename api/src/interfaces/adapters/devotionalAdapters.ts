@@ -32,9 +32,20 @@ export class DevotionalAdapters {
     };
   }
 
-  private assertChurchManager(user: { role: string }) {
-    if (!["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(user.role)) {
-      throw new DomainError("Apenas pastores ou admins podem gerenciar devocionais");
+  // Pastor/admin sempre; alem deles, quem o pastor autorizou via PUBLISH_CONTENT
+  // num cargo da igreja (mesma regra do versiculo do dia).
+  private assertChurchManager(user: {
+    role: string;
+    churchRole?: { permissions: string[] } | null;
+  }) {
+    const isManager = ["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(user.role);
+    const hasPermission =
+      user.churchRole?.permissions?.includes("PUBLISH_CONTENT") === true;
+
+    if (!isManager && !hasPermission) {
+      throw new DomainError(
+        "Você não tem permissão para publicar conteúdo da igreja",
+      );
     }
   }
 
@@ -82,6 +93,7 @@ export class DevotionalAdapters {
     const body = request.body as {
       title?: string;
       description?: string | null;
+      videoUrl?: string | null;
       chapters?: {
         title?: string;
         content?: string;
@@ -110,6 +122,7 @@ export class DevotionalAdapters {
           id: crypto.randomUUID(),
           title: body.title!.trim(),
           description: body.description?.trim() || null,
+          videoUrl: body.videoUrl?.trim() || null,
           crunchId: user.crunchId!,
           authorId: user.id,
           chapters: {
