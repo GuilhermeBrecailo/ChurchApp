@@ -2032,7 +2032,16 @@ export class ChurchDepartmentAdapters {
 
     const department = await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
     if (!this.isChurchWideManager(user) && department.leaderId !== user.id) {
-      throw new DomainError("Apenas pastores, admins ou lideres podem listar gestores de escala");
+      const ownMembership = await $prismaClient.userDepartmentMembership.findUnique({
+        where: { userId_departmentId: { userId: user.id, departmentId: id } },
+        select: { canManageSchedule: true },
+      });
+
+      if (!ownMembership?.canManageSchedule) {
+        throw new DomainError(
+          "Apenas pastores, admins, lideres ou gestores de escala podem listar os membros deste ministerio",
+        );
+      }
     }
 
     return await $prismaClient.userDepartmentMembership.findMany({

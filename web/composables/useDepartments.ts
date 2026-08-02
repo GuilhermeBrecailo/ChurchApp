@@ -422,6 +422,47 @@ export const useDepartments = () => {
     };
   };
 
+  const addDepartmentMember = async (
+    departmentId: string,
+    userId: string,
+  ): Promise<ApiResponse<DepartmentMember>> => {
+    const response = await $customFetch<DepartmentMemberResponse>(
+      `${config.public.URL_BACKEND}/api/church/departments/${departmentId}/members`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+        body: { userId },
+      },
+    );
+
+    return {
+      ...response,
+      data: response.data
+        ? {
+            id: response.data.user?.id ?? userId,
+            membershipId: response.data.id,
+            name: response.data.user?.name ?? "",
+            email: response.data.user?.email ?? "",
+            role: response.data.function ?? undefined,
+            canManageSchedule: response.data.canManageSchedule,
+          }
+        : undefined,
+    };
+  };
+
+  const removeDepartmentMember = async (
+    departmentId: string,
+    userId: string,
+  ): Promise<ApiResponse<{ success: boolean }>> => {
+    return await $customFetch<{ success: boolean }>(
+      `${config.public.URL_BACKEND}/api/church/departments/${departmentId}/members/${userId}`,
+      {
+        method: "DELETE",
+        headers: authOnlyHeaders(),
+      },
+    );
+  };
+
   const updateDepartmentMemberScheduleManager = async (
     departmentId: string,
     userId: string,
@@ -821,6 +862,8 @@ export const useDepartments = () => {
     updateDepartment,
     deleteDepartment,
     getDepartmentMembers,
+    addDepartmentMember,
+    removeDepartmentMember,
     updateDepartmentMemberScheduleManager,
     getDepartmentTasks,
     createDepartmentTask,

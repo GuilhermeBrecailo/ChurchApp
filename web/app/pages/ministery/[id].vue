@@ -135,6 +135,82 @@
           class="ministery-content-card pa-4 elevation-1 bg-white mb-4"
         >
           <div class="leader-card-title mb-3">
+            <UserPlus size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
+            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+              Membros do ministério
+            </h3>
+          </div>
+
+          <v-alert
+            v-if="addMemberError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            {{ addMemberError }}
+          </v-alert>
+
+          <div class="add-member-row mb-3">
+            <v-select
+              v-model="selectedMemberToAdd"
+              :items="addMemberOptions"
+              item-title="label"
+              item-value="value"
+              label="Adicionar membro da igreja"
+              variant="outlined"
+              density="compact"
+              hide-details
+              clearable
+              :no-data-text="members.length ? 'Todos os membros já estão neste ministério' : 'Nenhum membro disponível'"
+            />
+            <v-btn
+              color="purple-darken-3"
+              class="text-none rounded-lg"
+              :loading="isAddingMember"
+              :disabled="!selectedMemberToAdd"
+              @click="addMember"
+            >
+              Adicionar
+            </v-btn>
+          </div>
+
+          <div v-if="departmentMembers.length" class="schedule-manager-list">
+            <div
+              v-for="member in departmentMembers"
+              :key="member.id"
+              class="schedule-manager-row"
+            >
+              <div class="min-w-0">
+                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                  {{ member.name }}
+                </p>
+                <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
+                  {{ member.email }}
+                </p>
+              </div>
+              <v-btn
+                icon
+                variant="text"
+                size="small"
+                color="error"
+                :disabled="member.id === department.leaderId"
+                @click="requestRemoveMember(member)"
+              >
+                <Trash2 size="16" />
+              </v-btn>
+            </div>
+          </div>
+          <p v-else class="text-caption text-grey-darken-1 mb-0">
+            Nenhum membro neste ministério ainda.
+          </p>
+        </v-card>
+
+        <v-card
+          v-if="canManageScheduleDelegation"
+          class="ministery-content-card pa-4 elevation-1 bg-white mb-4"
+        >
+          <div class="leader-card-title mb-3">
             <Users size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
             <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
               Gestores de escala
@@ -2117,6 +2193,8 @@ const {
   updateScheduleAssignments,
   sendScheduleReminder,
   updateScheduleAssignmentAttendance,
+  addDepartmentMember,
+  removeDepartmentMember,
 } = useDepartments();
 const { getMembers } = useMembers();
 const { user } = useAuth();
@@ -2145,6 +2223,9 @@ const leaderError = ref("");
 const leaderMessage = ref("");
 const scheduleManagersError = ref("");
 const updatingScheduleManagerId = ref("");
+const addMemberError = ref("");
+const isAddingMember = ref(false);
+const selectedMemberToAdd = ref<string | null>(null);
 const activeTab = ref("overview");
 const isTaskDialogOpen = ref(false);
 const isScheduleDialogOpen = ref(false);
@@ -2174,7 +2255,7 @@ const selectedSong = ref<DepartmentSong | null>(null);
 const songViewerTab = ref("lyrics");
 const songViewerAutoScrollSpeed = ref(24);
 const pendingDelete = ref<{
-  kind: "task" | "schedule" | "resource" | "song";
+  kind: "task" | "schedule" | "resource" | "song" | "member";
   id: string;
   title: string;
 } | null>(null);
@@ -2363,7 +2444,20 @@ const tabs = computed(() => {
 });
 
 const memberOptions = computed(() =>
-  members.value.map((member) => ({
+  departmentMembers.value.map((member) => ({
+    label: `${member.name} (${member.email})`,
+    value: member.id,
+  })),
+);
+
+const membersAvailableToAdd = computed(() =>
+  members.value.filter(
+    (member) => !departmentMembers.value.some((deptMember) => deptMember.id === member.id),
+  ),
+);
+
+const addMemberOptions = computed(() =>
+  membersAvailableToAdd.value.map((member) => ({
     label: `${member.name} (${member.email})`,
     value: member.id,
   })),
@@ -2643,6 +2737,7 @@ const deleteDialogTitle = computed(() => {
     schedule: "Remover escala",
     resource: "Remover recurso",
     song: "Remover música",
+    member: "Remover membro",
   };
 
   return pendingDelete.value ? labels[pendingDelete.value.kind] : "Confirmar remoção";
@@ -2804,6 +2899,37 @@ const toggleScheduleManager = async (member: DepartmentMember, canManageSchedule
     updatingScheduleManagerId.value = "";
   }
 };
+const addMember = async () => {
+  if (!selectedMemberToAdd.value) return;
+
+  addMemberError.value = "";
+  isAddingMember.value = true;
+
+  try {
+    const { data, error } = await addDepartmentMember(
+      departmentId,
+      selectedMemberToAdd.value,
+    );
+
+    if (error || !data) {
+      addMemberError.value = error || "Nao foi possivel adicionar o membro.";
+      return;
+    }
+
+    departmentMembers.value = [...departmentMembers.value, data].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+    selectedMemberToAdd.value = null;
+  } finally {
+    isAddingMember.value = false;
+  }
+};
+
+const requestRemoveMember = (member: DepartmentMember) => {
+  addMemberError.value = "";
+  pendingDelete.value = { kind: "member", id: member.id, title: member.name };
+};
+
 const resetTaskForm = () => {
   taskForm.title = "";
   taskForm.description = "";
@@ -3531,6 +3657,20 @@ const confirmDelete = async () => {
       songs.value = songs.value.filter((item) => item.id !== target.id);
     }
 
+    if (target.kind === "member") {
+      addMemberError.value = "";
+      const { error } = await removeDepartmentMember(departmentId, target.id);
+
+      if (error) {
+        addMemberError.value = error;
+        return;
+      }
+
+      departmentMembers.value = departmentMembers.value.filter(
+        (item) => item.id !== target.id,
+      );
+    }
+
     pendingDelete.value = null;
   } finally {
     isConfirmingDelete.value = false;
@@ -3846,6 +3986,13 @@ onMounted(async () => {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   gap: 12px;
 }
+.add-member-row {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .schedule-manager-list {
   display: grid;
   gap: 10px;
