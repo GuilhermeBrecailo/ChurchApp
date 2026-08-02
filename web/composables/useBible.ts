@@ -8,35 +8,24 @@ export interface BibleVerse {
   text: string;
 }
 
-interface BibliaDigitalVerse {
-  number: number;
+interface BollsVerse {
+  pk: number;
+  verse: number;
   text: string;
-}
-
-interface BibliaDigitalChapterResponse {
-  book: {
-    name: string;
-    abbrev: {
-      pt: string;
-      en: string;
-    };
-  };
-  chapter: {
-    number: number;
-    verses: number;
-  };
-  verses: BibliaDigitalVerse[];
 }
 
 interface BibleApiChapterResponse {
   verses: BibleVerse[];
 }
 
+// O provedor antigo (abibliadigital.com.br) saiu do ar e TODA leitura caia no
+// fallback Almeida - quem escolhia NVI/ACF/NVT lia outra traducao sem saber.
+// bolls.life serve as quatro versoes de verdade; `value` e o short_name deles.
 export const BIBLE_VERSIONS = [
-  { label: "NVI", value: "nvi" },
-  { label: "ACF", value: "acf" },
-  { label: "ARA", value: "ra" },
-  { label: "NVT", value: "nvt" },
+  { label: "NVI", value: "NVIPT" },
+  { label: "ACF", value: "ACF11" },
+  { label: "ARA", value: "ARA" },
+  { label: "NVT", value: "NVT" },
 ] as const;
 
 export const BIBLE_BOOKS = [
@@ -179,18 +168,24 @@ const BIBLE_API_BOOKS: Record<string, string> = {
   ap: "revelation",
 };
 
+// bolls.life numera os livros no canone padrao (1 = Genesis ... 66 = Apocalipse),
+// que e exatamente a ordem de BIBLE_BOOKS.
+const bollsBookId = (bookIndex: number) => bookIndex + 1;
+
+// Defensivo: algumas traducoes do bolls trazem marcacao (<S>, <br/>) no texto.
+const stripMarkup = (text: string) =>
+  text.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+
 export function useBible() {
-  const selectedVersion = ref("nvi");
+  const selectedVersion = ref<string>(BIBLE_VERSIONS[0].value);
   const selectedBookIndex = ref(0);
   const selectedChapter = ref(1);
   const verses = ref<BibleVerse[]>([]);
   const loading = ref(false);
   const error = ref("");
-  // A API principal (abibliadigital.com.br) e uma API gratuita/comunitaria
-  // que cai com frequencia (erro 500 do lado dela). Quando isso acontece,
-  // caimos num fallback que so tem a versao Almeida - sem esta flag, a tela
-  // mostrava o texto Almeida com o chip da versao que o usuario escolheu
-  // (ex.: "NVI"), passando a versao errada como se fosse a certa.
+  // Quando nem o provedor principal responde, o ultimo recurso so tem Almeida.
+  // Sem esta flag a tela mostrava o texto Almeida com o chip da versao que o
+  // usuario escolheu (ex.: "NVI"), passando a versao errada como se fosse certa.
   const usedFallback = ref(false);
 
   const restoreState = () => {
@@ -198,7 +193,14 @@ export function useBible() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
       const saved = JSON.parse(raw);
-      if (saved.version) selectedVersion.value = saved.version;
+
+      // Quem ja usou o app tem a sigla do provedor antigo salva ("nvi", "acf",
+      // "ra"...), que o novo nao entende. Só restaura se ainda for valida.
+      const isKnownVersion = BIBLE_VERSIONS.some(
+        (version) => version.value === saved.version,
+      );
+      if (isKnownVersion) selectedVersion.value = saved.version;
+
       if (typeof saved.bookIndex === "number") selectedBookIndex.value = saved.bookIndex;
       if (typeof saved.chapter === "number") selectedChapter.value = saved.chapter;
     } catch {
@@ -231,14 +233,19 @@ export function useBible() {
     usedFallback.value = false;
 
     try {
-      const url = `https://www.abibliadigital.com.br/api/verses/${selectedVersion.value}/${encodeURIComponent(book.abbrev)}/${selectedChapter.value}`;
-      const response = await $fetch<BibliaDigitalChapterResponse>(url);
-      verses.value = (response.verses ?? []).map((verse) => ({
+      const url = `https://bolls.life/get-chapter/${selectedVersion.value}/${bollsBookId(selectedBookIndex.value)}/${selectedChapter.value}/`;
+      const response = await $fetch<BollsVerse[]>(url);
+
+      if (!Array.isArray(response) || response.length === 0) {
+        throw new Error("Capítulo vazio");
+      }
+
+      verses.value = response.map((verse) => ({
         book_id: book.abbrev,
         book_name: book.pt,
         chapter: selectedChapter.value,
-        verse: verse.number,
-        text: verse.text,
+        verse: verse.verse,
+        text: stripMarkup(verse.text),
       }));
       saveState();
     } catch {

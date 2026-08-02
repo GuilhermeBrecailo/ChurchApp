@@ -909,7 +909,11 @@ export class ChurchDepartmentAdapters {
     return departments.map((department) =>
       this.mapDepartment(department, {
         canManageSchedule: scheduleManagerDepartments.has(department.id),
-        isMember: memberDepartments.has(department.id),
+        // Liderar nao cria registro em userDepartmentMembership, entao o lider
+        // sumia da propria lista de "meus ministerios" sem este OR.
+        isMember:
+          memberDepartments.has(department.id) ||
+          department.leaderId === user.id,
       }),
     );
   }
