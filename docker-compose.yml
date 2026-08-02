@@ -26,6 +26,11 @@ services:
       - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
       - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
       - VAPID_SUBJECT=${VAPID_SUBJECT}
+      # Dominio do cookie de refresh (ex: .churchapp.site). Precisa bater com
+      # o dominio que o front realmente usa - senao o cookie e cross-site
+      # "de verdade" pro navegador (dominios registraveis diferentes) e
+      # Safari/Chrome mobile passam a bloquear/descartar ele por padrao.
+      - REFRESH_COOKIE_DOMAIN=${REFRESH_COOKIE_DOMAIN:-}
     depends_on:
       db:
         condition: service_healthy
