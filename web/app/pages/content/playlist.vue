@@ -4,8 +4,8 @@
       <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
         <ChevronLeft size="20" />
       </v-btn>
-      <div>
-        <h1 class="text-h5 font-weight-bold">Minha Playlist</h1>
+      <div class="min-w-0">
+        <h1 class="text-h5 font-weight-bold mb-1">Minha Playlist</h1>
         <p class="text-body-2 text-grey mb-0">Músicas com seu tom pessoal</p>
       </div>
     </div>
@@ -36,10 +36,10 @@
       <ListMusic size="40" color="#9CA3AF" class="mb-3" />
       <p class="text-body-2 text-grey font-weight-medium mb-1">Nenhuma música encontrada</p>
       <p class="text-caption text-grey mb-4">
-        Salve preferências de tom nas músicas dos seus ministérios
+        Abra o repertório de um ministério para salvar o seu tom em cada música
       </p>
       <v-btn to="/ministery" color="purple-darken-3" variant="tonal" size="small" class="text-none">
-        Ver ministérios
+        Ver músicas
       </v-btn>
     </div>
 
@@ -188,6 +188,9 @@ onMounted(async () => {
 
 .playlist-header h1 {
   color: var(--app-color-text, #111827);
+  /* h1 herdava a margem grande do reset e abria um buraco ate a descricao. */
+  line-height: 1.2;
+  margin-bottom: 2px !important;
 }
 
 .playlist-search :deep(.v-field) {

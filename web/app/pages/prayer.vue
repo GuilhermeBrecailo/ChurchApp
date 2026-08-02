@@ -1,20 +1,21 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper">
-    <div class="prayer-header mb-5">
-      <div>
-        <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">Pedidos de Oração</h1>
-        <p class="text-body-2 text-grey-darken-1 mb-0">Interceda pelos irmãos da sua igreja</p>
-      </div>
-      <v-btn
-        color="purple-darken-3"
-        class="text-none font-weight-bold rounded-lg"
-        size="small"
-        elevation="1"
-        @click="showNewDialog = true"
-      >
-        <Plus size="16" class="mr-1" /> Novo pedido
+    <div class="prayer-header mb-4">
+      <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+        <ChevronLeft size="20" />
       </v-btn>
+      <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-0">Pedidos de Oração</h1>
     </div>
+
+    <v-btn
+      color="purple-darken-3"
+      class="text-none font-weight-bold rounded-lg mb-5"
+      block
+      elevation="1"
+      @click="showNewDialog = true"
+    >
+      <Plus size="16" class="mr-1" /> Novo pedido
+    </v-btn>
 
     <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mb-4">
       {{ error }}
@@ -160,11 +161,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { Heart, Plus, User, CheckCircle, X } from "lucide-vue-next";
+import { useRouter } from "vue-router";
+import { ChevronLeft, Heart, Plus, User, CheckCircle, X } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { usePrayerRequests } from "../../composables/usePrayerRequests";
 import type { PrayerRequest } from "../../composables/usePrayerRequests";
 
+const router = useRouter();
 const { user } = useAuth();
 const { isDark } = useThemeMode();
 const { getPrayerRequests, createPrayerRequest, markAsAnswered } = usePrayerRequests();
@@ -235,17 +238,11 @@ onMounted(loadPrayers);
 
 .prayer-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
 }
 
 .prayer-header h1 {
   color: var(--app-color-text, #111827);
-}
-
-.prayer-header p {
-  color: var(--app-color-text-soft, #4b5563);
 }
 
 .prayer-empty-state {
