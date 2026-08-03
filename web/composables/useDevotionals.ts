@@ -58,6 +58,12 @@ export const useDevotionals = () => {
       : {}),
   });
 
+  const authOnlyHeaders = () => ({
+    ...(access_token.value
+      ? { Authorization: `Bearer ${access_token.value}` }
+      : {}),
+  });
+
   const listDevotionals = async (): Promise<ApiResponse<Devotional[]>> => {
     return await $customFetch<Devotional[]>(
       `${config.public.URL_BACKEND}/api/church/devotionals`,
@@ -126,7 +132,7 @@ const updateDevotional = async (
       `${config.public.URL_BACKEND}/api/church/devotionals/${id}`,
       {
         method: "DELETE",
-        headers: authHeaders(),
+        headers: authOnlyHeaders(),
       },
     );
   };

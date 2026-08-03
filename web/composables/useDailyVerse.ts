@@ -53,6 +53,12 @@ export const useDailyVerse = () => {
       : {}),
   });
 
+  const authOnlyHeaders = () => ({
+    ...(access_token.value
+      ? { Authorization: `Bearer ${access_token.value}` }
+      : {}),
+  });
+
   const getLatestVerse = async (): Promise<ApiResponse<DailyVerse | null>> => {
     return await $customFetch<DailyVerse | null>(
       `${config.public.URL_BACKEND}/api/church/daily-verse`,
@@ -107,7 +113,7 @@ const updateVerse = async (
       `${config.public.URL_BACKEND}/api/church/daily-verse/${id}`,
       {
         method: "DELETE",
-        headers: authHeaders(),
+        headers: authOnlyHeaders(),
       },
     );
   };

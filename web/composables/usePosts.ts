@@ -46,6 +46,10 @@ export const usePosts = () => {
     Authorization: `Bearer ${access_token.value}`,
   });
 
+  const authOnlyHeaders = () => ({
+    Authorization: `Bearer ${access_token.value}`,
+  });
+
   const listPosts = async (): Promise<ApiResponse<ChurchPost[]>> =>
     await $customFetch<ChurchPost[]>(
       `${config.public.URL_BACKEND}/api/church/posts`,
@@ -74,7 +78,7 @@ export const usePosts = () => {
   ): Promise<ApiResponse<{ success: boolean }>> =>
     await $customFetch<{ success: boolean }>(
       `${config.public.URL_BACKEND}/api/church/posts/${id}`,
-      { method: "DELETE", headers: authHeaders() },
+      { method: "DELETE", headers: authOnlyHeaders() },
     );
 
   const uploadImage = async (

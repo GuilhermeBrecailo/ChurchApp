@@ -45,6 +45,12 @@ export const useAnnouncements = () => {
       : {}),
   });
 
+  const authOnlyHeaders = () => ({
+    ...(access_token.value
+      ? { Authorization: `Bearer ${access_token.value}` }
+      : {}),
+  });
+
   const getAnnouncements = async (): Promise<ApiResponse<Announcement[]>> => {
     return await $customFetch<Announcement[]>(
       `${config.public.URL_BACKEND}/api/church/announcements`,
@@ -89,7 +95,7 @@ const updateAnnouncement = async (
       `${config.public.URL_BACKEND}/api/church/announcements/${id}`,
       {
         method: "DELETE",
-        headers: authHeaders(),
+        headers: authOnlyHeaders(),
       },
     );
   };
