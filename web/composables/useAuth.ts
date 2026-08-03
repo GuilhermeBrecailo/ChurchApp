@@ -17,6 +17,8 @@ interface AuthChurch {
   userMainId?: string | null;
   slug?: string | null;
   accentColor?: string | null;
+  textColor?: string | null;
+  fontFamily?: string | null;
   phone?: string | null;
   whatsapp?: string | null;
   email?: string | null;

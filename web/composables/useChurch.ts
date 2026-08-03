@@ -30,6 +30,8 @@ interface ChurchResponse {
   isActive?: boolean;
   slug?: string | null;
   accentColor?: string | null;
+  textColor?: string | null;
+  fontFamily?: string | null;
 }
 
 export interface UploadedChurchPhoto {
@@ -43,6 +45,8 @@ type UpdateChurchDTO = Partial<CreateOwnChurchDTO> & {
   isActive?: boolean;
   slug?: string | null;
   accentColor?: string | null;
+  textColor?: string | null;
+  fontFamily?: string | null;
   phone?: string | null;
   whatsapp?: string | null;
   email?: string | null;

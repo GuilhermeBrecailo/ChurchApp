@@ -14,6 +14,11 @@ model Crunch {
     userMainId String?
     logo       String?
     accentColor String?
+    // Cor do texto da pagina publica (hex). Nula usa a cor padrao do tema.
+    textColor  String?
+    // Chave de uma fonte curada (ver FONT_OPTIONS no front). Nula usa a fonte
+    // padrao (Fraunces/Inter) ja carregada pela pagina.
+    fontFamily String?
     isActive   Boolean  @default(true)
     createdAt  DateTime @default(now())
 

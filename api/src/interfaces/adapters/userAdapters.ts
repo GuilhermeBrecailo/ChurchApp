@@ -15,6 +15,7 @@ import { resolveActiveChurchContext } from "../utils/churchContext";
 import { assertChurchSlugAvailable, ensureUniqueChurchSlug } from "../utils/churchSlug";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { isValidFontKey } from "../../domain/appearance";
 
 const userRepository = new UserRepository();
 const createUserUseCase = new CreateUserUseCase(userRepository);
@@ -44,6 +45,8 @@ function formatChurch(church: {
   document: string | null;
   logo: string | null;
   accentColor: string | null;
+  textColor?: string | null;
+  fontFamily?: string | null;
   isActive: boolean;
   userMainId: string | null;
   phone?: string | null;
@@ -67,6 +70,8 @@ function formatChurch(church: {
     document: church.document,
     logo: church.logo,
     accentColor: church.accentColor,
+    textColor: church.textColor ?? null,
+    fontFamily: church.fontFamily ?? null,
     isActive: church.isActive,
     userMainId: church.userMainId,
     phone: church.phone ?? null,
@@ -649,6 +654,8 @@ export class UserAdapters {
       isActive?: boolean;
       slug?: string;
       accentColor?: string | null;
+      textColor?: string | null;
+      fontFamily?: string | null;
       phone?: string | null;
       whatsapp?: string | null;
       email?: string | null;
@@ -684,6 +691,20 @@ export class UserAdapters {
       facebook: true,
       youtube: true,
       website: true,
+    } as const;
+
+    // Aparencia: cor do texto livre (hex/nome CSS); fonte precisa bater com a
+    // lista curada (ALLOWED_FONT_KEYS) - fora dela, o valor e ignorado.
+    if (body.fontFamily !== undefined && body.fontFamily !== null && !isValidFontKey(body.fontFamily)) {
+      throw new DomainError("Estilo de fonte invalido");
+    }
+    const appearanceData = {
+      ...(body.textColor !== undefined ? { textColor: cleanText(body.textColor) } : {}),
+      ...(body.fontFamily !== undefined ? { fontFamily: body.fontFamily || null } : {}),
+    };
+    const appearanceSelect = {
+      textColor: true,
+      fontFamily: true,
     } as const;
 
     const user = await $prismaClient.user.findUnique({
@@ -744,6 +765,7 @@ export class UserAdapters {
           ...(body.accentColor !== undefined ? { accentColor: body.accentColor?.trim() || null } : {}),
           ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
           ...footerData,
+          ...appearanceData,
         },
         select: {
           id: true,
@@ -761,6 +783,7 @@ export class UserAdapters {
           isActive: true,
           userMainId: true,
           ...footerSelect,
+          ...appearanceSelect,
         },
       });
     }
@@ -812,6 +835,8 @@ export class UserAdapters {
         ...(body.logo !== undefined ? { logo: body.logo?.trim() || null } : {}),
         ...(body.accentColor !== undefined ? { accentColor: body.accentColor?.trim() || null } : {}),
         ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
+        ...footerData,
+        ...appearanceData,
       },
       select: {
         id: true,
@@ -828,6 +853,8 @@ export class UserAdapters {
         accentColor: true,
         isActive: true,
         userMainId: true,
+        ...footerSelect,
+        ...appearanceSelect,
       },
     });
 

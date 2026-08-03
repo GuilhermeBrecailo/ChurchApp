@@ -21,6 +21,8 @@ export interface PublicChurch {
   name: string;
   logo?: string | null;
   accentColor?: string | null;
+  textColor?: string | null;
+  fontFamily?: string | null;
   isActive?: boolean;
   city?: string | null;
   state?: string | null;

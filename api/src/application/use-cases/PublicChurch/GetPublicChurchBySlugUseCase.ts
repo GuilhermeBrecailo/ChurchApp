@@ -10,6 +10,8 @@ export class GetPublicChurchBySlugUseCase {
         slug: true,
         logo: true,
         accentColor: true,
+        textColor: true,
+        fontFamily: true,
         isActive: true,
         city: true,
         state: true,

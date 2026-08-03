@@ -339,6 +339,7 @@ import {
 } from "lucide-vue-next";
 import { computed, onMounted, ref, watch } from "vue";
 import type { PublicAnnouncementKind, PublicServiceOccurrence } from "../../../composables/useChurchLanding";
+import { fontCssValue } from "../../../composables/useChurchAppearance";
 
 definePageMeta({
   layout: "public",
@@ -367,6 +368,8 @@ const notFound = computed(() => Boolean(error.value));
 
 const landingStyle = computed(() => ({
   "--church-accent": accentColor.value,
+  "--church-display": fontCssValue(church.value?.fontFamily),
+  ...(church.value?.textColor ? { "--ink": church.value.textColor } : {}),
 }));
 
 const churchInitials = computed(() =>
@@ -568,6 +571,7 @@ watch(slug, (nextSlug, previousSlug) => {
   --ink-soft: #6B655C;
   --line: #E4DFD5;
   --card: #FFFFFF;
+  --church-display: "Fraunces", serif;
   background: var(--paper);
   color: var(--ink);
   font-family: "Inter", system-ui, sans-serif;
@@ -607,7 +611,7 @@ watch(slug, (nextSlug, previousSlug) => {
   border-radius: 8px;
   color: var(--church-accent);
   display: flex;
-  font-family: "Fraunces", serif;
+  font-family: var(--church-display);
   font-size: 2rem;
   font-weight: 750;
   height: 72px;
@@ -616,7 +620,7 @@ watch(slug, (nextSlug, previousSlug) => {
 }
 
 .not-found-state h1 {
-  font-family: "Fraunces", serif;
+  font-family: var(--church-display);
   font-size: clamp(2rem, 7vw, 4rem);
   font-weight: 750;
   letter-spacing: 0;
@@ -682,7 +686,7 @@ watch(slug, (nextSlug, previousSlug) => {
   border-radius: 8px;
   color: var(--church-accent);
   display: flex;
-  font-family: "Fraunces", serif;
+  font-family: var(--church-display);
   font-size: 2rem;
   font-weight: 750;
   height: 96px;
@@ -700,7 +704,7 @@ watch(slug, (nextSlug, previousSlug) => {
 }
 
 .landing-hero h1 {
-  font-family: "Fraunces", serif;
+  font-family: var(--church-display);
   font-size: clamp(3.2rem, 12vw, 7.6rem);
   font-weight: 750;
   letter-spacing: 0;
@@ -787,7 +791,7 @@ watch(slug, (nextSlug, previousSlug) => {
 }
 
 .schedule-board-row strong {
-  font-family: "Fraunces", serif;
+  font-family: var(--church-display);
   font-size: clamp(1.05rem, 4vw, 1.45rem);
   font-weight: 650;
   line-height: 1.15;
@@ -837,7 +841,7 @@ watch(slug, (nextSlug, previousSlug) => {
 }
 
 .section-heading-copy h2 {
-  font-family: "Fraunces", serif;
+  font-family: var(--church-display);
   font-size: clamp(2rem, 6vw, 3.6rem);
   font-weight: 650;
   letter-spacing: 0;
@@ -901,7 +905,7 @@ watch(slug, (nextSlug, previousSlug) => {
 }
 
 .feed-card h3 {
-  font-family: "Fraunces", serif;
+  font-family: var(--church-display);
   font-size: 1.35rem;
   font-weight: 650;
   letter-spacing: 0;
@@ -929,7 +933,7 @@ watch(slug, (nextSlug, previousSlug) => {
 }
 
 .mural-head h2 {
-  font-family: "Fraunces", serif;
+  font-family: var(--church-display);
   font-size: clamp(2rem, 6vw, 3.4rem);
   font-weight: 650;
   line-height: 1;
@@ -1025,7 +1029,7 @@ watch(slug, (nextSlug, previousSlug) => {
 }
 
 .mural-body h3 {
-  font-family: "Fraunces", serif;
+  font-family: var(--church-display);
   font-size: clamp(1.3rem, 3vw, 1.8rem);
   font-weight: 650;
   line-height: 1.12;
@@ -1069,7 +1073,7 @@ watch(slug, (nextSlug, previousSlug) => {
   color: var(--church-accent);
   display: flex;
   flex-shrink: 0;
-  font-family: "Fraunces", serif;
+  font-family: var(--church-display);
   font-size: 1.4rem;
   font-weight: 750;
   height: 58px;
@@ -1085,7 +1089,7 @@ watch(slug, (nextSlug, previousSlug) => {
 }
 
 .footer-name {
-  font-family: "Fraunces", serif;
+  font-family: var(--church-display);
   font-size: 1.5rem;
   font-weight: 650;
   line-height: 1.1;

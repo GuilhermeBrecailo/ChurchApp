@@ -1630,6 +1630,46 @@
           </div>
         </div>
 
+        <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">
+          Foto da igreja
+        </p>
+        <div class="d-flex align-center flex-wrap ga-3 mb-4">
+          <v-avatar size="56" color="grey-lighten-3">
+            <img
+              v-if="currentChurch?.logo"
+              :src="currentChurch.logo"
+              alt="Foto da igreja"
+            />
+            <Church v-else size="26" color="#9CA3AF" />
+          </v-avatar>
+          <v-btn
+            variant="tonal"
+            color="purple-darken-3"
+            size="small"
+            class="text-none"
+            :loading="isUploadingLogo"
+            @click="logoInput?.click()"
+          >
+            {{ currentChurch?.logo ? "Trocar foto" : "Adicionar foto" }}
+          </v-btn>
+          <input
+            ref="logoInput"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            class="d-none"
+            @change="onLogoChange"
+          />
+        </div>
+        <v-alert
+          v-if="logoUploadError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ logoUploadError }}
+        </v-alert>
+
         <v-text-field
           v-model="publicChurchForm.slug"
           label="Slug da página pública"
@@ -1644,20 +1684,50 @@
           :disabled="isSavingPublicChurch"
         />
 
-        <v-text-field
-          v-model="publicChurchForm.accentColor"
-          label="Cor de destaque"
-          type="color"
+        <div class="footer-fields-grid mb-4">
+          <v-text-field
+            v-model="publicChurchForm.accentColor"
+            label="Cor de destaque"
+            type="color"
+            variant="outlined"
+            density="comfortable"
+            hide-details="auto"
+            :disabled="isSavingPublicChurch"
+          >
+            <template #prepend-inner>
+              <Palette size="18" />
+            </template>
+          </v-text-field>
+
+          <v-text-field
+            v-model="publicChurchForm.textColor"
+            label="Cor da letra (opcional)"
+            type="color"
+            variant="outlined"
+            density="comfortable"
+            hide-details="auto"
+            :disabled="isSavingPublicChurch"
+          >
+            <template #prepend-inner>
+              <Palette size="18" />
+            </template>
+          </v-text-field>
+        </div>
+
+        <v-select
+          v-model="publicChurchForm.fontFamily"
+          :items="FONT_OPTIONS"
+          item-title="label"
+          item-value="key"
+          label="Estilo da letra"
           variant="outlined"
           density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
           class="mb-4"
           hide-details="auto"
           :disabled="isSavingPublicChurch"
-        >
-          <template #prepend-inner>
-            <Palette size="18" />
-          </template>
-        </v-text-field>
+        />
 
         <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">
           Rodapé da página pública
@@ -3133,6 +3203,7 @@ import { useChurchInvite } from "../../composables/useChurchInvite";
 import { useChurch } from "../../composables/useChurch";
 import { useServiceTimes, type ServiceTime } from "../../composables/useServiceTimes";
 import { usePosts, type ChurchPost } from "../../composables/usePosts";
+import { FONT_OPTIONS } from "../../composables/useChurchAppearance";
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
@@ -3162,7 +3233,7 @@ const {
 } = useAdmin();
 const { listVerses, publishVerse, deleteVerse } = useDailyVerse();
 const { getInviteCode, regenerateInviteCode } = useChurchInvite();
-const { updateOwnChurch } = useChurch();
+const { updateOwnChurch, uploadChurchPhoto } = useChurch();
 const {
   serviceTimes,
   loadServiceTimes,
@@ -3697,6 +3768,8 @@ const announcementKindLabel = (kind?: Announcement["kind"]) => {
 const publicChurchForm = reactive({
   slug: "",
   accentColor: "#B5472A",
+  textColor: "",
+  fontFamily: "EDITORIAL",
   phone: "",
   whatsapp: "",
   email: "",
@@ -3705,6 +3778,10 @@ const publicChurchForm = reactive({
   youtube: "",
   website: "",
 });
+
+const isUploadingLogo = ref(false);
+const logoUploadError = ref("");
+const logoInput = ref<HTMLInputElement | null>(null);
 
 const currentChurch = computed(() => user.value?.activeChurch ?? user.value?.church ?? null);
 
@@ -3717,6 +3794,8 @@ const syncPublicChurchForm = () => {
   const church = currentChurch.value;
   publicChurchForm.slug = church?.slug ?? "";
   publicChurchForm.accentColor = church?.accentColor || "#B5472A";
+  publicChurchForm.textColor = church?.textColor ?? "";
+  publicChurchForm.fontFamily = church?.fontFamily || "EDITORIAL";
   publicChurchForm.phone = church?.phone ?? "";
   publicChurchForm.whatsapp = church?.whatsapp ?? "";
   publicChurchForm.email = church?.email ?? "";
@@ -4651,6 +4730,32 @@ const removeServiceTime = async (id: string) => {
   if (editingServiceTimeId.value === id) resetServiceTimeForm();
 };
 
+const onLogoChange = async (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  logoUploadError.value = "";
+  isUploadingLogo.value = true;
+  try {
+    const { data, error } = await uploadChurchPhoto(file);
+    if (error || !data) {
+      logoUploadError.value = error || "Não foi possível enviar a foto.";
+      return;
+    }
+    if (user.value) {
+      const activeChurch = user.value.activeChurch ?? user.value.church;
+      const church = user.value.church ?? user.value.activeChurch;
+      user.value = {
+        ...user.value,
+        activeChurch: activeChurch ? { ...activeChurch, logo: data.url } : activeChurch,
+        church: church ? { ...church, logo: data.url } : church,
+      };
+    }
+  } finally {
+    isUploadingLogo.value = false;
+    if (logoInput.value) logoInput.value.value = "";
+  }
+};
+
 const savePublicChurchSettings = async () => {
   publicChurchError.value = "";
   publicChurchMessage.value = "";
@@ -4666,6 +4771,8 @@ const savePublicChurchSettings = async () => {
     const { data, error } = await updateOwnChurch({
       slug: publicChurchForm.slug.trim().toLowerCase(),
       accentColor: publicChurchForm.accentColor || null,
+      textColor: publicChurchForm.textColor.trim() || null,
+      fontFamily: publicChurchForm.fontFamily || null,
       phone: publicChurchForm.phone.trim() || null,
       whatsapp: publicChurchForm.whatsapp.trim() || null,
       email: publicChurchForm.email.trim() || null,
