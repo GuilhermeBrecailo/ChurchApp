@@ -1088,6 +1088,11 @@
             class="mb-3"
             hide-details="auto"
           />
+          <AdminMediaAttachmentFields
+            v-model:image-url="verseForm.imageUrl"
+            v-model:image-key="verseForm.imageKey"
+            v-model:video-url="verseForm.videoUrl"
+          />
           <v-switch
             v-model="verseForm.isPublic"
             label="Publicar também na página pública da igreja"
@@ -1199,6 +1204,11 @@
               hide-details="auto"
             />
           </div>
+          <AdminMediaAttachmentFields
+            v-model:image-url="announcementForm.imageUrl"
+            v-model:image-key="announcementForm.imageKey"
+            v-model:video-url="announcementForm.videoUrl"
+          />
           <v-switch
             v-model="announcementForm.isPublic"
             label="Publicar também na página pública da igreja"
@@ -1319,6 +1329,11 @@
                 hide-details="auto"
               />
             </div>
+            <AdminMediaAttachmentFields
+              v-model:image-url="devotionalForm.imageUrl"
+              v-model:image-key="devotionalForm.imageKey"
+              v-model:video-url="devotionalForm.videoUrl"
+            />
             <v-switch
               v-model="devotionalForm.isPublic"
               label="Publicar também na página pública da igreja"
@@ -3656,6 +3671,9 @@ const verseForm = reactive({
   reference: "",
   commentary: "",
   isPublic: false,
+  imageUrl: "" as string | null,
+  imageKey: "" as string | null,
+  videoUrl: "",
 });
 
 const announcementForm = reactive({
@@ -3665,6 +3683,9 @@ const announcementForm = reactive({
   expiresAt: "",
   isPublic: false,
   kind: "ANNOUNCEMENT" as "ANNOUNCEMENT" | "PASTOR_MESSAGE" | "PRAYER",
+  imageUrl: "" as string | null,
+  imageKey: "" as string | null,
+  videoUrl: "",
 });
 
 const announcementKindLabel = (kind?: Announcement["kind"]) => {
@@ -3716,6 +3737,9 @@ const devotionalForm = reactive({
   title: "",
   description: "",
   isPublic: false,
+  imageUrl: "" as string | null,
+  imageKey: "" as string | null,
+  videoUrl: "",
   chapters: [
     {
       title: "",
@@ -4490,6 +4514,9 @@ const publishDailyVerse = async () => {
       reference: verseForm.reference.trim(),
       commentary: verseForm.commentary.trim(),
       isPublic: verseForm.isPublic,
+      imageUrl: verseForm.imageUrl || null,
+      imageKey: verseForm.imageKey || null,
+      videoUrl: verseForm.videoUrl.trim() || undefined,
     });
     if (error || !data) {
       verseError.value = error || "Não foi possível publicar o versículo.";
@@ -4500,6 +4527,9 @@ const publishDailyVerse = async () => {
     verseForm.reference = "";
     verseForm.commentary = "";
     verseForm.isPublic = false;
+    verseForm.imageUrl = "";
+    verseForm.imageKey = "";
+    verseForm.videoUrl = "";
   } finally {
     isPublishingVerse.value = false;
   }
@@ -4532,6 +4562,9 @@ const publishAnnouncement = async () => {
       expiresAt: announcementForm.expiresAt || null,
       isPublic: announcementForm.isPublic,
       kind: announcementForm.kind,
+      imageUrl: announcementForm.imageUrl || null,
+      imageKey: announcementForm.imageKey || null,
+      videoUrl: announcementForm.videoUrl.trim() || null,
     });
     if (error || !data) {
       announcementError.value = error || "Não foi possível publicar o aviso.";
@@ -4544,6 +4577,9 @@ const publishAnnouncement = async () => {
     announcementForm.expiresAt = "";
     announcementForm.isPublic = false;
     announcementForm.kind = "ANNOUNCEMENT";
+    announcementForm.imageUrl = "";
+    announcementForm.imageKey = "";
+    announcementForm.videoUrl = "";
   } finally {
     isSavingAnnouncement.value = false;
   }
@@ -4704,6 +4740,9 @@ const publishDevotional = async () => {
       title: devotionalForm.title.trim(),
       description: devotionalForm.description.trim(),
       isPublic: devotionalForm.isPublic,
+      imageUrl: devotionalForm.imageUrl || null,
+      imageKey: devotionalForm.imageKey || null,
+      videoUrl: devotionalForm.videoUrl.trim() || undefined,
       chapters,
     });
     if (error || !data) {
@@ -4714,6 +4753,9 @@ const publishDevotional = async () => {
     devotionalForm.title = "";
     devotionalForm.description = "";
     devotionalForm.isPublic = false;
+    devotionalForm.imageUrl = "";
+    devotionalForm.imageKey = "";
+    devotionalForm.videoUrl = "";
     devotionalForm.chapters = [{ title: "", content: "", bibleRef: "" }];
   } finally {
     isSavingDevotional.value = false;

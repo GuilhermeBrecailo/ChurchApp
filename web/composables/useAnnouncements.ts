@@ -14,6 +14,9 @@ export interface Announcement {
   expiresAt?: string | null;
   isPublic?: boolean;
   kind?: AnnouncementKind;
+  imageUrl?: string | null;
+  imageKey?: string | null;
+  videoUrl?: string | null;
 }
 
 interface CreateAnnouncementDTO {
@@ -23,6 +26,9 @@ interface CreateAnnouncementDTO {
   expiresAt?: string | null;
   isPublic?: boolean;
   kind?: AnnouncementKind;
+  imageUrl?: string | null;
+  imageKey?: string | null;
+  videoUrl?: string | null;
 }
 
 export const useAnnouncements = () => {

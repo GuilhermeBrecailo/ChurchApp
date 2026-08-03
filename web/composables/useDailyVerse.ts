@@ -10,6 +10,8 @@ export interface DailyVerse {
   commentary?: string | null;
   /** link de video (YouTube/Instagram) opcional */
   videoUrl?: string | null;
+  imageUrl?: string | null;
+  imageKey?: string | null;
   /** true quando o versiculo tambem aparece na pagina publica da igreja */
   isPublic?: boolean;
   publishedAt: string;
@@ -31,6 +33,8 @@ interface PublishDailyVerseDTO {
   reference: string;
   commentary?: string;
   videoUrl?: string;
+  imageUrl?: string | null;
+  imageKey?: string | null;
   isPublic?: boolean;
 }
 

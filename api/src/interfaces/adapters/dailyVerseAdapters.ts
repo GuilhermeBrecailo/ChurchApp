@@ -96,6 +96,8 @@ export class DailyVerseAdapters {
       reference?: string;
       commentary?: string | null;
       videoUrl?: string | null;
+      imageUrl?: string | null;
+      imageKey?: string | null;
       isPublic?: boolean;
     };
 
@@ -114,6 +116,8 @@ export class DailyVerseAdapters {
         reference: body.reference.trim(),
         commentary: body.commentary?.trim() || null,
         videoUrl: body.videoUrl?.trim() || null,
+        imageUrl: body.imageUrl?.trim() || null,
+        imageKey: body.imageKey?.trim() || null,
         isPublic: body.isPublic === true,
         crunchId: user.crunchId!,
         authorId: user.id,

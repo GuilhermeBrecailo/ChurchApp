@@ -136,12 +136,25 @@
               :class="{ pinned: item.pinned }"
             >
               <span v-if="item.pinned" class="pinned-fold" aria-label="Fixado" />
+              <img
+                v-if="item.imageUrl"
+                :src="item.imageUrl"
+                :alt="item.title"
+                class="feed-card-image"
+                loading="lazy"
+              />
               <div class="feed-card-meta">
                 <span>{{ kindLabel(item.kind) }}</span>
                 <time>{{ relativeDate(item.publishedAt) }}</time>
               </div>
               <h3>{{ item.title }}</h3>
               <p>{{ item.body }}</p>
+              <MusicEmbedPlayer
+                v-if="item.videoUrl"
+                :url="item.videoUrl"
+                :title="item.title"
+                class="landing-embed"
+              />
             </MotionStaggerItem>
           </MotionStaggerGroup>
 
@@ -168,6 +181,13 @@
               tag="article"
               class="feed-card"
             >
+              <img
+                v-if="verse.imageUrl"
+                :src="verse.imageUrl"
+                :alt="verse.reference"
+                class="feed-card-image"
+                loading="lazy"
+              />
               <div class="feed-card-meta">
                 <span>{{ verse.reference }}</span>
                 <time>{{ relativeDate(verse.publishedAt) }}</time>
@@ -202,6 +222,13 @@
               tag="article"
               class="feed-card"
             >
+              <img
+                v-if="devotional.imageUrl"
+                :src="devotional.imageUrl"
+                :alt="devotional.title"
+                class="feed-card-image"
+                loading="lazy"
+              />
               <div class="feed-card-meta">
                 <span>{{ devotional.chapters?.length || 0 }} capitulos</span>
                 <time>{{ relativeDate(devotional.publishedAt) }}</time>
@@ -830,6 +857,15 @@ watch(slug, (nextSlug, previousSlug) => {
   border-radius: 8px;
   padding: 18px 18px 18px 20px;
   position: relative;
+}
+
+.feed-card-image {
+  border-radius: 6px;
+  display: block;
+  margin: -2px -2px 14px;
+  max-height: 320px;
+  object-fit: cover;
+  width: calc(100% + 4px);
 }
 
 .pinned-fold {

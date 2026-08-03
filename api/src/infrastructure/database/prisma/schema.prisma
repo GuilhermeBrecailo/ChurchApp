@@ -176,9 +176,10 @@ model DailyVerse {
     // Quando true aparece na pagina publica da igreja. False nos versiculos
     // ja publicados - ninguem vira publico sem alguem marcar.
     isPublic    Boolean  @default(false)
-    // Link de video (YouTube/Instagram) opcional. Nulo nos versiculos ja
-    // existentes - upload de arquivo fica pra uma etapa posterior.
+    // Link de video (YouTube/Instagram) opcional.
     videoUrl    String?
+    imageUrl    String?
+    imageKey    String?
     publishedAt DateTime @default(now())
 
     crunchId String
@@ -198,6 +199,11 @@ model Announcement {
     pinned      Boolean  @default(false)
     isPublic    Boolean  @default(false)
     kind        String   @default("ANNOUNCEMENT")
+    imageUrl    String?
+    imageKey    String?
+    // Link de video (YouTube/Instagram) opcional - mesmo padrao de
+    // versiculo e devocional.
+    videoUrl    String?
     publishedAt DateTime @default(now())
     expiresAt   DateTime?
 
@@ -229,9 +235,10 @@ model Devotional {
     description String?
     // Mesma regra do versiculo: so aparece na pagina publica se marcado.
     isPublic    Boolean  @default(false)
-    // Link de video (YouTube/Instagram) opcional. Nulo nos devocionais ja
-    // existentes - upload de arquivo fica pra uma etapa posterior.
+    // Link de video (YouTube/Instagram) opcional.
     videoUrl    String?
+    imageUrl    String?
+    imageKey    String?
     publishedAt DateTime @default(now())
 
     crunchId String

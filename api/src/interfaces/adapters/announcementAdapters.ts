@@ -65,6 +65,9 @@ export class AnnouncementAdapters {
       expiresAt?: string | null;
       isPublic?: boolean;
       kind?: string;
+      imageUrl?: string | null;
+      imageKey?: string | null;
+      videoUrl?: string | null;
     };
 
     if (!body.title?.trim()) throw new DomainError("Titulo do aviso e obrigatorio");
@@ -85,6 +88,9 @@ export class AnnouncementAdapters {
         isPublic: body.isPublic === true,
         kind,
         expiresAt,
+        imageUrl: body.imageUrl?.trim() || null,
+        imageKey: body.imageKey?.trim() || null,
+        videoUrl: body.videoUrl?.trim() || null,
         crunchId: user.crunchId!,
         authorId: user.id,
       },
@@ -116,6 +122,9 @@ export class AnnouncementAdapters {
       expiresAt?: string | null;
       isPublic?: boolean;
       kind?: string;
+      imageUrl?: string | null;
+      imageKey?: string | null;
+      videoUrl?: string | null;
     };
 
     const announcement = await $prismaClient.announcement.findFirst({
@@ -136,6 +145,9 @@ export class AnnouncementAdapters {
     if (body.pinned !== undefined) data.pinned = body.pinned === true;
     if (body.isPublic !== undefined) data.isPublic = body.isPublic === true;
     if (body.kind !== undefined) data.kind = announcementKindSchema.parse(body.kind);
+    if (body.imageUrl !== undefined) data.imageUrl = body.imageUrl?.trim() || null;
+    if (body.imageKey !== undefined) data.imageKey = body.imageKey?.trim() || null;
+    if (body.videoUrl !== undefined) data.videoUrl = body.videoUrl?.trim() || null;
     if (body.expiresAt !== undefined) {
       const expiresAt = body.expiresAt ? new Date(body.expiresAt) : null;
       if (expiresAt && Number.isNaN(expiresAt.getTime())) throw new DomainError("Data de expiracao invalida");

@@ -12,6 +12,8 @@ export interface PublicChurchFeedItem {
   publishedAt: string;
   expiresAt?: string | null;
   kind?: PublicAnnouncementKind;
+  imageUrl?: string | null;
+  videoUrl?: string | null;
 }
 
 export interface PublicChurch {
@@ -33,6 +35,7 @@ export interface PublicChurchVerse {
   reference: string;
   commentary?: string | null;
   videoUrl?: string | null;
+  imageUrl?: string | null;
   publishedAt: string;
   author?: { id: string; name: string } | null;
 }
@@ -42,6 +45,7 @@ export interface PublicChurchDevotional {
   title: string;
   description?: string | null;
   videoUrl?: string | null;
+  imageUrl?: string | null;
   publishedAt: string;
   author?: { id: string; name: string } | null;
   chapters?: {
