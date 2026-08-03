@@ -123,4 +123,21 @@ export class DailyVerseAdapters {
       },
     });
   }
+
+  async deleteDailyVerse(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    this.assertCanPublishContent(user);
+
+    const { id } = request.params as { id?: string };
+    if (!id) throw new DomainError("Versículo não informado");
+
+    const verse = await $prismaClient.dailyVerse.findFirst({
+      where: { id, crunchId: user.crunchId! },
+      select: { id: true },
+    });
+    if (!verse) throw new DomainError("Versículo não encontrado");
+
+    await $prismaClient.dailyVerse.delete({ where: { id } });
+    return { success: true };
+  }
 }

@@ -8,4 +8,5 @@ export async function ServiceTimeRoutes(app: FastifyInstance) {
   app.get("/api/church/service-times", controllerHandler(adapters.list.bind(adapters)));
   app.post("/api/church/service-times", controllerHandler(adapters.create.bind(adapters)));
   app.patch("/api/church/service-times/:id", controllerHandler(adapters.update.bind(adapters)));
+  app.delete("/api/church/service-times/:id", controllerHandler(adapters.remove.bind(adapters)));
 }

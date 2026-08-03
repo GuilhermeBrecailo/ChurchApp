@@ -82,9 +82,22 @@ export const useDailyVerse = () => {
     );
   };
 
+  const deleteVerse = async (
+    id: string,
+  ): Promise<ApiResponse<{ success: boolean }>> => {
+    return await $customFetch<{ success: boolean }>(
+      `${config.public.URL_BACKEND}/api/church/daily-verse/${id}`,
+      {
+        method: "DELETE",
+        headers: authHeaders(),
+      },
+    );
+  };
+
   return {
     getLatestVerse,
     listVerses,
     publishVerse,
+    deleteVerse,
   };
 };

@@ -689,7 +689,7 @@
               Nenhum cargo atribuído
             </span>
           </div>
-          <div class="d-flex align-center gap-2">
+          <div class="assign-role-row">
             <v-select
               v-model="selectedMemberRoleId"
               :items="assignableRolesFor(selectedAdminUser)"
@@ -700,7 +700,7 @@
               density="compact"
               color="purple-darken-3"
               hide-details
-              style="max-width: 260px"
+              class="assign-role-select"
               :disabled="!canAssignSelectedAdminUserRole || isAssigningRole"
             />
             <v-btn
@@ -1049,6 +1049,17 @@
               Versículo
             </h3>
           </div>
+
+          <v-alert
+            v-if="verseError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            {{ verseError }}
+          </v-alert>
+
           <v-textarea
             v-model="verseForm.text"
             label="Texto"
@@ -1074,17 +1085,53 @@
             color="purple-darken-3"
             auto-grow
             rows="2"
-            class="mb-4"
+            class="mb-3"
             hide-details="auto"
+          />
+          <v-switch
+            v-model="verseForm.isPublic"
+            label="Publicar também na página pública da igreja"
+            color="purple-darken-3"
+            density="comfortable"
+            hide-details
+            class="mb-4"
           />
           <v-btn
             color="purple-darken-3"
-            class="text-none font-weight-bold"
+            class="text-none font-weight-bold mb-4"
             :loading="isPublishingVerse"
             @click="publishDailyVerse"
           >
             Publicar versículo
           </v-btn>
+
+          <MotionStaggerGroup class="content-admin-list">
+            <MotionStaggerItem
+              v-for="verse in dailyVerses"
+              :key="verse.id"
+              tag="div"
+              class="content-admin-row"
+            >
+              <div class="min-w-0">
+                <div class="d-flex align-center ga-2 mb-1">
+                  <v-chip
+                    size="x-small"
+                    variant="tonal"
+                    :color="verse.isPublic ? 'teal-darken-2' : 'grey-darken-1'"
+                  >
+                    {{ verse.isPublic ? "Público" : "Interno" }}
+                  </v-chip>
+                </div>
+                <span>{{ verse.reference }}</span>
+              </div>
+              <v-btn icon variant="text" color="red-darken-2" size="small" @click="removeVerse(verse.id)">
+                <Trash2 size="16" />
+              </v-btn>
+            </MotionStaggerItem>
+          </MotionStaggerGroup>
+          <p v-if="!dailyVerses.length" class="text-caption text-grey-darken-1 mb-0">
+            Nenhum versículo publicado ainda.
+          </p>
         </v-card>
 
         <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
@@ -1094,6 +1141,17 @@
               Avisos
             </h3>
           </div>
+
+          <v-alert
+            v-if="announcementError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            {{ announcementError }}
+          </v-alert>
+
           <v-text-field
             v-model="announcementForm.title"
             label="Título"
@@ -1199,6 +1257,17 @@
             <Plus size="16" class="mr-1" /> Adicionar capítulo
           </v-btn>
         </div>
+
+        <v-alert
+          v-if="devotionalError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-3"
+        >
+          {{ devotionalError }}
+        </v-alert>
+
         <div class="content-admin-grid">
           <div>
             <v-text-field
@@ -1250,6 +1319,14 @@
                 hide-details="auto"
               />
             </div>
+            <v-switch
+              v-model="devotionalForm.isPublic"
+              label="Publicar também na página pública da igreja"
+              color="purple-darken-3"
+              density="comfortable"
+              hide-details
+              class="mb-3"
+            />
             <v-btn
               color="purple-darken-3"
               class="text-none font-weight-bold"
@@ -1265,7 +1342,18 @@
               :key="devotional.id"
               class="content-admin-row"
             >
-              <span>{{ devotional.title }}</span>
+              <div class="min-w-0">
+                <div class="d-flex align-center ga-2 mb-1">
+                  <v-chip
+                    size="x-small"
+                    variant="tonal"
+                    :color="devotional.isPublic ? 'teal-darken-2' : 'grey-darken-1'"
+                  >
+                    {{ devotional.isPublic ? "Público" : "Interno" }}
+                  </v-chip>
+                </div>
+                <span>{{ devotional.title }}</span>
+              </div>
               <v-btn icon variant="text" color="red-darken-2" size="small" @click="removeDevotional(devotional.id)">
                 <Trash2 size="16" />
               </v-btn>
@@ -1284,6 +1372,17 @@
         <p class="text-caption text-grey-darken-1 mb-4">
           Poste uma foto com título, texto e vídeo na página da igreja.
         </p>
+
+        <v-alert
+          v-if="postError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-3"
+        >
+          {{ postError }}
+        </v-alert>
+
         <div class="content-admin-grid">
           <div>
             <v-text-field
@@ -1312,7 +1411,7 @@
                 alt="Pré-visualização da foto"
                 class="post-image-preview"
               />
-              <div class="d-flex align-center ga-2">
+              <div class="d-flex align-center flex-wrap ga-2">
                 <v-btn
                   variant="tonal"
                   color="purple-darken-3"
@@ -1772,12 +1871,11 @@
                 <Pencil size="15" />
               </v-btn>
               <v-btn
-                v-if="time.isActive"
                 icon
                 variant="text"
                 color="red-darken-2"
                 size="small"
-                @click="disableServiceTime(time.id)"
+                @click="removeServiceTime(time.id)"
               >
                 <Trash2 size="15" />
               </v-btn>
@@ -3007,7 +3105,7 @@ import {
   type PermissionScope,
   type AppPermission,
 } from "../../../composables/usePermissions";
-import { useDailyVerse } from "../../composables/useDailyVerse";
+import { useDailyVerse, type DailyVerse } from "../../composables/useDailyVerse";
 import {
   useAnnouncements,
   type Announcement,
@@ -3047,7 +3145,7 @@ const {
   resetChurchUserPasswordByAdmin,
   removeChurchUserByAdmin,
 } = useAdmin();
-const { publishVerse } = useDailyVerse();
+const { listVerses, publishVerse, deleteVerse } = useDailyVerse();
 const { getInviteCode, regenerateInviteCode } = useChurchInvite();
 const { updateOwnChurch } = useChurch();
 const {
@@ -3055,7 +3153,7 @@ const {
   loadServiceTimes,
   createServiceTime,
   updateServiceTime,
-  deactivateServiceTime,
+  deleteServiceTime,
 } = useServiceTimes();
 
 const inviteCodeValue = ref("");
@@ -3192,7 +3290,12 @@ const departmentTypeFilter = ref("ALL");
 const roleSearch = ref("");
 const roleModuleFilter = ref<PermissionModuleKey | "ALL">("ALL");
 const contentError = ref("");
+const announcementError = ref("");
+const devotionalError = ref("");
+const postError = ref("");
 const isPublishingVerse = ref(false);
+const dailyVerses = ref<DailyVerse[]>([]);
+const verseError = ref("");
 const isSavingAnnouncement = ref(false);
 const isSavingDevotional = ref(false);
 const isSavingServiceTime = ref(false);
@@ -3552,6 +3655,7 @@ const verseForm = reactive({
   text: "",
   reference: "",
   commentary: "",
+  isPublic: false,
 });
 
 const announcementForm = reactive({
@@ -3611,6 +3715,7 @@ const serviceTimeForm = reactive({
 const devotionalForm = reactive({
   title: "",
   description: "",
+  isPublic: false,
   chapters: [
     {
       title: "",
@@ -3767,12 +3872,12 @@ const resetPostForm = () => {
 const onPostImageChange = async (event: Event) => {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
-  contentError.value = "";
+  postError.value = "";
   isUploadingPostImage.value = true;
   try {
     const { data, error } = await uploadPostImage(file);
     if (error || !data) {
-      contentError.value = error || "Não foi possível enviar a imagem.";
+      postError.value = error || "Não foi possível enviar a imagem.";
       return;
     }
     postForm.imageUrl = data.url;
@@ -3800,9 +3905,9 @@ const editPost = (post: ChurchPost) => {
 };
 
 const savePost = async () => {
-  contentError.value = "";
+  postError.value = "";
   if (!postForm.title.trim()) {
-    contentError.value = "Título da publicação é obrigatório.";
+    postError.value = "Título da publicação é obrigatório.";
     return;
   }
   isSavingPost.value = true;
@@ -3818,11 +3923,11 @@ const savePost = async () => {
     };
     if (editingPostId.value) {
       const { data, error } = await updatePost(editingPostId.value, payload);
-      if (error || !data) { contentError.value = error || "Erro ao salvar publicação."; return; }
+      if (error || !data) { postError.value = error || "Erro ao salvar publicação."; return; }
       posts.value = posts.value.map((item) => (item.id === data.id ? data : item));
     } else {
       const { data, error } = await createPost(payload);
-      if (error || !data) { contentError.value = error || "Erro ao publicar."; return; }
+      if (error || !data) { postError.value = error || "Erro ao publicar."; return; }
       posts.value = [data, ...posts.value];
     }
     resetPostForm();
@@ -3832,9 +3937,9 @@ const savePost = async () => {
 };
 
 const removePost = async (id: string) => {
-  contentError.value = "";
+  postError.value = "";
   const { error } = await deletePost(id);
-  if (error) { contentError.value = error; return; }
+  if (error) { postError.value = error; return; }
   posts.value = posts.value.filter((item) => item.id !== id);
   if (editingPostId.value === id) resetPostForm();
 };
@@ -3850,6 +3955,7 @@ const loadChurchAdminData = async () => {
     loadDevotionals(),
     loadPosts(),
     loadServiceTimes(),
+    loadDailyVerses(),
   ]);
 };
 
@@ -4360,38 +4466,60 @@ const confirmDeleteMember = async () => {
   }
 };
 
+const loadDailyVerses = async () => {
+  const { data, error } = await listVerses();
+  if (error) {
+    verseError.value = error;
+    return;
+  }
+  dailyVerses.value = data?.items ?? [];
+};
+
 const publishDailyVerse = async () => {
-  contentError.value = "";
+  verseError.value = "";
 
   if (!verseForm.text.trim() || !verseForm.reference.trim()) {
-    contentError.value = "Informe o texto e a referência do versículo.";
+    verseError.value = "Informe o texto e a referência do versículo.";
     return;
   }
 
   isPublishingVerse.value = true;
   try {
-    const { error } = await publishVerse({
+    const { data, error } = await publishVerse({
       text: verseForm.text.trim(),
       reference: verseForm.reference.trim(),
       commentary: verseForm.commentary.trim(),
+      isPublic: verseForm.isPublic,
     });
-    if (error) {
-      contentError.value = error;
+    if (error || !data) {
+      verseError.value = error || "Não foi possível publicar o versículo.";
       return;
     }
+    dailyVerses.value = [data, ...dailyVerses.value];
     verseForm.text = "";
     verseForm.reference = "";
     verseForm.commentary = "";
+    verseForm.isPublic = false;
   } finally {
     isPublishingVerse.value = false;
   }
 };
 
+const removeVerse = async (id: string) => {
+  verseError.value = "";
+  const { error } = await deleteVerse(id);
+  if (error) {
+    verseError.value = error;
+    return;
+  }
+  dailyVerses.value = dailyVerses.value.filter((verse) => verse.id !== id);
+};
+
 const publishAnnouncement = async () => {
-  contentError.value = "";
+  announcementError.value = "";
 
   if (!announcementForm.title.trim() || !announcementForm.body.trim()) {
-    contentError.value = "Informe o título e o texto do aviso.";
+    announcementError.value = "Informe o título e o texto do aviso.";
     return;
   }
 
@@ -4406,7 +4534,7 @@ const publishAnnouncement = async () => {
       kind: announcementForm.kind,
     });
     if (error || !data) {
-      contentError.value = error || "Não foi possível publicar o aviso.";
+      announcementError.value = error || "Não foi possível publicar o aviso.";
       return;
     }
     announcements.value = [data, ...announcements.value];
@@ -4474,18 +4602,17 @@ const saveServiceTime = async () => {
   }
 };
 
-const disableServiceTime = async (id: string) => {
+const removeServiceTime = async (id: string) => {
   contentError.value = "";
-  const { data, error } = await deactivateServiceTime(id);
+  const { error } = await deleteServiceTime(id);
 
-  if (error || !data) {
-    contentError.value = error || "Nao foi possivel desativar o horario.";
+  if (error) {
+    contentError.value = error || "Nao foi possivel excluir o horario.";
     return;
   }
 
-  serviceTimes.value = serviceTimes.value.map((item) =>
-    item.id === data.id ? data : item,
-  );
+  serviceTimes.value = serviceTimes.value.filter((item) => item.id !== id);
+  if (editingServiceTimeId.value === id) resetServiceTimeForm();
 };
 
 const savePublicChurchSettings = async () => {
@@ -4539,10 +4666,10 @@ const savePublicChurchSettings = async () => {
   }
 };
 const removeAnnouncement = async (id: string) => {
-  contentError.value = "";
+  announcementError.value = "";
   const { error } = await deleteAnnouncement(id);
   if (error) {
-    contentError.value = error;
+    announcementError.value = error;
     return;
   }
   announcements.value = announcements.value.filter((announcement) => announcement.id !== id);
@@ -4557,7 +4684,7 @@ const addDevotionalChapter = () => {
 };
 
 const publishDevotional = async () => {
-  contentError.value = "";
+  devotionalError.value = "";
   const chapters = devotionalForm.chapters
     .map((chapter) => ({
       title: chapter.title.trim(),
@@ -4567,7 +4694,7 @@ const publishDevotional = async () => {
     .filter((chapter) => chapter.title && chapter.content);
 
   if (!devotionalForm.title.trim() || chapters.length === 0) {
-    contentError.value = "Informe o título e ao menos um capítulo.";
+    devotionalError.value = "Informe o título e ao menos um capítulo.";
     return;
   }
 
@@ -4576,15 +4703,17 @@ const publishDevotional = async () => {
     const { data, error } = await createDevotional({
       title: devotionalForm.title.trim(),
       description: devotionalForm.description.trim(),
+      isPublic: devotionalForm.isPublic,
       chapters,
     });
     if (error || !data) {
-      contentError.value = error || "Não foi possível criar o devocional.";
+      devotionalError.value = error || "Não foi possível criar o devocional.";
       return;
     }
     devotionals.value = [data, ...devotionals.value];
     devotionalForm.title = "";
     devotionalForm.description = "";
+    devotionalForm.isPublic = false;
     devotionalForm.chapters = [{ title: "", content: "", bibleRef: "" }];
   } finally {
     isSavingDevotional.value = false;
@@ -4592,10 +4721,10 @@ const publishDevotional = async () => {
 };
 
 const removeDevotional = async (id: string) => {
-  contentError.value = "";
+  devotionalError.value = "";
   const { error } = await deleteDevotional(id);
   if (error) {
-    contentError.value = error;
+    devotionalError.value = error;
     return;
   }
   devotionals.value = devotionals.value.filter((devotional) => devotional.id !== id);
@@ -5683,14 +5812,31 @@ onMounted(async () => {
 
 .content-admin-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* auto-fit + minmax faz o grid decidir sozinho quantas colunas cabem,
+     em vez de depender de um breakpoint fixo que pode nao bater com a
+     largura real do container (padding, app frame, etc). */
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px;
 }
 
 .footer-fields-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
+}
+
+/* Linha de select + botão de atribuir cargo: quebra para 2 linhas em telas
+   estreitas em vez de forçar o select a ficar espremido ou vazar da tela. */
+.assign-role-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.assign-role-select {
+  flex: 1 1 200px;
+  min-width: 0;
 }
 
 .post-image-preview {
@@ -5700,6 +5846,17 @@ onMounted(async () => {
   object-fit: cover;
   border-radius: 12px;
   margin-bottom: 8px;
+}
+
+/* v-btn-toggle nao estica os filhos por padrao; sem isto os dois botoes de
+   alcance do cargo ficam desalinhados/apertados em telas de celular. */
+.role-scope-toggle {
+  display: flex !important;
+  width: 100%;
+}
+
+.role-scope-toggle :deep(.v-btn) {
+  flex: 1 1 0;
 }
 
 /* --- Tratamento editorial das telas de cadastro (mesma cara da landing) --- */

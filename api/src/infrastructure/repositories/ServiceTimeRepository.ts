@@ -52,4 +52,8 @@ export class ServiceTimeRepository implements IServiceTimeRepository {
       throw new DomainError("Falha ao atualizar horario de culto");
     }
   }
+
+  async delete(id: string): Promise<void> {
+    await $prismaClient.serviceTime.delete({ where: { id } });
+  }
 }

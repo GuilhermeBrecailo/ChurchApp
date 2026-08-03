@@ -19,4 +19,9 @@ export async function DailyVerseRoutes(app: FastifyInstance) {
     "/api/church/daily-verse",
     controllerHandler(adapters.createDailyVerse.bind(adapters)),
   );
+
+  app.delete(
+    "/api/church/daily-verse/:id",
+    controllerHandler(adapters.deleteDailyVerse.bind(adapters)),
+  );
 }

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CreateServiceTimeUseCase } from "../../application/use-cases/ServiceTime/CreateServiceTimeUseCase";
 import { ListServiceTimesByChurchUseCase } from "../../application/use-cases/ServiceTime/ListServiceTimesByChurchUseCase";
 import { UpdateServiceTimeUseCase } from "../../application/use-cases/ServiceTime/UpdateServiceTimeUseCase";
+import { DeleteServiceTimeUseCase } from "../../application/use-cases/ServiceTime/DeleteServiceTimeUseCase";
 import { ServiceTimeRepository } from "../../infrastructure/repositories/ServiceTimeRepository";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { resolveActiveChurchContext, RoleContext } from "../utils/churchContext";
@@ -12,6 +13,7 @@ const serviceTimeRepository = new ServiceTimeRepository();
 const createServiceTimeUseCase = new CreateServiceTimeUseCase(serviceTimeRepository);
 const listServiceTimesUseCase = new ListServiceTimesByChurchUseCase(serviceTimeRepository);
 const updateServiceTimeUseCase = new UpdateServiceTimeUseCase(serviceTimeRepository);
+const deleteServiceTimeUseCase = new DeleteServiceTimeUseCase(serviceTimeRepository);
 
 const createServiceTimeSchema = z.object({
   label: z.string().trim().min(1, "Rotulo do culto e obrigatorio"),
@@ -89,5 +91,14 @@ export class ServiceTimeAdapters {
       ...body,
       crunchId: user.crunchId,
     });
+  }
+
+  async remove(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    this.assertCanManageServiceTimes(user);
+    const { id } = request.params as { id?: string };
+    if (!id) throw new DomainError("Horario nao informado");
+
+    return await deleteServiceTimeUseCase.execute({ id, crunchId: user.crunchId });
   }
 }

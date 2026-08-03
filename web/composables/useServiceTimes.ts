@@ -96,6 +96,18 @@ export const useServiceTimes = () => {
     return await updateServiceTime(id, { isActive: false });
   };
 
+  const deleteServiceTime = async (
+    id: string,
+  ): Promise<ApiResponse<{ success: boolean }>> => {
+    return await $customFetch<{ success: boolean }>(
+      `${config.public.URL_BACKEND}/api/church/service-times/${id}`,
+      {
+        method: "DELETE",
+        headers: authHeaders(),
+      },
+    );
+  };
+
   return {
     serviceTimes,
     loading,
@@ -105,5 +117,6 @@ export const useServiceTimes = () => {
     createServiceTime,
     updateServiceTime,
     deactivateServiceTime,
+    deleteServiceTime,
   };
 };

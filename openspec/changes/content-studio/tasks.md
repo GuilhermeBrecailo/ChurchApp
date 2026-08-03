@@ -1,33 +1,29 @@
 ## 0. Auditoria confirmada (estado real do código, verificado nesta sessão)
 
-Estado atual, checado direto no código antes de escrever as tarefas abaixo:
-
-- **Backend já tem `isPublic`** em `Announcement`, `DailyVerse` e `Devotional` (schema + adapters aceitam o campo). O que falta é só de UI.
-- **UI de "aparecer na página" só existe no formulário de Aviso** (`announcementForm.isPublic` com switch). Os formulários de **Versículo** e **Devocional** no admin **não têm o toggle** e **não enviam `isPublic`** no payload (`publishDailyVerse`/`publishDevotional`) — ou seja, hoje versículo e devocional são sempre criados como não-públicos, sem forma de mudar isso pela tela.
-- **Excluir**: `Announcement`, `Devotional` e `Post` já têm endpoint de exclusão (`deleteAnnouncement`, `deleteDevotional`, `deletePost`) e são usados no admin.
-- **`DailyVerse` (versículo) não tem endpoint de exclusão nenhum** — nem rota, nem adapter. Precisa ser criado do zero.
-- **`ServiceTime` (horário de culto) só tem "desativar"** (`deactivateServiceTime`, soft delete via `isActive=false`); não existe exclusão definitiva. Decidir se mantém só desativar ou também permite apagar.
+- **Backend já tinha `isPublic`** em `Announcement`, `DailyVerse` e `Devotional`. **Feito**: a UI de Versículo e Devocional agora enviam o campo.
+- **Excluir**: `Announcement`, `Devotional`, `Post` e agora **`DailyVerse`** têm endpoint de exclusão e botão no admin.
+- **`ServiceTime`**: trocado de "desativar" (soft) para **exclusão definitiva** (hard delete) via ícone de lixeira.
+- **Bug real encontrado e corrigido**: o erro de qualquer ação (excluir, publicar) só aparecia num único alerta no topo da aba Conteúdo — se o usuário estava rolado para um card mais abaixo (Devocional, Publicações), o erro ficava fora da tela e parecia que "o botão não fazia nada". Cada card agora tem seu próprio alerta de erro logo acima do formulário.
 
 ## 1. Backend
 
-- [ ] 1.1 Adicionar toggle funcional de `isPublic` no fluxo de versículo e devocional (o campo já existe no schema/adapter; falta só o front enviar)
-- [ ] 1.2 Criar endpoint de exclusão para `DailyVerse` (rota + adapter; não existe hoje)
-- [ ] 1.3 Decidir e, se necessário, implementar exclusão definitiva de `ServiceTime` (hoje só desativa)
-- [ ] 1.4 Endpoint(s) de listagem que a tela precise (a maioria já existe)
+- [x] 1.1 Toggle funcional de `isPublic` no fluxo de versículo e devocional
+- [x] 1.2 Endpoint de exclusão para `DailyVerse` (rota + adapter, novo)
+- [x] 1.3 Exclusão definitiva de `ServiceTime` (`DeleteServiceTimeUseCase` + rota `DELETE /api/church/service-times/:id`)
+- [x] 1.4 Endpoint(s) de listagem que a tela precisa (já existiam: `listVerses`, `getAnnouncements`, `listDevotionals`, `listPosts`, `listServiceTimes`)
 
 ## 2. Frontend
 
-- [ ] 2.1 Nova tela/aba de Conteúdo com seletor "O que você quer publicar?" (aviso, versículo, devocional, publicação, horário)
-- [ ] 2.2 Formulário certo por tipo, reaproveitando `useDailyVerse`/`useAnnouncements`/`useDevotionals`/`usePosts`/`useServiceTimes`
-- [ ] 2.3 Adicionar o switch "Aparecer na página pública" nos formulários de Versículo e Devocional (só existe no de Aviso hoje) e garantir que todos os tipos enviem `isPublic` corretamente
-- [ ] 2.4 Card de horários de culto (calendário da semana) incluído na tela
-- [ ] 2.5 Lista unificada com filtro por tipo e status público/interno
-- [ ] 2.6 Excluir com confirmação para todos os tipos, incluindo o botão de excluir versículo (depende da tarefa 1.2)
-- [ ] 2.7 Estilo editorial (papel + cor da igreja + Fraunces), consistente com o já aplicado
-- [ ] 2.8 **Corrigir layout no celular** — usuário relatou que a parte de "colocar na página" quebra no celular. Suspeitos concretos identificados no código: `.content-admin-grid`/`.footer-fields-grid` só empilham abaixo de 520px (telas um pouco maiores que isso ainda ficam em 2 colunas apertadas); o botão "Adicionar foto" + "Remover" da publicação fica em `d-flex` sem `flex-wrap`; o seletor de alcance do cargo (`v-btn-toggle` com `flex-1`) e as linhas de "adicionar cargo" (`v-select` + botão lado a lado, com `max-width` fixo em px) não têm regra de empilhar em telas estreitas. Revisar e testar em 375px e 390px de largura (iPhone SE/13 mini), não só no breakpoint de 520/720px já existente.
+- [ ] 2.1 Nova tela/aba de Conteúdo com seletor "O que você quer publicar?" (aviso, versículo, devocional, publicação, horário) — **ainda não feito**: os cards continuam lado a lado na aba Conteúdo existente, não numa tela com seletor de tipo dedicada
+- [x] 2.3 Switch "Aparecer na página pública" em Versículo e Devocional (antes só existia em Aviso); todos os tipos publicáveis enviam `isPublic` corretamente
+- [x] 2.4 Card de horários de culto já estava na seção Página Pública (feito em sessão anterior)
+- [ ] 2.5 Lista unificada com filtro por tipo e status público/interno — **ainda não feito**: cada tipo continua com sua própria lista separada
+- [x] 2.6 Excluir com confirmação simples (sem modal) para todos os tipos, incluindo o versículo (era o gap principal)
+- [x] 2.7 Estilo editorial já aplicado (sessão anterior)
+- [x] 2.8 **Layout mobile corrigido**: grids de Conteúdo/rodapé trocados de breakpoint fixo (520px) para `auto-fit`/`minmax` (se adaptam a qualquer largura); linhas de "adicionar cargo" (select + botão) e do upload de foto ganharam `flex-wrap`; o seletor de alcance do cargo (`v-btn-toggle`) ganhou `display:flex; width:100%` para não desalinhar
 
 ## 3. Validação
 
-- [ ] 3.1 `npm run validate` verde
-- [ ] 3.2 Teste manual: publicar cada tipo (incluindo marcar/desmarcar público em versículo e devocional) e conferir na página pública; excluir cada tipo, incluindo versículo
-- [ ] 3.3 Teste manual em viewport de celular real (375–390px) da tela de conteúdo inteira, não só o formulário de publicação
+- [x] 3.1 `npm run validate` verde (lint + typecheck + 107 testes + build)
+- [ ] 3.2 Teste manual: publicar cada tipo (incluindo público/interno em versículo e devocional) e conferir na página pública; excluir cada tipo, incluindo versículo — requer app + banco
+- [ ] 3.3 Teste manual em viewport de celular real (375–390px) — requer app rodando; as correções de CSS foram feitas por auditoria de código, não visualmente confirmadas no app real

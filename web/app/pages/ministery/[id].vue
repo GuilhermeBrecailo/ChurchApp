@@ -254,7 +254,7 @@
                 </span>
               </div>
 
-              <div v-if="assignableCargos(member.id).length" class="d-flex ga-2 mt-2">
+              <div v-if="assignableCargos(member.id).length" class="assign-cargo-row mt-2">
                 <v-select
                   v-model="selectedCargo[member.id]"
                   :items="assignableCargos(member.id)"
@@ -264,7 +264,7 @@
                   variant="outlined"
                   density="compact"
                   hide-details
-                  style="max-width: 220px"
+                  class="assign-cargo-select"
                   :disabled="isAssigningCargo === member.id"
                 />
                 <v-btn
@@ -4202,6 +4202,18 @@ onMounted(async () => {
   border: 1px solid var(--app-color-border, #e5e7eb);
   border-radius: 12px;
   padding: 12px 14px;
+}
+
+.assign-cargo-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.assign-cargo-select {
+  flex: 1 1 180px;
+  min-width: 0;
 }
 .leader-list {
   display: grid;

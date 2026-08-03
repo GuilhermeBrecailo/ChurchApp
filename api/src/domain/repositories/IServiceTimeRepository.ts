@@ -5,4 +5,5 @@ export interface IServiceTimeRepository {
   findByIdAndCrunchId(id: string, crunchId: string): Promise<ServiceTime | null>;
   findByCrunchId(crunchId: string, onlyActive?: boolean): Promise<ServiceTime[]>;
   update(serviceTime: ServiceTime): Promise<ServiceTime>;
+  delete(id: string): Promise<void>;
 }
