@@ -170,7 +170,10 @@ export interface CifraClubSongImport {
 
 export interface PdfSongSuggestion {
   title: string;
+  artist: string;
+  key: string;
   lyrics: string;
+  chords: string;
 }
 
 export interface SongPreference {

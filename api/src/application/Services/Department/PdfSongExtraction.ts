@@ -21,11 +21,37 @@ type PdfPageData = {
 
 export type ExtractedSong = {
   title: string;
+  artist: string;
+  key: string;
   lyrics: string;
+  chords: string;
 };
 
 const MAX_TITLE_LENGTH = 60;
 const FOOTER_MARKERS = [/^Composi[cç][aã]o de:/i, /^Tom:/i, /^Afina[cç][aã]o:/i];
+
+// Casa um token de cifra isolado (acorde), ex: Em7, C9/E, D4(7), G#, Am.
+// Raiz A-G obrigatoria (maiuscula) e o resto e sufixo/extensao/baixo -
+// e o que separa um acorde de uma palavra comum que comece com a mesma
+// letra (ex: "Deus" comeca com D mas nao casa porque sobra "eus").
+const CHORD_TOKEN_RE =
+  /^\(?[A-G][#b]?(?:m|min|maj|dim|aug|sus[24]?|add)?\d{0,2}(?:\(\d{1,2}\))?(?:\/[A-G][#b]?)?\)?$/;
+
+const SECTION_TAG_PREFIX_RE = /^(\[[^\]]*\])\s*(.*)$/;
+
+function isChordToken(token: string): boolean {
+  return token === "(" || token === ")" || CHORD_TOKEN_RE.test(token);
+}
+
+// Uma linha e "so cifra" quando TODOS os tokens dela sao acordes (ou
+// parenteses de progressao, ex: "( Em7 C9 G D )"). Uma linha com uma unica
+// palavra que bata com o regex de acorde nao basta - ela precisa estar
+// isolada ou acompanhada só de outros acordes.
+function isChordLine(line: string): boolean {
+  const tokens = line.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return false;
+  return tokens.every(isChordToken);
+}
 
 function renderPageText(pageData: PdfPageData): Promise<string> {
   return pageData
@@ -63,6 +89,43 @@ export async function extractPdfPages(buffer: Buffer): Promise<string[]> {
   return pages;
 }
 
+// Separa letra de cifra a partir das linhas de conteudo de uma musica.
+// "chords" e o texto original completo (acorde + letra intercalados, como
+// no PDF) - e o que um instrumentista usa para tocar. "lyrics" e o mesmo
+// conteudo com as linhas que sao só acorde removidas - o que sobra e a
+// letra pura, pronta pra cantar. Marcadores de secao ("[Refrão]") entram
+// nos dois; quando vem colado com acordes na mesma linha (ex: "[Solo] Am
+// G/B D Em Am"), so o marcador vai pra letra e a linha inteira vai pra
+// cifra.
+function splitLyricsFromChords(lines: string[]): { lyricLines: string[]; chordLines: string[] } {
+  const chordLines = lines;
+  const lyricLines: string[] = [];
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+
+    if (line === "") {
+      lyricLines.push(rawLine);
+      continue;
+    }
+
+    const sectionMatch = line.match(SECTION_TAG_PREFIX_RE);
+    if (sectionMatch) {
+      const [, tag, rest] = sectionMatch;
+      lyricLines.push(rest && isChordLine(rest) ? tag : line);
+      continue;
+    }
+
+    if (isChordLine(line)) {
+      continue;
+    }
+
+    lyricLines.push(line);
+  }
+
+  return { lyricLines, chordLines };
+}
+
 function splitIntoBlocks(text: string): string[] {
   return text
     .split(/\n\s*\n\s*\n+/g) // 2+ linhas em branco separam blocos
@@ -80,18 +143,24 @@ function blockToSong(block: string): ExtractedSong | null {
   if (firstContentIndex === -1) return null;
 
   const title = lines[firstContentIndex].slice(0, MAX_TITLE_LENGTH).trim();
-  const lyrics = lines
-    .slice(firstContentIndex + 1)
-    .join("\n")
-    .trim();
-
   if (!title) return null;
 
-  return { title, lyrics };
+  const bodyLines = lines.slice(firstContentIndex + 1);
+  const { lyricLines, chordLines } = splitLyricsFromChords(bodyLines);
+
+  return {
+    title,
+    artist: "",
+    key: "",
+    lyrics: lyricLines.join("\n").trim(),
+    chords: chordLines.join("\n").trim(),
+  };
 }
 
 type PageSongMetadata = {
   title: string;
+  artist: string;
+  key: string;
   footerStartIndex: number;
 };
 
@@ -110,25 +179,37 @@ function findCifraClubMetadata(lines: string[]): PageSongMetadata | null {
   const compositionIndex = lines.findIndex((line) => /^Composi[cç][aã]o de:/i.test(line));
   if (compositionIndex < 2) return null;
 
-  const nearbyFooter = lines
-    .slice(compositionIndex, Math.min(lines.length, compositionIndex + 5))
-    .some((line) => /^Tom:/i.test(line) || /^Afina[cç][aã]o:/i.test(line));
+  const footerWindow = lines.slice(compositionIndex, Math.min(lines.length, compositionIndex + 6));
+  const hasTomOrAfinacao = footerWindow.some(
+    (line) => /^Tom:/i.test(line) || /^Afina[cç][aã]o:/i.test(line),
+  );
 
-  if (!nearbyFooter) return null;
+  if (!hasTomOrAfinacao) return null;
+
+  const tomLine = footerWindow.find((line) => /^Tom:/i.test(line));
+  const key = tomLine ? tomLine.replace(/^Tom:\s*/i, "").trim() : "";
 
   return {
     title: lines[compositionIndex - 2].slice(0, MAX_TITLE_LENGTH).trim(),
+    artist: lines[compositionIndex - 1].trim(),
+    key,
     footerStartIndex: compositionIndex - 2,
   };
 }
 
-function cleanPageLyrics(pageText: string): { lyrics: string; metadata: PageSongMetadata | null } {
+function cleanPageLyrics(
+  pageText: string,
+): { lyrics: string; chords: string; metadata: PageSongMetadata | null } {
   const lines = normalizeLines(pageText);
   const metadata = findCifraClubMetadata(lines);
-  const lyricLines = metadata ? lines.slice(0, metadata.footerStartIndex) : lines;
+  const bodyLines = (metadata ? lines.slice(0, metadata.footerStartIndex) : lines).filter(
+    (line) => !looksLikeFooterLine(line),
+  );
+  const { lyricLines, chordLines } = splitLyricsFromChords(bodyLines);
 
   return {
-    lyrics: lyricLines.filter((line) => !looksLikeFooterLine(line)).join("\n").trim(),
+    lyrics: lyricLines.join("\n").trim(),
+    chords: chordLines.join("\n").trim(),
     metadata,
   };
 }
@@ -138,7 +219,8 @@ function pushCurrentSong(songs: ExtractedSong[], current: ExtractedSong | null) 
 
   const title = current.title.trim();
   const lyrics = current.lyrics.trim();
-  if (title) songs.push({ title, lyrics });
+  const chords = current.chords.trim();
+  if (title) songs.push({ ...current, title, lyrics, chords });
 }
 
 export function extractSongsFromPages(pages: string[]): ExtractedSong[] {
@@ -147,17 +229,24 @@ export function extractSongsFromPages(pages: string[]): ExtractedSong[] {
   let foundCifraClubMetadata = false;
 
   for (const page of pages) {
-    const { lyrics, metadata } = cleanPageLyrics(page);
+    const { lyrics, chords, metadata } = cleanPageLyrics(page);
 
     if (metadata) {
       foundCifraClubMetadata = true;
       pushCurrentSong(songs, currentSong);
-      currentSong = { title: metadata.title, lyrics };
+      currentSong = {
+        title: metadata.title,
+        artist: metadata.artist,
+        key: metadata.key,
+        lyrics,
+        chords,
+      };
       continue;
     }
 
     if (currentSong) {
       currentSong.lyrics = [currentSong.lyrics, lyrics].filter(Boolean).join("\n");
+      currentSong.chords = [currentSong.chords, chords].filter(Boolean).join("\n");
     }
   }
 

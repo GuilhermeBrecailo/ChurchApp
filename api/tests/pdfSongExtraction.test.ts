@@ -13,7 +13,10 @@ describe("extractSongsFromPages", () => {
     expect(songs).toHaveLength(3);
     expect(songs[0]).toEqual({
       title: "Grande e o Senhor",
+      artist: "",
+      key: "",
       lyrics: "Verso 1 linha 1\nVerso 1 linha 2",
+      chords: "Verso 1 linha 1\nVerso 1 linha 2",
     });
     expect(songs[1].title).toBe("Digno e o Cordeiro");
     expect(songs[2].title).toBe("Reina em Mim");
@@ -82,5 +85,85 @@ describe("extractSongsFromPages", () => {
 
     expect(songs).toHaveLength(1);
     expect(songs[0].title.length).toBeLessThanOrEqual(60);
+  });
+
+  it("separates letra da cifra e extrai tom/artista em PDF exportado do Cifra Club", () => {
+    const page = [
+      "Em7 C9/E G",
+      "Água em vinho tornou",
+      " Am7",
+      "Não há outro igual",
+      "(Rifle)",
+      "[Refrão]",
+      "Em7",
+      "Deus tu és grande",
+      "( Em7 C9 G D )",
+      "Nosso Deus",
+      "Gui Rebustini",
+      "Composição de: Chris Tonlin / Jonas Carl Gustaf Myrin",
+      "Tom: G",
+      "Afinação: E A D G B E",
+    ].join("\n");
+
+    const songs = extractSongsFromPages([page]);
+
+    expect(songs).toHaveLength(1);
+    const [song] = songs;
+
+    expect(song.title).toBe("Nosso Deus");
+    expect(song.artist).toBe("Gui Rebustini");
+    expect(song.key).toBe("G");
+
+    // cifra mantem tudo, igual ao PDF original (acorde + letra intercalados)
+    expect(song.chords).toContain("Em7 C9/E G");
+    expect(song.chords).toContain("Água em vinho tornou");
+    expect(song.chords).toContain("( Em7 C9 G D )");
+
+    // letra fica so com o que se canta: sem linhas so-de-acorde, com as
+    // marcacoes de secao preservadas
+    expect(song.lyrics).not.toContain("Em7");
+    expect(song.lyrics).not.toContain("C9/E");
+    expect(song.lyrics).not.toContain("( Em7 C9 G D )");
+    expect(song.lyrics).toContain("Água em vinho tornou");
+    expect(song.lyrics).toContain("Não há outro igual");
+    expect(song.lyrics).toContain("[Refrão]");
+    expect(song.lyrics).toContain("Deus tu és grande");
+  });
+
+  it("mantem o titulo de medley com '+' como veio do PDF (ex: João 20 + Pra Sempre)", () => {
+    const page = [
+      "C G/B",
+      "Abri minha bíblia em João 20",
+      "João 20 + Pra Sempre",
+      "Vitor Santana",
+      "Composição de: Brian Johnson / Gabriel Wilson",
+      "Tom: C",
+      "Afinação: E A D G B E",
+    ].join("\n");
+
+    const songs = extractSongsFromPages([page]);
+
+    expect(songs).toHaveLength(1);
+    expect(songs[0].title).toBe("João 20 + Pra Sempre");
+    expect(songs[0].key).toBe("C");
+  });
+
+  it("separa uma linha de secao colada com acordes (ex: [Solo] C Dm Am F)", () => {
+    const page = [
+      "C",
+      "O meu Deus sabe tudo",
+      "[Solo] C Dm Am F",
+      "Te Esperamos",
+      "Salvaon",
+      "Composição de: Felipe Andrade",
+      "Tom: C",
+      "Afinação: E A D G B E",
+    ].join("\n");
+
+    const songs = extractSongsFromPages([page]);
+
+    expect(songs[0].lyrics).toContain("[Solo]");
+    expect(songs[0].lyrics).not.toContain("[Solo] C Dm Am F");
+    expect(songs[0].chords).toContain("[Solo] C Dm Am F");
   });
 });

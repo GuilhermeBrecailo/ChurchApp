@@ -2482,14 +2482,17 @@ export class ChurchDepartmentAdapters {
     );
 
     const body = request.body as {
-      songs?: { title?: string; lyrics?: string }[];
+      songs?: { title?: string; artist?: string; key?: string; lyrics?: string; chords?: string }[];
     };
 
     const songs = Array.isArray(body.songs)
       ? body.songs
           .map((song) => ({
             title: song.title?.trim() || "",
+            artist: song.artist?.trim() || "",
+            key: song.key?.trim() || "",
             lyrics: song.lyrics?.trim() || "",
+            chords: song.chords?.trim() || "",
           }))
           .filter((song) => song.title)
       : [];
@@ -2507,13 +2510,13 @@ export class ChurchDepartmentAdapters {
             url: "",
             category: "MUSIC",
             metadata: {
-              artist: "",
-              key: "",
+              artist: song.artist,
+              key: song.key,
               bpm: "",
               songCategory: "Louvor",
               notes: "",
               lyrics: song.lyrics,
-              chords: "",
+              chords: song.chords,
               keyboardChords: "",
               mediaLink: "",
             },

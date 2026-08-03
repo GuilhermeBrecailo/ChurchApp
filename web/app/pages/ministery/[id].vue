@@ -1667,8 +1667,8 @@
         <template v-if="pdfImportStep === 'upload'">
           <p class="text-caption text-grey-darken-1 mb-4">
             Envie um PDF com o repertório (ex.: 3 músicas no PDF viram 3 músicas no
-            repertório, na mesma ordem). Depois você revisa título e letra antes de
-            confirmar.
+            repertório, na mesma ordem). Depois você revisa título, artista, tom,
+            letra e cifra antes de confirmar.
           </p>
 
           <v-alert
@@ -1742,6 +1742,28 @@
                   <Trash2 size="16" />
                 </v-btn>
               </div>
+              <div class="d-flex ga-2 mb-2">
+                <v-text-field
+                  v-model="song.artist"
+                  label="Artista"
+                  variant="outlined"
+                  density="compact"
+                  color="purple-darken-3"
+                  hide-details
+                  class="flex-grow-1"
+                />
+                <v-select
+                  v-model="song.key"
+                  label="Tom"
+                  :items="songKeyOptions"
+                  variant="outlined"
+                  density="compact"
+                  color="purple-darken-3"
+                  hide-details
+                  clearable
+                  style="max-width: 160px"
+                />
+              </div>
               <v-textarea
                 v-model="song.lyrics"
                 label="Letra"
@@ -1751,6 +1773,18 @@
                 auto-grow
                 rows="3"
                 hide-details
+                class="mb-2"
+              />
+              <v-textarea
+                v-model="song.chords"
+                label="Cifra"
+                variant="outlined"
+                density="compact"
+                color="purple-darken-3"
+                auto-grow
+                rows="3"
+                hide-details
+                class="chords-input"
               />
             </div>
             <p v-if="!pdfImportSongs.length" class="text-caption text-grey-darken-1 mb-0">
