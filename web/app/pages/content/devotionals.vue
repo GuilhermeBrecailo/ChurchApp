@@ -283,7 +283,7 @@ const createForm = reactive({
 });
 
 // Pastor/admin sempre; demais so com PUBLISH_CONTENT concedido pelo pastor.
-const canPublish = computed(() => can("PUBLISH_CONTENT"));
+const canPublish = computed(() => can("CONTENT_PUBLISH"));
 
 const openCreateDialog = () => {
   createForm.title = "";

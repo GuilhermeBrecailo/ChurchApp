@@ -2,12 +2,13 @@ import { FastifyRequest } from "fastify";
 import crypto from "node:crypto";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
-import { resolveActiveChurchContext } from "../utils/churchContext";
+import { resolveActiveChurchContext, RoleContext } from "../utils/churchContext";
+import { hasPermission } from "../../application/Services/Auth/AuthorizationService";
 
 type InviteManagerContext = {
   role: string;
   canManageMembers: boolean;
-  permissions: string[];
+  roles: RoleContext[];
 };
 
 function getAuthPayload(request: FastifyRequest) {
@@ -25,9 +26,7 @@ function generateCode(): string {
 export class ChurchInviteAdapters {
   private canManageInvites(context: InviteManagerContext) {
     return (
-      ["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(context.role) ||
-      context.canManageMembers ||
-      context.permissions.includes("MANAGE_MEMBERS")
+      context.canManageMembers || hasPermission(context, "MEMBER_CREATE")
     );
   }
 
@@ -154,7 +153,6 @@ export class ChurchInviteAdapters {
             crunchId: church.id,
             role: "MEMBER",
             canManageMembers: false,
-            churchRoleId: null,
           },
         });
       }

@@ -1211,7 +1211,6 @@ import {
   type DepartmentSong,
 } from "../../composables/useDepartments";
 import { useMembers, type ChurchMember } from "../../composables/useMembers";
-import { usePermissions } from "../../composables/usePermissions";
 
 const {
   getDepartments,
@@ -1227,7 +1226,6 @@ const {
   reorderScheduleMediaItems,
 } = useDepartments();
 const { getMembers } = useMembers();
-const { can } = usePermissions();
 const { user } = useAuth();
 const { isDark } = useThemeMode();
 const accentColor = computed(() => isDark.value ? "#f0975a" : "#B5472A");
@@ -1327,7 +1325,7 @@ const manageableDepartments = computed(() => {
   return departments.value.filter(
     (department) =>
       department.canManageSchedule === true ||
-      (can("MANAGE_SCHEDULES") && department.leaderId === user.value?.id),
+      department.leaderId === user.value?.id,
   );
 });
 
@@ -1598,7 +1596,7 @@ const canManageSchedule = (schedule: DepartmentSchedule) =>
       department.id === schedule.departmentId &&
       department.canManageSchedule === true,
   ) ||
-  (can("MANAGE_SCHEDULES") && schedule.department?.leaderId === user.value?.id);
+  schedule.department?.leaderId === user.value?.id;
 
 const filteredSchedules = computed(() => {
   const visibleSchedules =

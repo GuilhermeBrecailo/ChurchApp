@@ -2,16 +2,19 @@ import { FastifyRequest } from "fastify";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 
+export type RoleContext = {
+  id: string;
+  name: string;
+  scope: string;
+  departmentId: string | null;
+  permissions: string[];
+};
+
 export type ActiveChurchContext = {
   activeChurchId: string | null;
   role: string;
   canManageMembers: boolean;
-  churchRole: {
-    id: string;
-    name: string;
-    permissions: string[];
-  } | null;
-  permissions: string[];
+  roles: RoleContext[];
   membershipId: string | null;
 };
 
@@ -30,6 +33,26 @@ export function getRequestedChurchId(request: FastifyRequest) {
   );
 }
 
+function mapRoles(
+  membershipRoles: {
+    churchRole: {
+      id: string;
+      name: string;
+      scope: string;
+      departmentId: string | null;
+      permissions: string[];
+    };
+  }[],
+): RoleContext[] {
+  return membershipRoles.map((mr) => ({
+    id: mr.churchRole.id,
+    name: mr.churchRole.name,
+    scope: mr.churchRole.scope,
+    departmentId: mr.churchRole.departmentId,
+    permissions: mr.churchRole.permissions,
+  }));
+}
+
 export async function resolveActiveChurchContext(
   request: FastifyRequest,
   userId: string,
@@ -38,13 +61,23 @@ export async function resolveActiveChurchContext(
   const user = await $prismaClient.user.findUnique({
     where: { id: userId },
     include: {
-      churchRole: { select: { id: true, name: true, permissions: true } },
       churchMemberships: {
         where: { isActive: true },
         orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
         include: {
-          churchRole: { select: { id: true, name: true, permissions: true } },
-          crunch: true,
+          membershipRoles: {
+            include: {
+              churchRole: {
+                select: {
+                  id: true,
+                  name: true,
+                  scope: true,
+                  departmentId: true,
+                  permissions: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -63,39 +96,21 @@ export async function resolveActiveChurchContext(
   }
 
   if (membership) {
-    const churchRole = membership.churchRole
-      ? {
-          id: membership.churchRole.id,
-          name: membership.churchRole.name,
-          permissions: membership.churchRole.permissions,
-        }
-      : null;
-
     return {
       activeChurchId: membership.crunchId,
       role: membership.role,
       canManageMembers: membership.canManageMembers,
-      churchRole,
-      permissions: churchRole?.permissions ?? [],
+      roles: mapRoles(membership.membershipRoles),
       membershipId: membership.id,
     };
   }
 
   if (user.crunchId) {
-    const churchRole = user.churchRole
-      ? {
-          id: user.churchRole.id,
-          name: user.churchRole.name,
-          permissions: user.churchRole.permissions,
-        }
-      : null;
-
     return {
       activeChurchId: user.crunchId,
       role: user.role,
       canManageMembers: user.canManageMembers,
-      churchRole,
-      permissions: churchRole?.permissions ?? [],
+      roles: [],
       membershipId: null,
     };
   }
@@ -104,8 +119,7 @@ export async function resolveActiveChurchContext(
     activeChurchId: null,
     role: user.role,
     canManageMembers: user.canManageMembers,
-    churchRole: null,
-    permissions: [],
+    roles: [],
     membershipId: null,
   };
 }

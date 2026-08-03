@@ -43,6 +43,13 @@ type UpdateChurchDTO = Partial<CreateOwnChurchDTO> & {
   isActive?: boolean;
   slug?: string | null;
   accentColor?: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
+  youtube?: string | null;
+  website?: string | null;
 };
 
 export const useChurch = () => {

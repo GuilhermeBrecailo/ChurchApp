@@ -2,7 +2,8 @@ import { FastifyRequest } from "fastify";
 import crypto from "node:crypto";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
-import { resolveActiveChurchContext } from "../utils/churchContext";
+import { resolveActiveChurchContext, RoleContext } from "../utils/churchContext";
+import { hasPermission } from "../../application/Services/Auth/AuthorizationService";
 
 function getAuthUserId(request: FastifyRequest): string {
   const authHeader = request.headers.authorization;
@@ -29,20 +30,14 @@ export class DevotionalAdapters {
       crunchId: context.activeChurchId,
       role: context.role,
       canManageMembers: context.canManageMembers,
+      roles: context.roles,
     };
   }
 
-  // Pastor/admin sempre; alem deles, quem o pastor autorizou via PUBLISH_CONTENT
+  // Pastor/admin sempre; alem deles, quem o pastor autorizou via CONTENT_PUBLISH
   // num cargo da igreja (mesma regra do versiculo do dia).
-  private assertChurchManager(user: {
-    role: string;
-    churchRole?: { permissions: string[] } | null;
-  }) {
-    const isManager = ["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(user.role);
-    const hasPermission =
-      user.churchRole?.permissions?.includes("PUBLISH_CONTENT") === true;
-
-    if (!isManager && !hasPermission) {
+  private assertChurchManager(user: { role: string; roles: RoleContext[] }) {
+    if (!hasPermission(user, "CONTENT_PUBLISH")) {
       throw new DomainError(
         "Você não tem permissão para publicar conteúdo da igreja",
       );

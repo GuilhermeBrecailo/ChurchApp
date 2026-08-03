@@ -153,7 +153,7 @@
 
 
         <v-card
-          v-if="canManageScheduleDelegation"
+          v-if="canManageMinistryMembers"
           class="ministery-content-card pa-4 elevation-1 bg-white mb-4"
         >
           <div class="leader-card-title mb-3">
@@ -197,30 +197,88 @@
             </v-btn>
           </div>
 
-          <div v-if="departmentMembers.length" class="schedule-manager-list">
+          <v-alert
+            v-if="cargoError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            {{ cargoError }}
+          </v-alert>
+
+          <div v-if="departmentMembers.length" class="member-cargo-list">
             <div
               v-for="member in departmentMembers"
               :key="member.id"
-              class="schedule-manager-row"
+              class="member-cargo-item"
             >
-              <div class="min-w-0">
-                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
-                  {{ member.name }}
-                </p>
-                <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
-                  {{ member.email }}
-                </p>
+              <div class="d-flex align-center justify-space-between">
+                <div class="min-w-0">
+                  <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                    {{ member.name }}
+                  </p>
+                  <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
+                    {{ member.id === department.leaderId ? "Líder do ministério" : member.email }}
+                  </p>
+                </div>
+                <v-btn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="error"
+                  :disabled="member.id === department.leaderId"
+                  @click="requestRemoveMember(member)"
+                >
+                  <Trash2 size="16" />
+                </v-btn>
               </div>
-              <v-btn
-                icon
-                variant="text"
-                size="small"
-                color="error"
-                :disabled="member.id === department.leaderId"
-                @click="requestRemoveMember(member)"
-              >
-                <Trash2 size="16" />
-              </v-btn>
+
+              <div class="d-flex flex-wrap ga-1 mt-2">
+                <v-chip
+                  v-for="cargo in memberCargos(member.id)"
+                  :key="cargo.id"
+                  size="x-small"
+                  color="purple-darken-3"
+                  variant="tonal"
+                  :closable="isAssigningCargo !== member.id"
+                  @click:close="removeCargo(member.id, cargo.id)"
+                >
+                  {{ cargo.name }}
+                </v-chip>
+                <span
+                  v-if="!memberCargos(member.id).length"
+                  class="text-caption text-grey-darken-1"
+                >
+                  Sem cargo neste ministério
+                </span>
+              </div>
+
+              <div v-if="assignableCargos(member.id).length" class="d-flex ga-2 mt-2">
+                <v-select
+                  v-model="selectedCargo[member.id]"
+                  :items="assignableCargos(member.id)"
+                  item-title="label"
+                  item-value="value"
+                  label="Dar um cargo"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  style="max-width: 220px"
+                  :disabled="isAssigningCargo === member.id"
+                />
+                <v-btn
+                  size="small"
+                  color="purple-darken-3"
+                  variant="tonal"
+                  class="text-none"
+                  :loading="isAssigningCargo === member.id"
+                  :disabled="!selectedCargo[member.id]"
+                  @click="assignCargo(member.id)"
+                >
+                  Atribuir
+                </v-btn>
+              </div>
             </div>
           </div>
           <p v-else class="text-caption text-grey-darken-1 mb-0">
@@ -228,78 +286,6 @@
           </p>
         </v-card>
 
-        <v-card
-          v-if="canManageScheduleDelegation"
-          class="ministery-content-card pa-4 elevation-1 bg-white mb-4"
-        >
-          <div class="leader-card-title mb-1">
-            <Users size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
-            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
-              Permissões do ministério
-            </h3>
-          </div>
-          <p class="text-caption text-grey-darken-1 mb-3">
-            Escolha, por membro, quem pode alterar a escala e quem pode mexer no
-            repertório.
-          </p>
-
-          <v-alert
-            v-if="scheduleManagersError"
-            type="error"
-            variant="tonal"
-            density="compact"
-            class="mb-3"
-          >
-            {{ scheduleManagersError }}
-          </v-alert>
-
-          <div v-if="departmentMembers.length" class="member-permission-list">
-            <div
-              v-for="member in departmentMembers"
-              :key="member.id"
-              class="member-permission-row"
-            >
-              <div class="min-w-0">
-                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
-                  {{ member.name }}
-                </p>
-                <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
-                  {{ member.id === department.leaderId ? "Líder do ministério" : member.email }}
-                </p>
-              </div>
-
-              <div class="member-permission-toggles">
-                <div class="member-permission-toggle">
-                  <span>Escala</span>
-                  <v-switch
-                    :model-value="member.id === department.leaderId || member.canManageSchedule === true"
-                    color="purple-darken-3"
-                    density="compact"
-                    hide-details
-                    :loading="updatingScheduleManagerId === member.id"
-                    :disabled="member.id === department.leaderId || Boolean(updatingScheduleManagerId)"
-                    @update:model-value="toggleMemberPermission(member, { canManageSchedule: Boolean($event) })"
-                  />
-                </div>
-                <div class="member-permission-toggle">
-                  <span>Músicas</span>
-                  <v-switch
-                    :model-value="member.id === department.leaderId || member.canManageSongs === true"
-                    color="purple-darken-3"
-                    density="compact"
-                    hide-details
-                    :loading="updatingScheduleManagerId === member.id"
-                    :disabled="member.id === department.leaderId || Boolean(updatingScheduleManagerId)"
-                    @update:model-value="toggleMemberPermission(member, { canManageSongs: Boolean($event) })"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <p v-else class="text-caption text-grey-darken-1 mb-0">
-            Nenhum membro listado para este ministerio.
-          </p>
-        </v-card>
         <div class="leader-metric-grid mb-4">
           <v-card
             v-for="metric in leaderMetrics"
@@ -2182,6 +2168,7 @@ import {
 } from "../../../composables/useDepartments";
 import { useAuth } from "../../../composables/useAuth";
 import { useMembers, type ChurchMember } from "../../../composables/useMembers";
+import { useChurchRoles, type ChurchRole, type MemberRole } from "../../../composables/useChurchRoles";
 import { usePermissions } from "../../../composables/usePermissions";
 
 const route = useRoute();
@@ -2191,7 +2178,6 @@ const departmentId = String(route.params.id);
 const {
   getDepartmentById,
   getDepartmentMembers,
-  updateDepartmentMemberPermissions,
   getDepartmentTasks,
   createDepartmentTask,
   updateDepartmentTask,
@@ -2219,6 +2205,78 @@ const {
   removeDepartmentMember,
 } = useDepartments();
 const { getMembers } = useMembers();
+const { getRoles, addMemberRole, removeMemberRole } = useChurchRoles();
+
+// Cargos de ministerio deste departamento, para o lider delegar aos membros.
+const churchRolesList = ref<ChurchRole[]>([]);
+const cargoError = ref("");
+const isAssigningCargo = ref("");
+const selectedCargo = reactive<Record<string, string | null>>({});
+const memberCargoOverride = reactive<Record<string, MemberRole[]>>({});
+
+const ministryRoles = computed(() =>
+  churchRolesList.value.filter(
+    (role) => role.scope === "MINISTRY" && role.departmentId === departmentId,
+  ),
+);
+
+const memberCargos = (memberId: string): MemberRole[] => {
+  if (memberCargoOverride[memberId]) return memberCargoOverride[memberId];
+  const churchMember = members.value.find((item) => item.id === memberId);
+  return (churchMember?.roles ?? []).filter(
+    (role) => role.scope === "MINISTRY" && role.departmentId === departmentId,
+  );
+};
+
+const assignableCargos = (memberId: string) => {
+  const assigned = new Set(memberCargos(memberId).map((role) => role.id));
+  return ministryRoles.value
+    .filter((role) => !assigned.has(role.id))
+    .map((role) => ({ label: role.name, value: role.id }));
+};
+
+const loadMinistryRoles = async () => {
+  const { data } = await getRoles();
+  churchRolesList.value = data ?? [];
+};
+
+const thisMinistryRoles = (roles: MemberRole[]) =>
+  roles.filter(
+    (role) => role.scope === "MINISTRY" && role.departmentId === departmentId,
+  );
+
+const assignCargo = async (memberId: string) => {
+  const roleId = selectedCargo[memberId];
+  if (!roleId) return;
+  cargoError.value = "";
+  isAssigningCargo.value = memberId;
+  try {
+    const { data, error } = await addMemberRole(memberId, roleId);
+    if (error || !data) {
+      cargoError.value = error || "Não foi possível atribuir o cargo.";
+      return;
+    }
+    memberCargoOverride[memberId] = thisMinistryRoles(data.roles);
+    selectedCargo[memberId] = null;
+  } finally {
+    isAssigningCargo.value = "";
+  }
+};
+
+const removeCargo = async (memberId: string, roleId: string) => {
+  cargoError.value = "";
+  isAssigningCargo.value = memberId;
+  try {
+    const { data, error } = await removeMemberRole(memberId, roleId);
+    if (error || !data) {
+      cargoError.value = error || "Não foi possível remover o cargo.";
+      return;
+    }
+    memberCargoOverride[memberId] = thisMinistryRoles(data.roles);
+  } finally {
+    isAssigningCargo.value = "";
+  }
+};
 const { user } = useAuth();
 const { can } = usePermissions();
 
@@ -2243,8 +2301,6 @@ const songPreferenceError = ref("");
 const assignmentsError = ref("");
 const leaderError = ref("");
 const leaderMessage = ref("");
-const scheduleManagersError = ref("");
-const updatingScheduleManagerId = ref("");
 const addMemberError = ref("");
 const isAddingMember = ref(false);
 const selectedMemberToAdd = ref<string | null>(null);
@@ -2297,42 +2353,31 @@ const isDepartmentLeader = computed(
 const canManageDepartment = computed(
   () =>
     isChurchWideManager.value ||
-    (isDepartmentLeader.value && can("MANAGE_DEPARTMENTS")),
+    isDepartmentLeader.value ||
+    can("MINISTRY_MANAGE", departmentId),
 );
-const canManageScheduleDelegation = computed(
-  () => isChurchWideManager.value || isDepartmentLeader.value,
+// Poder de gerenciar membros do ministerio (adicionar/remover) - antes era so
+// lider/pastor, agora tambem cargos de ministerio com a permissao.
+const canManageMinistryMembers = computed(
+  () =>
+    isChurchWideManager.value ||
+    isDepartmentLeader.value ||
+    can("MINISTRY_MEMBER_MANAGE", departmentId),
 );
-const isDelegatedScheduleManager = computed(() =>
-  department.value?.canManageSchedule === true ||
-  departmentMembers.value.some(
-    (member) => member.id === user.value?.id && member.canManageSchedule === true,
-  ),
-);
+// department.canManageSchedule / canManageSongs ja vem do backend calculado a
+// partir dos cargos, da lideranca e do papel do usuario atual.
 const canManageSchedules = computed(
   () =>
-    isChurchWideManager.value ||
-    (isDepartmentLeader.value && can("MANAGE_SCHEDULES")) ||
-    isDelegatedScheduleManager.value,
-);
-// Delegacao por membro: o lider pode liberar o repertorio pra quem monta a
-// playlist sem dar acesso ao resto do ministerio.
-const isDelegatedSongManager = computed(
-  () =>
-    department.value?.canManageSongs === true ||
-    departmentMembers.value.some(
-      (member) => member.id === user.value?.id && member.canManageSongs === true,
-    ),
+    isChurchWideManager.value || department.value?.canManageSchedule === true,
 );
 const canManageSongs = computed(
-  () =>
-    isChurchWideManager.value ||
-    (isDepartmentLeader.value && can("MANAGE_SONGS")) ||
-    isDelegatedSongManager.value,
+  () => isChurchWideManager.value || department.value?.canManageSongs === true,
 );
 const canSendNotifications = computed(
   () =>
     isChurchWideManager.value ||
-    (isDepartmentLeader.value && can("SEND_NOTIFICATIONS")),
+    isDepartmentLeader.value ||
+    can("MINISTRY_NOTIFY", departmentId.value),
 );
 
 const taskForm = reactive({
@@ -2469,7 +2514,7 @@ const hasModule = (module: string) => departmentModules.value.includes(module);
 const tabs = computed(() => {
   const items = [{ label: "Visão geral", value: "overview", icon: Info }];
 
-  if (canManageDepartment.value || canManageScheduleDelegation.value) {
+  if (canManageDepartment.value || canManageMinistryMembers.value) {
     items.push({ label: "Lider", value: "leader", icon: BarChart3 });
   }
 
@@ -2892,44 +2937,17 @@ const loadMembers = async () => {
 };
 
 const loadDepartmentMembers = async () => {
-  scheduleManagersError.value = "";
+  addMemberError.value = "";
   const { data, error } = await getDepartmentMembers(departmentId);
 
   if (error) {
-    scheduleManagersError.value = error;
+    addMemberError.value = error;
     return;
   }
 
   departmentMembers.value = data ?? [];
 };
 
-
-const toggleMemberPermission = async (
-  member: DepartmentMember,
-  permissions: { canManageSchedule?: boolean; canManageSongs?: boolean },
-) => {
-  scheduleManagersError.value = "";
-  updatingScheduleManagerId.value = member.id;
-
-  try {
-    const { data, error } = await updateDepartmentMemberPermissions(
-      departmentId,
-      member.id,
-      permissions,
-    );
-
-    if (error || !data) {
-      scheduleManagersError.value = error || "Nao foi possivel atualizar a permissao.";
-      return;
-    }
-
-    departmentMembers.value = departmentMembers.value.map((item) =>
-      item.id === data.id ? { ...item, ...data } : item,
-    );
-  } finally {
-    updatingScheduleManagerId.value = "";
-  }
-};
 const addMember = async () => {
   if (!selectedMemberToAdd.value) return;
 
@@ -3981,6 +3999,7 @@ onMounted(async () => {
     loadSongs(),
     loadMembers(),
     loadDepartmentMembers(),
+    loadMinistryRoles(),
   ]);
 });
 </script>
@@ -4171,6 +4190,18 @@ onMounted(async () => {
   .member-permission-toggles {
     justify-content: flex-start;
   }
+}
+
+.member-cargo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.member-cargo-item {
+  border: 1px solid var(--app-color-border, #e5e7eb);
+  border-radius: 12px;
+  padding: 12px 14px;
 }
 .leader-list {
   display: grid;

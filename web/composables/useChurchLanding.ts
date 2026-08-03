@@ -53,6 +53,34 @@ export interface PublicChurchDevotional {
   }[];
 }
 
+export interface PublicChurchPost {
+  id: string;
+  title: string;
+  body?: string | null;
+  imageUrl?: string | null;
+  videoUrl?: string | null;
+  pinned?: boolean;
+  publishedAt: string;
+  author?: { id: string; name: string } | null;
+}
+
+export interface PublicChurchFooter {
+  address?: {
+    road?: string | null;
+    number?: string | null;
+    complement?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zipCode?: string | null;
+  };
+  contacts?: {
+    phone?: string | null;
+    whatsapp?: string | null;
+    email?: string | null;
+  };
+  social?: Record<string, string>;
+}
+
 interface PublicChurchEnvelope {
   church: PublicChurch;
   serviceTimes?: PublicServiceTime[];
@@ -60,6 +88,8 @@ interface PublicChurchEnvelope {
   publicContent?: PublicChurchFeedItem[];
   publicVerses?: PublicChurchVerse[];
   publicDevotionals?: PublicChurchDevotional[];
+  publicPosts?: PublicChurchPost[];
+  footer?: PublicChurchFooter;
 }
 
 export interface PublicServiceTime {
@@ -110,6 +140,8 @@ export const useChurchLanding = () => {
     "public-church-devotionals",
     () => [],
   );
+  const posts = useState<PublicChurchPost[]>("public-church-posts", () => []);
+  const footer = useState<PublicChurchFooter | null>("public-church-footer", () => null);
   const loading = useState<boolean>("public-church-loading", () => false);
   const error = useState<string | null>("public-church-error", () => null);
 
@@ -144,6 +176,8 @@ export const useChurchLanding = () => {
     monthOccurrences.value = [];
     publicVerses.value = [];
     publicDevotionals.value = [];
+    posts.value = [];
+    footer.value = null;
 
     try {
       const [churchResponse, timesResponse] = await Promise.all([
@@ -162,6 +196,8 @@ export const useChurchLanding = () => {
       };
       publicVerses.value = churchResponse.data.publicVerses ?? [];
       publicDevotionals.value = churchResponse.data.publicDevotionals ?? [];
+      posts.value = churchResponse.data.publicPosts ?? [];
+      footer.value = churchResponse.data.footer ?? null;
 
       const payload = timesResponse.data;
       serviceTimes.value =
@@ -189,6 +225,8 @@ export const useChurchLanding = () => {
     monthOccurrences,
     publicVerses,
     publicDevotionals,
+    posts,
+    footer,
     loading,
     error,
     getPublicChurch,

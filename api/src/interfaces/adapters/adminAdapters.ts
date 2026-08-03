@@ -555,7 +555,6 @@ export class AdminAdapters {
             crunchId: nextMembership?.crunchId ?? null,
             role: nextMembership?.role ?? "MEMBER",
             canManageMembers: nextMembership?.canManageMembers ?? false,
-            churchRoleId: nextMembership?.churchRoleId ?? null,
           },
         });
       }

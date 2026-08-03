@@ -5,7 +5,8 @@ import { ListServiceTimesByChurchUseCase } from "../../application/use-cases/Ser
 import { UpdateServiceTimeUseCase } from "../../application/use-cases/ServiceTime/UpdateServiceTimeUseCase";
 import { ServiceTimeRepository } from "../../infrastructure/repositories/ServiceTimeRepository";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
-import { resolveActiveChurchContext } from "../utils/churchContext";
+import { resolveActiveChurchContext, RoleContext } from "../utils/churchContext";
+import { hasPermission } from "../../application/Services/Auth/AuthorizationService";
 
 const serviceTimeRepository = new ServiceTimeRepository();
 const createServiceTimeUseCase = new CreateServiceTimeUseCase(serviceTimeRepository);
@@ -27,7 +28,7 @@ type CurrentUser = {
   id: string;
   crunchId: string;
   role: string;
-  permissions: string[];
+  roles: RoleContext[];
 };
 
 function getAuthUserId(request: FastifyRequest) {
@@ -51,13 +52,12 @@ export class ServiceTimeAdapters {
       id: userId,
       crunchId: context.activeChurchId,
       role: context.role,
-      permissions: context.permissions,
+      roles: context.roles,
     };
   }
 
   private assertCanManageServiceTimes(user: CurrentUser) {
-    if (["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(user.role)) return;
-    if (user.permissions.includes("SEND_NOTIFICATIONS")) return;
+    if (hasPermission(user, "ANNOUNCEMENT_PUBLISH")) return;
     throw new DomainError("Apenas pastores ou usuarios com permissao de comunicacao podem gerenciar horarios de culto");
   }
 

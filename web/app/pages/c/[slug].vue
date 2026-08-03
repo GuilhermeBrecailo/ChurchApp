@@ -41,6 +41,44 @@
         </a>
       </MotionFadeInUp>
 
+      <MotionFadeInUp
+        v-if="posts.length"
+        tag="section"
+        class="mural-section"
+        in-view
+      >
+        <div class="mural-head">
+          <p class="landing-kicker">Nossa comunidade</p>
+          <h2>Momentos da igreja</h2>
+        </div>
+
+        <MotionStaggerGroup class="mural-grid">
+          <MotionStaggerItem
+            v-for="(post, index) in posts"
+            :key="post.id"
+            tag="article"
+            class="mural-card"
+            :class="{ feature: index === 0 && posts.length > 1 }"
+          >
+            <div v-if="post.imageUrl" class="mural-media">
+              <img :src="post.imageUrl" :alt="post.title" loading="lazy" />
+              <span v-if="post.pinned" class="mural-tag">Destaque</span>
+            </div>
+            <div class="mural-body">
+              <time>{{ relativeDate(post.publishedAt) }}</time>
+              <h3>{{ post.title }}</h3>
+              <p v-if="post.body">{{ post.body }}</p>
+              <MusicEmbedPlayer
+                v-if="post.videoUrl"
+                :url="post.videoUrl"
+                :title="post.title"
+                class="landing-embed"
+              />
+            </div>
+          </MotionStaggerItem>
+        </MotionStaggerGroup>
+      </MotionFadeInUp>
+
       <main class="landing-main">
         <MotionFadeInUp id="proximos-cultos" tag="section" class="schedule-board-section" in-view>
           <div class="section-rule-heading">
@@ -180,12 +218,98 @@
           </MotionStaggerGroup>
         </MotionFadeInUp>
       </main>
+
+      <footer v-if="hasFooter" class="landing-footer">
+        <div class="footer-inner">
+          <div class="footer-brand">
+            <div class="footer-mark">
+              <img v-if="church.logo" :src="church.logo" :alt="`Logo ${church.name}`" />
+              <span v-else>{{ churchInitials }}</span>
+            </div>
+            <div>
+              <p class="footer-name">{{ church.name }}</p>
+              <p v-if="churchLocation" class="footer-loc">{{ churchLocation }}</p>
+            </div>
+          </div>
+
+          <div class="footer-cols">
+            <div v-if="addressLines.length" class="footer-col">
+              <p class="footer-col-title">Onde estamos</p>
+              <address>
+                <span v-for="line in addressLines" :key="line">{{ line }}</span>
+              </address>
+              <a
+                v-if="mapsUrl"
+                :href="mapsUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="footer-link"
+              >
+                <MapPin size="14" /> Abrir no mapa
+              </a>
+            </div>
+
+            <div v-if="contactLinks.length" class="footer-col">
+              <p class="footer-col-title">Fale conosco</p>
+              <a
+                v-for="contact in contactLinks"
+                :key="contact.key"
+                :href="contact.href"
+                :target="contact.external ? '_blank' : undefined"
+                :rel="contact.external ? 'noopener noreferrer' : undefined"
+                class="footer-link"
+              >
+                <component :is="contact.icon" size="14" /> {{ contact.label }}
+              </a>
+            </div>
+
+            <div v-if="footerServiceTimes.length" class="footer-col">
+              <p class="footer-col-title">Cultos</p>
+              <div
+                v-for="time in footerServiceTimes"
+                :key="time.id"
+                class="footer-service"
+              >
+                <span>{{ weekdayLabel(time.weekday) }}</span>
+                <strong>{{ time.time }}</strong>
+                <em>{{ time.label }}</em>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="socialLinks.length" class="footer-social">
+            <a
+              v-for="social in socialLinks"
+              :key="social.key"
+              :href="social.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              :aria-label="social.label"
+              class="footer-social-btn"
+            >
+              <component :is="social.icon" size="18" />
+            </a>
+          </div>
+
+          <p class="footer-legal">© {{ currentYear }} {{ church.name }}</p>
+        </div>
+      </footer>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ArrowDown } from "lucide-vue-next";
+import {
+  ArrowDown,
+  MapPin,
+  Phone,
+  MessageCircle,
+  Mail,
+  Instagram,
+  Facebook,
+  Youtube,
+  Globe,
+} from "lucide-vue-next";
 import { computed, onMounted, ref, watch } from "vue";
 import type { PublicAnnouncementKind, PublicServiceOccurrence } from "../../../composables/useChurchLanding";
 
@@ -202,6 +326,8 @@ const {
   monthOccurrences,
   publicVerses,
   publicDevotionals,
+  posts,
+  footer,
   loading,
   error,
   loadLanding,
@@ -302,6 +428,100 @@ const relativeDate = (value: string) => {
     month: "short",
   }).format(date);
 };
+
+const currentYear = new Date().getFullYear();
+
+const onlyDigits = (value?: string | null) => (value || "").replace(/\D/g, "");
+
+const addressLines = computed(() => {
+  const address = footer.value?.address;
+  if (!address) return [];
+  const streetParts = [address.road, address.number].filter(Boolean).join(", ");
+  const cityParts = [address.city, address.state].filter(Boolean).join(" - ");
+  return [
+    streetParts,
+    address.complement,
+    cityParts,
+    address.zipCode ? `CEP ${address.zipCode}` : "",
+  ].filter((line): line is string => Boolean(line && line.trim()));
+});
+
+const mapsUrl = computed(() => {
+  if (!addressLines.value.length) return "";
+  const query = encodeURIComponent(
+    `${church.value?.name ?? ""} ${addressLines.value.join(" ")}`.trim(),
+  );
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
+});
+
+const contactLinks = computed(() => {
+  const contacts = footer.value?.contacts;
+  if (!contacts) return [];
+  const items: {
+    key: string;
+    label: string;
+    href: string;
+    icon: unknown;
+    external: boolean;
+  }[] = [];
+  if (contacts.whatsapp) {
+    items.push({
+      key: "whatsapp",
+      label: contacts.whatsapp,
+      href: `https://wa.me/${onlyDigits(contacts.whatsapp)}`,
+      icon: MessageCircle,
+      external: true,
+    });
+  }
+  if (contacts.phone) {
+    items.push({
+      key: "phone",
+      label: contacts.phone,
+      href: `tel:${onlyDigits(contacts.phone)}`,
+      icon: Phone,
+      external: false,
+    });
+  }
+  if (contacts.email) {
+    items.push({
+      key: "email",
+      label: contacts.email,
+      href: `mailto:${contacts.email}`,
+      icon: Mail,
+      external: false,
+    });
+  }
+  return items;
+});
+
+const socialLinks = computed(() => {
+  const social = footer.value?.social ?? {};
+  const config: { key: string; label: string; icon: unknown }[] = [
+    { key: "instagram", label: "Instagram", icon: Instagram },
+    { key: "facebook", label: "Facebook", icon: Facebook },
+    { key: "youtube", label: "YouTube", icon: Youtube },
+    { key: "website", label: "Site", icon: Globe },
+  ];
+  return config
+    .filter((item) => social[item.key])
+    .map((item) => ({ ...item, url: social[item.key] as string }));
+});
+
+const footerServiceTimes = computed(() =>
+  serviceTimes.value
+    .filter((time) => time.isActive !== false)
+    .slice()
+    .sort((a, b) => a.weekday - b.weekday || a.time.localeCompare(b.time))
+    .slice(0, 6),
+);
+
+const hasFooter = computed(
+  () =>
+    addressLines.value.length > 0 ||
+    contactLinks.value.length > 0 ||
+    socialLinks.value.length > 0 ||
+    footerServiceTimes.value.length > 0,
+);
 
 onMounted(() => {
   void loadLanding(slug.value);
@@ -659,6 +879,313 @@ watch(slug, (nextSlug, previousSlug) => {
   line-height: 1.7;
   margin: 0;
   white-space: pre-line;
+}
+
+/* --- Mural de publicacoes (assinatura da pagina) --- */
+.mural-section {
+  margin: 8px auto 0;
+  max-width: 1120px;
+  padding: 24px 20px 8px;
+}
+
+.mural-head {
+  margin-bottom: 20px;
+}
+
+.mural-head h2 {
+  font-family: "Fraunces", serif;
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  font-weight: 650;
+  line-height: 1;
+  margin: 0;
+}
+
+.mural-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mural-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.mural-card:hover {
+  border-color: color-mix(in srgb, var(--church-accent) 55%, var(--line));
+  box-shadow: 0 18px 40px -28px color-mix(in srgb, var(--church-accent) 60%, transparent);
+  transform: translateY(-3px);
+}
+
+.mural-card.feature {
+  grid-column: 1 / -1;
+  grid-template-columns: 1.15fr 1fr;
+}
+
+@media (min-width: 721px) {
+  .mural-card.feature {
+    display: grid;
+  }
+}
+
+.mural-media {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  position: relative;
+}
+
+.mural-card.feature .mural-media {
+  aspect-ratio: auto;
+  height: 100%;
+  min-height: 260px;
+}
+
+.mural-media img {
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+  width: 100%;
+}
+
+.mural-card:hover .mural-media img {
+  transform: scale(1.04);
+}
+
+.mural-tag {
+  background: var(--church-accent);
+  border-radius: 999px;
+  color: #fff;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.64rem;
+  font-weight: 700;
+  left: 12px;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  position: absolute;
+  text-transform: uppercase;
+  top: 12px;
+}
+
+.mural-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  padding: 18px 20px 22px;
+}
+
+.mural-body time {
+  color: var(--ink-soft);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mural-body h3 {
+  font-family: "Fraunces", serif;
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+  font-weight: 650;
+  line-height: 1.12;
+  margin: 0;
+}
+
+.mural-body p {
+  color: var(--ink-soft);
+  font-size: 0.96rem;
+  line-height: 1.65;
+  margin: 0;
+  white-space: pre-line;
+}
+
+/* --- Rodape --- */
+.landing-footer {
+  background: color-mix(in srgb, var(--church-accent) 6%, var(--paper));
+  border-top: 1px solid color-mix(in srgb, var(--church-accent) 26%, var(--line));
+  margin-top: 24px;
+  padding: 56px 20px 40px;
+}
+
+.footer-inner {
+  display: grid;
+  gap: 34px;
+  margin: 0 auto;
+  max-width: 1120px;
+}
+
+.footer-brand {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+}
+
+.footer-mark {
+  align-items: center;
+  background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--church-accent) 30%, var(--line));
+  border-radius: 12px;
+  color: var(--church-accent);
+  display: flex;
+  flex-shrink: 0;
+  font-family: "Fraunces", serif;
+  font-size: 1.4rem;
+  font-weight: 750;
+  height: 58px;
+  justify-content: center;
+  overflow: hidden;
+  width: 58px;
+}
+
+.footer-mark img {
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+.footer-name {
+  font-family: "Fraunces", serif;
+  font-size: 1.5rem;
+  font-weight: 650;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.footer-loc {
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  font-weight: 600;
+  margin: 2px 0 0;
+}
+
+.footer-cols {
+  display: grid;
+  gap: 28px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.footer-col-title {
+  color: var(--church-accent);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  margin: 0 0 14px;
+  text-transform: uppercase;
+}
+
+.footer-col address {
+  color: var(--ink-soft);
+  display: grid;
+  font-size: 0.92rem;
+  font-style: normal;
+  gap: 3px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.footer-link {
+  align-items: center;
+  color: var(--ink);
+  display: inline-flex;
+  font-size: 0.92rem;
+  font-weight: 600;
+  gap: 8px;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-col .footer-link {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.footer-link:hover {
+  color: var(--church-accent);
+}
+
+.footer-link :deep(svg) {
+  color: var(--church-accent);
+  flex-shrink: 0;
+}
+
+.footer-service {
+  align-items: baseline;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 42px auto minmax(0, 1fr);
+  margin-bottom: 8px;
+}
+
+.footer-service span {
+  color: var(--ink-soft);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.footer-service strong {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.footer-service em {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  font-style: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.footer-social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.footer-social-btn {
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  display: flex;
+  height: 42px;
+  justify-content: center;
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  width: 42px;
+}
+
+.footer-social-btn:hover {
+  border-color: var(--church-accent);
+  color: var(--church-accent);
+  transform: translateY(-2px);
+}
+
+.footer-legal {
+  border-top: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.74rem;
+  margin: 0;
+  padding-top: 22px;
+}
+
+@media (max-width: 720px) {
+  .mural-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-cols {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {

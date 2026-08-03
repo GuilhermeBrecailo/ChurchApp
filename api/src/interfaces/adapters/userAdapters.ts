@@ -46,6 +46,13 @@ function formatChurch(church: {
   accentColor: string | null;
   isActive: boolean;
   userMainId: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
+  youtube?: string | null;
+  website?: string | null;
 }) {
   return {
     id: church.id,
@@ -62,6 +69,13 @@ function formatChurch(church: {
     accentColor: church.accentColor,
     isActive: church.isActive,
     userMainId: church.userMainId,
+    phone: church.phone ?? null,
+    whatsapp: church.whatsapp ?? null,
+    email: church.email ?? null,
+    instagram: church.instagram ?? null,
+    facebook: church.facebook ?? null,
+    youtube: church.youtube ?? null,
+    website: church.website ?? null,
   };
 }
 
@@ -159,13 +173,24 @@ export class UserAdapters {
       },
       include: {
         crunch: true,
-        churchRole: { select: { id: true, name: true, permissions: true } },
         churchMemberships: {
           where: { isActive: true },
           orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
           include: {
             crunch: true,
-            churchRole: { select: { id: true, name: true, permissions: true } },
+            membershipRoles: {
+              include: {
+                churchRole: {
+                  select: {
+                    id: true,
+                    name: true,
+                    scope: true,
+                    departmentId: true,
+                    permissions: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -182,24 +207,27 @@ export class UserAdapters {
         (membership) => membership.crunchId === context.activeChurchId,
       ) ?? user.churchMemberships[0] ?? null;
     const activeChurch = activeMembership?.crunch ?? user.crunch ?? null;
-    const activeChurchRole = context.churchRole ?? user.churchRole ?? null;
     const memberships = user.churchMemberships.map((membership) => ({
       id: membership.id,
       role: membership.role,
       canManageMembers: membership.canManageMembers,
       isPrimary: membership.isPrimary,
       isActive: membership.isActive,
-      churchRole: membership.churchRole
-        ? {
-            id: membership.churchRole.id,
-            name: membership.churchRole.name,
-            permissions: membership.churchRole.permissions,
-          }
-        : null,
-      permissions: membership.churchRole?.permissions ?? [],
+      roles: membership.membershipRoles.map((mr) => ({
+        id: mr.churchRole.id,
+        name: mr.churchRole.name,
+        scope: mr.churchRole.scope,
+        departmentId: mr.churchRole.departmentId,
+        permissions: mr.churchRole.permissions,
+      })),
       church: formatChurch(membership.crunch),
     }));
     const church = activeChurch ? formatChurch(activeChurch) : null;
+    // Uniao chata das permissoes ativas - atalho para checagens de igreja no
+    // front. A checagem por ministerio usa `roles` (que carrega o departmentId).
+    const permissions = [
+      ...new Set(context.roles.flatMap((role) => role.permissions)),
+    ];
 
     return {
       id: user.id,
@@ -216,14 +244,8 @@ export class UserAdapters {
       memberships,
       hasChurch: Boolean(context.activeChurchId || memberships.length),
       isTitularPastor: context.role === "PASTOR" && church?.userMainId === user.id,
-      churchRole: activeChurchRole
-        ? {
-            id: activeChurchRole.id,
-            name: activeChurchRole.name,
-            permissions: activeChurchRole.permissions,
-          }
-        : null,
-      permissions: context.permissions,
+      roles: context.roles,
+      permissions,
       isDemoUser: user.isDemoUser,
     };
   }
@@ -627,7 +649,42 @@ export class UserAdapters {
       isActive?: boolean;
       slug?: string;
       accentColor?: string | null;
+      phone?: string | null;
+      whatsapp?: string | null;
+      email?: string | null;
+      instagram?: string | null;
+      facebook?: string | null;
+      youtube?: string | null;
+      website?: string | null;
     };
+
+    // Rodape: contatos como texto; redes/site viram link (assume https:// se
+    // vier sem esquema). So aplica os campos que o corpo enviou.
+    const cleanText = (value?: string | null) =>
+      typeof value === "string" && value.trim() ? value.trim() : null;
+    const cleanLink = (value?: string | null) => {
+      const trimmed = cleanText(value);
+      if (!trimmed) return null;
+      return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    };
+    const footerData = {
+      ...(body.phone !== undefined ? { phone: cleanText(body.phone) } : {}),
+      ...(body.whatsapp !== undefined ? { whatsapp: cleanText(body.whatsapp) } : {}),
+      ...(body.email !== undefined ? { email: cleanText(body.email) } : {}),
+      ...(body.instagram !== undefined ? { instagram: cleanLink(body.instagram) } : {}),
+      ...(body.facebook !== undefined ? { facebook: cleanLink(body.facebook) } : {}),
+      ...(body.youtube !== undefined ? { youtube: cleanLink(body.youtube) } : {}),
+      ...(body.website !== undefined ? { website: cleanLink(body.website) } : {}),
+    };
+    const footerSelect = {
+      phone: true,
+      whatsapp: true,
+      email: true,
+      instagram: true,
+      facebook: true,
+      youtube: true,
+      website: true,
+    } as const;
 
     const user = await $prismaClient.user.findUnique({
       where: {
@@ -686,6 +743,7 @@ export class UserAdapters {
           ...(body.logo !== undefined ? { logo: body.logo?.trim() || null } : {}),
           ...(body.accentColor !== undefined ? { accentColor: body.accentColor?.trim() || null } : {}),
           ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
+          ...footerData,
         },
         select: {
           id: true,
@@ -702,6 +760,7 @@ export class UserAdapters {
           accentColor: true,
           isActive: true,
           userMainId: true,
+          ...footerSelect,
         },
       });
     }
@@ -785,7 +844,6 @@ export class UserAdapters {
       },
       include: {
         crunch: true,
-        churchRole: true,
       },
     });
 
@@ -812,7 +870,7 @@ export class UserAdapters {
       crunchId: context.activeChurchId,
       role: context.role,
       canManageMembers: context.canManageMembers,
-      churchRole: context.churchRole,
+      roles: context.roles,
     };
   }
 
@@ -845,8 +903,19 @@ export class UserAdapters {
         role: true,
         canManageMembers: true,
         createdAt: true,
-        churchRoleId: true,
-        churchRole: { select: { id: true, name: true, permissions: true } },
+        membershipRoles: {
+          include: {
+            churchRole: {
+              select: {
+                id: true,
+                name: true,
+                scope: true,
+                departmentId: true,
+                permissions: true,
+              },
+            },
+          },
+        },
         user: {
           select: {
             id: true,
@@ -871,8 +940,13 @@ export class UserAdapters {
       role: membership.role,
       canManageMembers: membership.canManageMembers,
       createdAt: membership.createdAt,
-      churchRoleId: membership.churchRoleId,
-      churchRole: membership.churchRole,
+      roles: membership.membershipRoles.map((mr) => ({
+        id: mr.churchRole.id,
+        name: mr.churchRole.name,
+        scope: mr.churchRole.scope,
+        departmentId: mr.churchRole.departmentId,
+        permissions: mr.churchRole.permissions,
+      })),
       unavailableDates: membership.user.unavailableDates.map((item) =>
         item.date.toISOString().slice(0, 10),
       ),
@@ -1220,7 +1294,6 @@ export class UserAdapters {
             crunchId: nextMembership?.crunchId ?? null,
             role: nextMembership?.role ?? "MEMBER",
             canManageMembers: nextMembership?.canManageMembers ?? false,
-            churchRoleId: nextMembership?.churchRoleId ?? null,
           },
         });
       }

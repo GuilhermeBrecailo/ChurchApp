@@ -35,11 +35,6 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
     controllerHandler(adapters.listChurchDepartmentScheduleManagers.bind(adapters)),
   );
 
-  app.patch(
-    "/api/church/departments/:id/schedule-managers/:userId",
-    controllerHandler(adapters.updateChurchDepartmentScheduleManager.bind(adapters)),
-  );
-
   app.post(
     "/api/church/departments/:id/members",
     controllerHandler(adapters.addChurchDepartmentMember.bind(adapters)),

@@ -42,16 +42,12 @@ export interface DepartmentMember {
   name: string;
   email: string;
   role?: string;
-  canManageSchedule?: boolean;
-  canManageSongs?: boolean;
 }
 
 interface DepartmentMemberResponse {
   id: string;
   function?: string | null;
   isPrimary?: boolean;
-  canManageSchedule?: boolean;
-  canManageSongs?: boolean;
   user?: {
     id: string;
     name: string;
@@ -434,8 +430,6 @@ export const useDepartments = () => {
         name: membership.user?.name ?? "",
         email: membership.user?.email ?? "",
         role: membership.function ?? undefined,
-        canManageSchedule: membership.canManageSchedule,
-        canManageSongs: membership.canManageSongs,
       })),
     };
   };
@@ -462,8 +456,6 @@ export const useDepartments = () => {
             name: response.data.user?.name ?? "",
             email: response.data.user?.email ?? "",
             role: response.data.function ?? undefined,
-            canManageSchedule: response.data.canManageSchedule,
-            canManageSongs: response.data.canManageSongs,
           }
         : undefined,
     };
@@ -482,35 +474,6 @@ export const useDepartments = () => {
     );
   };
 
-  const updateDepartmentMemberPermissions = async (
-    departmentId: string,
-    userId: string,
-    permissions: { canManageSchedule?: boolean; canManageSongs?: boolean },
-  ): Promise<ApiResponse<DepartmentMember>> => {
-    const response = await $customFetch<DepartmentMemberResponse>(
-      `${config.public.URL_BACKEND}/api/church/departments/${departmentId}/schedule-managers/${userId}`,
-      {
-        method: "PATCH",
-        headers: authHeaders(),
-        body: permissions,
-      },
-    );
-
-    return {
-      ...response,
-      data: response.data
-        ? {
-            id: response.data.user?.id ?? userId,
-            membershipId: response.data.id,
-            name: response.data.user?.name ?? "",
-            email: response.data.user?.email ?? "",
-            role: response.data.function ?? undefined,
-            canManageSchedule: response.data.canManageSchedule,
-            canManageSongs: response.data.canManageSongs,
-          }
-        : undefined,
-    };
-  };
   const getDepartmentTasks = async (
     id: string,
   ): Promise<ApiResponse<DepartmentTask[]>> => {
@@ -884,7 +847,6 @@ export const useDepartments = () => {
     getDepartmentMembers,
     addDepartmentMember,
     removeDepartmentMember,
-    updateDepartmentMemberPermissions,
     getDepartmentTasks,
     createDepartmentTask,
     updateDepartmentTask,

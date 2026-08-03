@@ -3,7 +3,8 @@ import crypto from "node:crypto";
 import { z } from "zod";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
-import { resolveActiveChurchContext } from "../utils/churchContext";
+import { resolveActiveChurchContext, RoleContext } from "../utils/churchContext";
+import { hasPermission } from "../../application/Services/Auth/AuthorizationService";
 import { pushNotificationService } from "../../infrastructure/notifications/PushNotificationService";
 
 const announcementKindSchema = z.enum(["ANNOUNCEMENT", "PASTOR_MESSAGE", "PRAYER"]);
@@ -23,7 +24,6 @@ export class AnnouncementAdapters {
   private async getCurrentUser(request: FastifyRequest) {
     const user = await $prismaClient.user.findUnique({
       where: { id: getAuthUserId(request) },
-      include: { churchRole: { select: { id: true, name: true, permissions: true } } },
     });
     if (!user) throw new DomainError("Usuario nao encontrado");
     const context = request.churchContext ?? (await resolveActiveChurchContext(request, user.id));
@@ -33,15 +33,12 @@ export class AnnouncementAdapters {
       crunchId: context.activeChurchId,
       role: context.role,
       canManageMembers: context.canManageMembers,
-      permissions: context.permissions,
-      churchRole: context.churchRole ?? user.churchRole,
+      roles: context.roles,
     };
   }
 
-  private assertCanManageCommunication(user: { role: string; permissions?: string[]; churchRole?: { permissions: string[] } | null }) {
-    if (["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(user.role)) return;
-    const permissions = user.permissions ?? user.churchRole?.permissions ?? [];
-    if (permissions.includes("SEND_NOTIFICATIONS")) return;
+  private assertCanManageCommunication(user: { role: string; roles: RoleContext[] }) {
+    if (hasPermission(user, "ANNOUNCEMENT_PUBLISH")) return;
     throw new DomainError("Apenas pastores ou usuarios com permissao de comunicacao podem gerenciar avisos");
   }
 

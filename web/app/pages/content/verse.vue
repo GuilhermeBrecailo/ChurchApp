@@ -244,7 +244,7 @@ const publishForm = reactive({
 
 // Pastor/admin sempre podem; os demais dependem da permissao que o pastor
 // concede pelo cargo da igreja.
-const canPublish = computed(() => can("PUBLISH_CONTENT"));
+const canPublish = computed(() => can("CONTENT_PUBLISH"));
 
 // A lista ja vem ordenada do mais recente pro mais antigo.
 const latestVerse = computed(() => verses.value[0] ?? null);

@@ -25,8 +25,13 @@ export async function ChurchRoleRoutes(app: FastifyInstance) {
     controllerHandler(adapters.deleteRole.bind(adapters)),
   );
 
-  app.patch(
-    "/api/church/members/:id/church-role",
-    controllerHandler(adapters.assignMemberRole.bind(adapters)),
+  app.post(
+    "/api/church/members/:id/roles",
+    controllerHandler(adapters.addMemberRole.bind(adapters)),
+  );
+
+  app.delete(
+    "/api/church/members/:id/roles/:roleId",
+    controllerHandler(adapters.removeMemberRole.bind(adapters)),
   );
 }

@@ -17,6 +17,21 @@ interface AuthChurch {
   userMainId?: string | null;
   slug?: string | null;
   accentColor?: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
+  youtube?: string | null;
+  website?: string | null;
+}
+
+interface AuthRole {
+  id: string;
+  name: string;
+  scope: string;
+  departmentId: string | null;
+  permissions: string[];
 }
 
 interface AuthMembership {
@@ -25,12 +40,7 @@ interface AuthMembership {
   canManageMembers: boolean;
   isPrimary: boolean;
   isActive: boolean;
-  permissions?: string[];
-  churchRole?: {
-    id: string;
-    name: string;
-    permissions: string[];
-  } | null;
+  roles?: AuthRole[];
   church: AuthChurch;
 }
 
@@ -51,11 +61,7 @@ interface AuthUser {
   memberships?: AuthMembership[];
   isDemoUser?: boolean;
   permissions?: string[];
-  churchRole?: {
-    id: string;
-    name: string;
-    permissions: string[];
-  } | null;
+  roles?: AuthRole[];
   phone?: string;
   church?: AuthChurch | null;
 }
@@ -154,10 +160,9 @@ export const useAuth = () => {
       role,
       canManageMembers:
         activeMembership?.canManageMembers ?? data.canManageMembers ?? false,
-      churchRole: activeMembership?.churchRole ?? data.churchRole ?? null,
+      roles: activeMembership?.roles ?? data.roles ?? [],
       permissions:
-        activeMembership?.permissions ??
-        activeMembership?.churchRole?.permissions ??
+        activeMembership?.roles?.flatMap((role) => role.permissions) ??
         data.permissions ??
         [],
       hasChurch: memberships.length > 0 || data.hasChurch === true,

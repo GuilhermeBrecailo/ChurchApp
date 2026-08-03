@@ -24,7 +24,7 @@ export class PublicChurchAdapters {
 
     if (!church) return reply.code(404).send({ error: "Igreja nao encontrada", status: 404 });
 
-    const [serviceTimes, publicContent, publicVerses, publicDevotionals] = await Promise.all([
+    const [serviceTimes, publicContent, publicVerses, publicDevotionals, publicPosts] = await Promise.all([
       listServiceTimesUseCase.execute(church.id, true),
       $prismaClient.announcement.findMany({
         where: {
@@ -82,6 +82,21 @@ export class PublicChurchAdapters {
           },
         },
       }),
+      $prismaClient.post.findMany({
+        where: { crunchId: church.id, isPublic: true },
+        orderBy: [{ pinned: "desc" }, { publishedAt: "desc" }],
+        take: 30,
+        select: {
+          id: true,
+          title: true,
+          body: true,
+          imageUrl: true,
+          videoUrl: true,
+          pinned: true,
+          publishedAt: true,
+          author: { select: { id: true, name: true } },
+        },
+      }),
     ]);
 
     const serviceTimeItems = serviceTimes.map((item) => ({
@@ -91,6 +106,31 @@ export class PublicChurchAdapters {
       time: item.time,
       isActive: item.isActive,
     }));
+
+    const footer = {
+      address: {
+        road: church.road,
+        number: church.number,
+        complement: church.complement,
+        city: church.city,
+        state: church.state,
+        zipCode: church.localZipCode,
+      },
+      contacts: {
+        phone: church.phone,
+        whatsapp: church.whatsapp,
+        email: church.email,
+      },
+      // So as redes preenchidas - a landing nao mostra icone vazio.
+      social: Object.fromEntries(
+        Object.entries({
+          instagram: church.instagram,
+          facebook: church.facebook,
+          youtube: church.youtube,
+          website: church.website,
+        }).filter(([, value]) => Boolean(value)),
+      ) as Record<string, string>,
+    };
 
     return {
       church,
@@ -102,6 +142,8 @@ export class PublicChurchAdapters {
       publicContent,
       publicVerses,
       publicDevotionals,
+      publicPosts,
+      footer,
     };
   }
 

@@ -2,7 +2,8 @@ import { FastifyRequest } from "fastify";
 import crypto from "node:crypto";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
-import { resolveActiveChurchContext } from "../utils/churchContext";
+import { resolveActiveChurchContext, RoleContext } from "../utils/churchContext";
+import { hasPermission } from "../../application/Services/Auth/AuthorizationService";
 
 function getAuthUserId(request: FastifyRequest): string {
   const authHeader = request.headers.authorization;
@@ -24,7 +25,6 @@ export class DailyVerseAdapters {
     const userId = getAuthUserId(request);
     const user = await $prismaClient.user.findUnique({
       where: { id: userId },
-      include: { churchRole: true },
     });
 
     if (!user) throw new DomainError("Usuário não encontrado");
@@ -37,25 +37,14 @@ export class DailyVerseAdapters {
       crunchId: context.activeChurchId,
       role: context.role,
       canManageMembers: context.canManageMembers,
-      churchRole: context.churchRole,
+      roles: context.roles,
     };
   }
 
   // Pastor/admin publicam sempre; alem deles, qualquer membro a quem o pastor
-  // tenha concedido PUBLISH_CONTENT atraves de um cargo da igreja.
-  private assertCanPublishContent(user: {
-    role: string;
-    churchRole?: { permissions: string[] } | null;
-  }) {
-    const isManager =
-      user.role === "PASTOR" ||
-      user.role === "ADMIN" ||
-      user.role === "SUPER_ADMIN";
-
-    const hasPermission =
-      user.churchRole?.permissions?.includes("PUBLISH_CONTENT") === true;
-
-    if (!isManager && !hasPermission) {
+  // tenha concedido CONTENT_PUBLISH atraves de um cargo da igreja.
+  private assertCanPublishContent(user: { role: string; roles: RoleContext[] }) {
+    if (!hasPermission(user, "CONTENT_PUBLISH")) {
       throw new DomainError(
         "Você não tem permissão para publicar conteúdo da igreja",
       );

@@ -13,6 +13,17 @@ export class GetPublicChurchBySlugUseCase {
         isActive: true,
         city: true,
         state: true,
+        road: true,
+        number: true,
+        complement: true,
+        localZipCode: true,
+        phone: true,
+        whatsapp: true,
+        email: true,
+        instagram: true,
+        facebook: true,
+        youtube: true,
+        website: true,
       },
     });
 

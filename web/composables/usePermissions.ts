@@ -1,21 +1,33 @@
 import { computed } from "vue";
 import { useAuth } from "./useAuth";
 
+export type PermissionScope = "CHURCH" | "MINISTRY";
+
 export type AppPermission =
-  | "MANAGE_MEMBERS"
-  | "MANAGE_SCHEDULES"
-  | "MANAGE_DEPARTMENTS"
-  | "MANAGE_SONGS"
-  | "PUBLISH_CONTENT"
-  | "SEND_NOTIFICATIONS";
+  | "SONG_CREATE"
+  | "SONG_EDIT"
+  | "SONG_DELETE"
+  | "SCHEDULE_CREATE"
+  | "SCHEDULE_EDIT"
+  | "SCHEDULE_DELETE"
+  | "MINISTRY_MEMBER_MANAGE"
+  | "MINISTRY_NOTIFY"
+  | "MINISTRY_MANAGE"
+  | "MEMBER_CREATE"
+  | "MEMBER_EDIT"
+  | "MEMBER_DELETE"
+  | "CONTENT_PUBLISH"
+  | "ANNOUNCEMENT_PUBLISH";
 
 export type PermissionModuleKey =
-  | "members"
-  | "departments"
+  | "songs"
   | "schedules"
+  | "ministryMembers"
+  | "ministryNotify"
+  | "ministry"
+  | "members"
   | "content"
-  | "churchContent"
-  | "communication";
+  | "announcements";
 
 export type PermissionDefinition = {
   key: AppPermission;
@@ -24,95 +36,192 @@ export type PermissionDefinition = {
   module: PermissionModuleKey;
 };
 
-export const PERMISSION_MODULES: {
+export type PermissionModule = {
   key: PermissionModuleKey;
   label: string;
   description: string;
+  scope: PermissionScope;
   permissions: PermissionDefinition[];
-}[] = [
+};
+
+export const PERMISSION_MODULES: PermissionModule[] = [
   {
-    key: "members",
-    label: "Membros",
-    description: "Cadastro e manutenção de pessoas da igreja",
+    key: "songs",
+    label: "Músicas",
+    description: "Repertório, cifras e PDFs do ministério",
+    scope: "MINISTRY",
     permissions: [
-      {
-        key: "MANAGE_MEMBERS",
-        label: "Gerenciar membros",
-        description: "Adicionar, editar e remover membros da igreja",
-        module: "members",
-      },
-    ],
-  },
-  {
-    key: "departments",
-    label: "Ministérios",
-    description: "Organização, tarefas e recursos do ministério liderado",
-    permissions: [
-      {
-        key: "MANAGE_DEPARTMENTS",
-        label: "Gerenciar ministérios",
-        description: "Criar tarefas, editar recursos e ajustar dados do ministério",
-        module: "departments",
-      },
+      { key: "SONG_CREATE", label: "Criar músicas", description: "Adicionar músicas e enviar cifras/PDFs", module: "songs" },
+      { key: "SONG_EDIT", label: "Editar músicas", description: "Alterar músicas do repertório", module: "songs" },
+      { key: "SONG_DELETE", label: "Apagar músicas", description: "Remover músicas do repertório", module: "songs" },
     ],
   },
   {
     key: "schedules",
     label: "Escalas",
-    description: "Escalas e voluntários do ministério liderado",
+    description: "Escalas e voluntários do ministério",
+    scope: "MINISTRY",
+    permissions: [
+      { key: "SCHEDULE_CREATE", label: "Criar escalas", description: "Montar novas escalas", module: "schedules" },
+      { key: "SCHEDULE_EDIT", label: "Editar escalas", description: "Alterar escalas e atribuições", module: "schedules" },
+      { key: "SCHEDULE_DELETE", label: "Apagar escalas", description: "Excluir escalas", module: "schedules" },
+    ],
+  },
+  {
+    key: "ministryMembers",
+    label: "Membros do ministério",
+    description: "Quem faz parte do ministério",
+    scope: "MINISTRY",
     permissions: [
       {
-        key: "MANAGE_SCHEDULES",
-        label: "Gerenciar escalas",
-        description: "Criar, editar e excluir escalas e gerenciar voluntários",
-        module: "schedules",
+        key: "MINISTRY_MEMBER_MANAGE",
+        label: "Gerenciar membros do ministério",
+        description: "Adicionar e remover pessoas do ministério",
+        module: "ministryMembers",
       },
     ],
   },
   {
-    key: "content",
-    label: "Músicas",
-    description: "Repertório, letras, cifras e PDFs do ministério liderado",
+    key: "ministryNotify",
+    label: "Notificações do ministério",
+    description: "Lembretes e avisos do ministério",
+    scope: "MINISTRY",
     permissions: [
       {
-        key: "MANAGE_SONGS",
-        label: "Gerenciar músicas",
-        description: "Adicionar, editar e remover músicas",
+        key: "MINISTRY_NOTIFY",
+        label: "Enviar notificações",
+        description: "Enviar lembretes push aos escalados",
+        module: "ministryNotify",
+      },
+    ],
+  },
+  {
+    key: "ministry",
+    label: "Ministério",
+    description: "Tarefas, recursos e dados do ministério",
+    scope: "MINISTRY",
+    permissions: [
+      {
+        key: "MINISTRY_MANAGE",
+        label: "Gerenciar o ministério",
+        description: "Criar tarefas, editar recursos e ajustar dados do ministério",
+        module: "ministry",
+      },
+    ],
+  },
+  {
+    key: "members",
+    label: "Membros da igreja",
+    description: "Cadastro de pessoas da igreja",
+    scope: "CHURCH",
+    permissions: [
+      { key: "MEMBER_CREATE", label: "Cadastrar membros", description: "Adicionar e convidar membros", module: "members" },
+      { key: "MEMBER_EDIT", label: "Editar membros", description: "Alterar dados dos membros", module: "members" },
+      { key: "MEMBER_DELETE", label: "Remover membros", description: "Remover membros da igreja", module: "members" },
+    ],
+  },
+  {
+    key: "content",
+    label: "Conteúdo da igreja",
+    description: "Versículo do dia e devocionais",
+    scope: "CHURCH",
+    permissions: [
+      {
+        key: "CONTENT_PUBLISH",
+        label: "Publicar conteúdo",
+        description: "Publicar versículo do dia e devocionais",
         module: "content",
       },
     ],
   },
   {
-    key: "churchContent",
-    label: "Conteúdo da igreja",
-    description: "Versículo do dia e devocionais publicados para toda a igreja",
+    key: "announcements",
+    label: "Avisos da igreja",
+    description: "Avisos e horários de culto",
+    scope: "CHURCH",
     permissions: [
       {
-        key: "PUBLISH_CONTENT",
-        label: "Publicar conteúdo",
-        description:
-          "Publicar versículo do dia e devocionais sem precisar ser pastor ou admin",
-        module: "churchContent",
-      },
-    ],
-  },
-  {
-    key: "communication",
-    label: "Comunicação",
-    description: "Lembretes e avisos do ministério liderado",
-    permissions: [
-      {
-        key: "SEND_NOTIFICATIONS",
-        label: "Enviar notificações",
-        description: "Enviar lembretes e notificações push para membros escalados",
-        module: "communication",
+        key: "ANNOUNCEMENT_PUBLISH",
+        label: "Publicar avisos",
+        description: "Publicar avisos e gerenciar horários de culto",
+        module: "announcements",
       },
     ],
   },
 ];
 
-export const ALL_PERMISSIONS: PermissionDefinition[] =
-  PERMISSION_MODULES.flatMap((module) => module.permissions);
+export const ALL_PERMISSIONS: PermissionDefinition[] = PERMISSION_MODULES.flatMap(
+  (module) => module.permissions,
+);
+
+const PERMISSION_SCOPE: Record<AppPermission, PermissionScope> = ALL_PERMISSIONS.reduce(
+  (acc, permission) => {
+    const module = PERMISSION_MODULES.find((m) => m.key === permission.module);
+    acc[permission.key] = module?.scope ?? "CHURCH";
+    return acc;
+  },
+  {} as Record<AppPermission, PermissionScope>,
+);
+
+export function modulesForScope(scope: PermissionScope): PermissionModule[] {
+  return PERMISSION_MODULES.filter((module) => module.scope === scope);
+}
+
+export type RolePreset = {
+  key: string;
+  label: string;
+  scope: PermissionScope;
+  permissions: AppPermission[];
+};
+
+export const ROLE_PRESETS: RolePreset[] = [
+  {
+    key: "MINISTER",
+    label: "Ministro",
+    scope: "MINISTRY",
+    permissions: [
+      "SONG_CREATE",
+      "SONG_EDIT",
+      "SONG_DELETE",
+      "SCHEDULE_CREATE",
+      "SCHEDULE_EDIT",
+      "SCHEDULE_DELETE",
+      "MINISTRY_MEMBER_MANAGE",
+      "MINISTRY_NOTIFY",
+      "MINISTRY_MANAGE",
+    ],
+  },
+  {
+    key: "SONG_EDITOR",
+    label: "Editor de repertório",
+    scope: "MINISTRY",
+    permissions: ["SONG_CREATE", "SONG_EDIT"],
+  },
+  {
+    key: "SCHEDULE_MANAGER",
+    label: "Responsável por escala",
+    scope: "MINISTRY",
+    permissions: ["SCHEDULE_CREATE", "SCHEDULE_EDIT", "SCHEDULE_DELETE"],
+  },
+  {
+    key: "SECRETARY",
+    label: "Secretária",
+    scope: "CHURCH",
+    permissions: ["MEMBER_CREATE", "MEMBER_EDIT", "MEMBER_DELETE"],
+  },
+  {
+    key: "COMMUNICATION",
+    label: "Comunicação",
+    scope: "CHURCH",
+    permissions: ["CONTENT_PUBLISH", "ANNOUNCEMENT_PUBLISH"],
+  },
+];
+
+type SessionRole = {
+  scope: string;
+  departmentId: string | null;
+  permissions: string[];
+};
 
 export const usePermissions = () => {
   const { user } = useAuth();
@@ -125,14 +234,30 @@ export const usePermissions = () => {
       user.value?.role === "SUPER_ADMIN",
   );
 
-  const can = (permission: AppPermission): boolean => {
+  const can = (permission: AppPermission, departmentId?: string): boolean => {
     if (!user.value) return false;
     if (isPrivileged.value) return true;
-    return user.value.permissions?.includes(permission) ?? false;
+
+    const roles = (user.value.roles ?? []) as SessionRole[];
+    const scope = PERMISSION_SCOPE[permission];
+
+    if (scope === "MINISTRY") {
+      if (!departmentId) return false;
+      return roles.some(
+        (role) =>
+          role.scope === "MINISTRY" &&
+          role.departmentId === departmentId &&
+          role.permissions.includes(permission),
+      );
+    }
+
+    return roles.some(
+      (role) => role.scope === "CHURCH" && role.permissions.includes(permission),
+    );
   };
 
-  const canRef = (permission: AppPermission) => computed(() => can(permission));
+  const canRef = (permission: AppPermission, departmentId?: string) =>
+    computed(() => can(permission, departmentId));
 
   return { can, canRef, isPrivileged };
 };
-

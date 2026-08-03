@@ -29,6 +29,16 @@ model Crunch {
 
     inviteCode    String?  @unique
 
+    // Dados de rodape da pagina publica. Todos opcionais - a landing so mostra
+    // o que estiver preenchido.
+    phone     String?
+    whatsapp  String?
+    email     String?
+    instagram String?
+    facebook  String?
+    youtube   String?
+    website   String?
+
     users         User[]
     memberships   ChurchMembership[]
     departments   Department[]
@@ -41,6 +51,29 @@ model Crunch {
     devotionalProgresses DevotionalProgress[]
     prayerRequests PrayerRequest[]
     pushSubscriptions PushSubscription[]
+    posts         Post[]
+}
+
+model Post {
+    id          String   @id @default(uuid())
+    title       String
+    body        String?
+    imageUrl    String?
+    imageKey    String?
+    // Link de video (YouTube/Instagram) opcional - mesmo padrao de versiculo
+    // e devocional. Nao guardamos o binario do video.
+    videoUrl    String?
+    isPublic    Boolean  @default(true)
+    pinned      Boolean  @default(false)
+    publishedAt DateTime @default(now())
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    authorId String
+    author   User   @relation(fields: [authorId], references: [id])
+
+    @@index([crunchId, isPublic, publishedAt])
 }
 
 model ChurchRole {
@@ -48,13 +81,36 @@ model ChurchRole {
     name        String
     description String?
     permissions String[]
+    // Alcance do cargo: "CHURCH" vale na igreja toda; "MINISTRY" vale apenas
+    // no ministerio de departmentId. Cargo de ministerio exige departmentId.
+    scope       String   @default("CHURCH")
     createdAt   DateTime @default(now())
 
     crunchId String
     crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
 
-    users       User[]
-    memberships ChurchMembership[]
+    departmentId String?
+    department   Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+    membershipRoles MembershipRole[]
+
+    @@index([crunchId])
+    @@index([departmentId])
+}
+
+model MembershipRole {
+    id           String   @id @default(uuid())
+    createdAt    DateTime @default(now())
+
+    membershipId String
+    membership   ChurchMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+    churchRoleId String
+    churchRole   ChurchRole @relation(fields: [churchRoleId], references: [id], onDelete: Cascade)
+
+    @@unique([membershipId, churchRoleId])
+    @@index([membershipId])
+    @@index([churchRoleId])
 }
 
 model User {
@@ -72,9 +128,6 @@ model User {
     crunchId String?
     crunch   Crunch? @relation(fields: [crunchId], references: [id])
 
-    churchRoleId String?
-    churchRole   ChurchRole? @relation(fields: [churchRoleId], references: [id], onDelete: SetNull)
-
     churchMemberships ChurchMembership[]
     ledDepartments Department[]         @relation("Leader")
     assignments    ScheduleAssignment[]
@@ -90,6 +143,7 @@ model User {
     devotionals Devotional[]
     devotionalProgresses DevotionalProgress[]
     prayerRequests PrayerRequest[]
+    posts Post[]
 }
 
 model ChurchMembership {
@@ -107,8 +161,7 @@ model ChurchMembership {
     crunchId String
     crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
 
-    churchRoleId String?
-    churchRole   ChurchRole? @relation(fields: [churchRoleId], references: [id], onDelete: SetNull)
+    membershipRoles MembershipRole[]
 
     @@unique([userId, crunchId])
     @@index([crunchId])
@@ -291,17 +344,13 @@ model Department {
     schedules  Schedule[]
     tasks      DepartmentTask[]
     members    UserDepartmentMembership[]
+    roles      ChurchRole[]
 }
 
 model UserDepartmentMembership {
     id        String  @id @default(uuid())
     function  String?
     isPrimary Boolean @default(true)
-    canManageSchedule Boolean @default(false)
-    // Permissao por membro pra mexer no repertorio do ministerio. Zerada nos
-    // registros existentes: quem ja gerenciava (lider/pastor/admin) continua
-    // liberado pelo papel, nao por esta flag.
-    canManageSongs Boolean @default(false)
     createdAt DateTime @default(now())
 
     userId String

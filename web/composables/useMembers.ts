@@ -2,6 +2,7 @@ import type { CustomFetch } from "../types/nuxt";
 import type { ApiResponse } from "./useTypes";
 import { useNuxtApp, useRuntimeConfig } from "#app";
 import { useAuth } from "./useAuth";
+import type { MemberRole } from "./useChurchRoles";
 
 export interface ChurchMember {
   id: string;
@@ -12,12 +13,7 @@ export interface ChurchMember {
   canManageMembers: boolean;
   unavailableDates?: string[];
   createdAt?: string;
-  churchRoleId?: string | null;
-  churchRole?: {
-    id: string;
-    name: string;
-    permissions: string[];
-  } | null;
+  roles?: MemberRole[];
 }
 
 interface CreateMemberDTO {

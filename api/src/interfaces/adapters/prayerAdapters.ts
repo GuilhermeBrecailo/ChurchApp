@@ -20,7 +20,6 @@ export class PrayerAdapters {
     const userId = getAuthUserId(request);
     const user = await $prismaClient.user.findUnique({
       where: { id: userId },
-      include: { churchRole: true },
     });
     if (!user) throw new DomainError("Usuário não encontrado");
     const context =
@@ -31,7 +30,7 @@ export class PrayerAdapters {
       crunchId: context.activeChurchId,
       role: context.role,
       canManageMembers: context.canManageMembers,
-      churchRole: context.churchRole,
+      roles: context.roles,
     };
   }
 

@@ -668,19 +668,39 @@
             Cargo
           </h3>
           <p class="text-caption text-grey-darken-1 mb-3">
-            Define as permissões granulares deste membro.
+            Um membro pode ter mais de um cargo. As permissões somam.
           </p>
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <v-chip
+              v-for="memberRole in selectedAdminUser.roles ?? []"
+              :key="memberRole.id"
+              size="small"
+              :color="memberRole.scope === 'MINISTRY' ? 'orange-darken-2' : 'teal-darken-2'"
+              variant="tonal"
+              :closable="canAssignSelectedAdminUserRole && !isAssigningRole"
+              @click:close="removeRoleFromSelected(memberRole.id)"
+            >
+              {{ memberRole.name }}
+            </v-chip>
+            <span
+              v-if="!(selectedAdminUser.roles ?? []).length"
+              class="text-caption text-grey-darken-1"
+            >
+              Nenhum cargo atribuído
+            </span>
+          </div>
           <div class="d-flex align-center gap-2">
             <v-select
               v-model="selectedMemberRoleId"
-              :items="roleOptions"
+              :items="assignableRolesFor(selectedAdminUser)"
               item-title="label"
               item-value="value"
+              label="Adicionar cargo"
               variant="outlined"
               density="compact"
               color="purple-darken-3"
               hide-details
-              style="max-width: 220px"
+              style="max-width: 260px"
               :disabled="!canAssignSelectedAdminUserRole || isAssigningRole"
             />
             <v-btn
@@ -689,10 +709,10 @@
               variant="tonal"
               class="text-none"
               :loading="isAssigningRole"
-              :disabled="!canAssignSelectedAdminUserRole || isAssigningRole"
-              @click="saveAssignRole"
+              :disabled="!canAssignSelectedAdminUserRole || isAssigningRole || !selectedMemberRoleId"
+              @click="addRoleToSelected"
             >
-              Salvar
+              Adicionar
             </v-btn>
           </div>
           <v-alert
@@ -1005,7 +1025,7 @@
       />
     </div>
 
-    <section v-show="isChurchWideManager && activeAdminTab === 'conteudo'" class="church-admin-section mb-8">
+    <section v-show="isChurchWideManager && activeAdminTab === 'conteudo'" class="church-admin-section editorial-surface mb-8" :style="editorialStyle">
       <div class="section-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
@@ -1024,7 +1044,7 @@
       <div class="content-admin-grid mb-4">
         <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
           <div class="d-flex align-center mb-4">
-            <BookMarked size="18" :color="accentColor" class="mr-2" />
+            <BookMarked size="18" :color="churchAccent" class="mr-2" />
             <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
               Versículo
             </h3>
@@ -1069,7 +1089,7 @@
 
         <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
           <div class="d-flex align-center mb-4">
-            <Megaphone size="18" :color="accentColor" class="mr-2" />
+            <Megaphone size="18" :color="churchAccent" class="mr-2" />
             <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
               Avisos
             </h3>
@@ -1170,7 +1190,7 @@
       <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
         <div class="d-flex align-center justify-space-between mb-4">
           <div class="d-flex align-center">
-            <Heart size="18" color="#F43F5E" class="mr-2" />
+            <Heart size="18" :color="churchAccent" class="mr-2" />
             <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
               Devocionais
             </h3>
@@ -1253,6 +1273,158 @@
           </div>
         </div>
       </v-card>
+
+      <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle mt-4">
+        <div class="d-flex align-center mb-1">
+          <ImageIcon size="18" :color="churchAccent" class="mr-2" />
+          <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+            Publicações
+          </h3>
+        </div>
+        <p class="text-caption text-grey-darken-1 mb-4">
+          Poste uma foto com título, texto e vídeo na página da igreja.
+        </p>
+        <div class="content-admin-grid">
+          <div>
+            <v-text-field
+              v-model="postForm.title"
+              label="Título"
+              variant="outlined"
+              color="purple-darken-3"
+              class="mb-3"
+              hide-details="auto"
+            />
+            <v-textarea
+              v-model="postForm.body"
+              label="Texto"
+              variant="outlined"
+              color="purple-darken-3"
+              auto-grow
+              rows="3"
+              class="mb-3"
+              hide-details="auto"
+            />
+
+            <div class="post-image-field mb-3">
+              <img
+                v-if="postForm.imageUrl"
+                :src="postForm.imageUrl"
+                alt="Pré-visualização da foto"
+                class="post-image-preview"
+              />
+              <div class="d-flex align-center ga-2">
+                <v-btn
+                  variant="tonal"
+                  color="purple-darken-3"
+                  size="small"
+                  class="text-none"
+                  :loading="isUploadingPostImage"
+                  @click="postImageInput?.click()"
+                >
+                  <ImageIcon size="16" class="mr-1" />
+                  {{ postForm.imageUrl ? "Trocar foto" : "Adicionar foto" }}
+                </v-btn>
+                <v-btn
+                  v-if="postForm.imageUrl"
+                  variant="text"
+                  color="red-darken-2"
+                  size="small"
+                  class="text-none"
+                  @click="clearPostImage"
+                >
+                  Remover
+                </v-btn>
+              </div>
+              <input
+                ref="postImageInput"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                class="d-none"
+                @change="onPostImageChange"
+              />
+            </div>
+
+            <v-text-field
+              v-model="postForm.videoUrl"
+              label="Link de vídeo (YouTube/Instagram)"
+              variant="outlined"
+              color="purple-darken-3"
+              class="mb-3"
+              hide-details="auto"
+            />
+            <v-switch
+              v-model="postForm.isPublic"
+              label="Aparecer na página pública da igreja"
+              color="purple-darken-3"
+              density="comfortable"
+              hide-details
+              class="mb-2"
+            />
+            <v-switch
+              v-model="postForm.pinned"
+              label="Fixar no topo"
+              color="purple-darken-3"
+              density="comfortable"
+              hide-details
+              class="mb-4"
+            />
+            <div class="d-flex ga-2">
+              <v-btn
+                color="purple-darken-3"
+                class="text-none font-weight-bold"
+                :loading="isSavingPost"
+                @click="savePost"
+              >
+                {{ editingPostId ? "Salvar publicação" : "Publicar" }}
+              </v-btn>
+              <v-btn
+                v-if="editingPostId"
+                variant="text"
+                color="grey-darken-1"
+                class="text-none"
+                @click="resetPostForm"
+              >
+                Cancelar
+              </v-btn>
+            </div>
+          </div>
+
+          <div class="content-admin-list">
+            <div
+              v-for="post in posts"
+              :key="post.id"
+              class="content-admin-row"
+            >
+              <div class="min-w-0">
+                <div class="d-flex align-center ga-2 mb-1">
+                  <v-chip
+                    size="x-small"
+                    variant="tonal"
+                    :color="post.isPublic ? 'teal-darken-2' : 'grey-darken-1'"
+                  >
+                    {{ post.isPublic ? "Público" : "Interno" }}
+                  </v-chip>
+                  <v-chip v-if="post.pinned" size="x-small" variant="tonal" color="amber-darken-2">
+                    Fixado
+                  </v-chip>
+                </div>
+                <span>{{ post.title }}</span>
+              </div>
+              <div class="d-flex ga-1">
+                <v-btn icon variant="text" color="grey-darken-1" size="small" @click="editPost(post)">
+                  <Pencil size="16" />
+                </v-btn>
+                <v-btn icon variant="text" color="red-darken-2" size="small" @click="removePost(post.id)">
+                  <Trash2 size="16" />
+                </v-btn>
+              </div>
+            </div>
+            <p v-if="!posts.length" class="text-caption text-grey-darken-1 mb-0">
+              Nenhuma publicação ainda.
+            </p>
+          </div>
+        </div>
+      </v-card>
     </section>
 
     <!-- Invite code card -->
@@ -1325,7 +1497,8 @@
         </template>
       </v-card>
 
-      <div class="section-heading mb-4 mt-6">
+      <div class="editorial-surface mt-6" :style="editorialStyle">
+      <div class="section-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Página Pública</h2>
           <p class="text-caption text-grey-darken-1 mb-0">Vitrine da igreja para visitantes, sem precisar de login</p>
@@ -1335,7 +1508,7 @@
       <v-card class="invite-code-card rounded-xl pa-5 elevation-1 border-subtle">
         <div class="d-flex align-center gap-3 mb-4">
           <v-avatar size="40" :color="avatarBgIndigo">
-            <Globe size="20" :color="accentColor" />
+            <Globe size="20" :color="churchAccent" />
           </v-avatar>
           <div>
             <p class="font-weight-bold mb-0" style="font-size:0.9rem;">Link público</p>
@@ -1371,6 +1544,92 @@
             <Palette size="18" />
           </template>
         </v-text-field>
+
+        <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">
+          Rodapé da página pública
+        </p>
+        <p class="text-caption text-grey-darken-1 mb-3">
+          Contatos e redes que aparecem no rodapé. Deixe em branco o que não usar.
+        </p>
+        <div class="footer-fields-grid mb-4">
+          <v-text-field
+            v-model="publicChurchForm.phone"
+            label="Telefone"
+            prepend-inner-icon="mdi-phone"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            hide-details="auto"
+            :disabled="isSavingPublicChurch"
+          />
+          <v-text-field
+            v-model="publicChurchForm.whatsapp"
+            label="WhatsApp"
+            prepend-inner-icon="mdi-whatsapp"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            hide-details="auto"
+            :disabled="isSavingPublicChurch"
+          />
+          <v-text-field
+            v-model="publicChurchForm.email"
+            label="E-mail"
+            prepend-inner-icon="mdi-email"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            hide-details="auto"
+            :disabled="isSavingPublicChurch"
+          />
+          <v-text-field
+            v-model="publicChurchForm.instagram"
+            label="Instagram"
+            prepend-inner-icon="mdi-instagram"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            hide-details="auto"
+            :disabled="isSavingPublicChurch"
+          />
+          <v-text-field
+            v-model="publicChurchForm.facebook"
+            label="Facebook"
+            prepend-inner-icon="mdi-facebook"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            hide-details="auto"
+            :disabled="isSavingPublicChurch"
+          />
+          <v-text-field
+            v-model="publicChurchForm.youtube"
+            label="YouTube"
+            prepend-inner-icon="mdi-youtube"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            hide-details="auto"
+            :disabled="isSavingPublicChurch"
+          />
+          <v-text-field
+            v-model="publicChurchForm.website"
+            label="Site"
+            prepend-inner-icon="mdi-web"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            hide-details="auto"
+            :disabled="isSavingPublicChurch"
+          />
+        </div>
 
         <v-alert
           v-if="publicChurchMessage"
@@ -1417,6 +1676,119 @@
           </v-btn>
         </div>
       </v-card>
+
+      <div class="section-heading mb-4 mt-6">
+        <div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Horários de culto</h2>
+          <p class="text-caption text-grey-darken-1 mb-0">Aparecem nos "Próximos cultos" da página pública</p>
+        </div>
+      </div>
+
+      <v-card class="invite-code-card rounded-xl pa-5 elevation-1 border-subtle">
+        <div class="d-flex align-center gap-3 mb-4">
+          <v-avatar size="40" :color="avatarBgIndigo">
+            <Calendar size="20" :color="churchAccent" />
+          </v-avatar>
+          <div>
+            <p class="font-weight-bold mb-0" style="font-size:0.9rem;">
+              {{ editingServiceTimeId ? "Editar horário" : "Novo horário" }}
+            </p>
+            <p class="text-caption text-grey-darken-1 mb-0">Dia da semana, horário e nome do culto</p>
+          </div>
+        </div>
+
+        <div class="service-time-form mb-4">
+          <v-select
+            v-model="serviceTimeForm.weekday"
+            :items="weekdayOptions"
+            item-title="label"
+            item-value="value"
+            label="Dia"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            hide-details="auto"
+          />
+          <v-text-field
+            v-model="serviceTimeForm.time"
+            label="Horário"
+            type="time"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            hide-details="auto"
+          />
+          <v-text-field
+            v-model="serviceTimeForm.label"
+            label="Nome do culto"
+            placeholder="ex: Culto da Família"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            hide-details="auto"
+          />
+        </div>
+
+        <div class="d-flex gap-2 mb-4">
+          <v-btn
+            color="purple-darken-3"
+            class="text-none font-weight-bold"
+            size="small"
+            :loading="isSavingServiceTime"
+            @click="saveServiceTime"
+          >
+            {{ editingServiceTimeId ? "Salvar horário" : "Adicionar horário" }}
+          </v-btn>
+          <v-btn
+            v-if="editingServiceTimeId"
+            variant="text"
+            color="grey-darken-1"
+            class="text-none"
+            size="small"
+            @click="resetServiceTimeForm"
+          >
+            Cancelar
+          </v-btn>
+        </div>
+
+        <div v-if="sortedServiceTimes.length" class="service-time-list">
+          <div
+            v-for="time in sortedServiceTimes"
+            :key="time.id"
+            class="service-time-row"
+            :class="{ inactive: !time.isActive }"
+          >
+            <span class="service-day">{{ weekdayName(time.weekday) }}</span>
+            <strong class="service-hour">{{ time.time }}</strong>
+            <span class="service-label">{{ time.label }}</span>
+            <div class="service-actions">
+              <v-chip v-if="!time.isActive" size="x-small" variant="tonal" color="grey-darken-1">
+                Inativo
+              </v-chip>
+              <v-btn icon variant="text" color="grey-darken-1" size="small" @click="editServiceTime(time)">
+                <Pencil size="15" />
+              </v-btn>
+              <v-btn
+                v-if="time.isActive"
+                icon
+                variant="text"
+                color="red-darken-2"
+                size="small"
+                @click="disableServiceTime(time.id)"
+              >
+                <Trash2 size="15" />
+              </v-btn>
+            </div>
+          </div>
+        </div>
+        <p v-else class="text-caption text-grey-darken-1 mb-0">
+          Nenhum horário cadastrado ainda.
+        </p>
+      </v-card>
+      </div>
     </section>
 
     <AdminReports
@@ -1631,12 +2003,13 @@
               Líder
             </v-chip>
             <v-chip
-              v-if="member.churchRole"
+              v-for="memberRole in member.roles ?? []"
+              :key="memberRole.id"
               size="small"
-              color="teal-darken-2"
+              :color="memberRole.scope === 'MINISTRY' ? 'orange-darken-2' : 'teal-darken-2'"
               variant="tonal"
             >
-              {{ member.churchRole.name }}
+              {{ memberRole.name }}
             </v-chip>
             <v-chip size="small" color="purple-darken-3" variant="tonal">
               {{ churchMemberRoleLabel(member) }}
@@ -1826,10 +2199,17 @@
           class="role-item"
         >
           <div class="min-w-0 flex-1">
-            <div class="d-flex align-center gap-2 mb-1">
+            <div class="d-flex align-center gap-2 mb-1 flex-wrap">
               <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
                 {{ role.name }}
               </p>
+              <v-chip
+                size="x-small"
+                :color="role.scope === 'MINISTRY' ? 'orange-darken-2' : 'teal-darken-2'"
+                variant="tonal"
+              >
+                {{ role.scope === "MINISTRY" ? (role.department?.name ?? "Ministério") : "Igreja" }}
+              </v-chip>
               <v-chip size="x-small" color="grey" variant="tonal">
                 {{ role.userCount ?? 0 }} {{ (role.userCount ?? 0) === 1 ? "membro" : "membros" }}
               </v-chip>
@@ -2196,21 +2576,55 @@
           :disabled="isUpdatingMember"
         />
 
-        <v-select
-          v-model="selectedChurchMemberRoleId"
-          label="Cargo"
-          :items="roleOptions"
-          item-title="label"
-          item-value="value"
-          prepend-inner-icon="mdi-badge-account-outline"
-          variant="outlined"
-          density="comfortable"
-          color="purple-darken-3"
-          bg-color="white"
-          class="admin-input mb-4"
-          hide-details="auto"
-          :disabled="!canAssignSelectedMemberRole || isAssigningChurchMemberRole"
-        />
+        <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">
+          Cargos
+        </p>
+        <div class="d-flex flex-wrap gap-2 mb-2">
+          <v-chip
+            v-for="memberRole in selectedMember?.roles ?? []"
+            :key="memberRole.id"
+            size="small"
+            :color="memberRole.scope === 'MINISTRY' ? 'orange-darken-2' : 'teal-darken-2'"
+            variant="tonal"
+            :closable="canAssignSelectedMemberRole && !isAssigningRole"
+            @click:close="removeRoleFromSelectedMember(memberRole.id)"
+          >
+            {{ memberRole.name }}
+          </v-chip>
+          <span
+            v-if="!(selectedMember?.roles ?? []).length"
+            class="text-caption text-grey-darken-1"
+          >
+            Nenhum cargo atribuído
+          </span>
+        </div>
+        <div class="d-flex align-center gap-2 mb-4">
+          <v-select
+            v-model="selectedChurchMemberRoleId"
+            label="Adicionar cargo"
+            :items="assignableRolesFor(selectedMember)"
+            item-title="label"
+            item-value="value"
+            prepend-inner-icon="mdi-badge-account-outline"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="admin-input"
+            hide-details="auto"
+            :disabled="!canAssignSelectedMemberRole || isAssigningRole"
+          />
+          <v-btn
+            color="purple-darken-3"
+            variant="tonal"
+            class="text-none"
+            :loading="isAssigningRole"
+            :disabled="!canAssignSelectedMemberRole || isAssigningRole || !selectedChurchMemberRoleId"
+            @click="addRoleToSelectedMember"
+          >
+            Adicionar
+          </v-btn>
+        </div>
 
         <v-alert
           v-if="selectedMember && leaderDepartmentNames(selectedMember.id).length"
@@ -2248,7 +2662,7 @@
             variant="text"
             color="red-darken-2"
             class="text-none"
-            :disabled="isUpdatingMember || isAssigningChurchMemberRole"
+            :disabled="isUpdatingMember || isAssigningRole"
             @click="handleDeleteMember"
           >
             Remover
@@ -2258,7 +2672,7 @@
               variant="text"
               color="grey-darken-1"
               class="text-none"
-              :disabled="isUpdatingMember || isAssigningChurchMemberRole"
+              :disabled="isUpdatingMember || isAssigningRole"
               @click="closeMemberDetails"
             >
               Fechar
@@ -2267,8 +2681,8 @@
               v-if="canManageMembersByRole && canEditSelectedMember"
               color="purple-darken-3"
               class="text-none"
-              :loading="isUpdatingMember || isAssigningChurchMemberRole"
-              :disabled="isUpdatingMember || isAssigningChurchMemberRole"
+              :loading="isUpdatingMember || isAssigningRole"
+              :disabled="isUpdatingMember || isAssigningRole"
               @click="handleUpdateMember"
             >
               Salvar
@@ -2382,13 +2796,57 @@
           hide-details="auto"
         />
 
+        <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">
+          Onde este cargo vale?
+        </p>
+        <v-btn-toggle
+          v-model="roleForm.scope"
+          mandatory
+          divided
+          color="purple-darken-3"
+          density="comfortable"
+          class="mb-3 role-scope-toggle"
+        >
+          <v-btn value="MINISTRY" class="text-none flex-1">Um ministério</v-btn>
+          <v-btn value="CHURCH" class="text-none flex-1">Igreja toda</v-btn>
+        </v-btn-toggle>
+
+        <v-select
+          v-if="roleForm.scope === 'MINISTRY'"
+          v-model="roleForm.departmentId"
+          :items="ministryRoleOptions"
+          item-title="label"
+          item-value="value"
+          label="Ministério"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+
+        <v-select
+          v-model="selectedRolePreset"
+          :items="presetRoleOptions"
+          item-title="label"
+          item-value="value"
+          label="Modelo pronto (opcional)"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-4"
+          hide-details="auto"
+          clearable
+          @update:model-value="applyRolePreset"
+        />
+
         <div class="role-permission-header mb-3">
           <div>
             <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">
-              Permissões por módulo
+              O que este cargo pode fazer
             </p>
             <p class="text-caption text-grey-darken-1 mb-0">
-              Para líderes, essas permissões valem somente no ministério liderado.
+              Marque as ações permitidas. Você ajusta caixa por caixa ou usa "tudo".
             </p>
           </div>
           <v-chip size="small" color="purple-darken-3" variant="tonal">
@@ -2397,7 +2855,7 @@
         </div>
         <div class="permission-module-list mb-4">
           <div
-            v-for="module in PERMISSION_MODULES"
+            v-for="module in visibleRoleModules"
             :key="module.key"
             class="permission-module-card"
           >
@@ -2406,9 +2864,15 @@
                 <strong>{{ module.label }}</strong>
                 <span>{{ module.description }}</span>
               </div>
-              <v-chip size="x-small" color="indigo-darken-2" variant="tonal">
-                {{ selectedModulePermissionCount(module.key) }}/{{ module.permissions.length }}
-              </v-chip>
+              <v-btn
+                variant="tonal"
+                color="indigo-darken-2"
+                size="x-small"
+                class="text-none"
+                @click="toggleModulePermissions(module.key)"
+              >
+                {{ isModuleFullySelected(module.key) ? "Limpar" : "Tudo" }}
+              </v-btn>
             </div>
 
             <v-checkbox
@@ -2513,6 +2977,7 @@ import {
   Globe,
   Palette,
   Save,
+  Image as ImageIcon,
 } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
@@ -2536,7 +3001,11 @@ import {
 } from "../../../composables/useChurchRoles";
 import {
   PERMISSION_MODULES,
+  modulesForScope,
+  ROLE_PRESETS,
   type PermissionModuleKey,
+  type PermissionScope,
+  type AppPermission,
 } from "../../../composables/usePermissions";
 import { useDailyVerse } from "../../composables/useDailyVerse";
 import {
@@ -2550,6 +3019,7 @@ import {
 import { useChurchInvite } from "../../composables/useChurchInvite";
 import { useChurch } from "../../composables/useChurch";
 import { useServiceTimes, type ServiceTime } from "../../composables/useServiceTimes";
+import { usePosts, type ChurchPost } from "../../composables/usePosts";
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
@@ -2637,6 +3107,28 @@ const {
   createDevotional,
   deleteDevotional,
 } = useDevotionals();
+const {
+  listPosts,
+  createPost,
+  updatePost,
+  deletePost,
+  uploadImage: uploadPostImage,
+} = usePosts();
+
+const posts = ref<ChurchPost[]>([]);
+const postImageInput = ref<HTMLInputElement | null>(null);
+const editingPostId = ref("");
+const isSavingPost = ref(false);
+const isUploadingPostImage = ref(false);
+const postForm = reactive({
+  title: "",
+  body: "",
+  videoUrl: "",
+  imageUrl: "" as string | null,
+  imageKey: "" as string | null,
+  isPublic: true,
+  pinned: false,
+});
 
 const members = ref<ChurchMember[]>([]);
 const departments = ref<ChurchDepartment[]>([]);
@@ -3080,14 +3572,33 @@ const announcementKindLabel = (kind?: Announcement["kind"]) => {
 const publicChurchForm = reactive({
   slug: "",
   accentColor: "#B5472A",
+  phone: "",
+  whatsapp: "",
+  email: "",
+  instagram: "",
+  facebook: "",
+  youtube: "",
+  website: "",
 });
 
 const currentChurch = computed(() => user.value?.activeChurch ?? user.value?.church ?? null);
+
+// Cor da igreja (mesma da pagina publica) para o tratamento editorial das telas
+// de cadastro. Cai no terracota padrao quando a igreja nao escolheu uma cor.
+const churchAccent = computed(() => currentChurch.value?.accentColor || "#B5472A");
+const editorialStyle = computed(() => ({ "--church-accent": churchAccent.value }));
 
 const syncPublicChurchForm = () => {
   const church = currentChurch.value;
   publicChurchForm.slug = church?.slug ?? "";
   publicChurchForm.accentColor = church?.accentColor || "#B5472A";
+  publicChurchForm.phone = church?.phone ?? "";
+  publicChurchForm.whatsapp = church?.whatsapp ?? "";
+  publicChurchForm.email = church?.email ?? "";
+  publicChurchForm.instagram = church?.instagram ?? "";
+  publicChurchForm.facebook = church?.facebook ?? "";
+  publicChurchForm.youtube = church?.youtube ?? "";
+  publicChurchForm.website = church?.website ?? "";
 };
 
 const serviceTimeForm = reactive({
@@ -3130,6 +3641,15 @@ const weekdayOptions = [
   { label: "Sexta", value: 5 },
   { label: "Sabado", value: 6 },
 ];
+
+const weekdayName = (weekday: number) =>
+  weekdayOptions.find((day) => day.value === weekday)?.label ?? "-";
+
+const sortedServiceTimes = computed(() =>
+  [...serviceTimes.value].sort(
+    (a, b) => a.weekday - b.weekday || a.time.localeCompare(b.time),
+  ),
+);
 
 const departmentTypes = [
   { label: "Louvor", value: "WORSHIP" },
@@ -3227,6 +3747,98 @@ const loadDevotionals = async () => {
   devotionals.value = data ?? [];
 };
 
+const loadPosts = async () => {
+  const { data } = await listPosts();
+  posts.value = data ?? [];
+};
+
+const resetPostForm = () => {
+  editingPostId.value = "";
+  postForm.title = "";
+  postForm.body = "";
+  postForm.videoUrl = "";
+  postForm.imageUrl = "";
+  postForm.imageKey = "";
+  postForm.isPublic = true;
+  postForm.pinned = false;
+  if (postImageInput.value) postImageInput.value.value = "";
+};
+
+const onPostImageChange = async (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  contentError.value = "";
+  isUploadingPostImage.value = true;
+  try {
+    const { data, error } = await uploadPostImage(file);
+    if (error || !data) {
+      contentError.value = error || "Não foi possível enviar a imagem.";
+      return;
+    }
+    postForm.imageUrl = data.url;
+    postForm.imageKey = data.key;
+  } finally {
+    isUploadingPostImage.value = false;
+  }
+};
+
+const clearPostImage = () => {
+  postForm.imageUrl = "";
+  postForm.imageKey = "";
+  if (postImageInput.value) postImageInput.value.value = "";
+};
+
+const editPost = (post: ChurchPost) => {
+  editingPostId.value = post.id;
+  postForm.title = post.title;
+  postForm.body = post.body ?? "";
+  postForm.videoUrl = post.videoUrl ?? "";
+  postForm.imageUrl = post.imageUrl ?? "";
+  postForm.imageKey = post.imageKey ?? "";
+  postForm.isPublic = post.isPublic;
+  postForm.pinned = post.pinned;
+};
+
+const savePost = async () => {
+  contentError.value = "";
+  if (!postForm.title.trim()) {
+    contentError.value = "Título da publicação é obrigatório.";
+    return;
+  }
+  isSavingPost.value = true;
+  try {
+    const payload = {
+      title: postForm.title.trim(),
+      body: postForm.body.trim() || null,
+      videoUrl: postForm.videoUrl.trim() || null,
+      imageUrl: postForm.imageUrl || null,
+      imageKey: postForm.imageKey || null,
+      isPublic: postForm.isPublic,
+      pinned: postForm.pinned,
+    };
+    if (editingPostId.value) {
+      const { data, error } = await updatePost(editingPostId.value, payload);
+      if (error || !data) { contentError.value = error || "Erro ao salvar publicação."; return; }
+      posts.value = posts.value.map((item) => (item.id === data.id ? data : item));
+    } else {
+      const { data, error } = await createPost(payload);
+      if (error || !data) { contentError.value = error || "Erro ao publicar."; return; }
+      posts.value = [data, ...posts.value];
+    }
+    resetPostForm();
+  } finally {
+    isSavingPost.value = false;
+  }
+};
+
+const removePost = async (id: string) => {
+  contentError.value = "";
+  const { error } = await deletePost(id);
+  if (error) { contentError.value = error; return; }
+  posts.value = posts.value.filter((item) => item.id !== id);
+  if (editingPostId.value === id) resetPostForm();
+};
+
 const loadChurchAdminData = async () => {
   syncPublicChurchForm();
   await Promise.all([
@@ -3236,6 +3848,8 @@ const loadChurchAdminData = async () => {
     loadRoles(),
     loadAnnouncements(),
     loadDevotionals(),
+    loadPosts(),
+    loadServiceTimes(),
   ]);
 };
 
@@ -3295,7 +3909,7 @@ const closeChurchDetails = () => {
 
 const openAdminUserDetails = (member: AdminChurchUser) => {
   selectedAdminUser.value = member;
-  selectedMemberRoleId.value = member.churchRoleId ?? null;
+  selectedMemberRoleId.value = null;
   adminUserEditForm.name = member.name;
   adminUserEditForm.phone = member.phone || "";
   adminUserEditForm.role = member.role === "PASTOR" ? "PASTOR" : "MEMBER";
@@ -3508,7 +4122,7 @@ const openMemberDetails = (member: ChurchMember) => {
   selectedMemberForm.name = member.name;
   selectedMemberForm.email = member.email;
   selectedMemberForm.phone = member.phone || "";
-  selectedChurchMemberRoleId.value = member.churchRoleId ?? null;
+  selectedChurchMemberRoleId.value = null;
   permissionError.value = "";
   isMemberDetailsOpen.value = true;
 };
@@ -3693,11 +4307,12 @@ const handleUpdateMember = async () => {
       return;
     }
 
-    let nextMember = data;
-    if (canAssignSelectedMemberRole.value) {
-      nextMember = await saveSelectedChurchMemberRole(data);
-      if (!nextMember) return;
-    }
+    // Cargos sao gerenciados a parte (chips add/remove), entao preservamos os
+    // cargos atuais do membro ao salvar nome/email/telefone.
+    const nextMember: ChurchMember = {
+      ...data,
+      roles: selectedMember.value.roles ?? data.roles ?? [],
+    };
 
     selectedMember.value = nextMember;
     members.value = members.value.map((member) =>
@@ -3705,39 +4320,6 @@ const handleUpdateMember = async () => {
     );
   } finally {
     isUpdatingMember.value = false;
-  }
-};
-
-const saveSelectedChurchMemberRole = async (
-  member: ChurchMember,
-): Promise<ChurchMember | null> => {
-  isAssigningChurchMemberRole.value = true;
-  try {
-    const { data, error } = await assignRole(
-      member.id,
-      selectedChurchMemberRoleId.value,
-    );
-
-    if (error || !data) {
-      permissionError.value = error || "Não foi possível salvar o cargo.";
-      return null;
-    }
-
-    const role = churchRoles.value.find((item) => item.id === data.churchRoleId) ?? null;
-
-    return {
-      ...member,
-      churchRoleId: data.churchRoleId,
-      churchRole: role
-        ? {
-            id: role.id,
-            name: role.name,
-            permissions: role.permissions,
-          }
-        : null,
-    };
-  } finally {
-    isAssigningChurchMemberRole.value = false;
   }
 };
 
@@ -3921,6 +4503,13 @@ const savePublicChurchSettings = async () => {
     const { data, error } = await updateOwnChurch({
       slug: publicChurchForm.slug.trim().toLowerCase(),
       accentColor: publicChurchForm.accentColor || null,
+      phone: publicChurchForm.phone.trim() || null,
+      whatsapp: publicChurchForm.whatsapp.trim() || null,
+      email: publicChurchForm.email.trim() || null,
+      instagram: publicChurchForm.instagram.trim() || null,
+      facebook: publicChurchForm.facebook.trim() || null,
+      youtube: publicChurchForm.youtube.trim() || null,
+      website: publicChurchForm.website.trim() || null,
     });
 
     if (error) {
@@ -4013,7 +4602,7 @@ const removeDevotional = async (id: string) => {
 };
 
 // ── Cargos (RBAC) ──────────────────────────────────────────────
-const { getRoles, createRole, updateRole, deleteRole, assignRole } =
+const { getRoles, createRole, updateRole, deleteRole, addMemberRole, removeMemberRole } =
   useChurchRoles();
 
 const churchRoles = ref<ChurchRole[]>([]);
@@ -4022,14 +4611,16 @@ const editingRoleId = ref("");
 const roleForm = reactive({
   name: "",
   description: "",
-  permissions: [] as string[],
+  scope: "MINISTRY" as PermissionScope,
+  departmentId: null as string | null,
+  permissions: [] as AppPermission[],
 });
+const selectedRolePreset = ref<string | null>(null);
 const isSavingRole = ref(false);
 const roleError = ref("");
 const isDeletingRole = ref(false);
 const pendingDeleteRoleId = ref("");
 const isAssigningRole = ref(false);
-const isAssigningChurchMemberRole = ref(false);
 const selectedMemberRoleId = ref<string | null>(null);
 const selectedChurchMemberRoleId = ref<string | null>(null);
 
@@ -4038,10 +4629,64 @@ const isDeleteRoleDialogOpen = computed({
   set: (v: boolean) => { if (!v) pendingDeleteRoleId.value = ""; },
 });
 
-const roleOptions = computed(() => [
-  { label: "Sem cargo", value: null },
-  ...churchRoles.value.map((r) => ({ label: r.name, value: r.id })),
-]);
+// Cargos que o membro ainda nao tem, para o seletor de atribuicao.
+const assignableRolesFor = (member?: { roles?: { id: string }[] } | null) => {
+  const assignedIds = new Set((member?.roles ?? []).map((role) => role.id));
+  return churchRoles.value
+    .filter((role) => !assignedIds.has(role.id))
+    .map((role) => ({
+      label:
+        role.scope === "MINISTRY"
+          ? `${role.name} · ${role.department?.name ?? "Ministério"}`
+          : `${role.name} · Igreja`,
+      value: role.id,
+    }));
+};
+
+const visibleRoleModules = computed(() => modulesForScope(roleForm.scope));
+
+const ministryRoleOptions = computed(() =>
+  departments.value.map((department) => ({
+    label: department.name,
+    value: department.id,
+  })),
+);
+
+const presetRoleOptions = computed(() =>
+  ROLE_PRESETS.filter((preset) => preset.scope === roleForm.scope).map(
+    (preset) => ({ label: preset.label, value: preset.key }),
+  ),
+);
+
+const applyRolePreset = (presetKey: string | null) => {
+  if (!presetKey) return;
+  const preset = ROLE_PRESETS.find((item) => item.key === presetKey);
+  if (!preset) return;
+  roleForm.permissions = [...preset.permissions];
+};
+
+const isModuleFullySelected = (moduleKey: PermissionModuleKey) => {
+  const module = PERMISSION_MODULES.find((item) => item.key === moduleKey);
+  if (!module) return false;
+  return module.permissions.every((perm) =>
+    roleForm.permissions.includes(perm.key),
+  );
+};
+
+const toggleModulePermissions = (moduleKey: PermissionModuleKey) => {
+  const module = PERMISSION_MODULES.find((item) => item.key === moduleKey);
+  if (!module) return;
+  const keys = module.permissions.map((perm) => perm.key);
+  if (isModuleFullySelected(moduleKey)) {
+    roleForm.permissions = roleForm.permissions.filter(
+      (perm) => !keys.includes(perm),
+    );
+  } else {
+    roleForm.permissions = [
+      ...new Set([...roleForm.permissions, ...keys]),
+    ];
+  }
+};
 
 const roleFilterOptions = computed(() => [
   { label: "Todos", value: "ALL" },
@@ -4064,7 +4709,7 @@ const filteredMembers = computed(() => {
       member.role === memberTypeFilter.value;
     const matchesRole =
       memberRoleFilter.value === "ALL" ||
-      member.churchRoleId === memberRoleFilter.value;
+      (member.roles ?? []).some((role) => role.id === memberRoleFilter.value);
 
     return matchesSearch && matchesType && matchesRole;
   });
@@ -4108,15 +4753,6 @@ const filteredChurchRoles = computed(() => {
   });
 });
 
-const selectedModulePermissionCount = (moduleKey: PermissionModuleKey) => {
-  const module = PERMISSION_MODULES.find((item) => item.key === moduleKey);
-  if (!module) return 0;
-
-  return module.permissions.filter((permission) =>
-    roleForm.permissions.includes(permission.key),
-  ).length;
-};
-
 const loadRoles = async () => {
   const { data } = await getRoles();
   churchRoles.value = data ?? [];
@@ -4126,7 +4762,10 @@ const openCreateRole = () => {
   editingRoleId.value = "";
   roleForm.name = "";
   roleForm.description = "";
+  roleForm.scope = "MINISTRY";
+  roleForm.departmentId = departments.value[0]?.id ?? null;
   roleForm.permissions = [];
+  selectedRolePreset.value = null;
   roleError.value = "";
   isRoleDialogOpen.value = true;
 };
@@ -4135,7 +4774,10 @@ const openEditRole = (role: ChurchRole) => {
   editingRoleId.value = role.id;
   roleForm.name = role.name;
   roleForm.description = role.description ?? "";
+  roleForm.scope = role.scope;
+  roleForm.departmentId = role.departmentId;
   roleForm.permissions = [...role.permissions];
+  selectedRolePreset.value = null;
   roleError.value = "";
   isRoleDialogOpen.value = true;
 };
@@ -4146,25 +4788,29 @@ const saveRole = async () => {
     roleError.value = "Nome do cargo é obrigatório.";
     return;
   }
+  if (roleForm.scope === "MINISTRY" && !roleForm.departmentId) {
+    roleError.value = "Escolha o ministério deste cargo.";
+    return;
+  }
 
   isSavingRole.value = true;
   try {
     const payload = {
       name: roleForm.name.trim(),
       description: roleForm.description.trim() || undefined,
+      scope: roleForm.scope,
+      departmentId: roleForm.scope === "MINISTRY" ? roleForm.departmentId : null,
       permissions: roleForm.permissions,
     };
 
     if (editingRoleId.value) {
       const { data, error } = await updateRole(editingRoleId.value, payload);
       if (error || !data) { roleError.value = error || "Erro ao salvar cargo."; return; }
-      churchRoles.value = churchRoles.value.map((r) =>
-        r.id === data.id ? { ...data, userCount: r.userCount } : r,
-      );
+      await loadRoles();
     } else {
       const { data, error } = await createRole(payload);
       if (error || !data) { roleError.value = error || "Erro ao criar cargo."; return; }
-      churchRoles.value = [...churchRoles.value, { ...data, userCount: 0 }];
+      await loadRoles();
     }
 
     isRoleDialogOpen.value = false;
@@ -4188,48 +4834,73 @@ const confirmDeleteRole = async () => {
   }
 };
 
-const saveAssignRole = async () => {
-  if (!selectedAdminUser.value) return;
-  if (!canAssignSelectedAdminUserRole.value) return;
+// Espelha a nova lista de cargos do membro em todos os locais de estado.
+const applyMemberRoles = (memberId: string, roles: MemberRole[]) => {
+  members.value = members.value.map((m) =>
+    m.id === memberId ? { ...m, roles } : m,
+  );
+  if (selectedMember.value?.id === memberId) {
+    selectedMember.value = { ...selectedMember.value, roles };
+  }
+  if (selectedAdminUser.value?.id === memberId) {
+    selectedAdminUser.value = { ...selectedAdminUser.value, roles };
+  }
+  if (selectedChurch.value) {
+    selectedChurch.value = {
+      ...selectedChurch.value,
+      users: selectedChurch.value.users.map((u) =>
+        u.id === memberId ? { ...u, roles } : u,
+      ),
+    };
+  }
+};
 
+const addMemberRoleById = async (memberId: string, roleId: string) => {
   isAssigningRole.value = true;
   try {
-    const { data, error } = await assignRole(
-      selectedAdminUser.value.id,
-      selectedMemberRoleId.value,
-    );
+    const { data, error } = await addMemberRole(memberId, roleId);
     if (error || !data) return;
-    selectedAdminUser.value = {
-      ...selectedAdminUser.value,
-      churchRoleId: data.churchRoleId,
-      churchRole: data.churchRole ?? null,
-    };
-    if (selectedChurch.value) {
-      selectedChurch.value = {
-        ...selectedChurch.value,
-        users: selectedChurch.value.users.map((member) =>
-          member.id === selectedAdminUser.value?.id
-            ? {
-                ...member,
-                churchRoleId: data.churchRoleId,
-                churchRole: data.churchRole ?? null,
-              }
-            : member,
-        ),
-      };
-    }
-    members.value = members.value.map((m) =>
-      m.id === selectedAdminUser.value?.id
-        ? {
-            ...m,
-            churchRoleId: data.churchRoleId,
-            churchRole: data.churchRole ?? null,
-          }
-        : m,
-    );
+    applyMemberRoles(memberId, data.roles);
   } finally {
     isAssigningRole.value = false;
   }
+};
+
+const removeMemberRoleById = async (memberId: string, roleId: string) => {
+  isAssigningRole.value = true;
+  try {
+    const { data, error } = await removeMemberRole(memberId, roleId);
+    if (error || !data) return;
+    applyMemberRoles(memberId, data.roles);
+  } finally {
+    isAssigningRole.value = false;
+  }
+};
+
+const addRoleToSelected = async () => {
+  if (!selectedAdminUser.value || !selectedMemberRoleId.value) return;
+  if (!canAssignSelectedAdminUserRole.value) return;
+  const roleId = selectedMemberRoleId.value;
+  selectedMemberRoleId.value = null;
+  await addMemberRoleById(selectedAdminUser.value.id, roleId);
+};
+
+const removeRoleFromSelected = async (roleId: string) => {
+  if (!selectedAdminUser.value) return;
+  await removeMemberRoleById(selectedAdminUser.value.id, roleId);
+};
+
+const addRoleToSelectedMember = async () => {
+  if (!selectedMember.value || !selectedChurchMemberRoleId.value) return;
+  if (!canAssignSelectedMemberRole.value) return;
+  const roleId = selectedChurchMemberRoleId.value;
+  selectedChurchMemberRoleId.value = null;
+  await addMemberRoleById(selectedMember.value.id, roleId);
+};
+
+const removeRoleFromSelectedMember = async (roleId: string) => {
+  if (!selectedMember.value) return;
+  await removeMemberRoleById(selectedMember.value.id, roleId);
 };
 
 onMounted(async () => {
@@ -5016,6 +5687,162 @@ onMounted(async () => {
   gap: 12px;
 }
 
+.footer-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.post-image-preview {
+  display: block;
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+/* --- Tratamento editorial das telas de cadastro (mesma cara da landing) --- */
+.editorial-surface {
+  --e-paper: #FBF8F3;
+  --e-ink: #221F1A;
+  --e-ink-soft: #6B655C;
+  --e-line: #E4DFD5;
+  --e-card: #FFFFFF;
+  background: var(--e-paper);
+  border: 1px solid var(--e-line);
+  border-radius: 20px;
+  color: var(--e-ink);
+  padding: 26px;
+}
+
+:global(.v-theme--dark) .editorial-surface {
+  --e-paper: #17140F;
+  --e-ink: #F3EFE6;
+  --e-ink-soft: #B9B0A2;
+  --e-line: #2C2820;
+  --e-card: #201C16;
+}
+
+.editorial-surface :deep(.section-heading h2),
+.editorial-surface :deep(h2.text-subtitle-1) {
+  color: var(--e-ink);
+  font-family: "Fraunces", serif;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.editorial-surface :deep(h3.text-subtitle-2) {
+  color: var(--e-ink);
+  font-family: "Fraunces", serif;
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.editorial-surface :deep(.text-grey-darken-4) {
+  color: var(--e-ink) !important;
+}
+
+.editorial-surface :deep(.text-caption),
+.editorial-surface :deep(.text-grey-darken-1) {
+  color: var(--e-ink-soft) !important;
+}
+
+/* Cards viram "papel" com borda fina e o realce da cor da igreja */
+.editorial-surface :deep(.v-card.bg-white),
+.editorial-surface :deep(.v-card.invite-code-card) {
+  background: var(--e-card) !important;
+  border: 1px solid var(--e-line) !important;
+  border-left: 3px solid var(--church-accent) !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+}
+
+/* Botoes, campos e realces adotam a cor da igreja no lugar do roxo */
+.editorial-surface :deep(.bg-purple-darken-3) {
+  background-color: var(--church-accent) !important;
+  border-color: var(--church-accent) !important;
+}
+
+.editorial-surface :deep(.text-purple-darken-3) {
+  color: var(--church-accent) !important;
+  caret-color: var(--church-accent) !important;
+}
+
+.editorial-surface :deep(.content-admin-row) {
+  border-color: var(--e-line) !important;
+}
+
+/* Horários de culto */
+.service-time-form {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(120px, 0.8fr) minmax(110px, 0.6fr) minmax(0, 1.4fr);
+}
+
+.service-time-list {
+  display: grid;
+  gap: 6px;
+}
+
+.service-time-row {
+  align-items: center;
+  border: 1px solid var(--e-line, #E4DFD5);
+  border-radius: 10px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 92px 60px minmax(0, 1fr) auto;
+  padding: 10px 12px;
+}
+
+.service-time-row.inactive {
+  opacity: 0.55;
+}
+
+.service-day {
+  color: var(--church-accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.service-hour {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.service-label {
+  color: var(--e-ink-soft, #6B655C);
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.service-actions {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .service-time-form {
+    grid-template-columns: 1fr;
+  }
+
+  .service-time-row {
+    grid-template-columns: 68px 54px minmax(0, 1fr);
+  }
+
+  .service-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
 .content-inline-fields {
   display: grid;
   grid-template-columns: minmax(120px, auto) minmax(0, 1fr);
@@ -5236,7 +6063,8 @@ onMounted(async () => {
   }
 
   .content-admin-grid,
-  .content-inline-fields {
+  .content-inline-fields,
+  .footer-fields-grid {
     grid-template-columns: 1fr;
   }
 
