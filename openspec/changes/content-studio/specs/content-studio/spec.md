@@ -38,3 +38,14 @@ A tela SHALL mostrar uma lista do que já foi publicado, com filtro por tipo e a
 #### Scenario: Filtrar por tipo
 - **WHEN** o pastor filtra a lista por "Publicações"
 - **THEN** apenas as publicações aparecem, cada uma marcada como pública ou interna
+
+### Requirement: Tela de conteúdo responsiva no celular
+A tela de conteúdo e o controle "Aparecer na página pública" SHALL funcionar bem no celular, sem layout quebrado (campos, toggles e grades empilham corretamente em telas estreitas).
+
+#### Scenario: Cadastro no celular
+- **WHEN** o pastor abre a tela de conteúdo num celular
+- **THEN** os formulários, o upload de foto e o toggle de publicar aparecem empilhados e legíveis, sem estourar a largura da tela
+
+#### Scenario: Grades empilham
+- **WHEN** a tela é vista numa largura estreita
+- **THEN** as grades de dois campos passam para uma coluna, sem cortar conteúdo
