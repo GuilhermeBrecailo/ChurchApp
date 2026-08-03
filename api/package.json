@@ -35,6 +35,7 @@
     "jwks-rsa": "^4.0.1",
     "keycloak-connect": "^26.1.1",
     "ofetch": "^1.5.1",
+    "pdf-parse": "^1.1.1",
     "web-push": "^3.6.7",
     "zod": "^4.3.6"
   },
@@ -44,6 +45,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/mocha": "^10.0.10",
     "@types/node": "^25.2.3",
+    "@types/pdf-parse": "^1.1.5",
     "@types/web-push": "^3.6.4",
     "@typescript-eslint/eslint-plugin": "^8.55.0",
     "@typescript-eslint/parser": "^8.55.0",

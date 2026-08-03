@@ -728,6 +728,15 @@
           >
             <Plus size="18" class="mr-1" /> Nova música
           </v-btn>
+          <v-btn
+            v-if="canManageDepartment"
+            variant="tonal"
+            color="purple-darken-3"
+            class="rounded-lg text-none"
+            @click="openPdfImportDialog"
+          >
+            <FileText size="18" class="mr-1" /> Importar do PDF
+          </v-btn>
         </div>
 
         <v-card
@@ -1635,6 +1644,141 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
+    <UtilsResponsiveOverlay v-model="isPdfImportDialogOpen" max-width="640">
+      <v-card class="rounded-xl pa-6" elevation="0">
+        <div class="d-flex align-center justify-space-between mb-5">
+          <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+            Importar músicas do PDF
+          </h2>
+          <v-btn
+            icon
+            variant="text"
+            color="grey-darken-1"
+            size="small"
+            @click="closePdfImportDialog"
+          >
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <template v-if="pdfImportStep === 'upload'">
+          <p class="text-caption text-grey-darken-1 mb-4">
+            Envie um PDF com o repertório (ex.: 3 músicas no PDF viram 3 músicas no
+            repertório, na mesma ordem). Depois você revisa título e letra antes de
+            confirmar.
+          </p>
+
+          <v-alert
+            v-if="pdfImportError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+          >
+            {{ pdfImportError }}
+          </v-alert>
+
+          <v-btn
+            color="purple-darken-3"
+            class="text-none font-weight-bold"
+            :loading="isExtractingPdfSongs"
+            @click="pdfImportFileInput?.click()"
+          >
+            <FileText size="18" class="mr-2" /> Escolher PDF
+          </v-btn>
+          <input
+            ref="pdfImportFileInput"
+            type="file"
+            accept="application/pdf"
+            class="d-none"
+            @change="onPdfImportFileChange"
+          />
+        </template>
+
+        <template v-else-if="pdfImportStep === 'review'">
+          <p class="text-caption text-grey-darken-1 mb-4">
+            {{ pdfImportSongs.length }}
+            {{ pdfImportSongs.length === 1 ? "música detectada" : "músicas detectadas" }}.
+            Revise antes de confirmar — o que estiver errado, ajuste ou remova.
+          </p>
+
+          <v-alert
+            v-if="pdfImportError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+          >
+            {{ pdfImportError }}
+          </v-alert>
+
+          <div class="pdf-import-review-list mb-4">
+            <div
+              v-for="(song, index) in pdfImportSongs"
+              :key="index"
+              class="pdf-import-review-item"
+            >
+              <div class="d-flex align-center ga-2 mb-2">
+                <span class="pdf-import-index">{{ index + 1 }}</span>
+                <v-text-field
+                  v-model="song.title"
+                  label="Título"
+                  variant="outlined"
+                  density="compact"
+                  color="purple-darken-3"
+                  hide-details
+                  class="flex-grow-1"
+                />
+                <v-btn
+                  icon
+                  variant="text"
+                  color="red-darken-2"
+                  size="small"
+                  @click="removePdfImportSong(index)"
+                >
+                  <Trash2 size="16" />
+                </v-btn>
+              </div>
+              <v-textarea
+                v-model="song.lyrics"
+                label="Letra"
+                variant="outlined"
+                density="compact"
+                color="purple-darken-3"
+                auto-grow
+                rows="3"
+                hide-details
+              />
+            </div>
+            <p v-if="!pdfImportSongs.length" class="text-caption text-grey-darken-1 mb-0">
+              Nenhuma música restante para importar.
+            </p>
+          </div>
+
+          <div class="d-flex ga-2">
+            <v-btn
+              color="purple-darken-3"
+              class="text-none font-weight-bold"
+              :loading="isConfirmingPdfImport"
+              :disabled="!pdfImportSongs.length"
+              @click="confirmPdfImport"
+            >
+              Importar {{ pdfImportSongs.length }}
+              {{ pdfImportSongs.length === 1 ? "música" : "músicas" }}
+            </v-btn>
+            <v-btn
+              variant="text"
+              color="grey-darken-1"
+              class="text-none"
+              @click="pdfImportStep = 'upload'"
+            >
+              Escolher outro PDF
+            </v-btn>
+          </div>
+        </template>
+      </v-card>
+    </UtilsResponsiveOverlay>
+
     <UtilsResponsiveOverlay v-model="isSongViewerOpen" fullscreen>
       <MusicSongReader
         :song="selectedSong"
@@ -2165,6 +2309,7 @@ import {
   type DepartmentSchedule,
   type DepartmentSong,
   type DepartmentTask,
+  type PdfSongSuggestion,
 } from "../../../composables/useDepartments";
 import { useAuth } from "../../../composables/useAuth";
 import { useMembers, type ChurchMember } from "../../../composables/useMembers";
@@ -2195,6 +2340,8 @@ const {
   updateDepartmentSong,
   deleteDepartmentSong,
   importCifraClubSong,
+  previewSongsFromPdf,
+  importSongsFromPdf,
   uploadDepartmentPdf,
   getSongPreference,
   updateSongPreference,
@@ -2310,6 +2457,13 @@ const isScheduleDialogOpen = ref(false);
 const isResourceDialogOpen = ref(false);
 const isSongDialogOpen = ref(false);
 const songFormTab = ref("info");
+const isPdfImportDialogOpen = ref(false);
+const pdfImportStep = ref<"upload" | "review">("upload");
+const pdfImportFileInput = ref<HTMLInputElement | null>(null);
+const pdfImportSongs = ref<PdfSongSuggestion[]>([]);
+const pdfImportError = ref("");
+const isExtractingPdfSongs = ref(false);
+const isConfirmingPdfImport = ref(false);
 const isActivityDialogOpen = ref(false);
 const isSongViewerOpen = ref(false);
 const isAssignmentsDialogOpen = ref(false);
@@ -2929,6 +3083,58 @@ const loadSongs = async () => {
   }
 
   songs.value = data ?? [];
+};
+
+const openPdfImportDialog = () => {
+  pdfImportStep.value = "upload";
+  pdfImportSongs.value = [];
+  pdfImportError.value = "";
+  isPdfImportDialogOpen.value = true;
+};
+
+const closePdfImportDialog = () => {
+  isPdfImportDialogOpen.value = false;
+  if (pdfImportFileInput.value) pdfImportFileInput.value.value = "";
+};
+
+const onPdfImportFileChange = async (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  pdfImportError.value = "";
+  isExtractingPdfSongs.value = true;
+  try {
+    const { data, error } = await previewSongsFromPdf(departmentId, file);
+    if (error || !data) {
+      pdfImportError.value = error || "Não foi possível ler o PDF.";
+      return;
+    }
+    pdfImportSongs.value = data.songs;
+    pdfImportStep.value = "review";
+  } finally {
+    isExtractingPdfSongs.value = false;
+    if (pdfImportFileInput.value) pdfImportFileInput.value.value = "";
+  }
+};
+
+const removePdfImportSong = (index: number) => {
+  pdfImportSongs.value = pdfImportSongs.value.filter((_, i) => i !== index);
+};
+
+const confirmPdfImport = async () => {
+  pdfImportError.value = "";
+  if (!pdfImportSongs.value.length) return;
+  isConfirmingPdfImport.value = true;
+  try {
+    const { data, error } = await importSongsFromPdf(departmentId, pdfImportSongs.value);
+    if (error || !data) {
+      pdfImportError.value = error || "Não foi possível importar as músicas.";
+      return;
+    }
+    songs.value = [...songs.value, ...data.songs];
+    closePdfImportDialog();
+  } finally {
+    isConfirmingPdfImport.value = false;
+  }
 };
 
 const loadMembers = async () => {
@@ -4202,6 +4408,34 @@ onMounted(async () => {
   border: 1px solid var(--app-color-border, #e5e7eb);
   border-radius: 12px;
   padding: 12px 14px;
+}
+
+.pdf-import-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.pdf-import-review-item {
+  border: 1px solid var(--app-color-border, #e5e7eb);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.pdf-import-index {
+  align-items: center;
+  background: var(--app-color-border, #e5e7eb);
+  border-radius: 999px;
+  color: var(--app-color-text-soft, #6b7280);
+  display: flex;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
 }
 
 .assign-cargo-row {

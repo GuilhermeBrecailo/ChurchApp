@@ -168,6 +168,11 @@ export interface CifraClubSongImport {
   youtubeUrl?: string;
 }
 
+export interface PdfSongSuggestion {
+  title: string;
+  lyrics: string;
+}
+
 export interface SongPreference {
   id: string | null;
   personalKey?: string | null;
@@ -757,6 +762,37 @@ export const useDepartments = () => {
       },
     );
   };
+  const previewSongsFromPdf = async (
+    departmentId: string,
+    file: File,
+  ): Promise<ApiResponse<{ songs: PdfSongSuggestion[] }>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return await $customFetch<{ songs: PdfSongSuggestion[] }>(
+      `${config.public.URL_BACKEND}/api/church/departments/${departmentId}/songs/import-pdf/preview`,
+      {
+        method: "POST",
+        headers: authOnlyHeaders(),
+        body: formData,
+      },
+    );
+  };
+
+  const importSongsFromPdf = async (
+    departmentId: string,
+    songs: PdfSongSuggestion[],
+  ): Promise<ApiResponse<{ songs: DepartmentSong[] }>> => {
+    return await $customFetch<{ songs: DepartmentSong[] }>(
+      `${config.public.URL_BACKEND}/api/church/departments/${departmentId}/songs/import-pdf/confirm`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+        body: { songs },
+      },
+    );
+  };
+
   const deleteDepartmentSong = async (
     departmentId: string,
     songId: string,
@@ -871,6 +907,8 @@ export const useDepartments = () => {
     updateDepartmentSong,
     deleteDepartmentSong,
     importCifraClubSong,
+    previewSongsFromPdf,
+    importSongsFromPdf,
     getSongPreference,
     updateSongPreference,
     reorderScheduleMediaItems,

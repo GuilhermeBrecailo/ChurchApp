@@ -11,6 +11,10 @@ import { hasPermission } from "../../application/Services/Auth/AuthorizationServ
 import { PermissionKey } from "../../domain/permissions";
 import { normalizeSongKey } from "../../application/Services/Department/SongKey";
 import {
+  extractPdfPages,
+  extractSongsFromPages,
+} from "../../application/Services/Department/PdfSongExtraction";
+import {
   DEPARTMENT_MODULES,
   normalizeDepartmentModules,
   parseDepartmentModules as parseDepartmentModulesInput,
@@ -2401,6 +2405,126 @@ export class ChurchDepartmentAdapters {
       },
       select: this.songSelect,
     });
+  }
+
+  // Sobe um PDF de repertorio e devolve as musicas detectadas (titulo +
+  // letra) SEM criar nada ainda - o usuario revisa/edita antes de confirmar
+  // em importSongsFromPdf. Mesma permissao de SONG_CREATE do cadastro manual.
+  async previewSongsFromPdf(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+
+    if (!id) {
+      throw new DomainError("Ministério não informado");
+    }
+
+    await this.assertDepartmentPermission(
+      user,
+      id,
+      "SONG_CREATE",
+      "Apenas pastores, admins ou cargos com permissao podem importar musicas deste ministerio",
+    );
+
+    const multipartRequest = request as FastifyRequest & {
+      file: (options?: unknown) => Promise<{
+        filename: string;
+        mimetype: string;
+        toBuffer: () => Promise<Buffer>;
+      } | undefined>;
+    };
+    const file = await multipartRequest.file({
+      limits: {
+        fileSize: PDF_MAX_SIZE_BYTES,
+        files: 1,
+      },
+    });
+
+    if (!file) {
+      throw new DomainError("Arquivo PDF não enviado");
+    }
+
+    if (file.mimetype !== "application/pdf") {
+      throw new DomainError("Envie um arquivo PDF válido");
+    }
+
+    const buffer = await file.toBuffer();
+    if (buffer.byteLength > PDF_MAX_SIZE_BYTES) {
+      throw new DomainError("O PDF deve ter no máximo 10 MB");
+    }
+
+    const pages = await extractPdfPages(buffer);
+    const songs = extractSongsFromPages(pages);
+
+    if (songs.length === 0) {
+      throw new DomainError(
+        "Não foi possível extrair texto deste PDF. Ele pode ser uma imagem escaneada sem texto selecionável.",
+      );
+    }
+
+    return { songs };
+  }
+
+  // Cria de fato as musicas revisadas pelo usuario, na ordem enviada
+  // (a ordem detectada no PDF vira a ordem do repertorio/playlist).
+  async importSongsFromPdf(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+
+    if (!id) {
+      throw new DomainError("Ministério não informado");
+    }
+
+    await this.assertDepartmentPermission(
+      user,
+      id,
+      "SONG_CREATE",
+      "Apenas pastores, admins ou cargos com permissao podem importar musicas deste ministerio",
+    );
+
+    const body = request.body as {
+      songs?: { title?: string; lyrics?: string }[];
+    };
+
+    const songs = Array.isArray(body.songs)
+      ? body.songs
+          .map((song) => ({
+            title: song.title?.trim() || "",
+            lyrics: song.lyrics?.trim() || "",
+          }))
+          .filter((song) => song.title)
+      : [];
+
+    if (songs.length === 0) {
+      throw new DomainError("Nenhuma música para importar");
+    }
+
+    const created = await $prismaClient.$transaction(
+      songs.map((song) =>
+        $prismaClient.mediaItem.create({
+          data: {
+            id: crypto.randomUUID(),
+            title: song.title,
+            url: "",
+            category: "MUSIC",
+            metadata: {
+              artist: "",
+              key: "",
+              bpm: "",
+              songCategory: "Louvor",
+              notes: "",
+              lyrics: song.lyrics,
+              chords: "",
+              keyboardChords: "",
+              mediaLink: "",
+            },
+            departmentId: id,
+          },
+          select: this.songSelect,
+        }),
+      ),
+    );
+
+    return { songs: created };
   }
 
   async updateChurchDepartmentSong(request: FastifyRequest) {

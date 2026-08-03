@@ -147,6 +147,16 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
     controllerHandler(adapters.importCifraClubSong.bind(adapters)),
   );
 
+  app.post(
+    "/api/church/departments/:id/songs/import-pdf/preview",
+    controllerHandler(adapters.previewSongsFromPdf.bind(adapters)),
+  );
+
+  app.post(
+    "/api/church/departments/:id/songs/import-pdf/confirm",
+    controllerHandler(adapters.importSongsFromPdf.bind(adapters)),
+  );
+
   app.patch(
     "/api/church/departments/:departmentId/songs/:songId",
     controllerHandler(adapters.updateChurchDepartmentSong.bind(adapters)),
