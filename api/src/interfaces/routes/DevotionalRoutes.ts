@@ -20,6 +20,11 @@ export async function DevotionalRoutes(app: FastifyInstance) {
     controllerHandler(adapters.createDevotional.bind(adapters)),
   );
 
+  app.patch(
+    "/api/church/devotionals/:id",
+    controllerHandler(adapters.updateDevotional.bind(adapters)),
+  );
+
   app.delete(
     "/api/church/devotionals/:id",
     controllerHandler(adapters.deleteDevotional.bind(adapters)),

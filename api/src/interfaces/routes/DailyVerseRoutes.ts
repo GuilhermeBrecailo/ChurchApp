@@ -20,6 +20,11 @@ export async function DailyVerseRoutes(app: FastifyInstance) {
     controllerHandler(adapters.createDailyVerse.bind(adapters)),
   );
 
+  app.patch(
+    "/api/church/daily-verse/:id",
+    controllerHandler(adapters.updateDailyVerse.bind(adapters)),
+  );
+
   app.delete(
     "/api/church/daily-verse/:id",
     controllerHandler(adapters.deleteDailyVerse.bind(adapters)),

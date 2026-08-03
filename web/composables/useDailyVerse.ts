@@ -28,7 +28,7 @@ interface DailyVerseList {
   pageSize: number;
 }
 
-interface PublishDailyVerseDTO {
+export interface PublishDailyVerseDTO {
   text: string;
   reference: string;
   commentary?: string;
@@ -86,6 +86,20 @@ export const useDailyVerse = () => {
     );
   };
 
+const updateVerse = async (
+    id: string,
+    data: Partial<PublishDailyVerseDTO>,
+  ): Promise<ApiResponse<DailyVerse>> => {
+    return await $customFetch<DailyVerse>(
+      `${config.public.URL_BACKEND}/api/church/daily-verse/${id}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: data,
+      },
+    );
+  };
+
   const deleteVerse = async (
     id: string,
   ): Promise<ApiResponse<{ success: boolean }>> => {
@@ -102,6 +116,7 @@ export const useDailyVerse = () => {
     getLatestVerse,
     listVerses,
     publishVerse,
+    updateVerse,
     deleteVerse,
   };
 };

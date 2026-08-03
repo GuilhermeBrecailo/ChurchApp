@@ -30,7 +30,7 @@ export interface Devotional {
   }[];
 }
 
-interface CreateDevotionalDTO {
+export interface DevotionalPayload {
   title: string;
   description?: string;
   videoUrl?: string;
@@ -93,12 +93,26 @@ export const useDevotionals = () => {
   };
 
   const createDevotional = async (
-    data: CreateDevotionalDTO,
+    data: DevotionalPayload,
   ): Promise<ApiResponse<Devotional>> => {
     return await $customFetch<Devotional>(
       `${config.public.URL_BACKEND}/api/church/devotionals`,
       {
         method: "POST",
+        headers: authHeaders(),
+        body: data,
+      },
+    );
+  };
+
+const updateDevotional = async (
+    id: string,
+    data: Partial<DevotionalPayload>,
+  ): Promise<ApiResponse<Devotional>> => {
+    return await $customFetch<Devotional>(
+      `${config.public.URL_BACKEND}/api/church/devotionals/${id}`,
+      {
+        method: "PATCH",
         headers: authHeaders(),
         body: data,
       },
@@ -122,6 +136,7 @@ export const useDevotionals = () => {
     getDevotional,
     updateProgress,
     createDevotional,
+    updateDevotional,
     deleteDevotional,
   };
 };

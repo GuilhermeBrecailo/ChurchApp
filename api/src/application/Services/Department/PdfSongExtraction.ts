@@ -25,6 +25,7 @@ export type ExtractedSong = {
 };
 
 const MAX_TITLE_LENGTH = 60;
+const FOOTER_MARKERS = [/^Composi[cç][aã]o de:/i, /^Tom:/i, /^Afina[cç][aã]o:/i];
 
 function renderPageText(pageData: PdfPageData): Promise<string> {
   return pageData
@@ -89,17 +90,85 @@ function blockToSong(block: string): ExtractedSong | null {
   return { title, lyrics };
 }
 
-// Uma pagina pode conter mais de uma musica (setlist compacto); dentro da
-// pagina, blocos separados por linha(s) em branco viram musicas separadas.
-// Quando a pagina inteira e um bloco so, ela vira uma unica musica - e o
-// caso comum de "uma musica por pagina".
-function extractSongsFromPage(pageText: string): ExtractedSong[] {
-  const blocks = splitIntoBlocks(pageText);
-  return blocks
-    .map((block) => blockToSong(block))
-    .filter((song): song is ExtractedSong => song !== null);
+type PageSongMetadata = {
+  title: string;
+  footerStartIndex: number;
+};
+
+function normalizeLines(text: string): string[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function looksLikeFooterLine(line: string): boolean {
+  return FOOTER_MARKERS.some((marker) => marker.test(line));
+}
+
+function findCifraClubMetadata(lines: string[]): PageSongMetadata | null {
+  const compositionIndex = lines.findIndex((line) => /^Composi[cç][aã]o de:/i.test(line));
+  if (compositionIndex < 2) return null;
+
+  const nearbyFooter = lines
+    .slice(compositionIndex, Math.min(lines.length, compositionIndex + 5))
+    .some((line) => /^Tom:/i.test(line) || /^Afina[cç][aã]o:/i.test(line));
+
+  if (!nearbyFooter) return null;
+
+  return {
+    title: lines[compositionIndex - 2].slice(0, MAX_TITLE_LENGTH).trim(),
+    footerStartIndex: compositionIndex - 2,
+  };
+}
+
+function cleanPageLyrics(pageText: string): { lyrics: string; metadata: PageSongMetadata | null } {
+  const lines = normalizeLines(pageText);
+  const metadata = findCifraClubMetadata(lines);
+  const lyricLines = metadata ? lines.slice(0, metadata.footerStartIndex) : lines;
+
+  return {
+    lyrics: lyricLines.filter((line) => !looksLikeFooterLine(line)).join("\n").trim(),
+    metadata,
+  };
+}
+
+function pushCurrentSong(songs: ExtractedSong[], current: ExtractedSong | null) {
+  if (!current) return;
+
+  const title = current.title.trim();
+  const lyrics = current.lyrics.trim();
+  if (title) songs.push({ title, lyrics });
 }
 
 export function extractSongsFromPages(pages: string[]): ExtractedSong[] {
-  return pages.flatMap((page) => extractSongsFromPage(page));
+  const songs: ExtractedSong[] = [];
+  let currentSong: ExtractedSong | null = null;
+  let foundCifraClubMetadata = false;
+
+  for (const page of pages) {
+    const { lyrics, metadata } = cleanPageLyrics(page);
+
+    if (metadata) {
+      foundCifraClubMetadata = true;
+      pushCurrentSong(songs, currentSong);
+      currentSong = { title: metadata.title, lyrics };
+      continue;
+    }
+
+    if (currentSong) {
+      currentSong.lyrics = [currentSong.lyrics, lyrics].filter(Boolean).join("\n");
+    }
+  }
+
+  pushCurrentSong(songs, currentSong);
+
+  if (foundCifraClubMetadata) {
+    return songs;
+  }
+
+  return pages
+    .flatMap((page) => splitIntoBlocks(page))
+    .map((block) => blockToSong(block))
+    .filter((song): song is ExtractedSong => song !== null);
 }

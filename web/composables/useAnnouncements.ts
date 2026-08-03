@@ -19,7 +19,7 @@ export interface Announcement {
   videoUrl?: string | null;
 }
 
-interface CreateAnnouncementDTO {
+export interface AnnouncementPayload {
   title: string;
   body: string;
   pinned?: boolean;
@@ -56,12 +56,26 @@ export const useAnnouncements = () => {
   };
 
   const createAnnouncement = async (
-    data: CreateAnnouncementDTO,
+    data: AnnouncementPayload,
   ): Promise<ApiResponse<Announcement>> => {
     return await $customFetch<Announcement>(
       `${config.public.URL_BACKEND}/api/church/announcements`,
       {
         method: "POST",
+        headers: authHeaders(),
+        body: data,
+      },
+    );
+  };
+
+const updateAnnouncement = async (
+    id: string,
+    data: Partial<AnnouncementPayload>,
+  ): Promise<ApiResponse<Announcement>> => {
+    return await $customFetch<Announcement>(
+      `${config.public.URL_BACKEND}/api/church/announcements/${id}`,
+      {
+        method: "PATCH",
         headers: authHeaders(),
         body: data,
       },
@@ -83,6 +97,7 @@ export const useAnnouncements = () => {
   return {
     getAnnouncements,
     createAnnouncement,
+    updateAnnouncement,
     deleteAnnouncement,
   };
 };

@@ -728,15 +728,6 @@
           >
             <Plus size="18" class="mr-1" /> Nova música
           </v-btn>
-          <v-btn
-            v-if="canManageDepartment"
-            variant="tonal"
-            color="purple-darken-3"
-            class="rounded-lg text-none"
-            @click="openPdfImportDialog"
-          >
-            <FileText size="18" class="mr-1" /> Importar do PDF
-          </v-btn>
         </div>
 
         <v-card

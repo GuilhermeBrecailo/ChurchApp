@@ -1025,7 +1025,7 @@
       />
     </div>
 
-    <section v-show="isChurchWideManager && activeAdminTab === 'conteudo'" class="church-admin-section editorial-surface mb-8" :style="editorialStyle">
+    <section v-show="isChurchWideManager && activeAdminTab === 'conteudo'" class="church-admin-section mb-8">
       <div class="section-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
@@ -1101,14 +1101,25 @@
             hide-details
             class="mb-4"
           />
-          <v-btn
-            color="purple-darken-3"
-            class="text-none font-weight-bold mb-4"
-            :loading="isPublishingVerse"
-            @click="publishDailyVerse"
-          >
-            Publicar versículo
-          </v-btn>
+          <div class="d-flex flex-wrap ga-2 mb-4">
+            <v-btn
+              color="purple-darken-3"
+              class="text-none font-weight-bold"
+              :loading="isPublishingVerse"
+              @click="saveDailyVerse"
+            >
+              {{ editingVerseId ? "Salvar versículo" : "Publicar versículo" }}
+            </v-btn>
+            <v-btn
+              v-if="editingVerseId"
+              variant="text"
+              color="grey-darken-1"
+              class="text-none"
+              @click="resetVerseForm"
+            >
+              Cancelar
+            </v-btn>
+          </div>
 
           <MotionStaggerGroup class="content-admin-list">
             <MotionStaggerItem
@@ -1129,9 +1140,14 @@
                 </div>
                 <span>{{ verse.reference }}</span>
               </div>
-              <v-btn icon variant="text" color="red-darken-2" size="small" @click="removeVerse(verse.id)">
-                <Trash2 size="16" />
-              </v-btn>
+              <div class="d-flex ga-1">
+                <v-btn icon variant="text" color="grey-darken-1" size="small" @click="editVerse(verse)">
+                  <Pencil size="16" />
+                </v-btn>
+                <v-btn icon variant="text" color="red-darken-2" size="small" @click="removeVerse(verse.id)">
+                  <Trash2 size="16" />
+                </v-btn>
+              </div>
             </MotionStaggerItem>
           </MotionStaggerGroup>
           <p v-if="!dailyVerses.length" class="text-caption text-grey-darken-1 mb-0">
@@ -1217,14 +1233,25 @@
             hide-details
             class="mb-4"
           />
-          <v-btn
-            color="purple-darken-3"
-            class="text-none font-weight-bold mb-4"
-            :loading="isSavingAnnouncement"
-            @click="publishAnnouncement"
-          >
-            Publicar aviso
-          </v-btn>
+          <div class="d-flex flex-wrap ga-2 mb-4">
+            <v-btn
+              color="purple-darken-3"
+              class="text-none font-weight-bold"
+              :loading="isSavingAnnouncement"
+              @click="saveAnnouncement"
+            >
+              {{ editingAnnouncementId ? "Salvar aviso" : "Publicar aviso" }}
+            </v-btn>
+            <v-btn
+              v-if="editingAnnouncementId"
+              variant="text"
+              color="grey-darken-1"
+              class="text-none"
+              @click="resetAnnouncementForm"
+            >
+              Cancelar
+            </v-btn>
+          </div>
           <MotionStaggerGroup class="content-admin-list">
             <MotionStaggerItem
               v-for="announcement in announcements"
@@ -1247,9 +1274,14 @@
                 </div>
                 <span>{{ announcement.title }}</span>
               </div>
-              <v-btn icon variant="text" color="red-darken-2" size="small" @click="removeAnnouncement(announcement.id)">
-                <Trash2 size="16" />
-              </v-btn>
+              <div class="d-flex ga-1">
+                <v-btn icon variant="text" color="grey-darken-1" size="small" @click="editAnnouncement(announcement)">
+                  <Pencil size="16" />
+                </v-btn>
+                <v-btn icon variant="text" color="red-darken-2" size="small" @click="removeAnnouncement(announcement.id)">
+                  <Trash2 size="16" />
+                </v-btn>
+              </div>
             </MotionStaggerItem>
           </MotionStaggerGroup>
         </v-card>
@@ -1342,14 +1374,25 @@
               hide-details
               class="mb-3"
             />
-            <v-btn
-              color="purple-darken-3"
-              class="text-none font-weight-bold"
-              :loading="isSavingDevotional"
-              @click="publishDevotional"
-            >
-              Criar devocional
-            </v-btn>
+            <div class="d-flex flex-wrap ga-2">
+              <v-btn
+                color="purple-darken-3"
+                class="text-none font-weight-bold"
+                :loading="isSavingDevotional"
+                @click="saveDevotional"
+              >
+                {{ editingDevotionalId ? "Salvar devocional" : "Criar devocional" }}
+              </v-btn>
+              <v-btn
+                v-if="editingDevotionalId"
+                variant="text"
+                color="grey-darken-1"
+                class="text-none"
+                @click="resetDevotionalForm"
+              >
+                Cancelar
+              </v-btn>
+            </div>
           </div>
           <div class="content-admin-list">
             <div
@@ -1369,9 +1412,14 @@
                 </div>
                 <span>{{ devotional.title }}</span>
               </div>
-              <v-btn icon variant="text" color="red-darken-2" size="small" @click="removeDevotional(devotional.id)">
-                <Trash2 size="16" />
-              </v-btn>
+              <div class="d-flex ga-1">
+                <v-btn icon variant="text" color="grey-darken-1" size="small" @click="editDevotional(devotional)">
+                  <Pencil size="16" />
+                </v-btn>
+                <v-btn icon variant="text" color="red-darken-2" size="small" @click="removeDevotional(devotional.id)">
+                  <Trash2 size="16" />
+                </v-btn>
+              </div>
             </div>
           </div>
         </div>
@@ -1611,7 +1659,7 @@
         </template>
       </v-card>
 
-      <div class="editorial-surface mt-6" :style="editorialStyle">
+      <div class="mt-6">
       <div class="section-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Página Pública</h2>
@@ -3231,7 +3279,7 @@ const {
   resetChurchUserPasswordByAdmin,
   removeChurchUserByAdmin,
 } = useAdmin();
-const { listVerses, publishVerse, deleteVerse } = useDailyVerse();
+const { listVerses, publishVerse, updateVerse, deleteVerse } = useDailyVerse();
 const { getInviteCode, regenerateInviteCode } = useChurchInvite();
 const { updateOwnChurch, uploadChurchPhoto } = useChurch();
 const {
@@ -3759,6 +3807,10 @@ const announcementForm = reactive({
   videoUrl: "",
 });
 
+const toDateInputValue = (value?: string | null) => {
+  if (!value) return "";
+  return value.slice(0, 10);
+};
 const announcementKindLabel = (kind?: Announcement["kind"]) => {
   if (kind === "PASTOR_MESSAGE") return "Palavra";
   if (kind === "PRAYER") return "Oração";
@@ -4578,7 +4630,29 @@ const loadDailyVerses = async () => {
   dailyVerses.value = data?.items ?? [];
 };
 
-const publishDailyVerse = async () => {
+const resetVerseForm = () => {
+  editingVerseId.value = "";
+  verseForm.text = "";
+  verseForm.reference = "";
+  verseForm.commentary = "";
+  verseForm.isPublic = false;
+  verseForm.imageUrl = "";
+  verseForm.imageKey = "";
+  verseForm.videoUrl = "";
+};
+
+const editVerse = (verse: DailyVerse) => {
+  editingVerseId.value = verse.id;
+  verseForm.text = verse.text;
+  verseForm.reference = verse.reference;
+  verseForm.commentary = verse.commentary ?? "";
+  verseForm.isPublic = verse.isPublic === true;
+  verseForm.imageUrl = verse.imageUrl ?? "";
+  verseForm.imageKey = verse.imageKey ?? "";
+  verseForm.videoUrl = verse.videoUrl ?? "";
+};
+
+const saveDailyVerse = async () => {
   verseError.value = "";
 
   if (!verseForm.text.trim() || !verseForm.reference.trim()) {
@@ -4588,27 +4662,29 @@ const publishDailyVerse = async () => {
 
   isPublishingVerse.value = true;
   try {
-    const { data, error } = await publishVerse({
+    const payload = {
       text: verseForm.text.trim(),
       reference: verseForm.reference.trim(),
-      commentary: verseForm.commentary.trim(),
+      commentary: verseForm.commentary.trim() || null,
       isPublic: verseForm.isPublic,
       imageUrl: verseForm.imageUrl || null,
       imageKey: verseForm.imageKey || null,
-      videoUrl: verseForm.videoUrl.trim() || undefined,
-    });
+      videoUrl: verseForm.videoUrl.trim() || null,
+    };
+
+    const { data, error } = editingVerseId.value
+      ? await updateVerse(editingVerseId.value, payload)
+      : await publishVerse(payload);
+
     if (error || !data) {
-      verseError.value = error || "Não foi possível publicar o versículo.";
+      verseError.value = error || "Não foi possível salvar o versículo.";
       return;
     }
-    dailyVerses.value = [data, ...dailyVerses.value];
-    verseForm.text = "";
-    verseForm.reference = "";
-    verseForm.commentary = "";
-    verseForm.isPublic = false;
-    verseForm.imageUrl = "";
-    verseForm.imageKey = "";
-    verseForm.videoUrl = "";
+
+    dailyVerses.value = editingVerseId.value
+      ? dailyVerses.value.map((verse) => (verse.id === data.id ? data : verse))
+      : [data, ...dailyVerses.value];
+    resetVerseForm();
   } finally {
     isPublishingVerse.value = false;
   }
@@ -4624,7 +4700,33 @@ const removeVerse = async (id: string) => {
   dailyVerses.value = dailyVerses.value.filter((verse) => verse.id !== id);
 };
 
-const publishAnnouncement = async () => {
+const resetAnnouncementForm = () => {
+  editingAnnouncementId.value = "";
+  announcementForm.title = "";
+  announcementForm.body = "";
+  announcementForm.pinned = false;
+  announcementForm.expiresAt = "";
+  announcementForm.isPublic = false;
+  announcementForm.kind = "ANNOUNCEMENT";
+  announcementForm.imageUrl = "";
+  announcementForm.imageKey = "";
+  announcementForm.videoUrl = "";
+};
+
+const editAnnouncement = (announcement: Announcement) => {
+  editingAnnouncementId.value = announcement.id;
+  announcementForm.title = announcement.title;
+  announcementForm.body = announcement.body;
+  announcementForm.pinned = announcement.pinned;
+  announcementForm.expiresAt = toDateInputValue(announcement.expiresAt);
+  announcementForm.isPublic = announcement.isPublic === true;
+  announcementForm.kind = announcement.kind ?? "ANNOUNCEMENT";
+  announcementForm.imageUrl = announcement.imageUrl ?? "";
+  announcementForm.imageKey = announcement.imageKey ?? "";
+  announcementForm.videoUrl = announcement.videoUrl ?? "";
+};
+
+const saveAnnouncement = async () => {
   announcementError.value = "";
 
   if (!announcementForm.title.trim() || !announcementForm.body.trim()) {
@@ -4634,7 +4736,7 @@ const publishAnnouncement = async () => {
 
   isSavingAnnouncement.value = true;
   try {
-    const { data, error } = await createAnnouncement({
+    const payload = {
       title: announcementForm.title.trim(),
       body: announcementForm.body.trim(),
       pinned: announcementForm.pinned,
@@ -4644,26 +4746,27 @@ const publishAnnouncement = async () => {
       imageUrl: announcementForm.imageUrl || null,
       imageKey: announcementForm.imageKey || null,
       videoUrl: announcementForm.videoUrl.trim() || null,
-    });
+    };
+
+    const { data, error } = editingAnnouncementId.value
+      ? await updateAnnouncement(editingAnnouncementId.value, payload)
+      : await createAnnouncement(payload);
+
     if (error || !data) {
-      announcementError.value = error || "Não foi possível publicar o aviso.";
+      announcementError.value = error || "Não foi possível salvar o aviso.";
       return;
     }
-    announcements.value = [data, ...announcements.value];
-    announcementForm.title = "";
-    announcementForm.body = "";
-    announcementForm.pinned = false;
-    announcementForm.expiresAt = "";
-    announcementForm.isPublic = false;
-    announcementForm.kind = "ANNOUNCEMENT";
-    announcementForm.imageUrl = "";
-    announcementForm.imageKey = "";
-    announcementForm.videoUrl = "";
+
+    announcements.value = editingAnnouncementId.value
+      ? announcements.value.map((announcement) =>
+          announcement.id === data.id ? data : announcement,
+        )
+      : [data, ...announcements.value];
+    resetAnnouncementForm();
   } finally {
     isSavingAnnouncement.value = false;
   }
 };
-
 
 const resetServiceTimeForm = () => {
   editingServiceTimeId.value = "";
@@ -4826,13 +4929,51 @@ const addDevotionalChapter = () => {
   });
 };
 
-const publishDevotional = async () => {
+const resetDevotionalForm = () => {
+  editingDevotionalId.value = "";
+  devotionalForm.title = "";
+  devotionalForm.description = "";
+  devotionalForm.isPublic = false;
+  devotionalForm.imageUrl = "";
+  devotionalForm.imageKey = "";
+  devotionalForm.videoUrl = "";
+  devotionalForm.chapters = [{ title: "", content: "", bibleRef: "" }];
+};
+
+const editDevotional = async (devotional: Devotional) => {
+  devotionalError.value = "";
+  const fullDevotional = devotional.chapters?.length
+    ? devotional
+    : (await getDevotional(devotional.id)).data;
+
+  if (!fullDevotional) {
+    devotionalError.value = "Não foi possível carregar o devocional.";
+    return;
+  }
+
+  editingDevotionalId.value = fullDevotional.id;
+  devotionalForm.title = fullDevotional.title;
+  devotionalForm.description = fullDevotional.description ?? "";
+  devotionalForm.isPublic = fullDevotional.isPublic === true;
+  devotionalForm.imageUrl = fullDevotional.imageUrl ?? "";
+  devotionalForm.imageKey = fullDevotional.imageKey ?? "";
+  devotionalForm.videoUrl = fullDevotional.videoUrl ?? "";
+  devotionalForm.chapters = fullDevotional.chapters?.length
+    ? fullDevotional.chapters.map((chapter) => ({
+        title: chapter.title,
+        content: chapter.content,
+        bibleRef: chapter.bibleRef ?? "",
+      }))
+    : [{ title: "", content: "", bibleRef: "" }];
+};
+
+const saveDevotional = async () => {
   devotionalError.value = "";
   const chapters = devotionalForm.chapters
     .map((chapter) => ({
       title: chapter.title.trim(),
       content: chapter.content.trim(),
-      bibleRef: chapter.bibleRef.trim(),
+      bibleRef: chapter.bibleRef.trim() || null,
     }))
     .filter((chapter) => chapter.title && chapter.content);
 
@@ -4843,27 +4984,31 @@ const publishDevotional = async () => {
 
   isSavingDevotional.value = true;
   try {
-    const { data, error } = await createDevotional({
+    const payload = {
       title: devotionalForm.title.trim(),
-      description: devotionalForm.description.trim(),
+      description: devotionalForm.description.trim() || null,
       isPublic: devotionalForm.isPublic,
       imageUrl: devotionalForm.imageUrl || null,
       imageKey: devotionalForm.imageKey || null,
-      videoUrl: devotionalForm.videoUrl.trim() || undefined,
+      videoUrl: devotionalForm.videoUrl.trim() || null,
       chapters,
-    });
+    };
+
+    const { data, error } = editingDevotionalId.value
+      ? await updateDevotional(editingDevotionalId.value, payload)
+      : await createDevotional(payload);
+
     if (error || !data) {
-      devotionalError.value = error || "Não foi possível criar o devocional.";
+      devotionalError.value = error || "Não foi possível salvar o devocional.";
       return;
     }
-    devotionals.value = [data, ...devotionals.value];
-    devotionalForm.title = "";
-    devotionalForm.description = "";
-    devotionalForm.isPublic = false;
-    devotionalForm.imageUrl = "";
-    devotionalForm.imageKey = "";
-    devotionalForm.videoUrl = "";
-    devotionalForm.chapters = [{ title: "", content: "", bibleRef: "" }];
+
+    devotionals.value = editingDevotionalId.value
+      ? devotionals.value.map((devotional) =>
+          devotional.id === data.id ? data : devotional,
+        )
+      : [data, ...devotionals.value];
+    resetDevotionalForm();
   } finally {
     isSavingDevotional.value = false;
   }

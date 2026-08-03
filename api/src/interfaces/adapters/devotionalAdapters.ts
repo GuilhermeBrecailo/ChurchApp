@@ -144,6 +144,89 @@ export class DevotionalAdapters {
     });
   }
 
+  async updateDevotional(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    this.assertChurchManager(user);
+
+    const { id } = request.params as { id?: string };
+    if (!id) throw new DomainError("Devocional não informado");
+
+    const devotional = await $prismaClient.devotional.findFirst({
+      where: { id, crunchId: user.crunchId! },
+      select: { id: true },
+    });
+    if (!devotional) throw new DomainError("Devocional não encontrado");
+
+    const body = request.body as {
+      title?: string;
+      description?: string | null;
+      videoUrl?: string | null;
+      imageUrl?: string | null;
+      imageKey?: string | null;
+      isPublic?: boolean;
+      chapters?: {
+        title?: string;
+        content?: string;
+        bibleRef?: string | null;
+      }[];
+    };
+
+    if (body.title !== undefined && !body.title.trim()) {
+      throw new DomainError("Título do devocional é obrigatório");
+    }
+
+    const data: Record<string, unknown> = {};
+    if (body.title !== undefined) data.title = body.title.trim();
+    if (body.description !== undefined) data.description = body.description?.trim() || null;
+    if (body.videoUrl !== undefined) data.videoUrl = body.videoUrl?.trim() || null;
+    if (body.imageUrl !== undefined) data.imageUrl = body.imageUrl?.trim() || null;
+    if (body.imageKey !== undefined) data.imageKey = body.imageKey?.trim() || null;
+    if (body.isPublic !== undefined) data.isPublic = body.isPublic === true;
+
+    const chapters = Array.isArray(body.chapters)
+      ? body.chapters
+          .map((chapter) => ({
+            title: chapter.title?.trim() || "",
+            content: chapter.content?.trim() || "",
+            bibleRef: chapter.bibleRef?.trim() || null,
+          }))
+          .filter((chapter) => chapter.title && chapter.content)
+      : undefined;
+
+    if (body.chapters !== undefined && (!chapters || chapters.length === 0)) {
+      throw new DomainError("Informe ao menos um capítulo");
+    }
+
+    return await $prismaClient.$transaction(async (tx) => {
+      if (chapters) {
+        await tx.devotionalChapter.deleteMany({ where: { devotionalId: id } });
+      }
+
+      return await tx.devotional.update({
+        where: { id },
+        data: {
+          ...data,
+          ...(chapters
+            ? {
+                chapters: {
+                  create: chapters.map((chapter, index) => ({
+                    id: crypto.randomUUID(),
+                    title: chapter.title,
+                    content: chapter.content,
+                    bibleRef: chapter.bibleRef,
+                    order: index + 1,
+                  })),
+                },
+              }
+            : {}),
+        },
+        include: {
+          chapters: { orderBy: { order: "asc" } },
+          _count: { select: { chapters: true } },
+        },
+      });
+    });
+  }
   async deleteDevotional(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
     this.assertChurchManager(user);

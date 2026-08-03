@@ -128,6 +128,52 @@ export class DailyVerseAdapters {
     });
   }
 
+  async updateDailyVerse(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    this.assertCanPublishContent(user);
+
+    const { id } = request.params as { id?: string };
+    if (!id) throw new DomainError("Versículo não informado");
+
+    const verse = await $prismaClient.dailyVerse.findFirst({
+      where: { id, crunchId: user.crunchId! },
+      select: { id: true },
+    });
+    if (!verse) throw new DomainError("Versículo não encontrado");
+
+    const body = request.body as {
+      text?: string;
+      reference?: string;
+      commentary?: string | null;
+      videoUrl?: string | null;
+      imageUrl?: string | null;
+      imageKey?: string | null;
+      isPublic?: boolean;
+    };
+
+    const data: Record<string, unknown> = {};
+    if (body.text !== undefined) {
+      if (!body.text.trim()) throw new DomainError("Texto do versículo é obrigatório");
+      data.text = body.text.trim();
+    }
+    if (body.reference !== undefined) {
+      if (!body.reference.trim()) throw new DomainError("Referência bíblica é obrigatória");
+      data.reference = body.reference.trim();
+    }
+    if (body.commentary !== undefined) data.commentary = body.commentary?.trim() || null;
+    if (body.videoUrl !== undefined) data.videoUrl = body.videoUrl?.trim() || null;
+    if (body.imageUrl !== undefined) data.imageUrl = body.imageUrl?.trim() || null;
+    if (body.imageKey !== undefined) data.imageKey = body.imageKey?.trim() || null;
+    if (body.isPublic !== undefined) data.isPublic = body.isPublic === true;
+
+    return await $prismaClient.dailyVerse.update({
+      where: { id },
+      data,
+      include: {
+        author: { select: { id: true, name: true } },
+      },
+    });
+  }
   async deleteDailyVerse(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
     this.assertCanPublishContent(user);
