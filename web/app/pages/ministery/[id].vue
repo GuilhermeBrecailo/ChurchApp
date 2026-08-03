@@ -1365,6 +1365,18 @@
           </v-btn>
         </div>
 
+        <v-btn
+          v-if="!editingSongId"
+          variant="tonal"
+          color="purple-darken-3"
+          class="rounded-lg text-none mb-5"
+          block
+          :disabled="isCreatingSong || isImportingCifraClubSong"
+          @click="switchToImportPdfFromSongDialog"
+        >
+          <FileText size="18" class="mr-2" /> Prefere importar de um PDF?
+        </v-btn>
+
         <v-form autocomplete="off" @submit.prevent="handleSaveSong">
           <v-tabs
             v-model="songFormTab"
@@ -1620,7 +1632,7 @@
             {{ createSongError }}
           </v-alert>
 
-          <div class="d-flex justify-end ga-3">
+          <div class="d-flex justify-end ga-3 mt-6 pt-4 song-form-actions">
             <v-btn
               variant="text"
               color="grey-darken-1"
@@ -3305,6 +3317,11 @@ const closeSongDialog = () => {
   resetSongForm();
 };
 
+const switchToImportPdfFromSongDialog = () => {
+  closeSongDialog();
+  openPdfImportDialog();
+};
+
 const removeSongPdf = () => {
   songForm.pdfUrl = "";
   songForm.pdfKey = "";
@@ -4262,6 +4279,7 @@ onMounted(async () => {
 }
 .ministery-section-actions {
   justify-content: flex-end;
+  gap: 12px;
 }
 .ministery-card-grid {
   display: grid;
@@ -4507,6 +4525,9 @@ onMounted(async () => {
   gap: 8px;
   border-top: 1px solid #f3f4f6;
   padding-top: 10px;
+}
+.song-form-actions {
+  border-top: 1px solid #f3f4f6;
 }
 .pdf-current-card {
   display: flex;
@@ -4770,6 +4791,12 @@ onMounted(async () => {
   .leader-metric-grid,
   .leader-panel-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ministery-section-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
   }
 
   .ministery-section-actions .v-btn,
