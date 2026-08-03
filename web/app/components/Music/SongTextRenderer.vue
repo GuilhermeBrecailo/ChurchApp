@@ -34,6 +34,10 @@ const props = withDefaults(
     fitWidth?: boolean;
     minFontSize?: number;
     maxFontSize?: number;
+    /** Sem caixa/scroll proprios - flui como parte da pagina que o envolve
+     * (usado na leitura em sequencia, onde varias musicas ficam empilhadas
+     * num unico scroll continuo). */
+    flow?: boolean;
   }>(),
   {
     text: "",
@@ -45,6 +49,7 @@ const props = withDefaults(
     fitWidth: true,
     minFontSize: 9,
     maxFontSize: 0,
+    flow: false,
   },
 );
 
@@ -64,6 +69,7 @@ const rendererClasses = computed(() => ({
   "song-text-renderer--dense": props.dense,
   "song-text-renderer--auto": props.autoScroll && props.scrollSpeed > 0,
   "song-text-renderer--fit": isFitting.value,
+  "song-text-renderer--flow": props.flow,
 }));
 
 const fittedFontSize = ref(0);
@@ -302,6 +308,15 @@ onBeforeUnmount(() => {
 
 .song-text-renderer--fit {
   overflow-x: hidden;
+}
+
+.song-text-renderer--flow {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  min-height: 0;
+  overflow: visible;
+  padding: 0;
 }
 
 .song-text-renderer--lyrics {

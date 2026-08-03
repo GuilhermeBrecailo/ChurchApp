@@ -173,7 +173,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-vue-next";
 
 export type SongReaderSong = {
@@ -226,7 +226,9 @@ const tab = ref<"lyrics" | "chords">(props.tab);
 const instrument = ref<"auto" | "default" | "keyboard">("auto");
 const scrollSpeed = ref(0);
 const isControlsOpen = ref(false);
-const transposeSteps = ref(0);
+// Cordas e teclado transpõem de forma independente - trocar o tom com
+// teclado selecionado não pode mexer no tom da cifra de cordas, e vice-versa.
+const transposeStepsByInstrument = reactive({ default: 0, keyboard: 0 });
 
 watch(
   () => props.tab,
@@ -242,7 +244,8 @@ watch(tab, (value) => emit("update:tab", value));
 watch(
   () => props.song?.id,
   () => {
-    transposeSteps.value = 0;
+    transposeStepsByInstrument.default = 0;
+    transposeStepsByInstrument.keyboard = 0;
   },
 );
 
@@ -257,6 +260,12 @@ const useKeyboardChords = computed(
     instrument.value === "keyboard" ||
     (instrument.value === "auto" && props.keyboardAssignment),
 );
+
+const activeInstrumentKey = computed(() =>
+  useKeyboardChords.value ? "keyboard" : "default",
+);
+
+const transposeSteps = computed(() => transposeStepsByInstrument[activeInstrumentKey.value]);
 
 const officialChords = computed(() => {
   if (!props.song) return "";
@@ -303,13 +312,14 @@ const scrollSpeedLabel = computed(() =>
 );
 
 const transposeBy = (steps: number) => {
-  transposeSteps.value = ((transposeSteps.value + steps) % 12 + 12) % 12;
+  const current = transposeStepsByInstrument[activeInstrumentKey.value];
+  transposeStepsByInstrument[activeInstrumentKey.value] = ((current + steps) % 12 + 12) % 12;
 };
 
 const applyKey = (value: string | null) => {
   if (!value || !baseKey.value) return;
 
-  transposeSteps.value = songKeyDistance(baseKey.value, value);
+  transposeStepsByInstrument[activeInstrumentKey.value] = songKeyDistance(baseKey.value, value);
 };
 
 defineExpose({ tab });

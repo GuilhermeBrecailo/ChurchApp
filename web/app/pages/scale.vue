@@ -460,17 +460,13 @@
     </UtilsResponsiveOverlay>
 
     <UtilsResponsiveOverlay v-model="isSongFullscreenOpen" fullscreen>
-      <MusicSongReader
-        :song="fullscreenSong"
-        :tab="fullscreenSongTab"
-        :position="playlistPositionLabel"
-        :has-prev="playlistIndex > 0"
-        :has-next="playlistIndex < selectedDetailSongs.length - 1"
+      <MusicPlaylistReader
+        :songs="selectedDetailSongs"
+        :initial-index="playlistIndex"
+        :tab="playlistMode"
         :keyboard-assignment="isKeyboardAssignment(selectedDetailEvent)"
         @close="closeSongFullscreen"
-        @prev="stepPlaylist(-1)"
-        @next="stepPlaylist(1)"
-        @update:tab="fullscreenSongTab = $event"
+        @update:tab="playlistMode = $event"
       />
     </UtilsResponsiveOverlay>
 
@@ -1254,8 +1250,6 @@ const isPrefillingScheduleForm = ref(false);
 const pendingDeleteSchedule = ref<ScheduleEvent | null>(null);
 const selectedDetailEvent = ref<ScheduleEvent | null>(null);
 const isSongFullscreenOpen = ref(false);
-const fullscreenSong = ref<ScheduleEvent["mediaItems"][number] | null>(null);
-const fullscreenSongTab = ref<"lyrics" | "chords">("lyrics");
 const playlistMode = ref<"lyrics" | "chords">("lyrics");
 const playlistIndex = ref(0);
 const isSongPickerOpen = ref(false);
@@ -1579,12 +1573,6 @@ const selectedDetailResources = computed(
     ) || [],
 );
 
-const playlistPositionLabel = computed(() =>
-  selectedDetailSongs.value.length > 1
-    ? `Música ${playlistIndex.value + 1} de ${selectedDetailSongs.value.length}`
-    : "",
-);
-
 const canCreateChurchSchedule = computed(
   () => manageableDepartments.value.length > 0,
 );
@@ -1864,28 +1852,18 @@ const isKeyboardAssignment = (event: ScheduleEvent | null) =>
     .includes("teclado") || false;
 
 // Sequencia: abre a playlist na ordem definida, no modo escolhido (letra ou
-// cifra), e o leitor navega com Anterior/Proxima sem voltar pro detalhe.
+// cifra) e rola continuo pelas musicas seguintes - sem precisar de
+// Anterior/Proxima, so scroll (manual ou automatico).
 const openPlaylistSequence = (index: number) => {
   const song = selectedDetailSongs.value[index];
   if (!song) return;
 
   playlistIndex.value = index;
-  fullscreenSong.value = song;
-  fullscreenSongTab.value = playlistMode.value;
   isSongFullscreenOpen.value = true;
-};
-
-const stepPlaylist = (direction: -1 | 1) => {
-  const nextIndex = playlistIndex.value + direction;
-  if (nextIndex < 0 || nextIndex >= selectedDetailSongs.value.length) return;
-
-  playlistIndex.value = nextIndex;
-  fullscreenSong.value = selectedDetailSongs.value[nextIndex];
 };
 
 const closeSongFullscreen = () => {
   isSongFullscreenOpen.value = false;
-  fullscreenSong.value = null;
 };
 
 const updateLocalAssignment = (
