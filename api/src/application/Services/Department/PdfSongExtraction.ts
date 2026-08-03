@@ -1,4 +1,4 @@
-import pdfParseImport from "pdf-parse";
+import pdfParseImport from "pdf-parse/lib/pdf-parse.js";
 
 // pdf-parse tipa a opcao pagerender de forma generica (any); redeclaramos a
 // assinatura real do pageData do pdf.js que ele repassa, para tipar o
