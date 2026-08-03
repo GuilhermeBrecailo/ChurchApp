@@ -32,6 +32,10 @@ O usuário autorizado SHALL poder excluir qualquer tipo de conteúdo (aviso, ver
 - **WHEN** o pastor exclui um aviso e confirma
 - **THEN** o aviso é removido da lista e da página pública
 
+#### Scenario: Excluir um versículo
+- **WHEN** o pastor exclui um versículo publicado e confirma
+- **THEN** o versículo é removido da lista e da página pública (hoje não existe endpoint de exclusão para versículo — precisa ser criado)
+
 ### Requirement: Lista unificada de conteúdo
 A tela SHALL mostrar uma lista do que já foi publicado, com filtro por tipo e a indicação de público ou interno.
 
