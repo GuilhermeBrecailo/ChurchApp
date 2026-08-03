@@ -32,6 +32,13 @@ interface ChurchResponse {
   accentColor?: string | null;
 }
 
+export interface UploadedChurchPhoto {
+  url: string;
+  key: string;
+  mimeType: string;
+  size: number;
+}
+
 type UpdateChurchDTO = Partial<CreateOwnChurchDTO> & {
   isActive?: boolean;
   slug?: string | null;
@@ -82,6 +89,37 @@ export const useChurch = () => {
     return response;
   };
 
+  const uploadChurchPhoto = async (
+    file: File,
+  ): Promise<ApiResponse<UploadedChurchPhoto>> => {
+    if (!access_token.value) {
+      return {
+        error: "Sessão expirada. Faça login novamente.",
+        status: 401,
+      };
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await $customFetch<UploadedChurchPhoto>(
+      `${config.public.URL_BACKEND}/api/church/uploads/photo`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${access_token.value}`,
+        },
+        body: formData,
+      },
+    );
+
+    if (!response.error) {
+      await fetchMe();
+    }
+
+    return response;
+  };
+
   const updateOwnChurch = async (
     church: UpdateChurchDTO,
   ): Promise<ApiResponse<ChurchResponse>> => {
@@ -114,5 +152,6 @@ export const useChurch = () => {
   return {
     createOwnChurch,
     updateOwnChurch,
+    uploadChurchPhoto,
   };
 };

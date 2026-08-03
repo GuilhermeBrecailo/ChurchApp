@@ -24,7 +24,7 @@ export class PublicChurchAdapters {
 
     if (!church) return reply.code(404).send({ error: "Igreja nao encontrada", status: 404 });
 
-    const [serviceTimes, publicContent] = await Promise.all([
+    const [serviceTimes, publicContent, publicVerses, publicDevotionals] = await Promise.all([
       listServiceTimesUseCase.execute(church.id, true),
       $prismaClient.announcement.findMany({
         where: {
@@ -45,6 +45,43 @@ export class PublicChurchAdapters {
           author: { select: { id: true, name: true } },
         },
       }),
+      $prismaClient.dailyVerse.findMany({
+        where: { crunchId: church.id, isPublic: true },
+        orderBy: { publishedAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          text: true,
+          reference: true,
+          commentary: true,
+          videoUrl: true,
+          publishedAt: true,
+          author: { select: { id: true, name: true } },
+        },
+      }),
+      $prismaClient.devotional.findMany({
+        where: { crunchId: church.id, isPublic: true },
+        orderBy: { publishedAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          videoUrl: true,
+          publishedAt: true,
+          author: { select: { id: true, name: true } },
+          chapters: {
+            orderBy: { order: "asc" },
+            select: {
+              id: true,
+              title: true,
+              content: true,
+              bibleRef: true,
+              order: true,
+            },
+          },
+        },
+      }),
     ]);
 
     const serviceTimeItems = serviceTimes.map((item) => ({
@@ -63,6 +100,8 @@ export class PublicChurchAdapters {
         month: calculateUpcomingServiceOccurrences(serviceTimeItems, { daysAhead: 30 }),
       },
       publicContent,
+      publicVerses,
+      publicDevotionals,
     };
   }
 

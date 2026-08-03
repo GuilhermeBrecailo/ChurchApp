@@ -67,26 +67,48 @@
         </v-chip>
       </div>
 
-      <section v-if="activeTab === 'overview'" class="ministery-card-grid">
+      <section v-if="activeTab === 'overview'">
         <v-card class="ministery-content-card pa-4 elevation-1 bg-white">
-          <p class="text-caption text-grey-darken-1 mb-1">Líder</p>
-          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
-            {{ department.leader.name }}
-          </h2>
-          <p class="text-caption text-grey-darken-1 mb-0">
-            {{ department.leader.email }}
-          </p>
-        </v-card>
+          <div class="overview-schedules-header mb-3">
+            <div class="leader-card-title">
+              <Calendar size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
+              <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+                Próximas escalas
+              </h3>
+            </div>
+            <v-btn
+              variant="text"
+              color="purple-darken-3"
+              size="small"
+              class="text-none font-weight-bold"
+              @click="activeTab = 'schedules'"
+            >
+              Ver todas
+            </v-btn>
+          </div>
 
-        <v-card class="ministery-content-card pa-4 elevation-1 bg-white">
-          <p class="text-caption text-grey-darken-1 mb-1">Status</p>
-          <v-chip
-            size="small"
-            :color="department.isActive ? 'teal-darken-2' : 'grey-darken-1'"
-            variant="tonal"
-          >
-            {{ department.isActive ? "Ativo" : "Inativo" }}
-          </v-chip>
+          <div v-if="upcomingSchedules.length" class="overview-schedule-list">
+            <div
+              v-for="schedule in upcomingSchedules"
+              :key="schedule.id"
+              class="overview-schedule-row"
+            >
+              <div class="min-w-0">
+                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                  {{ schedule.description }}
+                </p>
+                <p class="text-caption text-grey-darken-1 mb-0">
+                  {{ formatScheduleDate(schedule.date) }}
+                </p>
+              </div>
+              <v-chip size="small" color="purple-darken-3" variant="tonal">
+                {{ schedule.assignments?.length || 0 }} escalados
+              </v-chip>
+            </div>
+          </div>
+          <p v-else class="text-caption text-grey-darken-1 mb-0">
+            Nenhuma escala futura cadastrada.
+          </p>
         </v-card>
       </section>
 
@@ -210,12 +232,16 @@
           v-if="canManageScheduleDelegation"
           class="ministery-content-card pa-4 elevation-1 bg-white mb-4"
         >
-          <div class="leader-card-title mb-3">
+          <div class="leader-card-title mb-1">
             <Users size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
             <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
-              Gestores de escala
+              Permissões do ministério
             </h3>
           </div>
+          <p class="text-caption text-grey-darken-1 mb-3">
+            Escolha, por membro, quem pode alterar a escala e quem pode mexer no
+            repertório.
+          </p>
 
           <v-alert
             v-if="scheduleManagersError"
@@ -227,29 +253,47 @@
             {{ scheduleManagersError }}
           </v-alert>
 
-          <div v-if="departmentMembers.length" class="schedule-manager-list">
+          <div v-if="departmentMembers.length" class="member-permission-list">
             <div
               v-for="member in departmentMembers"
               :key="member.id"
-              class="schedule-manager-row"
+              class="member-permission-row"
             >
               <div class="min-w-0">
                 <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
                   {{ member.name }}
                 </p>
                 <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
-                  {{ member.email }}
+                  {{ member.id === department.leaderId ? "Líder do ministério" : member.email }}
                 </p>
               </div>
-              <v-switch
-                :model-value="member.canManageSchedule === true"
-                color="purple-darken-3"
-                density="compact"
-                hide-details
-                :loading="updatingScheduleManagerId === member.id"
-                :disabled="member.id === department.leaderId || Boolean(updatingScheduleManagerId)"
-                @update:model-value="toggleScheduleManager(member, Boolean($event))"
-              />
+
+              <div class="member-permission-toggles">
+                <div class="member-permission-toggle">
+                  <span>Escala</span>
+                  <v-switch
+                    :model-value="member.id === department.leaderId || member.canManageSchedule === true"
+                    color="purple-darken-3"
+                    density="compact"
+                    hide-details
+                    :loading="updatingScheduleManagerId === member.id"
+                    :disabled="member.id === department.leaderId || Boolean(updatingScheduleManagerId)"
+                    @update:model-value="toggleMemberPermission(member, { canManageSchedule: Boolean($event) })"
+                  />
+                </div>
+                <div class="member-permission-toggle">
+                  <span>Músicas</span>
+                  <v-switch
+                    :model-value="member.id === department.leaderId || member.canManageSongs === true"
+                    color="purple-darken-3"
+                    density="compact"
+                    hide-details
+                    :loading="updatingScheduleManagerId === member.id"
+                    :disabled="member.id === department.leaderId || Boolean(updatingScheduleManagerId)"
+                    @update:model-value="toggleMemberPermission(member, { canManageSongs: Boolean($event) })"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           <p v-else class="text-caption text-grey-darken-1 mb-0">
@@ -1367,23 +1411,26 @@
                 :disabled="isCreatingSong || isImportingCifraClubSong"
               />
 
-              <div class="d-flex ga-3 mb-4">
-                <v-text-field
+              <div class="d-flex ga-3 mb-2">
+                <v-select
                   v-model="songForm.key"
                   label="Tom"
-                  placeholder="ex: G, Am"
+                  :items="songKeyOptions"
                   variant="outlined"
                   density="comfortable"
                   color="purple-darken-3"
                   bg-color="white"
                   class="ministery-input"
                   hide-details="auto"
+                  clearable
                   :disabled="isCreatingSong || isImportingCifraClubSong"
+                  @update:model-value="handleSongKeyChange"
                 />
                 <v-text-field
                   v-model="songForm.bpm"
                   label="BPM"
                   placeholder="ex: 72"
+                  type="number"
                   variant="outlined"
                   density="comfortable"
                   color="purple-darken-3"
@@ -1393,6 +1440,10 @@
                   :disabled="isCreatingSong || isImportingCifraClubSong"
                 />
               </div>
+
+              <p class="text-caption text-grey-darken-1 mb-4">
+                {{ songKeyHint }}
+              </p>
 
               <v-select
                 v-model="songForm.songCategory"
@@ -1412,15 +1463,28 @@
               <v-text-field
                 v-model="songForm.url"
                 label="Link da cifra"
+                placeholder="cole o link do Cifra Club"
                 prepend-inner-icon="mdi-link-variant"
                 variant="outlined"
                 density="comfortable"
                 color="purple-darken-3"
                 bg-color="white"
-                class="ministery-input mb-4"
+                class="ministery-input mb-2"
                 hide-details="auto"
                 :disabled="isCreatingSong || isImportingCifraClubSong"
+                @paste="handleCifraClubPaste"
               />
+
+              <v-alert
+                v-if="cifraClubImportMessage"
+                type="success"
+                variant="tonal"
+                density="compact"
+                class="mb-3"
+              >
+                {{ cifraClubImportMessage }}
+              </v-alert>
+
               <div class="d-flex justify-end mb-4">
                 <v-btn
                   variant="tonal"
@@ -1585,190 +1649,90 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
-    <UtilsResponsiveOverlay
-      v-model="isSongViewerOpen"
-      max-width="920"
-      fullscreen-desktop
-      mobile-class="song-viewer-mobile-sheet"
-    >
-      <v-card v-if="selectedSong" class="rounded-xl bg-white song-viewer" elevation="0">
-        <div class="song-viewer-header">
-          <div class="min-w-0">
-            <h2 class="song-viewer-title mb-0">
-              {{ selectedSong.title }}
-            </h2>
-          </div>
-          <v-btn
-            icon
-            variant="text"
-            color="grey-darken-1"
-            aria-label="Fechar tela cheia"
-            @click="closeSongViewer"
+    <UtilsResponsiveOverlay v-model="isSongViewerOpen" fullscreen>
+      <MusicSongReader
+        :song="selectedSong"
+        :tab="songViewerTab"
+        :personal-chords="personalSongForm.chords"
+        :personal-key="personalSongForm.personalKey"
+        @close="closeSongViewer"
+        @update:tab="songViewerTab = $event"
+      >
+        <template #extra>
+          <p
+            v-if="selectedSong?.metadata?.notes"
+            class="text-caption text-grey-darken-1 mb-3"
           >
-            <v-icon size="20">mdi-close</v-icon>
-          </v-btn>
-        </div>
+            {{ selectedSong.metadata.notes }}
+          </p>
 
-        <v-divider />
+          <details class="personal-chords-editor">
+            <summary>Editar minha cifra</summary>
 
-        <div class="song-viewer-toolbar">
-          <v-tabs v-model="songViewerTab" color="purple-darken-3" density="compact">
-            <v-tab value="lyrics" class="text-none">Letra</v-tab>
-            <v-tab value="chords" class="text-none">Cifra</v-tab>
-            <v-tab value="notes" class="text-none">Tom</v-tab>
-          </v-tabs>
-
-          <div class="song-viewer-controls">
-            <v-btn-toggle
-              v-if="songViewerTab === 'chords'"
-              v-model="songViewerInstrument"
-              density="compact"
-              mandatory
-              class="song-instrument-toggle"
-            >
-              <v-btn value="default" size="small" class="text-none">
-                Violão/Guitarra
-              </v-btn>
-              <v-btn value="keyboard" size="small" class="text-none">
-                Teclado
-              </v-btn>
-            </v-btn-toggle>
-
-            <div
-              v-if="songViewerTab === 'chords'"
-              class="song-viewer-key-controls"
-            >
-              <v-btn
-                variant="tonal"
-                color="grey-darken-1"
-                size="small"
-                class="text-none"
-                @click="transposePersonalChords(-1)"
-              >
-                -1 tom
-              </v-btn>
-              <v-chip size="small" color="orange-darken-3" variant="tonal">
-                {{ songViewerCurrentKey }}
-              </v-chip>
-              <v-btn
-                variant="tonal"
-                color="grey-darken-1"
-                size="small"
-                class="text-none"
-                @click="transposePersonalChords(1)"
-              >
-                +1 tom
-              </v-btn>
-            </div>
-
-            <div class="song-autoscroll-controls">
-              <v-icon size="18">mdi-speedometer</v-icon>
-              <span>{{ songViewerScrollSpeedLabel }}</span>
-              <v-slider
-                v-model="songViewerAutoScrollSpeed"
-                min="0"
-                max="80"
-                step="4"
-                density="compact"
+            <div class="d-flex align-center ga-3 mt-3 mb-3">
+              <v-select
+                v-model="personalSongForm.personalKey"
+                :items="songKeyOptions"
+                label="Meu tom"
+                variant="outlined"
+                density="comfortable"
                 color="purple-darken-3"
-                hide-details
+                bg-color="white"
+                class="ministery-input"
+                hide-details="auto"
+                clearable
+                :disabled="isLoadingSongPreference || isSavingSongPreference"
+                @update:model-value="handlePersonalKeyChange"
               />
             </div>
-          </div>
-        </div>
 
-        <div class="song-viewer-body">
-          <MusicSongTextRenderer
-            v-if="songViewerTab === 'lyrics'"
-            class="song-viewer-text"
-            mode="lyrics"
-            :text="selectedSong.metadata?.lyrics"
-            empty-text="Letra não cadastrada."
-            :auto-scroll="songViewerAutoScrollSpeed > 0"
-            :scroll-speed="songViewerAutoScrollSpeed"
-          />
-          <div v-else-if="songViewerTab === 'chords'" class="personal-chords-panel">
-            <MusicSongTextRenderer
-              class="song-viewer-text"
-              mode="chords"
-              :text="selectedSongChordsText"
-              empty-text="Cifra não cadastrada."
-              :auto-scroll="songViewerAutoScrollSpeed > 0"
-              :scroll-speed="songViewerAutoScrollSpeed"
+            <v-textarea
+              v-model="personalSongForm.chords"
+              label="Minha cifra"
+              variant="outlined"
+              density="comfortable"
+              color="purple-darken-3"
+              bg-color="white"
+              class="ministery-input chords-input mb-3"
+              hide-details="auto"
+              rows="9"
+              auto-grow
+              :disabled="isLoadingSongPreference || isSavingSongPreference"
             />
 
-            <details class="personal-chords-editor">
-              <summary>{{ personalChordsSummary }}</summary>
-
-              <v-text-field
-                v-model="personalSongForm.personalKey"
-                label="Meu tom"
-                placeholder="ex: C, Dm, F#"
-                variant="outlined"
-                density="comfortable"
-                color="purple-darken-3"
-                bg-color="white"
-                class="ministery-input mb-3 mt-3"
-                hide-details="auto"
+            <div class="personal-chords-actions">
+              <v-btn
+                variant="text"
+                color="grey-darken-1"
+                class="text-none"
                 :disabled="isLoadingSongPreference || isSavingSongPreference"
-              />
-
-              <v-textarea
-                v-model="personalSongForm.chords"
-                label="Minha cifra"
-                variant="outlined"
-                density="comfortable"
-                color="purple-darken-3"
-                bg-color="white"
-                class="ministery-input chords-input mb-3"
-                hide-details="auto"
-                rows="9"
-                auto-grow
-                :disabled="isLoadingSongPreference || isSavingSongPreference"
-              />
-
-              <div class="personal-chords-actions">
-                <v-btn
-                  variant="text"
-                  color="grey-darken-1"
-                  class="text-none"
-                  :disabled="isLoadingSongPreference || isSavingSongPreference"
-                  @click="useOfficialChords"
-                >
-                  Usar cifra da escala
-                </v-btn>
-                <v-btn
-                  color="purple-darken-3"
-                  class="text-none"
-                  :loading="isSavingSongPreference"
-                  :disabled="isLoadingSongPreference"
-                  @click="saveSongPreference"
-                >
-                  Salvar minha cifra
-                </v-btn>
-              </div>
-
-              <v-alert
-                v-if="songPreferenceError"
-                type="error"
-                variant="tonal"
-                density="compact"
-                class="mt-3"
+                @click="useOfficialChords"
               >
-                {{ songPreferenceError }}
-              </v-alert>
-            </details>
-          </div>
-          <MusicSongTextRenderer
-            v-else
-            class="song-viewer-text"
-            mode="lyrics"
-            :text="selectedSongToneText"
-            :auto-scroll="songViewerAutoScrollSpeed > 0"
-            :scroll-speed="songViewerAutoScrollSpeed"
-          />
-        </div>
-      </v-card>
+                Usar cifra da escala
+              </v-btn>
+              <v-btn
+                color="purple-darken-3"
+                class="text-none"
+                :loading="isSavingSongPreference"
+                :disabled="isLoadingSongPreference"
+                @click="saveSongPreference"
+              >
+                Salvar minha cifra
+              </v-btn>
+            </div>
+
+            <v-alert
+              v-if="songPreferenceError"
+              type="error"
+              variant="tonal"
+              density="compact"
+              class="mt-3"
+            >
+              {{ songPreferenceError }}
+            </v-alert>
+          </details>
+        </template>
+      </MusicSongReader>
     </UtilsResponsiveOverlay>
 
     <UtilsResponsiveOverlay v-model="isActivityDialogOpen" max-width="520">
@@ -2208,6 +2172,7 @@ import {
 } from "lucide-vue-next";
 import {
   useDepartments,
+  DEPARTMENT_MODULE_OPTIONS,
   type ChurchDepartment,
   type DepartmentMember,
   type DepartmentResource,
@@ -2226,7 +2191,7 @@ const departmentId = String(route.params.id);
 const {
   getDepartmentById,
   getDepartmentMembers,
-  updateDepartmentMemberScheduleManager,
+  updateDepartmentMemberPermissions,
   getDepartmentTasks,
   createDepartmentTask,
   updateDepartmentTask,
@@ -2309,8 +2274,10 @@ const editingScheduleId = ref("");
 const editingResourceId = ref("");
 const editingSongId = ref("");
 const selectedSong = ref<DepartmentSong | null>(null);
-const songViewerTab = ref("lyrics");
-const songViewerAutoScrollSpeed = ref(24);
+const songViewerTab = ref<"lyrics" | "chords">("lyrics");
+const lastPersonalKey = ref("");
+const lastSongFormKey = ref("");
+const cifraClubImportMessage = ref("");
 const pendingDelete = ref<{
   kind: "task" | "schedule" | "resource" | "song" | "member";
   id: string;
@@ -2347,10 +2314,20 @@ const canManageSchedules = computed(
     (isDepartmentLeader.value && can("MANAGE_SCHEDULES")) ||
     isDelegatedScheduleManager.value,
 );
+// Delegacao por membro: o lider pode liberar o repertorio pra quem monta a
+// playlist sem dar acesso ao resto do ministerio.
+const isDelegatedSongManager = computed(
+  () =>
+    department.value?.canManageSongs === true ||
+    departmentMembers.value.some(
+      (member) => member.id === user.value?.id && member.canManageSongs === true,
+    ),
+);
 const canManageSongs = computed(
   () =>
     isChurchWideManager.value ||
-    (isDepartmentLeader.value && can("MANAGE_SONGS")),
+    (isDepartmentLeader.value && can("MANAGE_SONGS")) ||
+    isDelegatedSongManager.value,
 );
 const canSendNotifications = computed(
   () =>
@@ -2422,7 +2399,6 @@ const personalSongForm = reactive({
   personalKey: "",
   chords: "",
 });
-const songViewerInstrument = ref<"default" | "keyboard">("default");
 
 const assignmentForm = reactive({
   userId: "",
@@ -2482,29 +2458,56 @@ const departmentRoleOptions: Record<string, string[]> = {
   MEDIA: ["Mídia", "Mesa de som", "Luzes"],
 };
 
-const baseTabs = [
-  { label: "Visão geral", value: "overview", icon: Info },
-  { label: "Escalas", value: "schedules", icon: Calendar },
-  { label: "Tarefas", value: "tasks", icon: CheckSquare },
-  { label: "Recursos", value: "resources", icon: FileText },
-];
+// Ministerio antigo (modules vazio) mantem tudo ligado - a migracao nao fez
+// backfill de proposito.
+const departmentModules = computed(
+  () => department.value?.modules?.length ? department.value.modules : DEPARTMENT_MODULE_OPTIONS.map((item) => item.value),
+);
+
+const hasModule = (module: string) => departmentModules.value.includes(module);
 
 const tabs = computed(() => {
-  const items = [...baseTabs];
+  const items = [{ label: "Visão geral", value: "overview", icon: Info }];
 
   if (canManageDepartment.value || canManageScheduleDelegation.value) {
-    items.splice(1, 0, { label: "Lider", value: "leader", icon: BarChart3 });
+    items.push({ label: "Lider", value: "leader", icon: BarChart3 });
   }
 
-  if (["WORSHIP", "MUSIC", "MEDIA"].includes(department.value?.type || "")) {
+  if (hasModule("SCHEDULES")) {
+    items.push({ label: "Escalas", value: "schedules", icon: Calendar });
+  }
+
+  if (hasModule("TASKS")) {
+    items.push({ label: "Tarefas", value: "tasks", icon: CheckSquare });
+  }
+
+  if (hasModule("RESOURCES")) {
+    items.push({ label: "Recursos", value: "resources", icon: FileText });
+  }
+
+  if (hasModule("SONGS")) {
     items.push({ label: "Músicas", value: "songs", icon: Music });
   }
 
-  if (department.value?.type === "KIDS") {
+  if (hasModule("CLASSES")) {
     items.push({ label: "Aulas", value: "classes", icon: BookOpen });
   }
 
   return items;
+});
+
+// A escala futura mais proxima e o que o lider olha primeiro - o resto do
+// historico fica na aba Escalas.
+const upcomingSchedules = computed(() => {
+  const now = Date.now();
+
+  return [...schedules.value]
+    .filter((schedule) => new Date(schedule.date).getTime() >= now)
+    .sort(
+      (first, second) =>
+        new Date(first.date).getTime() - new Date(second.date).getTime(),
+    )
+    .slice(0, 3);
 });
 
 const memberOptions = computed(() =>
@@ -2730,52 +2733,13 @@ const reportRows = computed(() => [
   { label: "Presença registrada", value: attendanceRate.value },
 ]);
 
-const selectedSongToneText = computed(() => {
-  if (!selectedSong.value) return "Tom não cadastrado.";
+const songKeyOptions = SONG_KEY_OPTIONS;
 
-  const items = [
-    selectedSong.value.metadata?.key ? `Tom: ${selectedSong.value.metadata.key}` : "",
-    selectedSong.value.metadata?.bpm ? `BPM: ${selectedSong.value.metadata.bpm}` : "",
-    selectedSong.value.metadata?.keyboardChords
-      ? "Teclado: cifra própria cadastrada para esta música."
-      : "Teclado: usando a cifra principal.",
-    selectedSong.value.metadata?.notes || "",
-  ].filter(Boolean);
-
-  return items.join("\n") || "Tom não cadastrado.";
+const songKeyHint = computed(() => {
+  if (!songForm.key) return "Escolha o tom para liberar a transposição automática da cifra.";
+  if (!songForm.chords.trim()) return `Tom ${songKeyLabel(songForm.key)}.`;
+  return `Tom ${songKeyLabel(songForm.key)} — trocar o tom transpõe a cifra automaticamente.`;
 });
-
-const songViewerCurrentKey = computed(() => {
-  const key = personalSongForm.personalKey || selectedSong.value?.metadata?.key || "";
-  return key ? `Tom ${key}` : "Tom não cadastrado";
-});
-
-const selectedSongChordsText = computed(() => {
-  if (!selectedSong.value) return "";
-
-  if (songViewerInstrument.value === "keyboard") {
-    return (
-      selectedSong.value.metadata?.keyboardChords ||
-      personalSongForm.chords ||
-      selectedSong.value.metadata?.chords ||
-      ""
-    );
-  }
-
-  return personalSongForm.chords || selectedSong.value.metadata?.chords || "";
-});
-
-const personalChordsSummary = computed(() =>
-  songViewerInstrument.value === "keyboard"
-    ? "Editar minha cifra de teclado"
-    : "Editar minha cifra",
-);
-
-const songViewerScrollSpeedLabel = computed(() =>
-  songViewerAutoScrollSpeed.value > 0
-    ? `Velocidade ${Math.round(songViewerAutoScrollSpeed.value)}`
-    : "Rolagem pausada",
-);
 
 const detailSummary = computed(() => [
   { label: "escalas", value: schedules.value.length },
@@ -2940,19 +2904,22 @@ const loadDepartmentMembers = async () => {
 };
 
 
-const toggleScheduleManager = async (member: DepartmentMember, canManageSchedule: boolean) => {
+const toggleMemberPermission = async (
+  member: DepartmentMember,
+  permissions: { canManageSchedule?: boolean; canManageSongs?: boolean },
+) => {
   scheduleManagersError.value = "";
   updatingScheduleManagerId.value = member.id;
 
   try {
-    const { data, error } = await updateDepartmentMemberScheduleManager(
+    const { data, error } = await updateDepartmentMemberPermissions(
       departmentId,
       member.id,
-      canManageSchedule,
+      permissions,
     );
 
     if (error || !data) {
-      scheduleManagersError.value = error || "Nao foi possivel atualizar o gestor.";
+      scheduleManagersError.value = error || "Nao foi possivel atualizar a permissao.";
       return;
     }
 
@@ -3104,6 +3071,8 @@ const resetSongForm = () => {
   songPdfFile.value = null;
   editingSongId.value = "";
   songFormTab.value = "info";
+  lastSongFormKey.value = "";
+  cifraClubImportMessage.value = "";
 };
 
 const closeSongDialog = () => {
@@ -3136,12 +3105,7 @@ const closeActivityDialog = () => {
 
 const openSongViewer = (song: DepartmentSong) => {
   selectedSong.value = song;
-  songViewerInstrument.value = "default";
-  songViewerTab.value = song.metadata?.lyrics
-    ? "lyrics"
-    : song.metadata?.chords
-      ? "chords"
-      : "notes";
+  songViewerTab.value = song.metadata?.lyrics ? "lyrics" : "chords";
   isSongViewerOpen.value = true;
   void loadSongPreference(song);
 };
@@ -3158,7 +3122,6 @@ const closeSongViewer = () => {
   songPreferenceError.value = "";
   personalSongForm.personalKey = "";
   personalSongForm.chords = "";
-  songViewerInstrument.value = "default";
 };
 
 const loadSongPreference = async (song: DepartmentSong) => {
@@ -3177,6 +3140,9 @@ const loadSongPreference = async (song: DepartmentSong) => {
 
     personalSongForm.personalKey = data?.personalKey || "";
     personalSongForm.chords = data?.chords || song.metadata?.chords || "";
+    lastPersonalKey.value = normalizeSongKey(
+      personalSongForm.personalKey || song.metadata?.key || "",
+    );
   } finally {
     isLoadingSongPreference.value = false;
   }
@@ -3184,12 +3150,26 @@ const loadSongPreference = async (song: DepartmentSong) => {
 
 const useOfficialChords = () => {
   personalSongForm.personalKey = selectedSong.value?.metadata?.key || "";
-  personalSongForm.chords =
-    songViewerInstrument.value === "keyboard"
-      ? selectedSong.value?.metadata?.keyboardChords ||
-        selectedSong.value?.metadata?.chords ||
-        ""
-      : selectedSong.value?.metadata?.chords || "";
+  personalSongForm.chords = selectedSong.value?.metadata?.chords || "";
+};
+
+// Trocar "meu tom" transpoe a cifra pessoal a partir do tom que estava
+// valendo - o mesmo comportamento do cadastro, so que salvo por usuario.
+const handlePersonalKeyChange = (nextKey: string | null) => {
+  const previousKey = normalizeSongKey(
+    lastPersonalKey.value || selectedSong.value?.metadata?.key || "",
+  );
+  const targetKey = normalizeSongKey(nextKey || "");
+
+  lastPersonalKey.value = targetKey;
+
+  if (!previousKey || !targetKey || previousKey === targetKey) return;
+  if (!personalSongForm.chords.trim()) return;
+
+  personalSongForm.chords = transposeChordText(
+    personalSongForm.chords,
+    songKeyDistance(previousKey, targetKey),
+  );
 };
 
 const saveSongPreference = async () => {
@@ -3213,41 +3193,6 @@ const saveSongPreference = async () => {
     personalSongForm.chords = data.chords || "";
   } finally {
     isSavingSongPreference.value = false;
-  }
-};
-
-const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-const flatToSharp: Record<string, string> = {
-  Db: "C#",
-  Eb: "D#",
-  Gb: "F#",
-  Ab: "G#",
-  Bb: "A#",
-};
-
-const transposeNote = (note: string, steps: number) => {
-  const normalized = flatToSharp[note] || note;
-  const index = noteNames.indexOf(normalized);
-
-  if (index === -1) return note;
-
-  return noteNames[(index + steps + noteNames.length) % noteNames.length];
-};
-
-const transposePersonalChords = (steps: number) => {
-  const chordRegex = /\b([A-G](?:#|b)?)(m|maj|min|dim|aug|sus|add)?([0-9]*)?(\/([A-G](?:#|b)?))?/g;
-
-  personalSongForm.chords = personalSongForm.chords.replace(
-    chordRegex,
-    (match, root, quality = "", extension = "", slash = "", bass = "") => {
-      const nextRoot = transposeNote(root, steps);
-      const nextBass = bass ? `/${transposeNote(bass, steps)}` : "";
-      return `${nextRoot}${quality || ""}${extension || ""}${nextBass}`;
-    },
-  );
-
-  if (personalSongForm.personalKey) {
-    personalSongForm.personalKey = transposeNote(personalSongForm.personalKey, steps);
   }
 };
 
@@ -3498,8 +3443,11 @@ const handleSaveResource = async () => {
   }
 };
 
+// O link do Cifra Club prevalece: o que vem de la sobrescreve o que estava
+// digitado, inclusive tom e video. Depois de importar so falta salvar.
 const handleImportCifraClubSong = async () => {
   createSongError.value = "";
+  cifraClubImportMessage.value = "";
 
   if (!songForm.url.trim() && (!songForm.title.trim() || !songForm.artist.trim())) {
     createSongError.value = "Informe o link do Cifra Club ou titulo e artista.";
@@ -3522,7 +3470,6 @@ const handleImportCifraClubSong = async () => {
 
     songForm.title = data.title || songForm.title;
     songForm.artist = data.artist || songForm.artist;
-    songForm.key = data.key || songForm.key;
     songForm.bpm = data.bpm || songForm.bpm;
     songForm.songCategory = data.songCategory || songForm.songCategory;
     songForm.url = data.url || songForm.url;
@@ -3530,18 +3477,65 @@ const handleImportCifraClubSong = async () => {
     songForm.lyrics = data.lyrics || songForm.lyrics;
     songForm.chords = data.chords || songForm.chords;
     songForm.keyboardChords = data.keyboardChords || songForm.keyboardChords;
+
+    const importedKey = normalizeSongKey(data.key || "");
+    if (importedKey) {
+      songForm.key = importedKey;
+      lastSongFormKey.value = importedKey;
+    }
+
+    if (data.youtubeUrl && !songForm.mediaLink.trim()) {
+      songForm.mediaLink = data.youtubeUrl;
+    }
+
+    cifraClubImportMessage.value = importedKey
+      ? `Importado do Cifra Club em ${songKeyLabel(importedKey)}. Revise e salve.`
+      : "Importado do Cifra Club. Revise e salve.";
   } catch (error: any) {
     createSongError.value = error?.message || "Nao foi possivel buscar a cifra.";
   } finally {
     isImportingCifraClubSong.value = false;
   }
 };
+
+const handleCifraClubPaste = (event: ClipboardEvent) => {
+  const pasted = event.clipboardData?.getData("text")?.trim();
+  if (!pasted || !/cifraclub\.com\.br/i.test(pasted)) return;
+
+  event.preventDefault();
+  songForm.url = pasted;
+  void handleImportCifraClubSong();
+};
+
+// Trocar o tom no cadastro transpoe a cifra do tom anterior pro novo, nas duas
+// versoes (violao e teclado). Sem isso o tom gravado mentia sobre a cifra.
+const handleSongKeyChange = (nextKey: string | null) => {
+  const previousKey = normalizeSongKey(lastSongFormKey.value);
+  const targetKey = normalizeSongKey(nextKey || "");
+
+  lastSongFormKey.value = targetKey;
+
+  if (!previousKey || !targetKey || previousKey === targetKey) return;
+
+  const steps = songKeyDistance(previousKey, targetKey);
+
+  if (songForm.chords.trim()) {
+    songForm.chords = transposeChordText(songForm.chords, steps);
+  }
+
+  if (songForm.keyboardChords.trim()) {
+    songForm.keyboardChords = transposeChordText(songForm.keyboardChords, steps);
+  }
+};
+
 const openSongEditDialog = (song: DepartmentSong) => {
   editingSongId.value = song.id;
   songFormTab.value = "info";
+  cifraClubImportMessage.value = "";
   songForm.title = song.title;
   songForm.artist = song.metadata?.artist || "";
-  songForm.key = song.metadata?.key || "";
+  songForm.key = normalizeSongKey(song.metadata?.key || "");
+  lastSongFormKey.value = songForm.key;
   songForm.bpm = song.metadata?.bpm || "";
   songForm.songCategory = song.metadata?.songCategory || "Louvor";
   songForm.url = song.url || "";
@@ -4133,6 +4127,50 @@ onMounted(async () => {
   grid-template-columns: minmax(0, 1fr) auto;
   min-height: 58px;
   padding: 10px 12px;
+}
+
+.member-permission-list {
+  display: grid;
+  gap: 10px;
+}
+
+.member-permission-row {
+  align-items: center;
+  border: 1px solid var(--app-color-border, #f3f4f6);
+  border-radius: 10px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 62px;
+  padding: 10px 14px;
+}
+
+.member-permission-toggles {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.member-permission-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.member-permission-toggle span {
+  color: var(--app-color-text-soft, #6b7280);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+@media (max-width: 480px) {
+  .member-permission-row {
+    grid-template-columns: 1fr;
+  }
+
+  .member-permission-toggles {
+    justify-content: flex-start;
+  }
 }
 .leader-list {
   display: grid;

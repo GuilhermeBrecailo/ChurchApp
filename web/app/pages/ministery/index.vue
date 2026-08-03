@@ -18,7 +18,24 @@
       </v-btn>
     </div>
 
-    <div v-if="departments.length" class="ministery-summary mb-5">
+    <div v-if="departments.length" class="tabs-row mb-5">
+      <v-chip
+        v-for="tab in listTabs"
+        :key="tab.value"
+        :variant="activeTab === tab.value ? 'flat' : 'outlined'"
+        :color="activeTab === tab.value ? 'purple-darken-3' : 'grey-darken-1'"
+        class="tab-chip font-weight-medium cursor-pointer"
+        @click="activeTab = tab.value"
+      >
+        <component :is="tab.icon" size="16" class="tab-chip-icon" />
+        <span class="tab-chip-label">{{ tab.label }}</span>
+      </v-chip>
+    </div>
+
+    <div
+      v-if="departments.length && activeTab === 'overview'"
+      class="ministery-summary mb-5"
+    >
       <div class="ministery-summary-item">
         <span>{{ departments.length }}</span>
         <small>ministérios</small>
@@ -54,6 +71,37 @@
         @click="isDepartmentDialogOpen = true"
       >
         <Plus size="16" class="mr-1" /> Criar o primeiro ministério
+      </v-btn>
+    </v-card>
+
+    <v-card
+      v-else-if="activeTab === 'overview'"
+      class="rounded-xl pa-4 elevation-1 bg-white border-subtle"
+    >
+      <p class="text-caption font-weight-bold text-grey-darken-1 mb-3">
+        Por tipo
+      </p>
+      <div class="ministery-type-list">
+        <div
+          v-for="item in departmentsByType"
+          :key="item.label"
+          class="ministery-type-row"
+        >
+          <span class="text-body-2 font-weight-bold text-grey-darken-4">
+            {{ item.label }}
+          </span>
+          <v-chip size="small" variant="tonal" color="purple-darken-3">
+            {{ item.total }}
+          </v-chip>
+        </div>
+      </div>
+      <v-btn
+        variant="text"
+        color="purple-darken-3"
+        class="text-none font-weight-bold mt-2"
+        @click="activeTab = 'departments'"
+      >
+        Ver todos os ministérios
       </v-btn>
     </v-card>
 
@@ -174,6 +222,26 @@
             :disabled="isCreatingDepartment"
           />
 
+          <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">
+            Módulos ativos
+          </p>
+          <p class="text-caption text-grey-darken-1 mb-2">
+            Só aparece na tela do ministério o que estiver marcado aqui.
+          </p>
+          <div class="module-chip-row mb-4">
+            <v-chip
+              v-for="module in moduleOptions"
+              :key="module.value"
+              :variant="departmentForm.modules.includes(module.value) ? 'flat' : 'outlined'"
+              :color="departmentForm.modules.includes(module.value) ? 'purple-darken-3' : 'grey-darken-1'"
+              class="cursor-pointer font-weight-medium"
+              :disabled="isCreatingDepartment"
+              @click="toggleModule(module.value)"
+            >
+              {{ module.label }}
+            </v-chip>
+          </div>
+
           <v-alert
             v-if="createDepartmentError"
             type="error"
@@ -222,9 +290,10 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { Building, Plus, Trash2 } from "lucide-vue-next";
+import { BarChart3, Building, List, Plus, Trash2 } from "lucide-vue-next";
 import {
   useDepartments,
+  DEPARTMENT_MODULE_OPTIONS,
   type ChurchDepartment,
 } from "../../../composables/useDepartments";
 import { useMembers, type ChurchMember } from "../../../composables/useMembers";
@@ -245,11 +314,25 @@ const isCreatingDepartment = ref(false);
 const isDeletingDepartment = ref(false);
 const pendingDeleteDepartment = ref<ChurchDepartment | null>(null);
 
+const activeTab = ref("overview");
+const listTabs = [
+  { label: "Visão geral", value: "overview", icon: BarChart3 },
+  { label: "Ministérios", value: "departments", icon: List },
+];
+const moduleOptions = DEPARTMENT_MODULE_OPTIONS;
+
 const departmentForm = reactive({
   name: "",
   type: "OTHER",
   leaderId: "",
+  modules: DEPARTMENT_MODULE_OPTIONS.map((module) => module.value),
 });
+
+const toggleModule = (module: string) => {
+  departmentForm.modules = departmentForm.modules.includes(module)
+    ? departmentForm.modules.filter((item) => item !== module)
+    : [...departmentForm.modules, module];
+};
 
 const departmentTypes = [
   { label: "Louvor", value: "WORSHIP" },
@@ -293,6 +376,18 @@ const worshipDepartmentsCount = computed(
       ["WORSHIP", "MUSIC"].includes(department.type),
     ).length,
 );
+const departmentsByType = computed(() => {
+  const totals = new Map<string, number>();
+
+  departments.value.forEach((department) => {
+    const label = departmentTypeLabel(department.type);
+    totals.set(label, (totals.get(label) || 0) + 1);
+  });
+
+  return [...totals.entries()]
+    .map(([label, total]) => ({ label, total }))
+    .sort((first, second) => second.total - first.total);
+});
 const leaderOptions = computed(() =>
   members.value.map((member) => ({
     label: `${member.name} (${member.email})`,
@@ -329,6 +424,7 @@ const resetDepartmentForm = () => {
   departmentForm.name = "";
   departmentForm.type = "OTHER";
   departmentForm.leaderId = "";
+  departmentForm.modules = DEPARTMENT_MODULE_OPTIONS.map((module) => module.value);
 };
 
 const closeDepartmentDialog = () => {
@@ -346,6 +442,11 @@ const handleCreateDepartment = async () => {
     return;
   }
 
+  if (!departmentForm.modules.length) {
+    createDepartmentError.value = "Selecione ao menos um módulo para o ministério.";
+    return;
+  }
+
   isCreatingDepartment.value = true;
 
   try {
@@ -353,6 +454,7 @@ const handleCreateDepartment = async () => {
       name,
       type: departmentForm.type,
       leaderId: departmentForm.leaderId,
+      modules: [...departmentForm.modules],
     });
 
     if (error || !data) {
@@ -446,6 +548,35 @@ onMounted(async () => {
   color: #6b7280;
   font-size: 0.82rem;
   font-weight: 750;
+}
+.tabs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tab-chip-icon {
+  margin-right: 6px;
+}
+.cursor-pointer {
+  cursor: pointer;
+}
+.module-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ministery-type-list {
+  display: grid;
+  gap: 8px;
+}
+.ministery-type-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  padding: 10px 12px;
 }
 .ministery-grid {
   display: grid;

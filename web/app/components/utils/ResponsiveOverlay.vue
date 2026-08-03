@@ -1,6 +1,6 @@
 <template>
   <v-bottom-sheet
-    v-if="mobile"
+    v-if="mobile && !fullscreen"
     v-bind="attrs"
     :model-value="modelValue"
     :scrollable="scrollable"
@@ -21,7 +21,8 @@
     :scrollable="scrollable"
     :persistent="persistent"
     :scrim="scrim"
-    :fullscreen="fullscreenDesktop"
+    :class="fullscreen ? fullscreenClass : undefined"
+    :fullscreen="fullscreen || fullscreenDesktop"
     @update:model-value="emit('update:modelValue', $event)"
     @after-leave="emit('afterLeave')"
   >
@@ -44,6 +45,10 @@ withDefaults(
     scrim?: boolean;
     mobileClass?: string;
     fullscreenDesktop?: boolean;
+    /** Ocupa a tela inteira em qualquer breakpoint - no mobile troca o
+     * bottom sheet (que sempre sobra uma faixa) por um dialog fullscreen. */
+    fullscreen?: boolean;
+    fullscreenClass?: string;
   }>(),
   {
     maxWidth: 520,
@@ -52,6 +57,8 @@ withDefaults(
     scrim: true,
     mobileClass: "responsive-bottom-sheet",
     fullscreenDesktop: false,
+    fullscreen: false,
+    fullscreenClass: "responsive-fullscreen-overlay",
   },
 );
 

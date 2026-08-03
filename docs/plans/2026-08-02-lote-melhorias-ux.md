@@ -48,24 +48,24 @@ Legenda: ⚠️ = decisão pendente ou mudança de banco necessária.
 
 ## Grupo 4 — Próximos cultos (página nova)
 
-- [ ] 4.1 Nova rota/página dedicada
-- [ ] 4.2 Título + informações do culto
-- [ ] 4.3 Cards de escala no mesmo padrão visual de `/scale`, sem ações de gestão
+- [x] 4.1 Nova rota/página dedicada
+- [x] 4.2 Título + informações do culto
+- [x] 4.3 Cards de escala no mesmo padrão visual de `/scale`, sem ações de gestão
       (sem editar / apagar / gerenciar voluntários)
-- [ ] 4.4 Não exibir os contadores de gestão (pendentes / não viram / trocas) —
+- [x] 4.4 Não exibir os contadores de gestão (pendentes / não viram / trocas) —
       esses são da tela de escala, não da vitrine de cultos
-- [ ] 4.5 Clicar num card abre `/scale` já posicionado naquela escala
+- [x] 4.5 Clicar num card abre `/scale` já posicionado naquela escala
 
 ## Grupo 5 — Devocionais
 
 `web/app/pages/content/devotionals.vue`
 
-- [ ] 5.1 Botão de criar devocional na própria página (hoje só via `/admin`)
-- [ ] 5.2 ⚠️ Suporte a texto + vídeo (mesma decisão do 2.3)
+- [x] 5.1 Botão de criar devocional na própria página (hoje só via `/admin`)
+- [x] 5.2 Suporte a texto + vídeo por link (mesma decisão do 2.3)
 
 ## Grupo 6 — Bíblia
 
-- [ ] 6.1 Trocar o provedor de API — o atual (`abibliadigital.com.br`) está fora do ar,
+- [x] 6.1 Trocar o provedor de API — o atual (`abibliadigital.com.br`) está fora do ar,
       então toda leitura cai no fallback Almeida disfarçado da versão escolhida.
       Já existe a proposta em `openspec/changes/bible-reader-fixes`.
 
@@ -81,34 +81,53 @@ Legenda: ⚠️ = decisão pendente ou mudança de banco necessária.
 
 ## Grupo 8 — Músicas (editor + leitor)
 
-- [ ] 8.1 Validar o tom no cadastro (aceitar apenas tons válidos)
-- [ ] 8.2 Cifra com largura fixa — sem scroll horizontal
-- [ ] 8.3 Tela cheia: o bottom sheet deve ocupar a tela inteira
-- [ ] 8.4 Botão no topo direito abrindo os controles de velocidade e tom
-- [ ] 8.5 Seletor letra/cifra acessível durante a leitura
-- [ ] 8.6 Link do Cifra Club prevalece: importa e preenche tudo, resta só salvar
-- [ ] 8.7 Trocar o tom transpõe a cifra automaticamente
+- [x] 8.1 Tom virou `v-select` dos 24 tons válidos (12 maiores + 12 menores) e a
+      API rejeita qualquer outra coisa (`SongKey.ts`, com teste)
+- [x] 8.2 `SongTextRenderer` encolhe a fonte até a linha mais larga caber
+      (ResizeObserver + medição em monospace). Alinhamento preservado, zero
+      scroll horizontal
+- [x] 8.3 `UtilsResponsiveOverlay` ganhou `fullscreen`: no mobile troca o bottom
+      sheet por dialog de tela cheia
+- [x] 8.4 Controles (velocidade, tom, instrumento) num único botão no topo
+      direito do novo `MusicSongReader`
+- [x] 8.5 Tabs Letra/Cifra fixas no topo do leitor, visíveis durante a leitura
+- [x] 8.6 Colar o link do Cifra Club dispara a importação; tom, vídeo, letra e
+      cifra vêm preenchidos — só falta salvar
+- [x] 8.7 Trocar o tom transpõe cifra e cifra de teclado (`useSongChords.ts`:
+      transpõe só linhas de acorde, a letra fica intacta)
 
 ## Grupo 9 — Escala + playlist de músicas
 
-- [ ] 9.1 Selecionar músicas e montar a playlist da escala
-- [ ] 9.2 Mostrar o tom de cada música e facilitar a reordenação
-- [ ] 9.3 Botão que abre todas as músicas em sequência, na ordem definida
-- [ ] 9.4 Escolher se abre em letra ou cifra
-- [ ] 9.5 Melhorar o bottom sheet de adicionar música (espaçamento + informação
-      visível ao selecionar)
-- [ ] 9.6 ⚠️ Líder do ministério define, por membro, quem pode alterar escala e
-      adicionar música (precisa de mudança no banco — hoje a permissão é por
-      departamento, não por membro)
+- [x] 9.1 O `v-select` de músicas virou construtor de playlist ordenada no
+      formulário da escala
+- [x] 9.2 Tom em chip por música + reordenar por setas ou arrastar (detalhe e
+      formulário)
+- [x] 9.3 "Tocar sequência" abre o leitor na ordem definida, com Anterior/Próxima
+- [x] 9.4 Alternador Letra/Cifra define em que modo a sequência abre
+- [x] 9.5 Bottom sheet novo de adicionar música: busca, cards espaçados, tom,
+      BPM, categoria e posição na playlist visível ao selecionar
+- [x] 9.6 `UserDepartmentMembership.canManageSongs` (migration) + toggles por
+      membro no painel do líder: um para escala, outro para músicas
 
 ## Grupo 10 — Ministérios
 
-- [ ] 10.1 Lista: chips de navegação ("Visão geral" com x ministérios / x ativos,
-      "Ministérios" listando todos os cadastrados)
-- [ ] 10.2 Detalhe → visão geral: manter o dashboard do topo, remover o bloco de
-      líder, manter o de escalas
-- [ ] 10.3 ⚠️ Criar ministério escolhendo os módulos ativos (músicas, recursos,
-      tarefas...) — precisa de campo novo no `Department`
+- [x] 10.1 Chips "Visão geral" (contadores + quebra por tipo) e "Ministérios"
+      (lista completa)
+- [x] 10.2 Visão geral do detalhe: dashboard do topo mantido, card de líder
+      removido, bloco de próximas escalas no lugar
+- [x] 10.3 `Department.modules` (migration) + chips de módulos no cadastro; as
+      abas do ministério passam a seguir os módulos escolhidos
+
+## Grupo 12 — Conteúdo público e identidade da igreja
+
+- [x] 12.1 Versículo do dia com opção "mostrar na página pública"
+      (`DailyVerse.isPublic`)
+- [x] 12.2 Devocional com a mesma opção (`Devotional.isPublic`)
+- [x] 12.3 `GET /public/church/:slug` devolve `publicVerses` e
+      `publicDevotionals`; a landing renderiza as duas seções (com vídeo)
+- [x] 12.4 Upload da foto da igreja em Configurações
+      (`POST /api/church/uploads/photo`, PNG/JPG/WEBP até 5 MB, grava em
+      `Crunch.logo` e aparece na página pública)
 
 ## Grupo 11 — Usuário
 
@@ -132,16 +151,23 @@ Legenda: ⚠️ = decisão pendente ou mudança de banco necessária.
    link (YouTube/Instagram, aproveitando o `MusicEmbedPlayer` que já existe),
    depois upload de arquivo como etapa separada (exige storage novo, endpoint de
    upload e limite de tamanho).
-2. **Permissão de criar conteúdo (2.5)** — ⚠️ pendente: "quem ele quiser" deve
-   usar o sistema de permissões que já existe (`churchRole.permissions`) com uma
-   permissão nova do tipo `MANAGE_CONTENT`?
-3. **Migrations (9.6 e 10.3)** — ⚠️ pendente: os dois exigem alteração de schema
-   Prisma + migration. Confirmar antes de mexer no banco de produção.
+2. **Permissão de criar conteúdo (2.5)** — ✅ decidido: permissão nova
+   `PUBLISH_CONTENT` em `churchRole.permissions`; pastor/admin sempre.
+3. **Migrations (9.6 e 10.3)** — ✅ liberadas, com campos zerados nos registros
+   existentes:
+   - `UserDepartmentMembership.canManageSongs` → `false` (líder/pastor/admin
+     continuam liberados pelo papel, não pela flag)
+   - `Department.modules` → array vazio, lido como "todos os módulos ativos",
+     pra nenhum ministério antigo perder aba
+   - `DailyVerse.isPublic` / `Devotional.isPublic` → `false` (nada vira público
+     sozinho)
 
 ## Ordem de execução
 
-1. ▶️ **Em andamento:** Grupos 1, 3, 7 e 11 (frontend puro, sem migration)
-2. Depois: a definir com o usuário
+1. ✅ Grupos 1, 2, 3, 4, 5, 6, 7 e 11
+2. ✅ Grupos 8, 9 e 10 + Grupo 12 (conteúdo público e foto da igreja)
+3. Pendente: 7.2 (tela global de músicas) e upload de vídeo por arquivo
+   (etapa 2 da decisão 1)
 
 ## Sobreposição com propostas OpenSpec já existentes
 

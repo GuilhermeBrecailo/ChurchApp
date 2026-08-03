@@ -17,6 +17,8 @@ export interface Devotional {
   description?: string | null;
   /** link de video (YouTube/Instagram) opcional */
   videoUrl?: string | null;
+  /** true quando o devocional tambem aparece na pagina publica da igreja */
+  isPublic?: boolean;
   publishedAt: string;
   chapters?: DevotionalChapter[];
   _count?: { chapters: number };
@@ -30,6 +32,7 @@ interface CreateDevotionalDTO {
   title: string;
   description?: string;
   videoUrl?: string;
+  isPublic?: boolean;
   chapters: {
     title: string;
     content: string;

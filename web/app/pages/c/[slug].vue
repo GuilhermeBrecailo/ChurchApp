@@ -111,6 +111,74 @@
             Ainda nao ha avisos publicados. Volte em breve.
           </p>
         </MotionFadeInUp>
+
+        <MotionFadeInUp
+          v-if="publicVerses.length"
+          tag="section"
+          class="feed-section"
+          in-view
+        >
+          <div class="section-heading-copy">
+            <p class="landing-kicker">Palavra</p>
+            <h2>Versiculos publicados</h2>
+          </div>
+
+          <MotionStaggerGroup class="feed-list">
+            <MotionStaggerItem
+              v-for="verse in publicVerses"
+              :key="verse.id"
+              tag="article"
+              class="feed-card"
+            >
+              <div class="feed-card-meta">
+                <span>{{ verse.reference }}</span>
+                <time>{{ relativeDate(verse.publishedAt) }}</time>
+              </div>
+              <h3>{{ verse.text }}</h3>
+              <p v-if="verse.commentary">{{ verse.commentary }}</p>
+              <MusicEmbedPlayer
+                v-if="verse.videoUrl"
+                :url="verse.videoUrl"
+                :title="verse.reference"
+                class="landing-embed"
+              />
+            </MotionStaggerItem>
+          </MotionStaggerGroup>
+        </MotionFadeInUp>
+
+        <MotionFadeInUp
+          v-if="publicDevotionals.length"
+          tag="section"
+          class="feed-section"
+          in-view
+        >
+          <div class="section-heading-copy">
+            <p class="landing-kicker">Devocionais</p>
+            <h2>Para ler durante a semana</h2>
+          </div>
+
+          <MotionStaggerGroup class="feed-list">
+            <MotionStaggerItem
+              v-for="devotional in publicDevotionals"
+              :key="devotional.id"
+              tag="article"
+              class="feed-card"
+            >
+              <div class="feed-card-meta">
+                <span>{{ devotional.chapters?.length || 0 }} capitulos</span>
+                <time>{{ relativeDate(devotional.publishedAt) }}</time>
+              </div>
+              <h3>{{ devotional.title }}</h3>
+              <p v-if="devotional.description">{{ devotional.description }}</p>
+              <MusicEmbedPlayer
+                v-if="devotional.videoUrl"
+                :url="devotional.videoUrl"
+                :title="devotional.title"
+                class="landing-embed"
+              />
+            </MotionStaggerItem>
+          </MotionStaggerGroup>
+        </MotionFadeInUp>
       </main>
     </template>
   </div>
@@ -132,6 +200,8 @@ const {
   serviceTimes,
   weekOccurrences,
   monthOccurrences,
+  publicVerses,
+  publicDevotionals,
   loading,
   error,
   loadLanding,
@@ -486,6 +556,10 @@ watch(slug, (nextSlug, previousSlug) => {
 }
 
 .board-empty,
+.landing-embed {
+  margin-top: 14px;
+}
+
 .feed-empty {
   color: var(--ink-soft);
   font-size: 0.94rem;

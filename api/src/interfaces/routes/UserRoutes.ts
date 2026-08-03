@@ -37,6 +37,11 @@ export async function UserRoutes(app: FastifyInstance) {
     controllerHandler(adapters.updateOwnChurch.bind(adapters)),
   );
 
+  app.post(
+    "/api/church/uploads/photo",
+    controllerHandler(adapters.uploadChurchPhoto.bind(adapters)),
+  );
+
   app.get(
     "/api/church/members",
     controllerHandler(adapters.getChurchMembers.bind(adapters)),

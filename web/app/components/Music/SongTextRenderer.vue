@@ -3,6 +3,7 @@
     ref="scrollContainer"
     class="song-text-renderer"
     :class="rendererClasses"
+    :style="rendererStyle"
     @pointerdown="pauseAutoScroll"
     @pointerup="resumeAutoScroll"
     @pointercancel="resumeAutoScroll"
@@ -30,6 +31,9 @@ const props = withDefaults(
     dense?: boolean;
     autoScroll?: boolean;
     scrollSpeed?: number;
+    fitWidth?: boolean;
+    minFontSize?: number;
+    maxFontSize?: number;
   }>(),
   {
     text: "",
@@ -38,6 +42,9 @@ const props = withDefaults(
     dense: false,
     autoScroll: false,
     scrollSpeed: 0,
+    fitWidth: true,
+    minFontSize: 9,
+    maxFontSize: 0,
   },
 );
 
@@ -49,12 +56,23 @@ type SongSegment = {
 const chordTokenRegex =
   /^[A-G](?:#|b)?(?:m|maj|min|dim|aug|sus|sus[0-9]|add[0-9]|[0-9]|M|maj7|dim7|aug7)*(?:\([^)]+\))?(?:\/[A-G](?:#|b)?)?$/;
 
+const isFitting = computed(() => props.fitWidth && props.mode === "chords");
+
 const rendererClasses = computed(() => ({
   "song-text-renderer--chords": props.mode === "chords",
   "song-text-renderer--lyrics": props.mode !== "chords",
   "song-text-renderer--dense": props.dense,
   "song-text-renderer--auto": props.autoScroll && props.scrollSpeed > 0,
+  "song-text-renderer--fit": isFitting.value,
 }));
+
+const fittedFontSize = ref(0);
+
+const rendererStyle = computed(() =>
+  isFitting.value && fittedFontSize.value
+    ? { fontSize: `${fittedFontSize.value}px` }
+    : {},
+);
 
 const scrollContainer = ref<HTMLElement | null>(null);
 const isAutoScrollPaused = ref(false);
@@ -93,6 +111,76 @@ const renderedLines = computed(() => {
       : [{ text: line || "\u00a0", type: "lyric" }],
   );
 });
+
+const longestLineLength = computed(() =>
+  renderedLines.value.reduce((longest, line) => {
+    const length = line.reduce((total, segment) => total + segment.text.length, 0);
+    return length > longest ? length : longest;
+  }, 0),
+);
+
+const measureCharWidth = (fontSize: number) => {
+  const container = scrollContainer.value;
+  if (!container) return 0;
+
+  const probe = document.createElement("span");
+  probe.textContent = "0".repeat(50);
+  probe.style.cssText = `position:absolute;visibility:hidden;white-space:pre;font-family:inherit;font-weight:900;font-size:${fontSize}px;`;
+  container.appendChild(probe);
+  const width = probe.getBoundingClientRect().width / 50;
+  probe.remove();
+
+  return width;
+};
+
+// A cifra perde o sentido quando quebra linha - acorde tem que ficar em cima
+// da silaba certa. Em vez de deixar rolar na horizontal, encolhe a fonte ate
+// a linha mais larga caber na tela. Alinhamento preservado, scroll lateral zero.
+const updateFit = () => {
+  if (!import.meta.client) return;
+
+  const container = scrollContainer.value;
+
+  if (!container) return;
+
+  if (!isFitting.value || !longestLineLength.value) {
+    fittedFontSize.value = 0;
+    return;
+  }
+
+  const previousInline = container.style.fontSize;
+  container.style.fontSize = "";
+
+  const computedStyle = window.getComputedStyle(container);
+  const baseFontSize =
+    props.maxFontSize || Number.parseFloat(computedStyle.fontSize) || 16;
+  const horizontalPadding =
+    Number.parseFloat(computedStyle.paddingLeft) +
+    Number.parseFloat(computedStyle.paddingRight);
+  const availableWidth = container.clientWidth - horizontalPadding;
+  const charWidth = measureCharWidth(baseFontSize);
+
+  container.style.fontSize = previousInline;
+
+  if (availableWidth <= 0 || charWidth <= 0) return;
+
+  const requiredWidth = longestLineLength.value * charWidth;
+
+  fittedFontSize.value =
+    requiredWidth <= availableWidth
+      ? 0
+      : Math.max(
+          props.minFontSize,
+          Math.floor((availableWidth / requiredWidth) * baseFontSize * 10) / 10,
+        );
+};
+
+const scheduleFit = async () => {
+  await nextTick();
+  updateFit();
+};
+
+let resizeObserver: ResizeObserver | null = null;
 
 const stopAutoScroll = () => {
   if (animationFrameId.value !== null) {
@@ -166,12 +254,28 @@ watch(
     if (scrollContainer.value) {
       scrollContainer.value.scrollTop = 0;
     }
+    updateFit();
     startAutoScroll();
   },
 );
 
-onMounted(startAutoScroll);
-onBeforeUnmount(stopAutoScroll);
+watch(() => [props.fitWidth, props.dense], scheduleFit);
+
+onMounted(() => {
+  startAutoScroll();
+  void scheduleFit();
+
+  if (typeof ResizeObserver !== "undefined" && scrollContainer.value) {
+    resizeObserver = new ResizeObserver(() => updateFit());
+    resizeObserver.observe(scrollContainer.value);
+  }
+});
+
+onBeforeUnmount(() => {
+  stopAutoScroll();
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+});
 </script>
 
 <style scoped>
@@ -194,6 +298,10 @@ onBeforeUnmount(stopAutoScroll);
 
 .song-text-renderer--chords {
   white-space: pre;
+}
+
+.song-text-renderer--fit {
+  overflow-x: hidden;
 }
 
 .song-text-renderer--lyrics {

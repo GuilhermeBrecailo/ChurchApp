@@ -48,6 +48,46 @@
           </v-btn>
         </div>
 
+        <div class="church-photo-row mb-5">
+          <div class="church-photo-preview">
+            <img v-if="churchPhotoUrl" :src="churchPhotoUrl" alt="Foto da igreja" />
+            <Church v-else size="26" color="#9CA3AF" />
+          </div>
+
+          <div class="min-w-0 flex-grow-1">
+            <p class="text-caption font-weight-bold text-grey-darken-4 mb-1">
+              Foto da igreja
+            </p>
+            <p class="text-caption text-grey-darken-1 mb-2">
+              Aparece na página pública. PNG, JPG ou WEBP, até 5 MB.
+            </p>
+            <v-file-input
+              v-model="photoFile"
+              accept="image/png,image/jpeg,image/webp"
+              label="Escolher imagem"
+              prepend-icon=""
+              prepend-inner-icon="mdi-image-outline"
+              variant="outlined"
+              density="compact"
+              color="purple-darken-3"
+              hide-details="auto"
+              show-size
+              :disabled="!canEditChurch || isUploadingPhoto"
+              @update:model-value="handleUploadPhoto"
+            />
+          </div>
+        </div>
+
+        <v-alert
+          v-if="photoError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ photoError }}
+        </v-alert>
+
         <v-text-field
           v-model="form.name"
           label="Nome da igreja"
@@ -150,10 +190,13 @@ import { useChurch } from "../../composables/useChurch";
 import { useThemeMode } from "../../../composables/useThemeMode";
 
 const { user } = useAuth();
-const { updateOwnChurch } = useChurch();
+const { updateOwnChurch, uploadChurchPhoto } = useChurch();
 const { isDark } = useThemeMode();
 
 const loading = ref(false);
+const photoFile = ref<File | File[] | null>(null);
+const isUploadingPhoto = ref(false);
+const photoError = ref("");
 const message = ref("");
 const messageType = ref<"success" | "error">("success");
 
@@ -178,6 +221,39 @@ const isChurchWideManager = computed(
 const canEditChurch = computed(
   () => user.value?.hasChurch === true && isChurchWideManager.value,
 );
+
+const churchPhotoUrl = computed(() => user.value?.church?.logo || "");
+
+const handleUploadPhoto = async (value: File | File[] | null) => {
+  const file = Array.isArray(value) ? value[0] : value;
+
+  photoError.value = "";
+
+  if (!file) return;
+
+  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+    photoError.value = "Envie uma imagem PNG, JPG ou WEBP.";
+    photoFile.value = null;
+    return;
+  }
+
+  isUploadingPhoto.value = true;
+
+  try {
+    const { error } = await uploadChurchPhoto(file);
+
+    if (error) {
+      photoError.value = error;
+      return;
+    }
+
+    messageType.value = "success";
+    message.value = "Foto da igreja atualizada.";
+  } finally {
+    isUploadingPhoto.value = false;
+    photoFile.value = null;
+  }
+};
 
 const publicLandingUrl = computed(() => {
   const slug = user.value?.church?.slug;
@@ -252,6 +328,30 @@ watch(
   border: 1px solid #e5e7eb;
 }
 
+.church-photo-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.church-photo-preview {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.church-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -259,7 +359,31 @@ watch(
 }
 
 @media (max-width: 640px) {
-  .settings-grid {
+  .church-photo-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.church-photo-preview {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.church-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.settings-grid {
     grid-template-columns: 1fr;
     gap: 0;
   }

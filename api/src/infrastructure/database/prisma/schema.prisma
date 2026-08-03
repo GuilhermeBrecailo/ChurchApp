@@ -120,6 +120,9 @@ model DailyVerse {
     text        String
     reference   String
     commentary  String?
+    // Quando true aparece na pagina publica da igreja. False nos versiculos
+    // ja publicados - ninguem vira publico sem alguem marcar.
+    isPublic    Boolean  @default(false)
     // Link de video (YouTube/Instagram) opcional. Nulo nos versiculos ja
     // existentes - upload de arquivo fica pra uma etapa posterior.
     videoUrl    String?
@@ -132,6 +135,7 @@ model DailyVerse {
     author   User   @relation(fields: [authorId], references: [id])
 
     @@index([crunchId, publishedAt])
+    @@index([crunchId, isPublic, publishedAt])
 }
 
 model Announcement {
@@ -170,6 +174,8 @@ model Devotional {
     id          String   @id @default(uuid())
     title       String
     description String?
+    // Mesma regra do versiculo: so aparece na pagina publica se marcado.
+    isPublic    Boolean  @default(false)
     // Link de video (YouTube/Instagram) opcional. Nulo nos devocionais ja
     // existentes - upload de arquivo fica pra uma etapa posterior.
     videoUrl    String?
@@ -185,6 +191,7 @@ model Devotional {
     progresses DevotionalProgress[]
 
     @@index([crunchId, publishedAt])
+    @@index([crunchId, isPublic, publishedAt])
 }
 
 model DevotionalChapter {
@@ -269,6 +276,10 @@ model Department {
     name     String
     type     String  @default("OTHER")
     isActive Boolean @default(true)
+    // Modulos ativos do ministerio (SONGS, RESOURCES, TASKS, CLASSES...).
+    // Vazio nos registros ja existentes e tratado como "todos habilitados",
+    // pra nao apagar aba de ministerio nenhum na migracao.
+    modules  String[] @default([])
 
     crunchId String
     crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
@@ -287,6 +298,10 @@ model UserDepartmentMembership {
     function  String?
     isPrimary Boolean @default(true)
     canManageSchedule Boolean @default(false)
+    // Permissao por membro pra mexer no repertorio do ministerio. Zerada nos
+    // registros existentes: quem ja gerenciava (lider/pastor/admin) continua
+    // liberado pelo papel, nao por esta flag.
+    canManageSongs Boolean @default(false)
     createdAt DateTime @default(now())
 
     userId String

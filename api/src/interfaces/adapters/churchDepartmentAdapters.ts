@@ -8,6 +8,12 @@ import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { pushNotificationService } from "../../infrastructure/notifications/PushNotificationService";
 import { resolveActiveChurchContext } from "../utils/churchContext";
 import { canManageDepartmentSchedule } from "../../application/Services/Department/DepartmentSchedulePermission";
+import { normalizeSongKey } from "../../application/Services/Department/SongKey";
+import {
+  DEPARTMENT_MODULES,
+  normalizeDepartmentModules,
+  parseDepartmentModules as parseDepartmentModulesInput,
+} from "../../application/Services/Department/DepartmentModules";
 
 type CurrentUser = Prisma.UserGetPayload<{
   include: {
@@ -39,6 +45,7 @@ type DepartmentWithStats = {
   name: string;
   type: string;
   isActive: boolean;
+  modules: string[];
   leaderId: string;
   leader: {
     id: string;
@@ -215,6 +222,43 @@ function parseCifraClubTitle(html: string, fallbackTitle: string, fallbackArtist
   return { title: fallbackTitle || cleanTitle, artist: fallbackArtist };
 }
 
+function throwDomainError(message: string): never {
+  throw new DomainError(message);
+}
+
+function parseSongKey(rawKey?: string | null) {
+  const value = rawKey?.trim();
+
+  if (!value) return "";
+
+  const normalized = normalizeSongKey(value);
+
+  if (!normalized) {
+    throw new DomainError(
+      "Tom invalido. Use um tom de C a B, maior ou menor (ex: G, F#, Am)",
+    );
+  }
+
+  return normalized;
+}
+
+function extractCifraClubKey(html: string) {
+  const patterns = [
+    /id=["']cifra_tom["'][^>]*>\s*(?:<[^>]+>\s*)*([A-G][#b]?m?)\b/i,
+    /class=["'][^"']*\btom\b[^"']*["'][^>]*>\s*(?:<[^>]+>\s*)*([A-G][#b]?m?)\b/i,
+    /"tom"\s*:\s*"([A-G][#b]?m?)"/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    const normalized = match?.[1] ? normalizeSongKey(match[1]) : null;
+
+    if (normalized) return normalized;
+  }
+
+  return "";
+}
+
 function getAuthPayload(request: FastifyRequest): AuthPayload {
   const authHeader = request.headers.authorization;
   const token = authHeader?.replace("Bearer ", "");
@@ -377,6 +421,7 @@ export class ChurchDepartmentAdapters {
     name: true,
     type: true,
     isActive: true,
+    modules: true,
     leaderId: true,
     leader: {
       select: {
@@ -401,7 +446,11 @@ export class ChurchDepartmentAdapters {
 
   private mapDepartment(
     department: DepartmentWithStats,
-    options?: { canManageSchedule?: boolean; isMember?: boolean },
+    options?: {
+      canManageSchedule?: boolean;
+      canManageSongs?: boolean;
+      isMember?: boolean;
+    },
   ) {
     const songsCount = department.mediaItems.filter(
       (item) => item.category === "MUSIC",
@@ -412,9 +461,11 @@ export class ChurchDepartmentAdapters {
       name: department.name,
       type: department.type,
       isActive: department.isActive,
+      modules: normalizeDepartmentModules(department.modules),
       leaderId: department.leaderId,
       leader: department.leader,
       canManageSchedule: options?.canManageSchedule,
+      canManageSongs: options?.canManageSongs,
       isMember: options?.isMember,
       membersCount: department._count.members,
       schedulesCount: department._count.schedules,
@@ -590,12 +641,36 @@ export class ChurchDepartmentAdapters {
     );
   }
 
+  // Mesma logica das escalas: alem de pastor/admin/lider, o lider pode
+  // delegar o repertorio membro a membro (UserDepartmentMembership.canManageSongs).
   private async assertCanManageSongs(user: CurrentUser, departmentId: string) {
-    return await this.assertCanManageDepartmentWithPermission(
-      user,
+    const department = await this.getDepartmentFromCurrentChurch(
       departmentId,
-      "MANAGE_SONGS",
-      "Apenas pastores, admins ou lideres com permissao podem gerenciar musicas deste ministerio",
+      user.crunchId!,
+    );
+
+    if (this.isChurchWideManager(user) || department.leaderId === user.id) {
+      return department;
+    }
+
+    const membership = await $prismaClient.userDepartmentMembership.findUnique({
+      where: {
+        userId_departmentId: {
+          userId: user.id,
+          departmentId,
+        },
+      },
+      select: {
+        canManageSongs: true,
+      },
+    });
+
+    if (membership?.canManageSongs) {
+      return department;
+    }
+
+    throw new DomainError(
+      "Apenas pastores, admins, lideres ou membros com permissao podem gerenciar musicas deste ministerio",
     );
   }
 
@@ -892,11 +967,17 @@ export class ChurchDepartmentAdapters {
       select: {
         departmentId: true,
         canManageSchedule: true,
+        canManageSongs: true,
       },
     });
     const scheduleManagerDepartments = new Set(
       memberships
         .filter((membership) => membership.canManageSchedule)
+        .map((membership) => membership.departmentId),
+    );
+    const songManagerDepartments = new Set(
+      memberships
+        .filter((membership) => membership.canManageSongs)
         .map((membership) => membership.departmentId),
     );
     // A consulta de memberships ja existia so pra saber quem gerencia escala.
@@ -909,6 +990,7 @@ export class ChurchDepartmentAdapters {
     return departments.map((department) =>
       this.mapDepartment(department, {
         canManageSchedule: scheduleManagerDepartments.has(department.id),
+        canManageSongs: songManagerDepartments.has(department.id),
         // Liderar nao cria registro em userDepartmentMembership, entao o lider
         // sumia da propria lista de "meus ministerios" sem este OR.
         isMember:
@@ -924,6 +1006,7 @@ export class ChurchDepartmentAdapters {
       name?: string;
       leaderId?: string;
       type?: string;
+      modules?: unknown;
     };
 
     if (!this.isChurchWideManager(user)) {
@@ -953,6 +1036,7 @@ export class ChurchDepartmentAdapters {
         id: crypto.randomUUID(),
         name: body.name.trim(),
         type: body.type || "OTHER",
+        modules: parseDepartmentModulesInput(body.modules, throwDomainError) ?? [...DEPARTMENT_MODULES],
         leaderId: leader.id,
         crunchId: user.crunchId!,
         isActive: true,
@@ -981,12 +1065,15 @@ export class ChurchDepartmentAdapters {
       },
       select: {
         canManageSchedule: true,
+        canManageSongs: true,
       },
     });
 
     return {
       ...department,
+      modules: normalizeDepartmentModules(department.modules),
       canManageSchedule: membership?.canManageSchedule === true,
+      canManageSongs: membership?.canManageSongs === true,
     };
   }
 
@@ -998,6 +1085,7 @@ export class ChurchDepartmentAdapters {
       leaderId?: string;
       type?: string;
       isActive?: boolean;
+      modules?: unknown;
     };
 
     if (!id) {
@@ -1039,6 +1127,12 @@ export class ChurchDepartmentAdapters {
 
     if (body.isActive !== undefined) {
       data.isActive = body.isActive;
+    }
+
+    const modules = parseDepartmentModulesInput(body.modules, throwDomainError);
+
+    if (modules) {
+      data.modules = modules;
     }
 
     if (body.leaderId !== undefined) {
@@ -2073,6 +2167,7 @@ export class ChurchDepartmentAdapters {
         function: true,
         isPrimary: true,
         canManageSchedule: true,
+        canManageSongs: true,
         user: {
           select: {
             id: true,
@@ -2088,14 +2183,20 @@ export class ChurchDepartmentAdapters {
   async updateChurchDepartmentScheduleManager(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
     const { id, userId } = request.params as { id?: string; userId?: string };
-    const body = request.body as { canManageSchedule?: boolean };
+    const body = request.body as {
+      canManageSchedule?: boolean;
+      canManageSongs?: boolean;
+    };
 
     if (!id || !userId) {
       throw new DomainError("Membro do ministerio nao informado");
     }
 
-    if (typeof body.canManageSchedule !== "boolean") {
-      throw new DomainError("Permissao de escala invalida");
+    if (
+      typeof body.canManageSchedule !== "boolean" &&
+      typeof body.canManageSongs !== "boolean"
+    ) {
+      throw new DomainError("Permissao invalida");
     }
 
     const department = await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
@@ -2141,13 +2242,19 @@ export class ChurchDepartmentAdapters {
         id: membership.id,
       },
       data: {
-        canManageSchedule: body.canManageSchedule,
+        ...(typeof body.canManageSchedule === "boolean"
+          ? { canManageSchedule: body.canManageSchedule }
+          : {}),
+        ...(typeof body.canManageSongs === "boolean"
+          ? { canManageSongs: body.canManageSongs }
+          : {}),
       },
       select: {
         id: true,
         function: true,
         isPrimary: true,
         canManageSchedule: true,
+        canManageSongs: true,
         user: {
           select: {
             id: true,
@@ -2217,6 +2324,7 @@ export class ChurchDepartmentAdapters {
         function: true,
         isPrimary: true,
         canManageSchedule: true,
+        canManageSongs: true,
         user: {
           select: {
             id: true,
@@ -2332,7 +2440,7 @@ export class ChurchDepartmentAdapters {
     return {
       title: parsed.title,
       artist: parsed.artist,
-      key: "",
+      key: extractCifraClubKey(html),
       bpm: "",
       songCategory: "Louvor",
       url: canonicalUrl,
@@ -2400,7 +2508,7 @@ export class ChurchDepartmentAdapters {
 
     const metadata = {
       artist: body.artist?.trim() || "",
-      key: body.key?.trim() || "",
+      key: parseSongKey(body.key),
       bpm: body.bpm === undefined || body.bpm === null ? "" : String(body.bpm).trim(),
       songCategory: body.songCategory?.trim() || "Louvor",
       notes: body.notes?.trim() || "",
@@ -2473,7 +2581,7 @@ export class ChurchDepartmentAdapters {
     const metadata = {
       ...currentMetadata,
       ...(body.artist !== undefined ? { artist: body.artist.trim() } : {}),
-      ...(body.key !== undefined ? { key: body.key.trim() } : {}),
+      ...(body.key !== undefined ? { key: parseSongKey(body.key) } : {}),
       ...(body.bpm !== undefined
         ? { bpm: body.bpm === null ? "" : String(body.bpm).trim() }
         : {}),

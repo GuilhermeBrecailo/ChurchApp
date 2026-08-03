@@ -13,6 +13,8 @@ import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { resolveActiveChurchContext } from "../utils/churchContext";
 import { assertChurchSlugAvailable, ensureUniqueChurchSlug } from "../utils/churchSlug";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 const userRepository = new UserRepository();
 const createUserUseCase = new CreateUserUseCase(userRepository);
@@ -25,6 +27,9 @@ const updateUserService = new UpdateUserService(
   getUserByIdUseCase,
   updateUserUseCase,
 );
+
+const CHURCH_PHOTO_MAX_SIZE_BYTES = 5 * 1024 * 1024;
+const CHURCH_PHOTO_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 function formatChurch(church: {
   id: string;
@@ -523,6 +528,87 @@ export class UserAdapters {
       userMainId: church.userMainId,
       slug: church.slug,
       accentColor: church.accentColor,
+    };
+  }
+
+  // Foto/logo da igreja. Mesmo contrato do upload de PDF dos ministerios: o
+  // binario vai pro disco em uploads/ e o banco guarda so a URL.
+  async uploadChurchPhoto(request: FastifyRequest) {
+    const userId = getAuthUserId(request);
+    const context =
+      request.churchContext ?? (await resolveActiveChurchContext(request, userId));
+
+    if (!context.activeChurchId) {
+      throw new DomainError("Usuario nao possui igreja vinculada");
+    }
+
+    if (
+      context.role !== "PASTOR" &&
+      context.role !== "ADMIN" &&
+      context.role !== "SUPER_ADMIN"
+    ) {
+      throw new DomainError("Apenas pastores ou admins podem alterar a foto da igreja");
+    }
+
+    const multipartRequest = request as FastifyRequest & {
+      file: (options?: unknown) => Promise<{
+        filename: string;
+        mimetype: string;
+        toBuffer: () => Promise<Buffer>;
+      } | undefined>;
+    };
+    const file = await multipartRequest.file({
+      limits: {
+        fileSize: CHURCH_PHOTO_MAX_SIZE_BYTES,
+        files: 1,
+      },
+    });
+
+    if (!file) {
+      throw new DomainError("Imagem nao enviada");
+    }
+
+    if (!CHURCH_PHOTO_MIME_TYPES.includes(file.mimetype)) {
+      throw new DomainError("Envie uma imagem PNG, JPG ou WEBP");
+    }
+
+    const buffer = await file.toBuffer();
+
+    if (buffer.byteLength > CHURCH_PHOTO_MAX_SIZE_BYTES) {
+      throw new DomainError("A imagem deve ter no maximo 5 MB");
+    }
+
+    const extension =
+      {
+        "image/png": "png",
+        "image/jpeg": "jpg",
+        "image/webp": "webp",
+      }[file.mimetype] || "png";
+    const key = path.posix.join(
+      "church",
+      context.activeChurchId,
+      "photos",
+      `${crypto.randomUUID()}.${extension}`,
+    );
+    const targetPath = path.join(process.cwd(), "uploads", key);
+
+    await mkdir(path.dirname(targetPath), { recursive: true });
+    await writeFile(targetPath, buffer);
+
+    const host = request.headers.host || `localhost:${process.env.API_PORT || 8000}`;
+    const baseUrl = process.env.URL_BACKEND || `http://${host}`;
+    const url = `${baseUrl.replace(/\/$/, "")}/uploads/${key}`;
+
+    await $prismaClient.crunch.update({
+      where: { id: context.activeChurchId },
+      data: { logo: url },
+    });
+
+    return {
+      url,
+      key,
+      mimeType: file.mimetype,
+      size: buffer.byteLength,
     };
   }
 

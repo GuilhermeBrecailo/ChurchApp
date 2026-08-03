@@ -107,6 +107,7 @@ export class DailyVerseAdapters {
       reference?: string;
       commentary?: string | null;
       videoUrl?: string | null;
+      isPublic?: boolean;
     };
 
     if (!body.text?.trim()) {
@@ -124,6 +125,7 @@ export class DailyVerseAdapters {
         reference: body.reference.trim(),
         commentary: body.commentary?.trim() || null,
         videoUrl: body.videoUrl?.trim() || null,
+        isPublic: body.isPublic === true,
         crunchId: user.crunchId!,
         authorId: user.id,
       },

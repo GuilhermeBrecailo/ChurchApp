@@ -3,13 +3,24 @@ import type { ApiResponse } from "./useTypes";
 import { useNuxtApp, useRuntimeConfig } from "#app";
 import { useAuth } from "./useAuth";
 
+export const DEPARTMENT_MODULE_OPTIONS = [
+  { value: "SCHEDULES", label: "Escalas" },
+  { value: "TASKS", label: "Tarefas" },
+  { value: "RESOURCES", label: "Recursos" },
+  { value: "SONGS", label: "Músicas" },
+  { value: "CLASSES", label: "Aulas" },
+];
+
 export interface ChurchDepartment {
   id: string;
   name: string;
   type: string;
   isActive: boolean;
+  /** Módulos ativos. Vazio/ausente = ministério antigo, tudo habilitado. */
+  modules?: string[];
   leaderId: string;
   canManageSchedule?: boolean;
+  canManageSongs?: boolean;
   /** true quando o usuario logado e membro deste ministerio */
   isMember?: boolean;
   membersCount?: number;
@@ -32,6 +43,7 @@ export interface DepartmentMember {
   email: string;
   role?: string;
   canManageSchedule?: boolean;
+  canManageSongs?: boolean;
 }
 
 interface DepartmentMemberResponse {
@@ -39,6 +51,7 @@ interface DepartmentMemberResponse {
   function?: string | null;
   isPrimary?: boolean;
   canManageSchedule?: boolean;
+  canManageSongs?: boolean;
   user?: {
     id: string;
     name: string;
@@ -170,6 +183,7 @@ interface CreateDepartmentDTO {
   name: string;
   leaderId: string;
   type: string;
+  modules?: string[];
 }
 
 interface UpdateDepartmentDTO {
@@ -177,6 +191,7 @@ interface UpdateDepartmentDTO {
   leaderId?: string;
   type?: string;
   isActive?: boolean;
+  modules?: string[];
 }
 
 interface CreateDepartmentTaskDTO {
@@ -420,6 +435,7 @@ export const useDepartments = () => {
         email: membership.user?.email ?? "",
         role: membership.function ?? undefined,
         canManageSchedule: membership.canManageSchedule,
+        canManageSongs: membership.canManageSongs,
       })),
     };
   };
@@ -447,6 +463,7 @@ export const useDepartments = () => {
             email: response.data.user?.email ?? "",
             role: response.data.function ?? undefined,
             canManageSchedule: response.data.canManageSchedule,
+            canManageSongs: response.data.canManageSongs,
           }
         : undefined,
     };
@@ -465,17 +482,17 @@ export const useDepartments = () => {
     );
   };
 
-  const updateDepartmentMemberScheduleManager = async (
+  const updateDepartmentMemberPermissions = async (
     departmentId: string,
     userId: string,
-    canManageSchedule: boolean,
+    permissions: { canManageSchedule?: boolean; canManageSongs?: boolean },
   ): Promise<ApiResponse<DepartmentMember>> => {
     const response = await $customFetch<DepartmentMemberResponse>(
       `${config.public.URL_BACKEND}/api/church/departments/${departmentId}/schedule-managers/${userId}`,
       {
         method: "PATCH",
         headers: authHeaders(),
-        body: { canManageSchedule },
+        body: permissions,
       },
     );
 
@@ -489,6 +506,7 @@ export const useDepartments = () => {
             email: response.data.user?.email ?? "",
             role: response.data.function ?? undefined,
             canManageSchedule: response.data.canManageSchedule,
+            canManageSongs: response.data.canManageSongs,
           }
         : undefined,
     };
@@ -866,7 +884,7 @@ export const useDepartments = () => {
     getDepartmentMembers,
     addDepartmentMember,
     removeDepartmentMember,
-    updateDepartmentMemberScheduleManager,
+    updateDepartmentMemberPermissions,
     getDepartmentTasks,
     createDepartmentTask,
     updateDepartmentTask,

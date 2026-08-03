@@ -160,10 +160,23 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
-            class="mb-4"
+            class="mb-2"
             hide-details="auto"
             :disabled="isPublishing"
           />
+
+          <v-switch
+            v-model="publishForm.isPublic"
+            color="purple-darken-3"
+            density="compact"
+            hide-details
+            class="mb-1"
+            label="Mostrar na página pública da igreja"
+            :disabled="isPublishing"
+          />
+          <p class="text-caption text-grey-darken-1 mb-4">
+            Quem abrir o link público da igreja vai ver este versículo.
+          </p>
 
           <v-alert
             v-if="publishError"
@@ -226,6 +239,7 @@ const publishForm = reactive({
   text: "",
   commentary: "",
   videoUrl: "",
+  isPublic: false,
 });
 
 // Pastor/admin sempre podem; os demais dependem da permissao que o pastor
@@ -263,6 +277,7 @@ const openPublishDialog = () => {
   publishForm.text = "";
   publishForm.commentary = "";
   publishForm.videoUrl = "";
+  publishForm.isPublic = false;
   publishError.value = "";
   isPublishDialogOpen.value = true;
 };
@@ -296,6 +311,7 @@ const handlePublish = async () => {
       text,
       commentary: publishForm.commentary.trim(),
       videoUrl: publishForm.videoUrl.trim(),
+      isPublic: publishForm.isPublic,
     });
 
     if (error) {

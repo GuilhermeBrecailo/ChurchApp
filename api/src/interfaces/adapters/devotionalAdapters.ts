@@ -94,6 +94,7 @@ export class DevotionalAdapters {
       title?: string;
       description?: string | null;
       videoUrl?: string | null;
+      isPublic?: boolean;
       chapters?: {
         title?: string;
         content?: string;
@@ -123,6 +124,7 @@ export class DevotionalAdapters {
           title: body.title!.trim(),
           description: body.description?.trim() || null,
           videoUrl: body.videoUrl?.trim() || null,
+          isPublic: body.isPublic === true,
           crunchId: user.crunchId!,
           authorId: user.id,
           chapters: {

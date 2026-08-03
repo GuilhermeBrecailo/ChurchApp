@@ -27,11 +27,39 @@ export interface PublicChurch {
   announcements?: PublicChurchFeedItem[];
 }
 
+export interface PublicChurchVerse {
+  id: string;
+  text: string;
+  reference: string;
+  commentary?: string | null;
+  videoUrl?: string | null;
+  publishedAt: string;
+  author?: { id: string; name: string } | null;
+}
+
+export interface PublicChurchDevotional {
+  id: string;
+  title: string;
+  description?: string | null;
+  videoUrl?: string | null;
+  publishedAt: string;
+  author?: { id: string; name: string } | null;
+  chapters?: {
+    id: string;
+    title: string;
+    content: string;
+    bibleRef?: string | null;
+    order: number;
+  }[];
+}
+
 interface PublicChurchEnvelope {
   church: PublicChurch;
   serviceTimes?: PublicServiceTime[];
   upcomingServices?: { week?: PublicServiceOccurrence[]; month?: PublicServiceOccurrence[] };
   publicContent?: PublicChurchFeedItem[];
+  publicVerses?: PublicChurchVerse[];
+  publicDevotionals?: PublicChurchDevotional[];
 }
 
 export interface PublicServiceTime {
@@ -77,6 +105,11 @@ export const useChurchLanding = () => {
     "public-service-month-occurrences",
     () => [],
   );
+  const publicVerses = useState<PublicChurchVerse[]>("public-church-verses", () => []);
+  const publicDevotionals = useState<PublicChurchDevotional[]>(
+    "public-church-devotionals",
+    () => [],
+  );
   const loading = useState<boolean>("public-church-loading", () => false);
   const error = useState<string | null>("public-church-error", () => null);
 
@@ -109,6 +142,8 @@ export const useChurchLanding = () => {
     serviceTimes.value = [];
     weekOccurrences.value = [];
     monthOccurrences.value = [];
+    publicVerses.value = [];
+    publicDevotionals.value = [];
 
     try {
       const [churchResponse, timesResponse] = await Promise.all([
@@ -125,6 +160,8 @@ export const useChurchLanding = () => {
         ...churchResponse.data.church,
         feed: churchResponse.data.publicContent ?? [],
       };
+      publicVerses.value = churchResponse.data.publicVerses ?? [];
+      publicDevotionals.value = churchResponse.data.publicDevotionals ?? [];
 
       const payload = timesResponse.data;
       serviceTimes.value =
@@ -150,6 +187,8 @@ export const useChurchLanding = () => {
     serviceTimes,
     weekOccurrences,
     monthOccurrences,
+    publicVerses,
+    publicDevotionals,
     loading,
     error,
     getPublicChurch,

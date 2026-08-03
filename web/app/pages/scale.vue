@@ -316,12 +316,32 @@
 
           <section v-if="selectedDetailSongs.length" class="scale-details-section">
             <div class="scale-details-section-title scale-details-section-title-row">
-              <div>
-                <div class="d-flex align-center ga-2">
-                  <Music size="18" />
-                  <h3>Louvor</h3>
-                </div>
+              <div class="d-flex align-center ga-2">
+                <Music size="18" />
+                <h3>Louvor</h3>
               </div>
+              <v-chip size="small" variant="tonal" color="purple-darken-3">
+                {{ selectedDetailSongs.length }} músicas
+              </v-chip>
+            </div>
+
+            <div class="scale-playlist-actions">
+              <v-btn
+                color="purple-darken-3"
+                class="text-none font-weight-bold"
+                @click="openPlaylistSequence(0)"
+              >
+                <Play size="16" class="mr-1" /> Tocar sequência
+              </v-btn>
+              <v-btn-toggle
+                v-model="playlistMode"
+                density="compact"
+                mandatory
+                class="song-instrument-toggle"
+              >
+                <v-btn value="lyrics" size="small" class="text-none">Letra</v-btn>
+                <v-btn value="chords" size="small" class="text-none">Cifra</v-btn>
+              </v-btn-toggle>
             </div>
 
             <div class="scale-song-list">
@@ -330,26 +350,24 @@
                 :key="song.id"
                 class="scale-song-card"
                 :class="{
-                  'scale-song-card-active': activeDetailSong?.id === song.id,
                   'scale-song-card-dragging': draggedSongId === song.id,
                   'scale-song-card-saving': isSavingSongOrder && draggedSongId === song.id,
                 }"
                 :data-scale-song-id="song.id"
               >
                 <div class="scale-song-row">
+                  <span class="scale-song-index">{{ songIndex + 1 }}</span>
+
                   <div
                     class="scale-song-info"
                     role="button"
                     tabindex="0"
-                    @click="openSongFullscreen(song)"
-                    @keydown.enter="openSongFullscreen(song)"
-                    @keydown.space.prevent="openSongFullscreen(song)"
+                    @click="openPlaylistSequence(songIndex)"
+                    @keydown.enter="openPlaylistSequence(songIndex)"
+                    @keydown.space.prevent="openPlaylistSequence(songIndex)"
                   >
                     <div class="scale-song-header">
                       <div class="min-w-0">
-                        <p class="scale-song-category mb-1">
-                          {{ song.metadata?.songCategory || "Música" }}
-                        </p>
                         <h4 class="scale-song-title mb-1">{{ song.title }}</h4>
                         <p class="scale-song-artist mb-0">
                           {{ song.metadata?.artist || "Artista não informado" }}
@@ -357,11 +375,23 @@
                       </div>
                     </div>
                     <div class="scale-song-meta">
-                      <v-chip v-if="song.metadata?.key" size="small" variant="tonal">
-                        Tom {{ song.metadata.key }}
+                      <v-chip
+                        size="small"
+                        variant="tonal"
+                        :color="song.metadata?.key ? 'orange-darken-3' : undefined"
+                      >
+                        {{ song.metadata?.key ? `Tom ${songKeyLabel(song.metadata.key)}` : "Sem tom" }}
                       </v-chip>
                       <v-chip v-if="song.metadata?.bpm" size="small" variant="tonal">
                         {{ song.metadata.bpm }} BPM
+                      </v-chip>
+                      <v-chip
+                        v-if="song.metadata?.chords"
+                        size="small"
+                        variant="tonal"
+                        color="teal-darken-2"
+                      >
+                        Cifra
                       </v-chip>
                     </div>
                   </div>
@@ -369,140 +399,38 @@
                   <div v-if="selectedDetailEvent?.canManage" class="scale-song-order-btns">
                     <v-btn
                       icon
-                      size="small"
+                      size="x-small"
+                      variant="text"
+                      :disabled="songIndex === 0 || isSavingSongOrder"
+                      :aria-label="'Subir ' + song.title"
+                      @click.stop="moveSong(songIndex, -1)"
+                    >
+                      <ChevronUp size="18" />
+                    </v-btn>
+                    <v-btn
+                      icon
+                      size="x-small"
+                      variant="text"
+                      :disabled="songIndex === selectedDetailSongs.length - 1 || isSavingSongOrder"
+                      :aria-label="'Descer ' + song.title"
+                      @click.stop="moveSong(songIndex, 1)"
+                    >
+                      <ChevronDown size="18" />
+                    </v-btn>
+                    <v-btn
+                      icon
+                      size="x-small"
                       variant="text"
                       class="scale-song-drag-handle"
                       :class="{ 'scale-song-drag-handle-active': draggedSongId === song.id }"
-                      :aria-label="'Reordenar ' + song.title"
+                      :aria-label="'Arrastar ' + song.title"
                       @pointerdown.stop.prevent="startSongDrag($event, song)"
-                      @keydown.up.prevent="moveSong(songIndex, -1)"
-                      @keydown.down.prevent="moveSong(songIndex, 1)"
                     >
                       <GripVertical size="18" />
                     </v-btn>
                   </div>
                 </div>
               </article>
-            </div>
-
-            <div v-if="activeDetailSong" class="scale-song-reader">
-              <div class="scale-song-reader-header">
-                <div class="min-w-0">
-                  <p class="scale-song-category mb-1">
-                    {{ activeDetailSong.metadata?.songCategory || "Louvor" }}
-                  </p>
-                  <h4 class="scale-song-title mb-0">{{ activeDetailSong.title }}</h4>
-                </div>
-                <v-tooltip text="Tela cheia" location="bottom">
-                  <template #activator="{ props }">
-                    <v-btn
-                      v-bind="props"
-                      icon
-                      variant="tonal"
-                      color="purple-darken-3"
-                      aria-label="Abrir letra e cifra em tela cheia"
-                      @click="openSongFullscreen(activeDetailSong)"
-                    >
-                      <Maximize2 size="18" />
-                    </v-btn>
-                  </template>
-                </v-tooltip>
-              </div>
-
-              <v-tabs
-                v-model="songTabs[activeDetailSong.id]"
-                color="purple-darken-3"
-                density="compact"
-              >
-                <v-tab value="lyrics" class="text-none">Letra</v-tab>
-                <v-tab value="chords" class="text-none">Cifra</v-tab>
-              </v-tabs>
-
-              <div class="scale-song-filter-row">
-                <v-menu
-                  v-model="songFilterOpen"
-                  :close-on-content-click="false"
-                  location="bottom start"
-                >
-                  <template #activator="{ props: menuProps }">
-                    <v-btn
-                      v-bind="menuProps"
-                      variant="tonal"
-                      color="purple-darken-3"
-                      size="small"
-                      class="text-none"
-                      prepend-icon="mdi-tune"
-                    >
-                      Filtro
-                    </v-btn>
-                  </template>
-                  <v-card min-width="272" rounded="lg" elevation="4">
-                    <v-card-text class="pa-4">
-                      <template v-if="songTabs[activeDetailSong.id] === 'chords'">
-                        <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">Instrumento</p>
-                        <v-btn-toggle
-                          v-model="songInstrumentMode"
-                          density="compact"
-                          mandatory
-                          class="song-instrument-toggle mb-4"
-                        >
-                          <v-btn value="auto" size="small" class="text-none">Auto</v-btn>
-                          <v-btn value="default" size="small" class="text-none">Cordas</v-btn>
-                          <v-btn value="keyboard" size="small" class="text-none">Teclado</v-btn>
-                        </v-btn-toggle>
-
-                        <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">Tom</p>
-                        <div class="d-flex align-center ga-2 mb-4">
-                          <v-btn
-                            variant="tonal"
-                            color="grey-darken-1"
-                            size="small"
-                            class="text-none"
-                            @click="transposeSong(activeDetailSong.id, -1)"
-                          >
-                            -1
-                          </v-btn>
-                          <v-chip size="small" color="orange-darken-3" variant="tonal">
-                            {{ songCurrentKey(activeDetailSong) }}
-                          </v-chip>
-                          <v-btn
-                            variant="tonal"
-                            color="grey-darken-1"
-                            size="small"
-                            class="text-none"
-                            @click="transposeSong(activeDetailSong.id, 1)"
-                          >
-                            +1
-                          </v-btn>
-                        </div>
-                      </template>
-
-                      <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">
-                        Rolagem automática
-                      </p>
-                      <span class="text-caption text-grey-darken-1">{{ songScrollSpeedLabel }}</span>
-                      <v-slider
-                        v-model="songAutoScrollSpeed"
-                        min="0"
-                        max="80"
-                        step="4"
-                        density="compact"
-                        color="purple-darken-3"
-                        hide-details
-                        class="mt-1"
-                      />
-                    </v-card-text>
-                  </v-card>
-                </v-menu>
-              </div>
-
-              <MusicSongTextRenderer
-                class="scale-song-text"
-                :mode="songTabs[activeDetailSong.id] === 'chords' ? 'chords' : 'lyrics'"
-                :text="getSongTabText(activeDetailSong, songTabs[activeDetailSong.id])"
-                :auto-scroll="songAutoScrollSpeed > 0"
-                :scroll-speed="songAutoScrollSpeed"
-              />
             </div>
           </section>
 
@@ -531,122 +459,19 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
-    <UtilsResponsiveOverlay
-      v-model="isSongFullscreenOpen"
-      max-width="920"
-      fullscreen-desktop
-      mobile-class="scale-song-mobile-sheet"
-    >
-      <v-card v-if="fullscreenSong" class="scale-fullscreen-song" elevation="0">
-        <div class="scale-details-handle" />
-        <div class="scale-fullscreen-header">
-          <div class="min-w-0">
-            <h2 class="scale-fullscreen-title mb-0">{{ fullscreenSong.title }}</h2>
-          </div>
-          <v-btn
-            icon
-            variant="text"
-            color="grey-darken-1"
-            aria-label="Fechar tela cheia"
-            @click="closeSongFullscreen"
-          >
-            <v-icon size="24">mdi-close</v-icon>
-          </v-btn>
-        </div>
-
-        <div class="scale-fullscreen-toolbar">
-          <v-tabs v-model="fullscreenSongTab" color="purple-darken-3" density="compact">
-            <v-tab value="lyrics" class="text-none">Letra</v-tab>
-            <v-tab value="chords" class="text-none">Cifra</v-tab>
-          </v-tabs>
-
-          <div class="scale-fullscreen-controls">
-            <v-menu
-              v-model="songFilterFullscreenOpen"
-              :close-on-content-click="false"
-              location="bottom end"
-            >
-              <template #activator="{ props: menuProps }">
-                <v-btn
-                  v-bind="menuProps"
-                  variant="tonal"
-                  color="purple-darken-3"
-                  size="small"
-                  class="text-none"
-                  prepend-icon="mdi-tune"
-                >
-                  Filtro
-                </v-btn>
-              </template>
-              <v-card min-width="272" rounded="lg" elevation="4">
-                <v-card-text class="pa-4">
-                  <template v-if="fullscreenSongTab === 'chords'">
-                    <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">Instrumento</p>
-                    <v-btn-toggle
-                      v-model="songInstrumentMode"
-                      density="compact"
-                      mandatory
-                      class="song-instrument-toggle mb-4"
-                    >
-                      <v-btn value="auto" size="small" class="text-none">Auto</v-btn>
-                      <v-btn value="default" size="small" class="text-none">Cordas</v-btn>
-                      <v-btn value="keyboard" size="small" class="text-none">Teclado</v-btn>
-                    </v-btn-toggle>
-
-                    <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">Tom</p>
-                    <div class="d-flex align-center ga-2 mb-4">
-                      <v-btn
-                        variant="tonal"
-                        color="grey-darken-1"
-                        size="small"
-                        class="text-none"
-                        @click="transposeSong(fullscreenSong.id, -1)"
-                      >
-                        -1
-                      </v-btn>
-                      <v-chip size="small" color="orange-darken-3" variant="tonal">
-                        {{ songCurrentKey(fullscreenSong) }}
-                      </v-chip>
-                      <v-btn
-                        variant="tonal"
-                        color="grey-darken-1"
-                        size="small"
-                        class="text-none"
-                        @click="transposeSong(fullscreenSong.id, 1)"
-                      >
-                        +1
-                      </v-btn>
-                    </div>
-                  </template>
-
-                  <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">
-                    Rolagem automática
-                  </p>
-                  <span class="text-caption text-grey-darken-1">{{ songScrollSpeedLabel }}</span>
-                  <v-slider
-                    v-model="songAutoScrollSpeed"
-                    min="0"
-                    max="80"
-                    step="4"
-                    density="compact"
-                    color="purple-darken-3"
-                    hide-details
-                    class="mt-1"
-                  />
-                </v-card-text>
-              </v-card>
-            </v-menu>
-          </div>
-        </div>
-
-        <MusicSongTextRenderer
-          class="scale-fullscreen-text"
-          :mode="fullscreenSongTab === 'chords' ? 'chords' : 'lyrics'"
-          :text="getSongTabText(fullscreenSong, fullscreenSongTab)"
-          :auto-scroll="songAutoScrollSpeed > 0"
-          :scroll-speed="songAutoScrollSpeed"
-        />
-      </v-card>
+    <UtilsResponsiveOverlay v-model="isSongFullscreenOpen" fullscreen>
+      <MusicSongReader
+        :song="fullscreenSong"
+        :tab="fullscreenSongTab"
+        :position="playlistPositionLabel"
+        :has-prev="playlistIndex > 0"
+        :has-next="playlistIndex < selectedDetailSongs.length - 1"
+        :keyboard-assignment="isKeyboardAssignment(selectedDetailEvent)"
+        @close="closeSongFullscreen"
+        @prev="stepPlaylist(-1)"
+        @next="stepPlaylist(1)"
+        @update:tab="fullscreenSongTab = $event"
+      />
     </UtilsResponsiveOverlay>
 
     <UtilsResponsiveOverlay v-model="isScheduleDialogOpen" max-width="520">
@@ -774,25 +599,92 @@
             :disabled="isCreatingSchedule"
           />
 
-          <v-select
-            v-if="songOptions.length"
-            v-model="scheduleForm.songIds"
-            label="Músicas"
-            :items="songOptions"
-            item-title="label"
-            item-value="value"
-            prepend-inner-icon="mdi-music-note-outline"
-            variant="outlined"
-            density="comfortable"
-            color="purple-darken-3"
-            :bg-color="isDark ? 'transparent' : 'white'"
-            class="scale-input mb-4"
-            hide-details="auto"
-            multiple
-            chips
-            closable-chips
-            :disabled="isCreatingSchedule"
-          />
+          <div class="playlist-builder mb-4">
+            <div class="playlist-builder-header">
+              <p class="text-caption font-weight-bold text-grey-darken-1 mb-0">
+                Playlist da escala
+              </p>
+              <v-btn
+                variant="tonal"
+                :color="accentColor"
+                size="small"
+                class="text-none"
+                :disabled="isCreatingSchedule || !scheduleForm.departmentId"
+                @click="openSongPicker"
+              >
+                <Plus size="16" class="mr-1" /> Adicionar música
+              </v-btn>
+            </div>
+
+            <p
+              v-if="!scheduleForm.departmentId"
+              class="text-caption text-grey-darken-1 mb-0"
+            >
+              Selecione um ministério para montar a playlist.
+            </p>
+            <p
+              v-else-if="!formPlaylistSongs.length"
+              class="text-caption text-grey-darken-1 mb-0"
+            >
+              {{ selectedDepartmentSongs.length ? "Nenhuma música escolhida ainda." : "Este ministério ainda não tem repertório cadastrado." }}
+            </p>
+
+            <div v-else class="playlist-builder-list">
+              <div
+                v-for="(song, songIndex) in formPlaylistSongs"
+                :key="song.id"
+                class="playlist-builder-row"
+              >
+                <span class="playlist-builder-index">{{ songIndex + 1 }}</span>
+                <div class="min-w-0">
+                  <p class="playlist-builder-title mb-0">{{ song.title }}</p>
+                  <p class="playlist-builder-artist mb-0">
+                    {{ song.metadata?.artist || "Artista não informado" }}
+                  </p>
+                </div>
+                <v-chip
+                  size="x-small"
+                  variant="tonal"
+                  :color="song.metadata?.key ? 'orange-darken-3' : undefined"
+                >
+                  {{ song.metadata?.key ? songKeyLabel(song.metadata.key) : "Sem tom" }}
+                </v-chip>
+                <div class="playlist-builder-actions">
+                  <v-btn
+                    icon
+                    size="x-small"
+                    variant="text"
+                    :disabled="songIndex === 0 || isCreatingSchedule"
+                    :aria-label="'Subir ' + song.title"
+                    @click="moveFormSong(songIndex, -1)"
+                  >
+                    <ChevronUp size="16" />
+                  </v-btn>
+                  <v-btn
+                    icon
+                    size="x-small"
+                    variant="text"
+                    :disabled="songIndex === formPlaylistSongs.length - 1 || isCreatingSchedule"
+                    :aria-label="'Descer ' + song.title"
+                    @click="moveFormSong(songIndex, 1)"
+                  >
+                    <ChevronDown size="16" />
+                  </v-btn>
+                  <v-btn
+                    icon
+                    size="x-small"
+                    variant="text"
+                    color="red-darken-2"
+                    :disabled="isCreatingSchedule"
+                    :aria-label="'Remover ' + song.title"
+                    @click="toggleFormSong(song.id)"
+                  >
+                    <v-icon size="16">mdi-close</v-icon>
+                  </v-btn>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <v-select
             v-if="resourceOptions.length"
@@ -928,6 +820,122 @@
             </v-btn>
           </div>
         </v-form>
+      </v-card>
+    </UtilsResponsiveOverlay>
+
+    <UtilsResponsiveOverlay v-model="isSongPickerOpen" max-width="560" scrollable>
+      <v-card class="song-picker" elevation="0">
+        <div class="song-picker-header">
+          <div class="min-w-0">
+            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+              Adicionar música
+            </h2>
+            <p class="text-caption text-grey-darken-1 mb-0">
+              {{ formPlaylistSongs.length }} na playlist · {{ selectedDepartmentSongs.length }} no repertório
+            </p>
+          </div>
+          <v-btn
+            icon
+            variant="text"
+            color="grey-darken-1"
+            size="small"
+            aria-label="Fechar"
+            @click="isSongPickerOpen = false"
+          >
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <v-text-field
+          v-model="songPickerSearch"
+          label="Buscar por título ou artista"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          :bg-color="isDark ? 'transparent' : 'white'"
+          class="scale-input song-picker-search"
+          hide-details
+          clearable
+        />
+
+        <div class="song-picker-list">
+          <p
+            v-if="!songPickerResults.length"
+            class="text-caption text-grey-darken-1 text-center py-6 mb-0"
+          >
+            Nenhuma música encontrada.
+          </p>
+
+          <button
+            v-for="song in songPickerResults"
+            :key="song.id"
+            type="button"
+            class="song-picker-item"
+            :class="{ 'song-picker-item-selected': scheduleForm.songIds.includes(song.id) }"
+            @click="toggleFormSong(song.id)"
+          >
+            <div class="song-picker-check">
+              <v-icon v-if="scheduleForm.songIds.includes(song.id)" size="18">
+                mdi-check
+              </v-icon>
+              <span v-else class="song-picker-check-empty" />
+            </div>
+
+            <div class="min-w-0 text-left">
+              <p class="song-picker-title mb-0">{{ song.title }}</p>
+              <p class="song-picker-artist mb-1">
+                {{ song.metadata?.artist || "Artista não informado" }}
+              </p>
+              <div class="song-picker-chips">
+                <v-chip
+                  size="x-small"
+                  variant="tonal"
+                  :color="song.metadata?.key ? 'orange-darken-3' : undefined"
+                >
+                  {{ song.metadata?.key ? `Tom ${songKeyLabel(song.metadata.key)}` : "Sem tom" }}
+                </v-chip>
+                <v-chip v-if="song.metadata?.bpm" size="x-small" variant="tonal">
+                  {{ song.metadata.bpm }} BPM
+                </v-chip>
+                <v-chip
+                  v-if="song.metadata?.chords"
+                  size="x-small"
+                  variant="tonal"
+                  color="teal-darken-2"
+                >
+                  Cifra
+                </v-chip>
+                <v-chip
+                  v-if="song.metadata?.songCategory"
+                  size="x-small"
+                  variant="tonal"
+                  color="purple-darken-3"
+                >
+                  {{ song.metadata.songCategory }}
+                </v-chip>
+              </div>
+            </div>
+
+            <span
+              v-if="playlistPositionOf(song.id)"
+              class="song-picker-order"
+            >
+              {{ playlistPositionOf(song.id) }}º
+            </span>
+          </button>
+        </div>
+
+        <div class="song-picker-footer">
+          <v-btn
+            color="purple-darken-3"
+            class="text-none font-weight-bold"
+            block
+            @click="isSongPickerOpen = false"
+          >
+            Concluir
+          </v-btn>
+        </div>
       </v-card>
     </UtilsResponsiveOverlay>
 
@@ -1177,14 +1185,16 @@ import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from
 import {
   Calendar,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   GripVertical,
   Clock,
   Eye,
   EyeOff,
   FileText,
-  Maximize2,
   Music,
   Pencil,
+  Play,
   Plus,
   Repeat2,
   Trash2,
@@ -1245,16 +1255,13 @@ const editingScheduleId = ref("");
 const isPrefillingScheduleForm = ref(false);
 const pendingDeleteSchedule = ref<ScheduleEvent | null>(null);
 const selectedDetailEvent = ref<ScheduleEvent | null>(null);
-const activeDetailSongId = ref("");
 const isSongFullscreenOpen = ref(false);
 const fullscreenSong = ref<ScheduleEvent["mediaItems"][number] | null>(null);
-const fullscreenSongTab = ref("lyrics");
-const songAutoScrollSpeed = ref(24);
-const songInstrumentMode = ref<"auto" | "default" | "keyboard">("auto");
-const songTabs = reactive<Record<string, string>>({});
-const songTransposeSteps = reactive<Record<string, number>>({});
-const songFilterOpen = ref(false);
-const songFilterFullscreenOpen = ref(false);
+const fullscreenSongTab = ref<"lyrics" | "chords">("lyrics");
+const playlistMode = ref<"lyrics" | "chords">("lyrics");
+const playlistIndex = ref(0);
+const isSongPickerOpen = ref(false);
+const songPickerSearch = ref("");
 const draggedSongId = ref("");
 const isSavingSongOrder = ref(false);
 let songDragPointerId: number | null = null;
@@ -1389,12 +1396,55 @@ const selectedDepartmentSongs = computed(
   () => songsByDepartment.value[scheduleForm.departmentId] || [],
 );
 
-const songOptions = computed(() =>
-  selectedDepartmentSongs.value.map((song) => ({
-    label: song.metadata?.artist ? `${song.title} - ${song.metadata.artist}` : song.title,
-    value: song.id,
-  })),
+// A playlist e ordenada: songIds guarda a ordem escolhida e o backend grava
+// esse indice em ScheduleMediaItem.order.
+const formPlaylistSongs = computed(() =>
+  scheduleForm.songIds
+    .map((songId) => selectedDepartmentSongs.value.find((song) => song.id === songId))
+    .filter((song): song is DepartmentSong => Boolean(song)),
 );
+
+const songPickerResults = computed(() => {
+  const term = songPickerSearch.value?.trim().toLocaleLowerCase("pt-BR") || "";
+
+  if (!term) return selectedDepartmentSongs.value;
+
+  return selectedDepartmentSongs.value.filter((song) =>
+    `${song.title} ${song.metadata?.artist || ""}`
+      .toLocaleLowerCase("pt-BR")
+      .includes(term),
+  );
+});
+
+const playlistPositionOf = (songId: string) => {
+  const index = scheduleForm.songIds.indexOf(songId);
+  return index < 0 ? 0 : index + 1;
+};
+
+const openSongPicker = () => {
+  songPickerSearch.value = "";
+  isSongPickerOpen.value = true;
+};
+
+const toggleFormSong = (songId: string) => {
+  const index = scheduleForm.songIds.indexOf(songId);
+
+  if (index < 0) {
+    scheduleForm.songIds = [...scheduleForm.songIds, songId];
+    return;
+  }
+
+  scheduleForm.songIds = scheduleForm.songIds.filter((id) => id !== songId);
+};
+
+const moveFormSong = (index: number, direction: -1 | 1) => {
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= scheduleForm.songIds.length) return;
+
+  const reordered = [...scheduleForm.songIds];
+  [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+  scheduleForm.songIds = reordered;
+};
 
 const resourceOptions = computed(() =>
   selectedDepartmentResources.value.map((resource) => ({
@@ -1531,19 +1581,10 @@ const selectedDetailResources = computed(
     ) || [],
 );
 
-const defaultSongTab = (song: ScheduleEvent["mediaItems"][number]) =>
-  song.metadata?.lyrics ? "lyrics" : song.metadata?.chords ? "chords" : "lyrics";
-
-const activeDetailSong = computed(
-  () =>
-    selectedDetailSongs.value.find((song) => song.id === activeDetailSongId.value) ||
-    null,
-);
-
-const songScrollSpeedLabel = computed(() =>
-  songAutoScrollSpeed.value > 0
-    ? `Velocidade ${Math.round(songAutoScrollSpeed.value)}`
-    : "Rolagem pausada",
+const playlistPositionLabel = computed(() =>
+  selectedDetailSongs.value.length > 1
+    ? `Música ${playlistIndex.value + 1} de ${selectedDetailSongs.value.length}`
+    : "",
 );
 
 const canCreateChurchSchedule = computed(
@@ -1656,25 +1697,11 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
 
 const openScheduleDetails = (event: ScheduleEvent) => {
   selectedDetailEvent.value = event;
-  const songs = event.mediaItems.filter((item) => item.category === "MUSIC");
-  activeDetailSongId.value = songs[0]?.id || "";
-  songs.forEach((song) => {
-    if (!["lyrics", "chords"].includes(songTabs[song.id])) {
-      songTabs[song.id] = defaultSongTab(song);
-    }
-  });
+  playlistIndex.value = 0;
 };
 
 const closeScheduleDetails = () => {
   selectedDetailEvent.value = null;
-  activeDetailSongId.value = "";
-};
-
-const selectDetailSong = (song: ScheduleEvent["mediaItems"][number]) => {
-  activeDetailSongId.value = song.id;
-  if (!["lyrics", "chords"].includes(songTabs[song.id])) {
-    songTabs[song.id] = defaultSongTab(song);
-  }
 };
 
 const setEventSongOrder = (
@@ -1833,101 +1860,29 @@ const openDeleteFromDetails = () => {
   handleDeleteSchedule(event);
 };
 
-const getSongTabText = (
-  song: ScheduleEvent["mediaItems"][number],
-  tab = "lyrics",
-) => {
-  if (tab === "chords") {
-    return transposeChords(
-      getSongChordsForCurrentRole(song) || "Cifra não cadastrada.",
-      songTransposeSteps[song.id] || 0,
-    );
-  }
-  if (tab === "notes") {
-    const currentKey = transposeKey(
-      song.metadata?.key || "",
-      songTransposeSteps[song.id] || 0,
-    );
-    const items = [
-      currentKey ? `Tom: ${currentKey}` : "",
-      song.metadata?.bpm ? `BPM: ${song.metadata.bpm}` : "",
-      song.metadata?.notes || "",
-    ].filter(Boolean);
-
-    return items.join("\n") || "Tom não cadastrado.";
-  }
-
-  return song.metadata?.lyrics || "Letra não cadastrada.";
-};
-
 const isKeyboardAssignment = (event: ScheduleEvent | null) =>
   event?.currentUserAssignment?.role
     ?.toLocaleLowerCase("pt-BR")
     .includes("teclado") || false;
 
-const getSongChordsForCurrentRole = (song: ScheduleEvent["mediaItems"][number]) => {
-  const shouldUseKeyboard =
-    songInstrumentMode.value === "keyboard" ||
-    (songInstrumentMode.value === "auto" && isKeyboardAssignment(selectedDetailEvent.value));
+// Sequencia: abre a playlist na ordem definida, no modo escolhido (letra ou
+// cifra), e o leitor navega com Anterior/Proxima sem voltar pro detalhe.
+const openPlaylistSequence = (index: number) => {
+  const song = selectedDetailSongs.value[index];
+  if (!song) return;
 
-  if (shouldUseKeyboard && song.metadata?.keyboardChords) {
-    return song.metadata.keyboardChords;
-  }
-
-  return song.metadata?.chords || "";
-};
-
-const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-const flatToSharp: Record<string, string> = {
-  Db: "C#",
-  Eb: "D#",
-  Gb: "F#",
-  Ab: "G#",
-  Bb: "A#",
-};
-const transposeKey = (key: string, steps: number) => {
-  const match = key.trim().match(/^([A-G](?:#|b)?)(.*)$/);
-  if (!match || !steps) return key;
-
-  const normalized = flatToSharp[match[1]] || match[1];
-  const index = noteNames.indexOf(normalized);
-  if (index === -1) return key;
-
-  return `${noteNames[(index + steps + noteNames.length) % noteNames.length]}${match[2] || ""}`;
-};
-
-const transposeChords = (text: string, steps: number) => {
-  if (!steps) return text;
-
-  return text.replace(
-    /\b([A-G](?:#|b)?)(m|maj|min|dim|aug|sus|add)?([0-9]*)?(\/([A-G](?:#|b)?))?/g,
-    (match, root, quality = "", extension = "", slash = "", bass = "") => {
-      const nextRoot = transposeKey(root, steps);
-      const nextBass = bass ? `/${transposeKey(bass, steps)}` : "";
-      return `${nextRoot}${quality || ""}${extension || ""}${nextBass}`;
-    },
-  );
-};
-
-const transposeSong = (songId: string, steps: number) => {
-  songTransposeSteps[songId] = (songTransposeSteps[songId] || 0) + steps;
-};
-
-const songCurrentKey = (song: ScheduleEvent["mediaItems"][number]) => {
-  const currentKey = transposeKey(
-    song.metadata?.key || "",
-    songTransposeSteps[song.id] || 0,
-  );
-  return currentKey ? `Tom ${currentKey}` : "Tom não cadastrado";
-};
-
-const openSongFullscreen = (song: ScheduleEvent["mediaItems"][number]) => {
-  activeDetailSongId.value = song.id;
+  playlistIndex.value = index;
   fullscreenSong.value = song;
-  fullscreenSongTab.value = ["lyrics", "chords"].includes(songTabs[song.id])
-    ? songTabs[song.id]
-    : defaultSongTab(song);
+  fullscreenSongTab.value = playlistMode.value;
   isSongFullscreenOpen.value = true;
+};
+
+const stepPlaylist = (direction: -1 | 1) => {
+  const nextIndex = playlistIndex.value + direction;
+  if (nextIndex < 0 || nextIndex >= selectedDetailSongs.value.length) return;
+
+  playlistIndex.value = nextIndex;
+  fullscreenSong.value = selectedDetailSongs.value[nextIndex];
 };
 
 const closeSongFullscreen = () => {
@@ -2694,8 +2649,7 @@ watch(schedules, async () => {
   text-transform: uppercase;
 }
 
-.scale-details-title,
-.scale-fullscreen-title {
+.scale-details-title {
   color: #111827;
   font-size: 1.35rem;
   font-weight: 850;
@@ -2915,11 +2869,6 @@ watch(schedules, async () => {
   border-radius: 8px;
 }
 
-.scale-song-card-active {
-  border-color: var(--app-color-accent, #B5472A);
-  background: var(--app-color-accent-tint, #F7E2D3);
-}
-
 .scale-song-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -2948,123 +2897,195 @@ watch(schedules, async () => {
   gap: 8px;
 }
 
-.scale-song-reader {
+.scale-song-index {
   display: grid;
-  gap: 12px;
-  border: 1px solid #f2d3bd;
-  border-radius: 8px;
-  background: var(--app-color-surface);
-  padding: 14px;
-  border-color: var(--app-color-border);
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  margin-left: 10px;
+  border-radius: 999px;
+  background: var(--app-color-accent-tint, #f7e2d3);
+  color: var(--app-color-accent, #b5472a);
+  font-size: 0.78rem;
+  font-weight: 900;
+  flex-shrink: 0;
 }
 
-.scale-song-reader-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: start;
-}
-
-.scale-song-filter-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0 2px;
-}
-
-.scale-song-text {
-  min-height: 220px;
-  max-height: 62vh;
-  font-size: 1.1rem;
-  line-height: 1.88;
-  padding: 18px;
-}
-
-.scale-fullscreen-text {
-  font-size: 1.04rem;
-  line-height: 1.82;
-  min-height: 360px;
-}
-
-.scale-fullscreen-song {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  max-height: 100vh;
-  min-height: 100vh;
-  max-height: 100dvh;
-  min-height: 100dvh;
-  background: #0f0d1a;
-  overflow: hidden;
-  min-width: 0;
-}
-
-.scale-fullscreen-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 16px;
-  align-items: start;
-  padding: 18px 22px;
-  border-bottom: 1px solid #2d2640;
-}
-
-/* .scale-fullscreen-song tem fundo escuro fixo (#0f0d1a) em qualquer tema —
-   modo apresentação pensado pra tela de palco — então o texto aqui precisa
-   ser sempre claro, independente do app estar em light ou dark mode. */
-.scale-fullscreen-header h4,
-.scale-fullscreen-header p {
-  color: #e2e8f0 !important;
-}
-
-.scale-fullscreen-toolbar {
+.scale-playlist-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 22px;
-  border-bottom: 1px solid #f3f4f6;
-  border-color: #2d2640;
-}
-
-.scale-fullscreen-controls {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
   flex-wrap: wrap;
-  gap: 10px 14px;
-  min-width: 0;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
-.scale-fullscreen-text {
-  min-height: 0;
-  height: 100%;
-  max-height: 100%;
-  overflow: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  border: 0;
-  border-radius: 0;
-  font-size: 1.16rem;
-  line-height: 1.92;
-  padding: 24px;
+.playlist-builder {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--app-color-border);
+  border-radius: 12px;
+  padding: 14px;
 }
 
-.scale-song-mobile-sheet :deep(.v-overlay__content) {
-  top: 0 !important;
-  margin: 0 !important;
-  height: 100vh !important;
-  height: 100dvh !important;
-  max-height: 100vh !important;
-  max-height: 100dvh !important;
-  overflow: hidden !important;
+.playlist-builder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.scale-song-mobile-sheet :deep(.v-bottom-sheet__content) {
-  border-radius: 0 !important;
+.playlist-builder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.playlist-builder-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--app-color-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.playlist-builder-index {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--app-color-accent-tint, #f7e2d3);
+  color: var(--app-color-accent, #b5472a);
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.playlist-builder-title {
+  color: var(--app-color-text);
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.playlist-builder-artist {
+  color: var(--app-color-text-soft);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.playlist-builder-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.song-picker {
+  display: flex;
+  flex-direction: column;
+  max-height: min(86vh, 760px);
+  border-radius: 16px;
+  background: var(--app-color-surface);
   overflow: hidden;
-  height: 100vh !important;
-  height: 100dvh !important;
-  min-height: 0 !important;
-  background: #0f0d1a;
+}
+
+.song-picker-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 12px;
+}
+
+.song-picker-search {
+  margin: 0 18px 12px;
+}
+
+.song-picker-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 18px 12px;
+}
+
+.song-picker-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  border: 1px solid var(--app-color-border);
+  border-radius: 12px;
+  background: var(--app-color-surface);
+  padding: 14px;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.song-picker-item:hover {
+  border-color: var(--app-color-accent, #b5472a);
+}
+
+.song-picker-item-selected {
+  border-color: var(--app-color-accent, #b5472a);
+  background: var(--app-color-accent-tint, #f7e2d3);
+}
+
+.song-picker-check {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 2px solid var(--app-color-border-strong, #d1d5db);
+  color: var(--app-color-accent, #b5472a);
+}
+
+.song-picker-item-selected .song-picker-check {
+  border-color: var(--app-color-accent, #b5472a);
+}
+
+.song-picker-check-empty {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.song-picker-title {
+  color: var(--app-color-text);
+  font-size: 0.96rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.song-picker-artist {
+  color: var(--app-color-text-soft);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.song-picker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.song-picker-order {
+  color: var(--app-color-accent, #b5472a);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.song-picker-footer {
+  padding: 12px 18px calc(16px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--app-color-border);
 }
 
 @media (min-width: 560px) {
@@ -3074,22 +3095,6 @@ watch(schedules, async () => {
 }
 
 @media (max-width: 420px) {
-  .scale-song-mobile-sheet .scale-fullscreen-song {
-    max-height: 100vh;
-    min-height: 100vh;
-    max-height: 100dvh;
-    min-height: 100dvh;
-    border-radius: 0 !important;
-  }
-
-  .scale-fullscreen-toolbar {
-    grid-template-columns: 1fr;
-  }
-
-  .scale-fullscreen-controls {
-    justify-content: flex-start;
-  }
-
   .scale-page-header {
     align-items: flex-start;
     flex-direction: column;
@@ -3130,8 +3135,7 @@ watch(schedules, async () => {
     grid-template-columns: 1fr;
   }
 
-  .scale-details-header,
-  .scale-fullscreen-header {
+  .scale-details-header {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
@@ -3149,9 +3153,13 @@ watch(schedules, async () => {
     flex-direction: column;
   }
 
-  .scale-fullscreen-text {
-    font-size: 1rem;
-    padding: 18px;
+  .playlist-builder-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .playlist-builder-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
   }
 }
 </style>

@@ -126,10 +126,23 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
-            class="mb-5"
+            class="mb-2"
             hide-details="auto"
             :disabled="isSaving"
           />
+
+          <v-switch
+            v-model="createForm.isPublic"
+            color="purple-darken-3"
+            density="compact"
+            hide-details
+            class="mb-1"
+            label="Mostrar na página pública da igreja"
+            :disabled="isSaving"
+          />
+          <p class="text-caption text-grey-darken-1 mb-5">
+            Quem abrir o link público da igreja vai ver este devocional.
+          </p>
 
           <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">
             Capítulos
@@ -265,6 +278,7 @@ const createForm = reactive({
   title: "",
   description: "",
   videoUrl: "",
+  isPublic: false,
   chapters: [emptyChapter()],
 });
 
@@ -275,6 +289,7 @@ const openCreateDialog = () => {
   createForm.title = "";
   createForm.description = "";
   createForm.videoUrl = "";
+  createForm.isPublic = false;
   createForm.chapters = [emptyChapter()];
   createError.value = "";
   isCreateDialogOpen.value = true;
@@ -322,6 +337,7 @@ const handleCreate = async () => {
       title,
       description: createForm.description.trim(),
       videoUrl: createForm.videoUrl.trim(),
+      isPublic: createForm.isPublic,
       chapters,
     });
 
