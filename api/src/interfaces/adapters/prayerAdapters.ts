@@ -76,6 +76,15 @@ export class PrayerAdapters {
     );
   }
 
+  private async notifyChurch(crunchId: string, prayer: { title: string; body: string }) {
+    await pushNotificationService.sendPublicChurchContent(crunchId, {
+      title: `Novo pedido de oração: ${prayer.title}`,
+      body: prayer.body,
+      url: "/prayer",
+      type: "prayer_request_approved",
+    });
+  }
+
   async listPrayerRequests(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
     const query = request.query as { page?: string };
@@ -100,7 +109,7 @@ export class PrayerAdapters {
 
   async listPendingPrayerRequests(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    if (!this.isPastor(user)) throw new DomainError("Apenas o pastor pode ver pedidos pendentes");
+    if (!this.isManager(user)) throw new DomainError("Apenas pastor ou admin podem ver pedidos pendentes");
 
     const query = request.query as { page?: string };
     const page = Math.max(Number(query.page) || 1, 1);
@@ -151,7 +160,7 @@ export class PrayerAdapters {
 
   async approvePrayerRequest(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    if (!this.isPastor(user)) throw new DomainError("Apenas o pastor pode aprovar pedidos de oração");
+    if (!this.isManager(user)) throw new DomainError("Apenas pastor ou admin podem aprovar pedidos de oração");
 
     const { id } = request.params as { id: string };
     const { count } = await $prismaClient.prayerRequest.updateMany({
@@ -161,12 +170,18 @@ export class PrayerAdapters {
 
     if (count === 0) throw new DomainError("Pedido já foi revisado");
 
-    return await $prismaClient.prayerRequest.findUnique({ where: { id } });
+    const prayer = await $prismaClient.prayerRequest.findUnique({ where: { id } });
+
+    if (prayer) {
+      await this.notifyChurch(user.crunchId!, { title: prayer.title, body: prayer.body });
+    }
+
+    return prayer;
   }
 
   async rejectPrayerRequest(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    if (!this.isPastor(user)) throw new DomainError("Apenas o pastor pode rejeitar pedidos de oração");
+    if (!this.isManager(user)) throw new DomainError("Apenas pastor ou admin podem rejeitar pedidos de oração");
 
     const { id } = request.params as { id: string };
     const { reason } = request.body as { reason?: string };

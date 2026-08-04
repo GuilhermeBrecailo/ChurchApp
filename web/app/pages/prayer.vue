@@ -8,7 +8,7 @@
     </div>
 
     <v-tabs
-      v-if="isPastor"
+      v-if="isChurchManager"
       v-model="activeTab"
       color="purple-darken-3"
       density="comfortable"
@@ -108,7 +108,7 @@
         </div>
       </v-window-item>
 
-      <v-window-item v-if="isPastor" value="pending">
+      <v-window-item v-if="isChurchManager" value="pending">
         <div v-if="pendingLoading">
           <v-skeleton-loader v-for="i in 3" :key="i" type="list-item-three-line" class="mb-3 rounded-xl" />
         </div>
@@ -314,7 +314,6 @@ const form = reactive({ title: "", body: "", isAnonymous: false });
 const isChurchManager = computed(() =>
   ["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(user.value?.role ?? ""),
 );
-const isPastor = computed(() => user.value?.role === "PASTOR");
 
 function formatDate(val: string) {
   return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(new Date(val));
@@ -330,7 +329,7 @@ async function loadPrayers() {
 }
 
 async function loadPendingPrayers() {
-  if (!isPastor.value) return;
+  if (!isChurchManager.value) return;
   pendingLoading.value = true;
   const { data, error: err } = await getPendingPrayerRequests();
   if (err) error.value = err;

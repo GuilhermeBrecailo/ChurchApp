@@ -2761,9 +2761,26 @@
           </div>
           <div>
             <p class="text-caption text-grey-darken-1 mb-1">Tipo</p>
-            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+            <p
+              v-if="!canAssignSelectedMemberRole"
+              class="text-body-2 font-weight-medium text-grey-darken-4 mb-0"
+            >
               {{ selectedMember.role === "PASTOR" ? "Pastor" : "Membro" }}
             </p>
+            <v-select
+              v-else
+              v-model="selectedMemberForm.role"
+              :items="memberRoleOptions"
+              item-title="label"
+              item-value="value"
+              variant="outlined"
+              density="compact"
+              color="purple-darken-3"
+              bg-color="white"
+              hide-details="auto"
+              class="admin-input"
+              :disabled="isUpdatingMember"
+            />
           </div>
         </div>
 
@@ -3888,7 +3905,13 @@ const selectedMemberForm = reactive({
   name: "",
   email: "",
   phone: "",
+  role: "MEMBER",
 });
+
+const memberRoleOptions = [
+  { label: "Membro", value: "MEMBER" },
+  { label: "Pastor", value: "PASTOR" },
+];
 
 const announcementKindOptions = [
   { label: "Aviso", value: "ANNOUNCEMENT" },
@@ -4387,6 +4410,7 @@ const openMemberDetails = (member: ChurchMember) => {
   selectedMemberForm.name = member.name;
   selectedMemberForm.email = member.email;
   selectedMemberForm.phone = member.phone || "";
+  selectedMemberForm.role = member.role === "PASTOR" ? "PASTOR" : "MEMBER";
   selectedChurchMemberRoleId.value = null;
   permissionError.value = "";
   isMemberDetailsOpen.value = true;
@@ -4399,6 +4423,7 @@ const closeMemberDetails = () => {
   selectedMemberForm.name = "";
   selectedMemberForm.email = "";
   selectedMemberForm.phone = "";
+  selectedMemberForm.role = "MEMBER";
   selectedChurchMemberRoleId.value = null;
 };
 
@@ -4565,6 +4590,7 @@ const handleUpdateMember = async () => {
       name,
       email,
       phone: selectedMemberForm.phone.trim(),
+      ...(canAssignSelectedMemberRole.value ? { role: selectedMemberForm.role } : {}),
     });
 
     if (error || !data) {
@@ -4572,8 +4598,9 @@ const handleUpdateMember = async () => {
       return;
     }
 
-    // Cargos sao gerenciados a parte (chips add/remove), entao preservamos os
-    // cargos atuais do membro ao salvar nome/email/telefone.
+    // Cargos (ChurchRole, ex: lider de ministerio) sao gerenciados a parte
+    // (chips add/remove), entao preservamos os cargos atuais do membro ao
+    // salvar nome/email/telefone/tipo (PASTOR/MEMBER).
     const nextMember: ChurchMember = {
       ...data,
       roles: selectedMember.value.roles ?? data.roles ?? [],

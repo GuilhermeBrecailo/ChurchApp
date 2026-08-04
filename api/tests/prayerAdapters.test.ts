@@ -17,10 +17,12 @@ jest.mock("../config/database", () => ({
 }));
 
 const mockSendToUsers = jest.fn();
+const mockSendPublicChurchContent = jest.fn();
 
 jest.mock("../src/infrastructure/notifications/PushNotificationService", () => ({
   pushNotificationService: {
     sendToUsers: (...args: unknown[]) => mockSendToUsers(...args),
+    sendPublicChurchContent: (...args: unknown[]) => mockSendPublicChurchContent(...args),
   },
 }));
 
@@ -66,6 +68,13 @@ const memberContext: ChurchContext = {
 const pastorContext: ChurchContext = {
   activeChurchId: "church-1",
   role: "PASTOR",
+  canManageMembers: true,
+  roles: [],
+};
+
+const adminContext: ChurchContext = {
+  activeChurchId: "church-1",
+  role: "ADMIN",
   canManageMembers: true,
   roles: [],
 };
@@ -154,7 +163,7 @@ describe("PrayerAdapters", () => {
   });
 
   describe("listPendingPrayerRequests", () => {
-    it("bloqueia quem nao e pastor", async () => {
+    it("bloqueia quem nao e pastor nem admin", async () => {
       const request = makeRequest({ churchContext: memberContext });
       await expect(adapters.listPendingPrayerRequests(request)).rejects.toThrow(DomainError);
     });
@@ -170,17 +179,34 @@ describe("PrayerAdapters", () => {
         expect.objectContaining({ where: { crunchId: "church-1", status: "PENDING" } }),
       );
     });
+
+    it("retorna pedidos pendentes para o admin", async () => {
+      mockPrismaClient.prayerRequest.findMany.mockResolvedValue([]);
+      mockPrismaClient.prayerRequest.count.mockResolvedValue(0);
+
+      const request = makeRequest({ churchContext: adminContext });
+      await adapters.listPendingPrayerRequests(request);
+
+      expect(mockPrismaClient.prayerRequest.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { crunchId: "church-1", status: "PENDING" } }),
+      );
+    });
   });
 
   describe("approvePrayerRequest", () => {
-    it("bloqueia quem nao e pastor", async () => {
+    it("bloqueia quem nao e pastor nem admin", async () => {
       const request = makeRequest({ churchContext: memberContext, params: { id: "prayer-1" } });
       await expect(adapters.approvePrayerRequest(request)).rejects.toThrow(DomainError);
     });
 
-    it("aprova um pedido pendente", async () => {
+    it("aprova um pedido pendente e notifica toda a congregacao", async () => {
       mockPrismaClient.prayerRequest.updateMany.mockResolvedValue({ count: 1 });
-      mockPrismaClient.prayerRequest.findUnique.mockResolvedValue({ id: "prayer-1", status: "APPROVED" });
+      mockPrismaClient.prayerRequest.findUnique.mockResolvedValue({
+        id: "prayer-1",
+        title: "Cura",
+        body: "Por favor orem",
+        status: "APPROVED",
+      });
 
       const request = makeRequest({ churchContext: pastorContext, params: { id: "prayer-1" } });
       const result = await adapters.approvePrayerRequest(request);
@@ -189,7 +215,26 @@ describe("PrayerAdapters", () => {
         where: { id: "prayer-1", crunchId: "church-1", status: "PENDING" },
         data: expect.objectContaining({ status: "APPROVED", reviewedBy: "user-1" }),
       });
-      expect(result).toEqual({ id: "prayer-1", status: "APPROVED" });
+      expect(result).toEqual({ id: "prayer-1", title: "Cura", body: "Por favor orem", status: "APPROVED" });
+      expect(mockSendPublicChurchContent).toHaveBeenCalledWith(
+        "church-1",
+        expect.objectContaining({ type: "prayer_request_approved", url: "/prayer" }),
+      );
+    });
+
+    it("admin tambem pode aprovar um pedido pendente", async () => {
+      mockPrismaClient.prayerRequest.updateMany.mockResolvedValue({ count: 1 });
+      mockPrismaClient.prayerRequest.findUnique.mockResolvedValue({
+        id: "prayer-1",
+        title: "Cura",
+        body: "Por favor orem",
+        status: "APPROVED",
+      });
+
+      const request = makeRequest({ churchContext: adminContext, params: { id: "prayer-1" } });
+      await adapters.approvePrayerRequest(request);
+
+      expect(mockSendPublicChurchContent).toHaveBeenCalled();
     });
 
     it("rejeita reaprovar um pedido ja revisado", async () => {
@@ -197,11 +242,17 @@ describe("PrayerAdapters", () => {
 
       const request = makeRequest({ churchContext: pastorContext, params: { id: "prayer-1" } });
       await expect(adapters.approvePrayerRequest(request)).rejects.toThrow(DomainError);
+      expect(mockSendPublicChurchContent).not.toHaveBeenCalled();
     });
   });
 
   describe("rejectPrayerRequest", () => {
-    it("rejeita um pedido pendente com motivo", async () => {
+    it("bloqueia quem nao e pastor nem admin", async () => {
+      const request = makeRequest({ churchContext: memberContext, params: { id: "prayer-1" } });
+      await expect(adapters.rejectPrayerRequest(request)).rejects.toThrow(DomainError);
+    });
+
+    it("rejeita um pedido pendente com motivo e nao notifica ninguem", async () => {
       mockPrismaClient.prayerRequest.updateMany.mockResolvedValue({ count: 1 });
       mockPrismaClient.prayerRequest.findUnique.mockResolvedValue({ id: "prayer-1", status: "REJECTED" });
 
@@ -216,6 +267,8 @@ describe("PrayerAdapters", () => {
         where: { id: "prayer-1", crunchId: "church-1", status: "PENDING" },
         data: expect.objectContaining({ status: "REJECTED", rejectionReason: "Conteudo inadequado" }),
       });
+      expect(mockSendPublicChurchContent).not.toHaveBeenCalled();
+      expect(mockSendToUsers).not.toHaveBeenCalled();
     });
 
     it("aceita rejeicao sem motivo", async () => {
@@ -227,6 +280,18 @@ describe("PrayerAdapters", () => {
 
       expect(mockPrismaClient.prayerRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ rejectionReason: null }) }),
+      );
+    });
+
+    it("admin tambem pode rejeitar um pedido pendente", async () => {
+      mockPrismaClient.prayerRequest.updateMany.mockResolvedValue({ count: 1 });
+      mockPrismaClient.prayerRequest.findUnique.mockResolvedValue({ id: "prayer-1", status: "REJECTED" });
+
+      const request = makeRequest({ churchContext: adminContext, params: { id: "prayer-1" } });
+      await adapters.rejectPrayerRequest(request);
+
+      expect(mockPrismaClient.prayerRequest.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "prayer-1", crunchId: "church-1", status: "PENDING" } }),
       );
     });
 
