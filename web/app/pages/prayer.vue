@@ -7,7 +7,24 @@
       <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-0">Pedidos de Oração</h1>
     </div>
 
+    <v-tabs
+      v-if="isPastor"
+      v-model="activeTab"
+      color="purple-darken-3"
+      density="comfortable"
+      class="mb-4"
+    >
+      <v-tab value="community" class="text-none">Comunidade</v-tab>
+      <v-tab value="pending" class="text-none">
+        Pendentes
+        <v-chip v-if="pendingItems.length" size="x-small" color="error" variant="flat" class="ml-2">
+          {{ pendingItems.length }}
+        </v-chip>
+      </v-tab>
+    </v-tabs>
+
     <v-btn
+      v-if="activeTab === 'community'"
       color="purple-darken-3"
       class="text-none font-weight-bold rounded-lg mb-5"
       block
@@ -21,72 +38,165 @@
       {{ error }}
     </v-alert>
 
-    <div v-if="loading">
-      <v-skeleton-loader v-for="i in 4" :key="i" type="list-item-three-line" class="mb-3 rounded-xl" />
-    </div>
-
-    <div v-else-if="items.length === 0" class="prayer-empty-state">
-      <div class="prayer-empty-icon-wrap">
-        <Heart size="36" :color="isDark ? '#f0975a' : '#B5472A'" />
-      </div>
-      <h3 class="prayer-empty-title">Nenhum pedido ainda</h3>
-      <p class="prayer-empty-body">Seja o primeiro a compartilhar um pedido de oração com a comunidade.</p>
-      <v-btn
-        color="purple-darken-3"
-        variant="tonal"
-        class="text-none mt-2"
-        @click="showNewDialog = true"
-      >
-        Criar pedido
-      </v-btn>
-    </div>
-
-    <div v-else class="prayer-list">
-      <v-card
-        v-for="item in items"
-        :key="item.id"
-        class="prayer-card rounded-xl pa-4 elevation-1 mb-3"
-        :class="{ 'prayer-card--answered': item.isAnswered }"
-      >
-        <div class="d-flex align-start gap-3">
-          <v-avatar size="38" :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" class="flex-shrink-0 mt-1">
-            <Heart size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
-          </v-avatar>
-          <div class="flex-1 min-w-0">
-            <div class="d-flex align-center gap-2 mb-1 flex-wrap">
-              <span class="prayer-title">{{ item.title }}</span>
-              <v-chip
-                v-if="item.isAnswered"
-                size="x-small"
-                color="success"
-                variant="flat"
-                class="text-none font-weight-bold"
-              >
-                Respondido
-              </v-chip>
-            </div>
-            <p class="prayer-body mb-2">{{ item.body }}</p>
-            <div class="d-flex align-center justify-space-between gap-2">
-              <span class="prayer-author">
-                <User size="12" class="prayer-author-icon" />
-                {{ item.authorName }} · {{ formatDate(item.createdAt) }}
-              </span>
-              <v-btn
-                v-if="isChurchManager && !item.isAnswered"
-                size="x-small"
-                variant="tonal"
-                color="success"
-                class="text-none"
-                :loading="answeringId === item.id"
-                @click="markAnswered(item)"
-              >
-                <CheckCircle size="12" class="mr-1" /> Respondido
-              </v-btn>
-            </div>
-          </div>
+    <v-window v-model="activeTab">
+      <v-window-item value="community">
+        <div v-if="loading">
+          <v-skeleton-loader v-for="i in 4" :key="i" type="list-item-three-line" class="mb-3 rounded-xl" />
         </div>
-      </v-card>
-    </div>
+
+        <div v-else-if="items.length === 0" class="prayer-empty-state">
+          <div class="prayer-empty-icon-wrap">
+            <Heart size="36" :color="isDark ? '#f0975a' : '#B5472A'" />
+          </div>
+          <h3 class="prayer-empty-title">Nenhum pedido ainda</h3>
+          <p class="prayer-empty-body">Seja o primeiro a compartilhar um pedido de oração com a comunidade. Pedidos passam pela revisão do pastor antes de aparecer aqui.</p>
+          <v-btn
+            color="purple-darken-3"
+            variant="tonal"
+            class="text-none mt-2"
+            @click="showNewDialog = true"
+          >
+            Criar pedido
+          </v-btn>
+        </div>
+
+        <div v-else class="prayer-list">
+          <v-card
+            v-for="item in items"
+            :key="item.id"
+            class="prayer-card rounded-xl pa-4 elevation-1 mb-3"
+            :class="{ 'prayer-card--answered': item.isAnswered }"
+          >
+            <div class="d-flex align-start gap-3">
+              <v-avatar size="38" :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" class="flex-shrink-0 mt-1">
+                <Heart size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
+              </v-avatar>
+              <div class="flex-1 min-w-0">
+                <div class="d-flex align-center gap-2 mb-1 flex-wrap">
+                  <span class="prayer-title">{{ item.title }}</span>
+                  <v-chip
+                    v-if="item.isAnswered"
+                    size="x-small"
+                    color="success"
+                    variant="flat"
+                    class="text-none font-weight-bold"
+                  >
+                    Respondido
+                  </v-chip>
+                </div>
+                <p class="prayer-body mb-2">{{ item.body }}</p>
+                <div class="d-flex align-center justify-space-between gap-2">
+                  <span class="prayer-author">
+                    <User size="12" class="prayer-author-icon" />
+                    {{ item.authorName }} · {{ formatDate(item.createdAt) }}
+                  </span>
+                  <v-btn
+                    v-if="isChurchManager && !item.isAnswered"
+                    size="x-small"
+                    variant="tonal"
+                    color="success"
+                    class="text-none"
+                    :loading="answeringId === item.id"
+                    @click="markAnswered(item)"
+                  >
+                    <CheckCircle size="12" class="mr-1" /> Respondido
+                  </v-btn>
+                </div>
+              </div>
+            </div>
+          </v-card>
+        </div>
+      </v-window-item>
+
+      <v-window-item v-if="isPastor" value="pending">
+        <div v-if="pendingLoading">
+          <v-skeleton-loader v-for="i in 3" :key="i" type="list-item-three-line" class="mb-3 rounded-xl" />
+        </div>
+
+        <div v-else-if="pendingItems.length === 0" class="prayer-empty-state">
+          <div class="prayer-empty-icon-wrap">
+            <CheckCircle size="36" :color="isDark ? '#f0975a' : '#B5472A'" />
+          </div>
+          <h3 class="prayer-empty-title">Nenhum pedido pendente</h3>
+          <p class="prayer-empty-body">Novos pedidos de oração aparecem aqui para sua aprovação.</p>
+        </div>
+
+        <div v-else class="prayer-list">
+          <v-card
+            v-for="item in pendingItems"
+            :key="item.id"
+            class="prayer-card rounded-xl pa-4 elevation-1 mb-3"
+          >
+            <div class="d-flex align-start gap-3">
+              <v-avatar size="38" :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" class="flex-shrink-0 mt-1">
+                <Heart size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
+              </v-avatar>
+              <div class="flex-1 min-w-0">
+                <span class="prayer-title d-block mb-1">{{ item.title }}</span>
+                <p class="prayer-body mb-2">{{ item.body }}</p>
+                <span class="prayer-author d-block mb-3">
+                  <User size="12" class="prayer-author-icon" />
+                  {{ item.authorName }} · {{ formatDate(item.createdAt) }}
+                </span>
+
+                <div class="d-flex gap-2 flex-wrap">
+                  <v-btn
+                    color="success"
+                    variant="flat"
+                    size="small"
+                    class="text-none font-weight-bold"
+                    :loading="reviewingId === item.id && reviewingAction === 'approve'"
+                    :disabled="!!reviewingId"
+                    @click="approveItem(item)"
+                  >
+                    <CheckCircle size="14" class="mr-1" /> Aprovar
+                  </v-btn>
+                  <v-btn
+                    color="error"
+                    variant="text"
+                    size="small"
+                    class="text-none"
+                    :disabled="!!reviewingId"
+                    @click="toggleRejectInput(item.id)"
+                  >
+                    <X size="14" class="mr-1" /> Rejeitar
+                  </v-btn>
+                </div>
+
+                <div v-if="rejectingId === item.id" class="mt-3">
+                  <v-textarea
+                    v-model="rejectReason"
+                    label="Motivo (opcional)"
+                    variant="outlined"
+                    density="compact"
+                    color="error"
+                    rows="2"
+                    auto-grow
+                    hide-details
+                    class="mb-2"
+                  />
+                  <div class="d-flex gap-2">
+                    <v-btn
+                      color="error"
+                      size="small"
+                      variant="flat"
+                      class="text-none"
+                      :loading="reviewingId === item.id && reviewingAction === 'reject'"
+                      @click="rejectItem(item)"
+                    >
+                      Confirmar rejeição
+                    </v-btn>
+                    <v-btn size="small" variant="text" color="grey-darken-1" class="text-none" @click="rejectingId = null">
+                      Cancelar
+                    </v-btn>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </v-card>
+        </div>
+      </v-window-item>
+    </v-window>
 
     <!-- New prayer dialog -->
     <v-dialog v-model="showNewDialog" max-width="480" :fullscreen="$vuetify.display.xs">
@@ -134,8 +244,12 @@
           label="Publicar como anônimo"
           color="purple-darken-3"
           hide-details
-          class="mb-4"
+          class="mb-2"
         />
+
+        <p class="text-caption text-grey-darken-1 mb-4">
+          Seu pedido passa pela revisão do pastor antes de ficar visível para a comunidade.
+        </p>
 
         <v-alert v-if="formError" type="error" variant="tonal" density="compact" class="mb-4">
           {{ formError }}
@@ -151,7 +265,7 @@
             :loading="saving"
             @click="submitPrayer"
           >
-            Publicar pedido
+            Enviar para revisão
           </v-btn>
         </div>
       </v-card>
@@ -161,30 +275,46 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { ChevronLeft, Heart, Plus, User, CheckCircle, X } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { usePrayerRequests } from "../../composables/usePrayerRequests";
 import type { PrayerRequest } from "../../composables/usePrayerRequests";
 
 const router = useRouter();
+const route = useRoute();
 const { user } = useAuth();
 const { isDark } = useThemeMode();
-const { getPrayerRequests, createPrayerRequest, markAsAnswered } = usePrayerRequests();
+const {
+  getPrayerRequests,
+  getPendingPrayerRequests,
+  createPrayerRequest,
+  markAsAnswered,
+  approvePrayerRequest,
+  rejectPrayerRequest,
+} = usePrayerRequests();
 
 const items = ref<PrayerRequest[]>([]);
+const pendingItems = ref<PrayerRequest[]>([]);
 const loading = ref(false);
+const pendingLoading = ref(false);
 const error = ref("");
 const showNewDialog = ref(false);
 const saving = ref(false);
 const formError = ref("");
 const answeringId = ref<string | null>(null);
+const reviewingId = ref<string | null>(null);
+const reviewingAction = ref<"approve" | "reject" | null>(null);
+const rejectingId = ref<string | null>(null);
+const rejectReason = ref("");
+const activeTab = ref(route.query.tab === "pending" ? "pending" : "community");
 
 const form = reactive({ title: "", body: "", isAnonymous: false });
 
 const isChurchManager = computed(() =>
   ["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(user.value?.role ?? ""),
 );
+const isPastor = computed(() => user.value?.role === "PASTOR");
 
 function formatDate(val: string) {
   return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(new Date(val));
@@ -199,17 +329,25 @@ async function loadPrayers() {
   loading.value = false;
 }
 
+async function loadPendingPrayers() {
+  if (!isPastor.value) return;
+  pendingLoading.value = true;
+  const { data, error: err } = await getPendingPrayerRequests();
+  if (err) error.value = err;
+  else pendingItems.value = data?.items ?? [];
+  pendingLoading.value = false;
+}
+
 async function submitPrayer() {
   formError.value = "";
   if (!form.title.trim()) { formError.value = "Informe um título."; return; }
   if (!form.body.trim()) { formError.value = "Descreva seu pedido."; return; }
 
   saving.value = true;
-  const { data, error: err } = await createPrayerRequest({ ...form });
+  const { error: err } = await createPrayerRequest({ ...form });
   saving.value = false;
 
   if (err) { formError.value = err; return; }
-  if (data) items.value.unshift(data as any);
 
   showNewDialog.value = false;
   form.title = "";
@@ -227,7 +365,43 @@ async function markAnswered(item: PrayerRequest) {
   answeringId.value = null;
 }
 
-onMounted(loadPrayers);
+function toggleRejectInput(id: string) {
+  rejectingId.value = rejectingId.value === id ? null : id;
+  rejectReason.value = "";
+}
+
+async function approveItem(item: PrayerRequest) {
+  reviewingId.value = item.id;
+  reviewingAction.value = "approve";
+  const { error: err } = await approvePrayerRequest(item.id);
+  if (!err) {
+    pendingItems.value = pendingItems.value.filter((i) => i.id !== item.id);
+  } else {
+    error.value = err;
+  }
+  reviewingId.value = null;
+  reviewingAction.value = null;
+}
+
+async function rejectItem(item: PrayerRequest) {
+  reviewingId.value = item.id;
+  reviewingAction.value = "reject";
+  const { error: err } = await rejectPrayerRequest(item.id, rejectReason.value || undefined);
+  if (!err) {
+    pendingItems.value = pendingItems.value.filter((i) => i.id !== item.id);
+    rejectingId.value = null;
+    rejectReason.value = "";
+  } else {
+    error.value = err;
+  }
+  reviewingId.value = null;
+  reviewingAction.value = null;
+}
+
+onMounted(() => {
+  loadPrayers();
+  loadPendingPrayers();
+});
 </script>
 
 <style scoped>

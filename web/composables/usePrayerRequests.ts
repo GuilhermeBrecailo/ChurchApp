@@ -9,6 +9,8 @@ export interface PrayerRequest {
   body: string;
   isAnonymous: boolean;
   isAnswered: boolean;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string | null;
   createdAt: string;
   authorName: string;
 }
@@ -39,6 +41,13 @@ export function usePrayerRequests() {
     );
   };
 
+  const getPendingPrayerRequests = async (page = 1): Promise<ApiResponse<PrayerRequestsPage>> => {
+    return await $customFetch<PrayerRequestsPage>(
+      `${config.public.URL_BACKEND}/api/church/prayer-requests/pending?page=${page}`,
+      { method: "GET", headers: authHeaders() },
+    );
+  };
+
   const createPrayerRequest = async (data: {
     title: string;
     body: string;
@@ -57,5 +66,26 @@ export function usePrayerRequests() {
     );
   };
 
-  return { getPrayerRequests, createPrayerRequest, markAsAnswered };
+  const approvePrayerRequest = async (id: string): Promise<ApiResponse<PrayerRequest>> => {
+    return await $customFetch<PrayerRequest>(
+      `${config.public.URL_BACKEND}/api/church/prayer-requests/${id}/approve`,
+      { method: "PATCH", headers: authHeaders() },
+    );
+  };
+
+  const rejectPrayerRequest = async (id: string, reason?: string): Promise<ApiResponse<PrayerRequest>> => {
+    return await $customFetch<PrayerRequest>(
+      `${config.public.URL_BACKEND}/api/church/prayer-requests/${id}/reject`,
+      { method: "PATCH", headers: authHeaders(), body: { reason } },
+    );
+  };
+
+  return {
+    getPrayerRequests,
+    getPendingPrayerRequests,
+    createPrayerRequest,
+    markAsAnswered,
+    approvePrayerRequest,
+    rejectPrayerRequest,
+  };
 }
