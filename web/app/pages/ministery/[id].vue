@@ -721,7 +721,7 @@
       <section v-if="activeTab === 'songs'">
         <div class="ministery-section-actions mb-4">
           <v-btn
-            v-if="canManageDepartment"
+            v-if="canManageSongs"
             color="purple-darken-3"
             class="rounded-lg text-none"
             @click="isSongDialogOpen = true"
@@ -739,7 +739,7 @@
             Nenhuma música no repertório
           </p>
           <v-btn
-            v-if="canManageDepartment"
+            v-if="canManageSongs"
             color="purple-darken-3"
             variant="tonal"
             class="rounded-lg text-none mt-4"
@@ -860,7 +860,7 @@
               class="mt-3"
             />
 
-            <div v-if="canManageDepartment" class="ministery-card-actions mt-3">
+            <div v-if="canManageSongs" class="ministery-card-actions mt-3">
               <v-btn
                 icon
                 variant="text"

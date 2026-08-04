@@ -16,6 +16,8 @@ import { assertChurchSlugAvailable, ensureUniqueChurchSlug } from "../utils/chur
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { isValidFontKey } from "../../domain/appearance";
+import { hasPermission } from "../../application/Services/Auth/AuthorizationService";
+import { PermissionKey } from "../../domain/permissions";
 
 const userRepository = new UserRepository();
 const createUserUseCase = new CreateUserUseCase(userRepository);
@@ -861,7 +863,14 @@ export class UserAdapters {
     return updatedChurch;
   }
 
-  private async getChurchMemberManager(request: FastifyRequest) {
+  // Cargo de igreja com MEMBER_CREATE/MEMBER_EDIT/MEMBER_DELETE tambem da
+  // acesso, alem do flag legado canManageMembers e de pastor/admin/super
+  // (estes ja cobertos por hasPermission via isPrivilegedRole). Sem uma acao
+  // especifica, basta ter qualquer uma das tres (ex: listar membros).
+  private async getChurchMemberManager(
+    request: FastifyRequest,
+    permission?: PermissionKey,
+  ) {
     const userId = getAuthUserId(request);
     const context =
       request.churchContext ?? (await resolveActiveChurchContext(request, userId));
@@ -882,13 +891,14 @@ export class UserAdapters {
       throw new DomainError("Usuário não possui igreja vinculada");
     }
 
-    const isPlatformAdmin =
-      context.role === "ADMIN" || context.role === "SUPER_ADMIN";
-    if (
-      !isPlatformAdmin &&
-      context.role !== "PASTOR" &&
-      !context.canManageMembers
-    ) {
+    const permissionsToCheck: PermissionKey[] = permission
+      ? [permission]
+      : ["MEMBER_CREATE", "MEMBER_EDIT", "MEMBER_DELETE"];
+    const canManage =
+      context.canManageMembers ||
+      permissionsToCheck.some((key) => hasPermission(context, key));
+
+    if (!canManage) {
       throw new DomainError("Usuário não possui permissão para gerenciar membros");
     }
 
@@ -981,7 +991,7 @@ export class UserAdapters {
   }
 
   async createChurchMember(request: FastifyRequest) {
-    const manager = await this.getChurchMemberManager(request);
+    const manager = await this.getChurchMemberManager(request, "MEMBER_CREATE");
     const body = request.body as {
       name?: string;
       email?: string;
@@ -1143,7 +1153,7 @@ export class UserAdapters {
   }
 
   async updateChurchMember(request: FastifyRequest) {
-    const manager = await this.getChurchMemberManager(request);
+    const manager = await this.getChurchMemberManager(request, "MEMBER_EDIT");
     const { id } = request.params as { id?: string };
     const body = request.body as {
       name?: string;
@@ -1267,7 +1277,7 @@ export class UserAdapters {
   }
 
   async deleteChurchMember(request: FastifyRequest) {
-    const manager = await this.getChurchMemberManager(request);
+    const manager = await this.getChurchMemberManager(request, "MEMBER_DELETE");
     const { id } = request.params as { id?: string };
 
     if (!id) {

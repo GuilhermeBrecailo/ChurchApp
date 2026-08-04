@@ -3231,6 +3231,7 @@ import {
   type ChurchRole,
 } from "../../../composables/useChurchRoles";
 import {
+  usePermissions,
   PERMISSION_MODULES,
   modulesForScope,
   ROLE_PRESETS,
@@ -3450,7 +3451,10 @@ const isChurchWideManager = computed(
 const canManageMembersByRole = computed(
   () =>
     isChurchWideManager.value ||
-    user.value?.canManageMembers === true,
+    user.value?.canManageMembers === true ||
+    can("MEMBER_CREATE") ||
+    can("MEMBER_EDIT") ||
+    can("MEMBER_DELETE"),
 );
 const canAccessChurchAdmin = computed(
   () =>
@@ -5025,6 +5029,7 @@ const removeDevotional = async (id: string) => {
 };
 
 // ── Cargos (RBAC) ──────────────────────────────────────────────
+const { can } = usePermissions();
 const { getRoles, createRole, updateRole, deleteRole, addMemberRole, removeMemberRole } =
   useChurchRoles();
 
