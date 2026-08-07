@@ -74,7 +74,7 @@ const isOpen = ref(false);
   flex: 0 0 auto;
   width: 30px !important;
   height: 30px !important;
-  transform: translateY(2px);
+  transform: translateY(4px);
 }
 
 .page-help-modal {
