@@ -3,18 +3,20 @@
     <div class="platform-hero mb-6">
       <div class="min-w-0">
         <p class="platform-kicker mb-2">Admin master</p>
-        <h1 class="app-page-title platform-title text-grey-darken-4 mb-2">
-          Visão geral da plataforma
-        </h1>
+        <div class="app-help-title-row">
+          <h1 class="app-page-title platform-title text-grey-darken-4 mb-2">
+            Visão geral da plataforma
+          </h1>
+          <div class="platform-hero-actions">
+            <UtilsPageHelpButton title="Admin master" :items="platformAdminHelpItems" />
+            <div class="platform-hero-mark">
+              <Church size="26" :color="accentColor" />
+            </div>
+          </div>
+        </div>
         <p class="platform-subtitle text-body-2 text-grey-darken-1 mb-0">
           Acompanhe igrejas, lideranças, usuários e ministérios em um só lugar.
         </p>
-      </div>
-      <div class="platform-hero-actions">
-        <UtilsPageHelpButton title="Admin master" :items="platformAdminHelpItems" />
-        <div class="platform-hero-mark">
-          <Church size="26" :color="accentColor" />
-        </div>
       </div>
     </div>
 
@@ -971,14 +973,16 @@
     <div class="church-admin-hero mb-6">
       <div class="min-w-0">
         <p v-if="isPlatformAdmin" class="platform-kicker mb-2">Admin pastoral</p>
-        <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">
-          Administração da igreja
-        </h1>
+        <div class="app-help-title-row">
+          <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">
+            Administração da igreja
+          </h1>
+          <UtilsPageHelpButton title="Administração da igreja" :items="churchAdminHelpItems" />
+        </div>
         <p class="text-body-2 text-grey-darken-1 mb-0">
           Gerencie membros, cargos, ministérios e dados operacionais da sua igreja
         </p>
       </div>
-      <UtilsPageHelpButton title="Administração da igreja" :items="churchAdminHelpItems" />
     </div>
 
     <div class="admin-tabs-bar mb-6">

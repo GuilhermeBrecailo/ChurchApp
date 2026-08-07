@@ -2,22 +2,24 @@
   <div class="pa-4 page-wrapper min-vh-100">
     <div class="scale-page-header mb-5">
       <div class="min-w-0">
-        <h1 class="text-h5 font-weight-bold text-grey-darken-4">Escalas</h1>
+        <div class="app-help-title-row">
+          <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">Escalas</h1>
+          <div class="scale-header-actions">
+            <UtilsPageHelpButton title="Escalas" :items="scaleHelpItems" />
+            <v-btn
+              v-if="canCreateChurchSchedule"
+              :color="accentColor"
+              class="rounded-lg text-none px-4"
+              elevation="2"
+              @click="openNewScheduleDialog"
+            >
+              <Plus size="18" class="mr-1" /> Novo
+            </v-btn>
+          </div>
+        </div>
         <p class="text-body-2 text-grey-darken-1 mb-0">
           Confira os próximos cultos e eventos
         </p>
-      </div>
-      <div class="scale-header-actions">
-        <UtilsPageHelpButton title="Escalas" :items="scaleHelpItems" />
-        <v-btn
-          v-if="canCreateChurchSchedule"
-          :color="accentColor"
-          class="rounded-lg text-none px-4"
-          elevation="2"
-          @click="openNewScheduleDialog"
-        >
-          <Plus size="18" class="mr-1" /> Novo
-        </v-btn>
       </div>
     </div>
 

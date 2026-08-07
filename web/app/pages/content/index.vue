@@ -3,12 +3,14 @@
     <div class="content-page-header mb-5">
       <div class="app-help-header">
         <div class="min-w-0">
-          <h1 class="app-page-title text-h5 mb-1">Conteúdo</h1>
+          <div class="app-help-title-row">
+            <h1 class="app-page-title text-h5 mb-1">Conteúdo</h1>
+            <UtilsPageHelpButton title="Conteúdo" :items="contentHelpItems" />
+          </div>
           <p class="text-body-2 text-grey mb-0">
             Bíblia, devocionais, versículo do dia e playlist
           </p>
         </div>
-        <UtilsPageHelpButton title="Conteúdo" :items="contentHelpItems" />
       </div>
     </div>
 

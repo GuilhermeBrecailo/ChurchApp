@@ -3,12 +3,14 @@
     <template v-if="hasChurch">
       <div class="app-help-header mb-5">
         <div class="min-w-0">
-          <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">Início</h1>
+          <div class="app-help-title-row">
+            <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">Início</h1>
+            <UtilsPageHelpButton title="Início" :items="homeHelpItems" />
+          </div>
           <p class="text-body-2 text-grey-darken-1 mb-0">
             Resumo da sua igreja, escalas e conteúdos recentes
           </p>
         </div>
-        <UtilsPageHelpButton title="Início" :items="homeHelpItems" />
       </div>
 
       <v-skeleton-loader

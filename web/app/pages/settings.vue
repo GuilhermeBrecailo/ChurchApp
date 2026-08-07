@@ -2,14 +2,16 @@
   <div class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
     <div class="app-help-header mb-6">
       <div class="min-w-0">
-        <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
-          Configurações
-        </h1>
+        <div class="app-help-title-row">
+          <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
+            Configurações
+          </h1>
+          <UtilsPageHelpButton title="Configurações" :items="settingsHelpItems" />
+        </div>
         <p class="text-body-2 text-grey-darken-1 mb-0">
           Dados cadastrais da sua igreja
         </p>
       </div>
-      <UtilsPageHelpButton title="Configurações" :items="settingsHelpItems" />
     </div>
 
     <v-alert

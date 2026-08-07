@@ -1,23 +1,25 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper">
     <div class="notif-header mb-5">
-      <div>
-        <h1 class="text-h5 font-weight-bold mb-0">Notificações</h1>
+      <div class="min-w-0">
+        <div class="app-help-title-row">
+          <h1 class="text-h5 font-weight-bold mb-1">Notificações</h1>
+          <div class="notif-header-actions">
+            <UtilsPageHelpButton title="Notificações" :items="notificationHelpItems" />
+            <v-btn
+              v-if="unreadCount > 0"
+              color="primary"
+              variant="tonal"
+              size="small"
+              class="text-none font-weight-bold rounded-lg"
+              :loading="inboxLoading"
+              @click="markAllRead"
+            >
+              Marcar todas lidas
+            </v-btn>
+          </div>
+        </div>
         <p class="text-body-2 mb-0">Histórico de avisos recebidos</p>
-      </div>
-      <div class="notif-header-actions">
-        <UtilsPageHelpButton title="Notificações" :items="notificationHelpItems" />
-        <v-btn
-          v-if="unreadCount > 0"
-          color="primary"
-          variant="tonal"
-          size="small"
-          class="text-none font-weight-bold rounded-lg"
-          :loading="inboxLoading"
-          @click="markAllRead"
-        >
-          Marcar todas lidas
-        </v-btn>
       </div>
     </div>
 

@@ -63,9 +63,18 @@ const isOpen = ref(false);
 </script>
 
 <style scoped>
-.page-help-button,
+.page-help-button {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-height: 32px;
+}
+
 .page-help-trigger {
   flex: 0 0 auto;
+  width: 30px !important;
+  height: 30px !important;
+  transform: translateY(2px);
 }
 
 .page-help-modal {
