@@ -1,10 +1,13 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper">
     <div class="prayer-header mb-4">
-      <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
-        <ChevronLeft size="20" />
-      </v-btn>
-      <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-0">Pedidos de Oração</h1>
+      <div class="prayer-title-group min-w-0">
+        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+          <ChevronLeft size="20" />
+        </v-btn>
+        <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-0">Pedidos de Oração</h1>
+      </div>
+      <UtilsPageHelpButton title="Pedidos de Oração" :items="prayerHelpItems" />
     </div>
 
     <v-tabs
@@ -311,6 +314,24 @@ const activeTab = ref(route.query.tab === "pending" ? "pending" : "community");
 
 const form = reactive({ title: "", body: "", isAnonymous: false });
 
+const prayerHelpItems = [
+  {
+    title: "Como enviar um pedido",
+    description: "Toque em Novo pedido, escreva o título e detalhe a necessidade de oração.",
+    icon: Plus,
+  },
+  {
+    title: "Como acompanhar pedidos",
+    description: "A aba Comunidade mostra os pedidos aprovados para a igreja acompanhar em oração.",
+    icon: Heart,
+  },
+  {
+    title: "Como revisar pedidos",
+    description: "Líderes usam a aba Pendentes para aprovar, recusar ou marcar pedidos como respondidos.",
+    icon: CheckCircle,
+  },
+];
+
 const isChurchManager = computed(() =>
   ["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(user.value?.role ?? ""),
 );
@@ -410,6 +431,13 @@ onMounted(() => {
 }
 
 .prayer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.prayer-title-group {
   display: flex;
   align-items: center;
 }

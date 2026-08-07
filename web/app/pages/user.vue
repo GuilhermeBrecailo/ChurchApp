@@ -33,6 +33,7 @@
             {{ profile?.email || user?.email || "Email não informado" }}
           </p>
         </div>
+        <UtilsPageHelpButton title="Perfil" :items="profileHelpItems" />
       </div>
     </section>
 
@@ -451,6 +452,24 @@ const accentColor = computed(() => isDark.value ? "#f0975a" : "#B5472A");
 const { getMyProfile, updateMyProfile, updateMyPassword } = useUser();
 const { getDepartments } = useDepartments();
 
+const profileHelpItems = [
+  {
+    title: "Como atualizar seus dados",
+    description: "Revise telefone, ministério principal e função; depois toque em Salvar alterações.",
+    icon: UserRound,
+  },
+  {
+    title: "Como ver seus ministérios",
+    description: "A seção Meus ministérios mostra as equipes em que você serve nesta igreja.",
+    icon: ClipboardList,
+  },
+  {
+    title: "Como bloquear datas",
+    description: "Use Indisponibilidades para avisar dias em que você não pode ser escalado.",
+    icon: CalendarX,
+  },
+];
+
 const loadingLogout = ref(false);
 const isLoading = ref(true);
 const departmentsLoading = ref(false);
@@ -787,6 +806,10 @@ onMounted(loadPageData);
   flex: 1 1 auto;
   min-width: 0;
   padding-top: 40px;
+}
+
+.profile-hero-body :deep(.page-help-button) {
+  margin-top: 40px;
 }
 
 .profile-name,

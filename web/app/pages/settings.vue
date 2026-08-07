@@ -1,12 +1,15 @@
 <template>
   <div class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
-    <div class="mb-6">
-      <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
-        Configurações
-      </h1>
-      <p class="text-body-2 text-grey-darken-1 mb-0">
-        Dados cadastrais da sua igreja
-      </p>
+    <div class="app-help-header mb-6">
+      <div class="min-w-0">
+        <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
+          Configurações
+        </h1>
+        <p class="text-body-2 text-grey-darken-1 mb-0">
+          Dados cadastrais da sua igreja
+        </p>
+      </div>
+      <UtilsPageHelpButton title="Configurações" :items="settingsHelpItems" />
     </div>
 
     <v-alert
@@ -183,7 +186,7 @@
 </template>
 
 <script setup lang="ts">
-import { Church, Globe } from "lucide-vue-next";
+import { Church, Globe, Image as ImageIcon } from "lucide-vue-next";
 import { computed, reactive, ref, watch } from "vue";
 import { useAuth } from "../../composables/useAuth";
 import { useChurch } from "../../composables/useChurch";
@@ -199,6 +202,24 @@ const isUploadingPhoto = ref(false);
 const photoError = ref("");
 const message = ref("");
 const messageType = ref<"success" | "error">("success");
+
+const settingsHelpItems = [
+  {
+    title: "Como editar dados da igreja",
+    description: "Atualize nome, endereço e documento da igreja e depois toque em Salvar alterações.",
+    icon: Church,
+  },
+  {
+    title: "Como trocar a foto",
+    description: "Use o campo Foto da igreja para enviar uma imagem que aparece na página pública.",
+    icon: ImageIcon,
+  },
+  {
+    title: "Como ver a página pública",
+    description: "Quando disponível, toque em Ver página pública para conferir como visitantes veem a igreja.",
+    icon: Globe,
+  },
+];
 
 const form = reactive({
   name: "",

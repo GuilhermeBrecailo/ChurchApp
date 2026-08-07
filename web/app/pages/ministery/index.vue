@@ -7,15 +7,18 @@
           Organize equipes, escalas e repertórios
         </p>
       </div>
-      <v-btn
-        v-if="canCreateDepartment"
-        color="purple-darken-3"
-        class="rounded-lg text-none px-4"
-        elevation="2"
-        @click="isDepartmentDialogOpen = true"
-      >
-        <Plus size="18" class="mr-1" /> Novo
-      </v-btn>
+      <div class="ministery-header-actions">
+        <UtilsPageHelpButton title="Ministérios" :items="ministeryHelpItems" />
+        <v-btn
+          v-if="canCreateDepartment"
+          color="purple-darken-3"
+          class="rounded-lg text-none px-4"
+          elevation="2"
+          @click="isDepartmentDialogOpen = true"
+        >
+          <Plus size="18" class="mr-1" /> Novo
+        </v-btn>
+      </div>
     </div>
 
     <div v-if="departments.length" class="tabs-row mb-5">
@@ -304,6 +307,24 @@ const { user } = useAuth();
 const { getDepartments, createDepartment, deleteDepartment } = useDepartments();
 const { getMembers } = useMembers();
 
+const ministeryHelpItems = [
+  {
+    title: "Como ver os ministérios",
+    description: "Use os cards da lista para abrir detalhes, equipes, escalas e materiais de cada ministério.",
+    icon: List,
+  },
+  {
+    title: "Como criar um ministério",
+    description: "Se você tiver permissão, toque em Novo e informe nome, líder e módulos ativos.",
+    icon: Plus,
+  },
+  {
+    title: "Como acompanhar a visão geral",
+    description: "A aba de visão geral resume quantos ministérios existem e separa a lista por tipo.",
+    icon: BarChart3,
+  },
+];
+
 const departments = ref<ChurchDepartment[]>([]);
 const members = ref<ChurchMember[]>([]);
 const departmentsError = ref("");
@@ -519,9 +540,15 @@ onMounted(async () => {
 }
 .ministery-page-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+}
+.ministery-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 .ministery-summary {
   display: grid;
@@ -612,11 +639,10 @@ onMounted(async () => {
 @media (max-width: 520px) {
   .ministery-page-header {
     align-items: flex-start;
-    flex-direction: column;
   }
 
-  .ministery-page-header .v-btn {
-    width: 100%;
+  .ministery-header-actions {
+    align-items: flex-start;
   }
 
   .ministery-summary {

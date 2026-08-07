@@ -5,17 +5,20 @@
         <h1 class="text-h5 font-weight-bold mb-0">Notificações</h1>
         <p class="text-body-2 mb-0">Histórico de avisos recebidos</p>
       </div>
-      <v-btn
-        v-if="unreadCount > 0"
-        color="primary"
-        variant="tonal"
-        size="small"
-        class="text-none font-weight-bold rounded-lg"
-        :loading="inboxLoading"
-        @click="markAllRead"
-      >
-        Marcar todas lidas
-      </v-btn>
+      <div class="notif-header-actions">
+        <UtilsPageHelpButton title="Notificações" :items="notificationHelpItems" />
+        <v-btn
+          v-if="unreadCount > 0"
+          color="primary"
+          variant="tonal"
+          size="small"
+          class="text-none font-weight-bold rounded-lg"
+          :loading="inboxLoading"
+          @click="markAllRead"
+        >
+          Marcar todas lidas
+        </v-btn>
+      </div>
     </div>
 
     <div v-if="inboxLoading && notifications.length === 0">
@@ -57,7 +60,7 @@
 
 <script setup lang="ts">
 import { onMounted } from "vue";
-import { Bell } from "lucide-vue-next";
+import { ArrowRight, Bell, CheckCircle2 } from "lucide-vue-next";
 import { useNotifications } from "../../composables/useNotifications";
 import type { AppNotification } from "../../composables/usePushNotifications";
 
@@ -65,6 +68,24 @@ const { isDark } = useThemeMode();
 const router = useRouter();
 const { notifications, unreadCount, inboxLoading, startInboxSync, markRead, markAllRead } =
   useNotifications();
+
+const notificationHelpItems = [
+  {
+    title: "Como ler uma notificação",
+    description: "Toque em uma notificação para abrir o destino relacionado e marcar como lida.",
+    icon: ArrowRight,
+  },
+  {
+    title: "Como ver pendências",
+    description: "As notificações sem leitura ficam destacadas com indicador visual na lista.",
+    icon: Bell,
+  },
+  {
+    title: "Como limpar a lista",
+    description: "Use Marcar todas lidas quando quiser remover os destaques de novas notificações.",
+    icon: CheckCircle2,
+  },
+];
 
 function relativeDate(value: string): string {
   const date = new Date(value);
@@ -105,6 +126,13 @@ onMounted(() => startInboxSync());
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.notif-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 
 .notif-header h1 {

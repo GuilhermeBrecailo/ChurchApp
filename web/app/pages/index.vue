@@ -1,6 +1,16 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper">
     <template v-if="hasChurch">
+      <div class="app-help-header mb-5">
+        <div class="min-w-0">
+          <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">Início</h1>
+          <p class="text-body-2 text-grey-darken-1 mb-0">
+            Resumo da sua igreja, escalas e conteúdos recentes
+          </p>
+        </div>
+        <UtilsPageHelpButton title="Início" :items="homeHelpItems" />
+      </div>
+
       <v-skeleton-loader
         v-if="!setupStateLoaded"
         type="card"
@@ -190,7 +200,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { Church } from "lucide-vue-next";
+import { BookOpen, CalendarDays, Church, LayoutGrid } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import { useChurch } from "../../composables/useChurch";
@@ -206,6 +216,24 @@ const { isDark } = useThemeMode();
 const { createOwnChurch } = useChurch();
 const { getChurchSchedules, getDepartments } = useDepartments();
 const { getMembers } = useMembers();
+
+const homeHelpItems = [
+  {
+    title: "Como ver sua próxima escala",
+    description: "Confira os cards do início para ver datas, horários e sua próxima participação.",
+    icon: CalendarDays,
+  },
+  {
+    title: "Como acessar conteúdos",
+    description: "Use o atalho Conteúdo para abrir Bíblia, versículo do dia, devocionais e playlist.",
+    icon: BookOpen,
+  },
+  {
+    title: "Como usar os atalhos",
+    description: "Os atalhos levam direto para as áreas principais do app sem passar pelo menu inferior.",
+    icon: LayoutGrid,
+  },
+];
 
 const hasChurch = computed(() => user.value?.hasChurch === true);
 const isPastorWithoutChurch = computed(

@@ -1,21 +1,24 @@
 <template>
   <div class="pa-4 page-wrapper min-vh-100">
     <div class="scale-page-header mb-5">
-      <div>
+      <div class="min-w-0">
         <h1 class="text-h5 font-weight-bold text-grey-darken-4">Escalas</h1>
         <p class="text-body-2 text-grey-darken-1 mb-0">
           Confira os próximos cultos e eventos
         </p>
       </div>
-      <v-btn
-        v-if="canCreateChurchSchedule"
-        :color="accentColor"
-        class="rounded-lg text-none px-4"
-        elevation="2"
-        @click="openNewScheduleDialog"
-      >
-        <Plus size="18" class="mr-1" /> Novo
-      </v-btn>
+      <div class="scale-header-actions">
+        <UtilsPageHelpButton title="Escalas" :items="scaleHelpItems" />
+        <v-btn
+          v-if="canCreateChurchSchedule"
+          :color="accentColor"
+          class="rounded-lg text-none px-4"
+          elevation="2"
+          @click="openNewScheduleDialog"
+        >
+          <Plus size="18" class="mr-1" /> Novo
+        </v-btn>
+      </div>
     </div>
 
     <div class="filter-strip mb-8">
@@ -1227,6 +1230,24 @@ const { isDark } = useThemeMode();
 const accentColor = computed(() => isDark.value ? "#f0975a" : "#B5472A");
 const avatarBgColor = computed(() => isDark.value ? "rgba(240,151,90,0.16)" : "#F7E2D3");
 const route = useRoute();
+
+const scaleHelpItems = [
+  {
+    title: "Como ver suas escalas",
+    description: "Use os filtros para separar todos os eventos, confirmações pendentes e escalas já vistas.",
+    icon: Calendar,
+  },
+  {
+    title: "Como confirmar presença",
+    description: "Abra uma escala e use as ações do card para confirmar, recusar ou solicitar troca.",
+    icon: CheckCircle2,
+  },
+  {
+    title: "Como criar uma escala",
+    description: "Se você tiver permissão, toque em Novo para cadastrar culto, voluntários e playlist.",
+    icon: UserPlus,
+  },
+];
 
 const activeFilter = ref("Todos");
 const departments = ref<ChurchDepartment[]>([]);
@@ -2461,9 +2482,16 @@ watch(schedules, async () => {
 
 .scale-page-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+}
+
+.scale-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 
 .filter-strip {
@@ -3073,11 +3101,10 @@ watch(schedules, async () => {
 @media (max-width: 420px) {
   .scale-page-header {
     align-items: flex-start;
-    flex-direction: column;
   }
 
-  .scale-page-header .v-btn {
-    width: 100%;
+  .scale-header-actions {
+    align-items: flex-start;
   }
 
   .filter-strip {

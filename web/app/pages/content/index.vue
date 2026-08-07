@@ -1,27 +1,15 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper">
     <div class="content-page-header mb-5">
-      <div class="content-title-row">
-        <h1 class="app-page-title text-h5 mb-0">Conteúdo</h1>
-        <v-tooltip text="Ajuda da tela" location="bottom">
-          <template #activator="{ props }">
-            <v-btn
-              v-bind="props"
-              icon
-              variant="tonal"
-              color="purple-darken-3"
-              size="x-small"
-              aria-label="Abrir ajuda da tela de conteúdo"
-              @click="isHelpOpen = true"
-            >
-              <HelpCircle size="16" />
-            </v-btn>
-          </template>
-        </v-tooltip>
+      <div class="app-help-header">
+        <div class="min-w-0">
+          <h1 class="app-page-title text-h5 mb-1">Conteúdo</h1>
+          <p class="text-body-2 text-grey mb-0">
+            Bíblia, devocionais, versículo do dia e playlist
+          </p>
+        </div>
+        <UtilsPageHelpButton title="Conteúdo" :items="contentHelpItems" />
       </div>
-      <p class="text-body-2 text-grey mb-0">
-        Bíblia, devocionais, versículo do dia e playlist
-      </p>
     </div>
 
     <div class="content-grid">
@@ -46,40 +34,13 @@
       </NuxtLink>
     </div>
 
-    <UtilsResponsiveOverlay v-model="isHelpOpen" max-width="560" scrollable>
-      <v-card class="content-help-modal" elevation="0">
-        <div class="content-help-header">
-          <div class="min-w-0">
-            <p class="app-page-kicker mb-1">Ajuda</p>
-            <h2 class="content-help-title mb-0">Conteúdo</h2>
-          </div>
-          <v-btn icon variant="text" color="grey-darken-1" aria-label="Fechar ajuda" @click="isHelpOpen = false">
-            <X size="20" />
-          </v-btn>
-        </div>
-
-        <div class="content-help-list">
-          <div v-for="item in helpCards" :key="item.title" class="content-help-card">
-            <div class="content-help-icon">
-              <component :is="item.icon" size="18" />
-            </div>
-            <div class="min-w-0">
-              <h3 class="content-help-card-title mb-1">{{ item.title }}</h3>
-              <p class="content-help-card-desc mb-0">{{ item.description }}</p>
-            </div>
-          </div>
-        </div>
-      </v-card>
-    </UtilsResponsiveOverlay>
   </div>
 </template>
 
 <script setup lang="ts">
-import { BookMarked, BookOpen, Heart, ListMusic, ChevronRight, HelpCircle, X } from "lucide-vue-next";
-import { ref } from "vue";
+import { BookMarked, BookOpen, Heart, ListMusic, ChevronRight } from "lucide-vue-next";
 
 const { isDark } = useThemeMode();
-const isHelpOpen = ref(false);
 
 const contentItems = [
   {
@@ -124,7 +85,7 @@ const contentItems = [
   },
 ];
 
-const helpCards = [
+const contentHelpItems = [
   {
     title: "Como acessar o Versículo do Dia",
     description: "Toque no card Versículo do Dia para ler a palavra publicada pela liderança.",
@@ -151,12 +112,6 @@ const helpCards = [
 
 .content-page-header h1 {
   color: var(--app-color-text, #111827);
-}
-
-.content-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .content-grid {
@@ -211,70 +166,6 @@ const helpCards = [
 .content-card-chevron {
   color: var(--app-color-text-muted);
   flex-shrink: 0;
-}
-
-.content-help-modal {
-  border-radius: 8px;
-  border: 1px solid var(--app-color-border);
-  background: var(--app-color-surface);
-  color: var(--app-color-text);
-  overflow: hidden;
-}
-
-.content-help-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 18px 18px 14px;
-  border-bottom: 1px solid var(--app-color-border);
-}
-
-.content-help-title {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--app-color-text);
-  line-height: 1.25;
-}
-
-.content-help-list {
-  display: grid;
-  gap: 10px;
-  padding: 14px;
-}
-
-.content-help-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid var(--app-color-border);
-  border-radius: 8px;
-  background: var(--app-color-surface-soft);
-}
-
-.content-help-icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: var(--app-color-accent-tint);
-  color: var(--app-color-accent);
-  flex: 0 0 auto;
-}
-
-.content-help-card-title {
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: var(--app-color-text);
-  line-height: 1.3;
-}
-
-.content-help-card-desc {
-  font-size: 0.8rem;
-  color: var(--app-color-text-muted);
-  line-height: 1.45;
 }
 
 .gap-3 {

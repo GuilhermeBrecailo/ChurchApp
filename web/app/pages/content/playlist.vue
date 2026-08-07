@@ -1,13 +1,16 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper">
     <div class="playlist-header mb-5">
-      <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
-        <ChevronLeft size="20" />
-      </v-btn>
-      <div class="min-w-0">
-        <h1 class="text-h5 font-weight-bold mb-1">Minha Playlist</h1>
-        <p class="text-body-2 text-grey mb-0">Músicas com seu tom pessoal</p>
+      <div class="content-detail-title-group min-w-0">
+        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+          <ChevronLeft size="20" />
+        </v-btn>
+        <div class="min-w-0">
+          <h1 class="text-h5 font-weight-bold mb-1">Minha Playlist</h1>
+          <p class="text-body-2 text-grey mb-0">Músicas com seu tom pessoal</p>
+        </div>
       </div>
+      <UtilsPageHelpButton title="Minha Playlist" :items="playlistHelpItems" />
     </div>
 
     <v-text-field
@@ -130,6 +133,24 @@ const isOverlayOpen = ref(false);
 const activeSong = ref<PersonalSong | null>(null);
 const snackbar = ref(false);
 
+const playlistHelpItems = [
+  {
+    title: "Como buscar música",
+    description: "Use o campo de busca para filtrar músicas salvas pelo nome.",
+    icon: Search,
+  },
+  {
+    title: "Como abrir cifra e letra",
+    description: "Toque em uma música para abrir o conteúdo em tela de leitura.",
+    icon: Music,
+  },
+  {
+    title: "Como salvar seu tom",
+    description: "Escolha o tom no seletor da música para guardar sua preferência pessoal.",
+    icon: ListMusic,
+  },
+];
+
 const noteOptions = [
   { label: "C", value: "C" },
   { label: "C#", value: "C#" },
@@ -182,6 +203,13 @@ onMounted(async () => {
 }
 
 .playlist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.content-detail-title-group {
   display: flex;
   align-items: center;
 }

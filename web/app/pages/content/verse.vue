@@ -1,12 +1,15 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper">
     <div class="verse-header mb-4">
-      <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
-        <ChevronLeft size="20" />
-      </v-btn>
-      <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-0">
-        Versículo do dia
-      </h1>
+      <div class="content-detail-title-group min-w-0">
+        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+          <ChevronLeft size="20" />
+        </v-btn>
+        <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-0">
+          Versículo do dia
+        </h1>
+      </div>
+      <UtilsPageHelpButton title="Versículo do dia" :items="verseHelpItems" />
     </div>
 
     <v-btn
@@ -217,7 +220,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { BookMarked, ChevronLeft, Plus } from "lucide-vue-next";
+import { BookMarked, ChevronLeft, Clock, Plus } from "lucide-vue-next";
 import { useDailyVerse, type DailyVerse } from "../../../composables/useDailyVerse";
 import { usePermissions } from "../../../composables/usePermissions";
 import { useThemeMode } from "../../../composables/useThemeMode";
@@ -241,6 +244,24 @@ const publishForm = reactive({
   videoUrl: "",
   isPublic: false,
 });
+
+const verseHelpItems = [
+  {
+    title: "Como ler o versículo atual",
+    description: "O primeiro card mostra o versículo mais recente publicado pela liderança.",
+    icon: BookMarked,
+  },
+  {
+    title: "Como ver o histórico",
+    description: "A lista Histórico reúne os versículos anteriores publicados para a igreja.",
+    icon: Clock,
+  },
+  {
+    title: "Como publicar um versículo",
+    description: "Quem tem permissão usa Novo versículo para informar referência, texto e comentário.",
+    icon: Plus,
+  },
+];
 
 // Pastor/admin sempre podem; os demais dependem da permissao que o pastor
 // concede pelo cargo da igreja.
@@ -338,6 +359,13 @@ onMounted(loadVerses);
 .verse-header {
   align-items: center;
   display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.content-detail-title-group {
+  display: flex;
+  align-items: center;
 }
 
 .verse-header h1 {

@@ -1,12 +1,15 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper">
-    <div class="content-page-header mb-4 d-flex align-center">
-      <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
-        <ChevronLeft size="20" />
-      </v-btn>
-      <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-0">
-        Devocionais
-      </h1>
+    <div class="content-page-header mb-4">
+      <div class="content-detail-title-group min-w-0">
+        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+          <ChevronLeft size="20" />
+        </v-btn>
+        <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-0">
+          Devocionais
+        </h1>
+      </div>
+      <UtilsPageHelpButton title="Devocionais" :items="devotionalHelpItems" />
     </div>
 
     <v-btn
@@ -256,7 +259,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { ChevronLeft, Heart, Plus } from "lucide-vue-next";
+import { BookOpen, ChevronLeft, Heart, Plus } from "lucide-vue-next";
 import { useDevotionals, type Devotional } from "../../../composables/useDevotionals";
 import { usePermissions } from "../../../composables/usePermissions";
 
@@ -281,6 +284,24 @@ const createForm = reactive({
   isPublic: false,
   chapters: [emptyChapter()],
 });
+
+const devotionalHelpItems = [
+  {
+    title: "Como abrir um devocional",
+    description: "Toque em um card para acessar os capítulos e acompanhar a leitura.",
+    icon: Heart,
+  },
+  {
+    title: "Como acompanhar capítulos",
+    description: "Dentro do devocional, avance pelos capítulos disponíveis da série.",
+    icon: BookOpen,
+  },
+  {
+    title: "Como criar devocional",
+    description: "Quem tem permissão usa Novo devocional para publicar série e capítulos.",
+    icon: Plus,
+  },
+];
 
 // Pastor/admin sempre; demais so com PUBLISH_CONTENT concedido pelo pastor.
 const canPublish = computed(() => can("CONTENT_PUBLISH"));
@@ -374,6 +395,18 @@ onMounted(loadDevotionals);
 .chapter-card {
   background: var(--app-color-surface-soft);
   border: 1px solid var(--app-color-border);
+}
+
+.content-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.content-detail-title-group {
+  display: flex;
+  align-items: center;
 }
 
 .content-page-header h1 {

@@ -10,8 +10,11 @@
           Acompanhe igrejas, lideranças, usuários e ministérios em um só lugar.
         </p>
       </div>
-      <div class="platform-hero-mark">
-        <Church size="26" :color="accentColor" />
+      <div class="platform-hero-actions">
+        <UtilsPageHelpButton title="Admin master" :items="platformAdminHelpItems" />
+        <div class="platform-hero-mark">
+          <Church size="26" :color="accentColor" />
+        </div>
       </div>
     </div>
 
@@ -975,6 +978,7 @@
           Gerencie membros, cargos, ministérios e dados operacionais da sua igreja
         </p>
       </div>
+      <UtilsPageHelpButton title="Administração da igreja" :items="churchAdminHelpItems" />
     </div>
 
     <div class="admin-tabs-bar mb-6">
@@ -3277,6 +3281,43 @@ const accentColor = computed(() => isDark.value ? "#f0975a" : "#B5472A");
 const purpleAccent = computed(() => isDark.value ? "#f0975a" : "#C2542C");
 const avatarBgIndigo = computed(() => isDark.value ? "rgba(240,151,90,0.16)" : "#F7E2D3");
 const avatarBgPurple = computed(() => isDark.value ? "rgba(240,151,90,0.16)" : "#F7E2D3");
+
+const platformAdminHelpItems = [
+  {
+    title: "Como acompanhar igrejas",
+    description: "Use os cards e a lista para ver igrejas cadastradas, status e detalhes da plataforma.",
+    icon: Church,
+  },
+  {
+    title: "Como abrir detalhes",
+    description: "Selecione uma igreja na lista para consultar usuários, ministérios e próximas escalas.",
+    icon: Users,
+  },
+  {
+    title: "Como acessar a administração pastoral",
+    description: "Use Abrir minha igreja para ir direto para a área operacional da sua igreja.",
+    icon: ArrowRight,
+  },
+];
+
+const churchAdminHelpItems = [
+  {
+    title: "Como gerenciar membros",
+    description: "Na aba Membros você cria usuários, altera dados e acompanha permissões de acesso.",
+    icon: Users,
+  },
+  {
+    title: "Como organizar ministérios",
+    description: "Na aba Ministérios você cria equipes, define líderes e acompanha a estrutura da igreja.",
+    icon: Building,
+  },
+  {
+    title: "Como publicar conteúdo",
+    description: "Na aba Conteúdo você publica versículos, avisos, devocionais, posts e horários públicos.",
+    icon: BookMarked,
+  },
+];
+
 const {
   getMembers,
   createMember,
@@ -5416,6 +5457,13 @@ onMounted(async () => {
   max-width: 620px;
 }
 
+.platform-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
 .platform-hero-mark {
   width: 54px;
   height: 54px;
@@ -6656,7 +6704,3 @@ onMounted(async () => {
 
 /* ── Dark mode ── */
 </style>
-
-
-
-

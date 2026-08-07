@@ -1,12 +1,15 @@
 <template>
   <div class="bible-page pa-4 pb-8">
     <div class="bible-header mb-4">
-      <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
-        <ChevronLeft size="20" />
-      </v-btn>
-      <div class="flex-1 min-w-0">
-        <h1 class="text-h5 font-weight-bold">Leitura Bíblica</h1>
+      <div class="content-detail-title-group min-w-0">
+        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+          <ChevronLeft size="20" />
+        </v-btn>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-h5 font-weight-bold">Leitura Bíblica</h1>
+        </div>
       </div>
+      <UtilsPageHelpButton title="Leitura Bíblica" :items="bibleHelpItems" />
     </div>
 
     <div class="bible-selectors mb-4">
@@ -128,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight } from "lucide-vue-next";
+import { BookOpen, ChevronLeft, ChevronRight, Search } from "lucide-vue-next";
 import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useBible, BIBLE_BOOKS, BIBLE_VERSIONS } from "../../../composables/useBible";
@@ -150,6 +153,24 @@ const {
   prevChapter,
   nextChapter,
 } = useBible();
+
+const bibleHelpItems = [
+  {
+    title: "Como escolher a versão",
+    description: "Use o seletor Versão para trocar a tradução bíblica disponível.",
+    icon: BookOpen,
+  },
+  {
+    title: "Como mudar livro e capítulo",
+    description: "Selecione Livro e Capítulo para navegar direto até a leitura desejada.",
+    icon: Search,
+  },
+  {
+    title: "Como avançar na leitura",
+    description: "Use os botões de capítulo anterior e próximo no fim da leitura.",
+    icon: ChevronRight,
+  },
+];
 
 const bookOptions = BIBLE_BOOKS.map((book, index) => ({
   label: book.pt,
@@ -184,6 +205,13 @@ onMounted(() => {
 }
 
 .bible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.content-detail-title-group {
   display: flex;
   align-items: center;
 }

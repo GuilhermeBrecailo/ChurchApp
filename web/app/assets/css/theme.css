@@ -679,3 +679,15 @@ body {
   text-transform: uppercase;
   color: var(--app-color-text-muted);
 }
+
+.app-help-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.app-help-header > .min-w-0 {
+  flex: 1 1 auto;
+}
