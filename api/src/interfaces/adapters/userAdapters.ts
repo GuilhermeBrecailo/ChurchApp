@@ -19,6 +19,8 @@ import { isValidFontKey } from "../../domain/appearance";
 import { hasPermission } from "../../application/Services/Auth/AuthorizationService";
 import { PermissionKey } from "../../domain/permissions";
 
+const TRIAL_PERIOD_DAYS = 90;
+
 const userRepository = new UserRepository();
 const createUserUseCase = new CreateUserUseCase(userRepository);
 const deleteUserUseCase = new DeleteUserUseCase(userRepository);
@@ -515,6 +517,9 @@ export class UserAdapters {
           complement: body.complement ?? "",
           document: body.document ?? "",
           isActive: true,
+          plan: "PRO",
+          subscriptionStatus: "TRIALING",
+          trialEndsAt: new Date(Date.now() + TRIAL_PERIOD_DAYS * 24 * 60 * 60 * 1000),
         },
       });
 
