@@ -29,6 +29,19 @@
           </v-btn>
         </div>
 
+        <div v-if="video" class="page-help-video-wrap">
+          <iframe
+            v-if="videoEmbedUrl"
+            class="page-help-video"
+            :src="videoEmbedUrl"
+            title="Vídeo de ajuda"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          />
+          <video v-else class="page-help-video" :src="video.videoUrl" controls />
+        </div>
+
         <div class="page-help-list">
           <div v-for="item in items" :key="item.title" class="page-help-card">
             <div class="page-help-icon">
@@ -47,8 +60,10 @@
 
 <script setup lang="ts">
 import type { Component } from "vue";
-import { ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { HelpCircle, X } from "lucide-vue-next";
+import { useRoute } from "#app";
+import { useHelpVideos } from "../../../composables/useHelpVideos";
 
 defineProps<{
   title: string;
@@ -60,6 +75,28 @@ defineProps<{
 }>();
 
 const isOpen = ref(false);
+const route = useRoute();
+const { helpVideos, loading, loadHelpVideos, getHelpVideo } = useHelpVideos();
+
+onMounted(() => {
+  if (!helpVideos.value.length && !loading.value) {
+    loadHelpVideos();
+  }
+});
+
+const video = computed(() => getHelpVideo(route.path));
+
+const videoEmbedUrl = computed(() => {
+  const url = video.value?.videoUrl;
+  if (!url) return null;
+
+  const youtubeWatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+  if (youtubeWatch) return `https://www.youtube.com/embed/${youtubeWatch[1]}`;
+
+  if (url.includes("youtube.com/embed/")) return url;
+
+  return null;
+});
 </script>
 
 <style scoped>
@@ -74,7 +111,6 @@ const isOpen = ref(false);
   flex: 0 0 auto;
   width: 30px !important;
   height: 30px !important;
-  transform: translateY(4px);
 }
 
 .page-help-modal {
@@ -99,6 +135,18 @@ const isOpen = ref(false);
   font-weight: 800;
   color: var(--app-color-text);
   line-height: 1.25;
+}
+
+.page-help-video-wrap {
+  padding: 14px 14px 0;
+}
+
+.page-help-video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  border: 1px solid var(--app-color-border);
+  background: #000;
 }
 
 .page-help-list {
