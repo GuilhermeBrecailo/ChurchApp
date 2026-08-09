@@ -77,7 +77,7 @@ const stats = computed(() =>
 
 .ministery-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(140px, 1fr) minmax(0, 110px);
   gap: 16px;
   align-items: center;
   border: 1px solid #eef2f7;
@@ -114,6 +114,7 @@ const stats = computed(() =>
 }
 
 .ministery-card-side {
+  min-width: 0;
   gap: 10px;
 }
 
@@ -154,7 +155,7 @@ const stats = computed(() =>
   justify-content: flex-end;
   gap: 6px;
   flex-wrap: wrap;
-  max-width: 230px;
+  max-width: 80px;
 }
 
 .ministery-stats span {
