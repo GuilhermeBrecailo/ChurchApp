@@ -2744,15 +2744,27 @@
 
     <UtilsResponsiveOverlay v-model="isMemberDetailsOpen" max-width="520">
       <v-card v-if="selectedMember" class="rounded-xl pa-6 bg-white" elevation="0">
-        <div class="responsive-dialog-header mb-5">
+        <div class="responsive-dialog-header mb-4">
           <div class="d-flex align-center min-w-0">
-            <v-avatar :color="avatarBgIndigo" size="48" class="mr-3">
-              <Users size="22" :color="accentColor" />
+            <v-avatar
+              :color="avatarBgIndigo"
+              size="48"
+              class="mr-3 member-detail-avatar"
+              :style="{ borderColor: accentColor }"
+            >
+              <span class="member-detail-avatar-initials" :style="{ color: accentColor }">
+                {{ selectedMemberInitials }}
+              </span>
             </v-avatar>
             <div class="min-w-0">
-              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
-                {{ selectedMember.name }}
-              </h2>
+              <div class="d-flex align-center ga-2 flex-wrap">
+                <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                  {{ selectedMember.name }}
+                </h2>
+                <v-chip size="x-small" variant="tonal" color="purple-darken-3" class="text-none font-weight-bold">
+                  {{ selectedMember.role === "PASTOR" ? "Pastor" : "Membro" }}
+                </v-chip>
+              </div>
               <p class="text-body-2 text-grey-darken-1 mb-0 text-truncate">
                 {{ selectedMember.email }}
               </p>
@@ -2763,7 +2775,9 @@
           </v-btn>
         </div>
 
-        <div class="member-info mb-5">
+        <div class="member-dialog-rule mb-4" />
+
+        <div class="member-info mb-5 pa-3 rounded-lg bg-grey-lighten-5">
           <div>
             <p class="text-caption text-grey-darken-1 mb-1">Telefone</p>
             <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
@@ -2834,6 +2848,8 @@
           :readonly="!canManageMembersByRole || !canEditSelectedMember"
           :disabled="isUpdatingMember"
         />
+
+        <div class="member-dialog-rule mb-4" />
 
         <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">
           Cargos
@@ -3458,6 +3474,13 @@ const createDepartmentError = ref("");
 const permissionError = ref("");
 const showPassword = ref(false);
 const selectedMember = ref<ChurchMember | null>(null);
+const selectedMemberInitials = computed(() => {
+  const parts = selectedMember.value?.name?.trim().split(/\s+/).filter(Boolean) ?? [];
+  if (!parts.length) return "";
+  const first = parts[0][0];
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+  return (first + last).toUpperCase();
+});
 const selectedAdminUser = ref<AdminChurchUser | null>(null);
 const selectedAdminDepartment = ref<AdminChurchDepartment | null>(null);
 const selectedAdminSchedule = ref<AdminChurchSchedule | null>(null);
@@ -6489,6 +6512,20 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: 1fr;
   gap: 14px;
+}
+
+.member-detail-avatar {
+  border: 2px solid;
+}
+
+.member-detail-avatar-initials {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.member-dialog-rule {
+  height: 2px;
+  background: linear-gradient(90deg, var(--app-color-accent), transparent);
 }
 
 .admin-row {

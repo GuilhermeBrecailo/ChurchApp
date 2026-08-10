@@ -304,6 +304,10 @@ body {
   color: #2dd4bf !important;
 }
 
+.app-theme-dark .text-orange-darken-2 {
+  color: var(--app-color-warning) !important;
+}
+
 .app-theme-dark .text-red-darken-2,
 .app-theme-dark .text-red-darken-3 {
   color: #f87171 !important;
@@ -329,7 +333,7 @@ body {
  * (2) tirar o background-color, que é redundante — o Vuetify já deriva o
  * tom do fundo a partir do `color` via currentColor no ::underlay.
  */
-.app-theme-dark .v-btn--variant-tonal:not(.text-indigo-darken-2):not(.text-deep-purple-darken-2):not(.text-teal-darken-2):not(.text-red-darken-2):not(.text-red-darken-3):not(.text-purple-darken-3):not(.text-purple-darken-4) {
+.app-theme-dark .v-btn--variant-tonal:not(.text-indigo-darken-2):not(.text-deep-purple-darken-2):not(.text-teal-darken-2):not(.text-orange-darken-2):not(.text-red-darken-2):not(.text-red-darken-3):not(.text-purple-darken-3):not(.text-purple-darken-4) {
   color: var(--app-color-accent) !important;
 }
 
@@ -342,7 +346,7 @@ body {
    DARK — CHIPS
    ============================================================ */
 /* Mesma causa raiz e mesmo fix do bloco DARK — BUTTONS acima. */
-.app-theme-dark .v-chip.v-chip--variant-tonal:not(.text-indigo-darken-2):not(.text-deep-purple-darken-2):not(.text-teal-darken-2):not(.text-red-darken-2):not(.text-red-darken-3):not(.text-purple-darken-3):not(.text-purple-darken-4) {
+.app-theme-dark .v-chip.v-chip--variant-tonal:not(.text-indigo-darken-2):not(.text-deep-purple-darken-2):not(.text-teal-darken-2):not(.text-orange-darken-2):not(.text-red-darken-2):not(.text-red-darken-3):not(.text-purple-darken-3):not(.text-purple-darken-4) {
   color: var(--app-color-accent) !important;
 }
 
