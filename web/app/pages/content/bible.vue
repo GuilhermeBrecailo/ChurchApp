@@ -9,7 +9,7 @@
           <h1 class="text-h5 font-weight-bold">Leitura Bíblica</h1>
         </div>
       </div>
-      <UtilsPageHelpButton title="Leitura Bíblica" :items="bibleHelpItems" />
+      <UtilsPageHelpButton title="Leitura Bíblica" />
     </div>
 
     <div class="bible-selectors mb-4">
@@ -131,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { BookOpen, ChevronLeft, ChevronRight, Search } from "lucide-vue-next";
+import { ChevronLeft, ChevronRight } from "lucide-vue-next";
 import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useBible, BIBLE_BOOKS, BIBLE_VERSIONS } from "../../../composables/useBible";
@@ -154,23 +154,6 @@ const {
   nextChapter,
 } = useBible();
 
-const bibleHelpItems = [
-  {
-    title: "Como escolher a versão",
-    description: "Use o seletor Versão para trocar a tradução bíblica disponível.",
-    icon: BookOpen,
-  },
-  {
-    title: "Como mudar livro e capítulo",
-    description: "Selecione Livro e Capítulo para navegar direto até a leitura desejada.",
-    icon: Search,
-  },
-  {
-    title: "Como avançar na leitura",
-    description: "Use os botões de capítulo anterior e próximo no fim da leitura.",
-    icon: ChevronRight,
-  },
-];
 
 const bookOptions = BIBLE_BOOKS.map((book, index) => ({
   label: book.pt,

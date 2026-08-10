@@ -10,7 +10,7 @@
           <p class="text-body-2 text-grey mb-0">Músicas com seu tom pessoal</p>
         </div>
       </div>
-      <UtilsPageHelpButton title="Minha Playlist" :items="playlistHelpItems" />
+      <UtilsPageHelpButton title="Minha Playlist" />
     </div>
 
     <v-text-field
@@ -133,23 +133,6 @@ const isOverlayOpen = ref(false);
 const activeSong = ref<PersonalSong | null>(null);
 const snackbar = ref(false);
 
-const playlistHelpItems = [
-  {
-    title: "Como buscar música",
-    description: "Use o campo de busca para filtrar músicas salvas pelo nome.",
-    icon: Search,
-  },
-  {
-    title: "Como abrir cifra e letra",
-    description: "Toque em uma música para abrir o conteúdo em tela de leitura.",
-    icon: Music,
-  },
-  {
-    title: "Como salvar seu tom",
-    description: "Escolha o tom no seletor da música para guardar sua preferência pessoal.",
-    icon: ListMusic,
-  },
-];
 
 const noteOptions = [
   { label: "C", value: "C" },

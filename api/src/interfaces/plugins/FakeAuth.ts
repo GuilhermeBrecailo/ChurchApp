@@ -21,7 +21,7 @@ const FakeAuth: FastifyPluginAsync = async (fastify) => {
         "/public/auth/logout",
       ];
 
-      const path = (request.routeOptions?.url || request.raw.url || "").split(
+      const path = (request.raw.url || request.routeOptions?.url || "").split(
         "?",
       )[0];
 
@@ -29,6 +29,7 @@ const FakeAuth: FastifyPluginAsync = async (fastify) => {
         request.method === "OPTIONS" ||
         !path ||
         path.startsWith("/public") ||
+        path.startsWith("/uploads/") ||
         publicRoutes.includes(path)
       ) {
         return;

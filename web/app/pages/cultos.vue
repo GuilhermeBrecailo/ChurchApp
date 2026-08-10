@@ -9,7 +9,7 @@
           Próximos cultos
         </h1>
       </div>
-      <UtilsPageHelpButton title="Próximos cultos" :items="cultosHelpItems" />
+      <UtilsPageHelpButton title="Próximos cultos" />
     </div>
 
     <v-alert
@@ -87,9 +87,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
-import { Calendar, ChevronLeft, ChevronRight, Users } from "lucide-vue-next";
+import { computed, onMounted } from "vue";
+import { ChevronLeft, ChevronRight } from "lucide-vue-next";
 import {
   useDepartments,
   type DepartmentSchedule,
@@ -102,23 +101,6 @@ const schedules = ref<DepartmentSchedule[]>([]);
 const loading = ref(false);
 const errorMessage = ref("");
 
-const cultosHelpItems = [
-  {
-    title: "Como ver próximos cultos",
-    description: "A lista mostra apenas cultos e eventos futuros, em ordem de data.",
-    icon: Calendar,
-  },
-  {
-    title: "Como abrir detalhes",
-    description: "Toque em um culto para abrir a escala completa na tela de Escalas.",
-    icon: ChevronRight,
-  },
-  {
-    title: "Como conferir voluntários e músicas",
-    description: "Os chips do card mostram quantos voluntários e músicas estão vinculados ao culto.",
-    icon: Users,
-  },
-];
 
 // Esta tela e a vitrine dos cultos que ainda vao acontecer - o historico e a
 // gestao (editar, voluntarios, pendencias) ficam em /scale.

@@ -5,7 +5,7 @@
         <div class="app-help-title-row">
           <h1 class="text-h5 font-weight-bold mb-1">Notificações</h1>
           <div class="notif-header-actions">
-            <UtilsPageHelpButton title="Notificações" :items="notificationHelpItems" />
+            <UtilsPageHelpButton title="Notificações" />
             <v-btn
               v-if="unreadCount > 0"
               color="primary"
@@ -61,8 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
-import { ArrowRight, Bell, CheckCircle2 } from "lucide-vue-next";
+import { Bell } from "lucide-vue-next";
 import { useNotifications } from "../../composables/useNotifications";
 import type { AppNotification } from "../../composables/usePushNotifications";
 
@@ -71,23 +70,6 @@ const router = useRouter();
 const { notifications, unreadCount, inboxLoading, startInboxSync, markRead, markAllRead } =
   useNotifications();
 
-const notificationHelpItems = [
-  {
-    title: "Como ler uma notificação",
-    description: "Toque em uma notificação para abrir o destino relacionado e marcar como lida.",
-    icon: ArrowRight,
-  },
-  {
-    title: "Como ver pendências",
-    description: "As notificações sem leitura ficam destacadas com indicador visual na lista.",
-    icon: Bell,
-  },
-  {
-    title: "Como limpar a lista",
-    description: "Use Marcar todas lidas quando quiser remover os destaques de novas notificações.",
-    icon: CheckCircle2,
-  },
-];
 
 function relativeDate(value: string): string {
   const date = new Date(value);

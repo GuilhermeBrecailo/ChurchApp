@@ -14,7 +14,7 @@ const publicRoutes = new Set([
 ]);
 
 function getRoutePath(request: FastifyRequest) {
-  return (request.routeOptions?.url || request.raw.url || "").split("?")[0];
+  return (request.raw.url || request.routeOptions?.url || "").split("?")[0];
 }
 
 function isPublicRequest(request: FastifyRequest) {
@@ -24,6 +24,7 @@ function isPublicRequest(request: FastifyRequest) {
     request.method === "OPTIONS" ||
     !path ||
     path.startsWith("/public") ||
+    path.startsWith("/uploads/") ||
     publicRoutes.has(path)
   );
 }

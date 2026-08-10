@@ -5,7 +5,7 @@
         <div class="min-w-0">
           <div class="app-help-title-row">
             <h1 class="app-page-title text-h5 mb-1">Conteúdo</h1>
-            <UtilsPageHelpButton title="Conteúdo" :items="contentHelpItems" />
+            <UtilsPageHelpButton title="Conteúdo" />
           </div>
           <p class="text-body-2 text-grey mb-0">
             Bíblia, devocionais, versículo do dia e playlist
@@ -87,23 +87,6 @@ const contentItems = [
   },
 ];
 
-const contentHelpItems = [
-  {
-    title: "Como acessar o Versículo do Dia",
-    description: "Toque no card Versículo do Dia para ler a palavra publicada pela liderança.",
-    icon: BookMarked,
-  },
-  {
-    title: "Como acessar a Bíblia",
-    description: "Toque em Leitura Bíblica para escolher versão, livro e capítulo.",
-    icon: BookOpen,
-  },
-  {
-    title: "Como acessar o Devocional",
-    description: "Entre em Devocionais para acompanhar estudos e continuar a leitura dos capítulos.",
-    icon: Heart,
-  },
-];
 </script>
 
 <style scoped>

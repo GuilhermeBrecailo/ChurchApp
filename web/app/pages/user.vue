@@ -33,7 +33,7 @@
             {{ profile?.email || user?.email || "Email não informado" }}
           </p>
         </div>
-        <UtilsPageHelpButton title="Perfil" :items="profileHelpItems" />
+        <UtilsPageHelpButton title="Perfil" />
       </div>
     </section>
 
@@ -426,20 +426,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
-import {
-  BadgeCheck,
-  CalendarDays,
-  CalendarX,
-  ChevronRight,
-  Church,
-  ClipboardList,
-  LogOut,
-  Plus,
-  Save,
-  Shield,
-  UserRound,
-} from "lucide-vue-next";
+import { computed, onMounted, reactive } from "vue";
+import { CalendarDays, CalendarX, ChevronRight, Church, ClipboardList, LogOut, Plus, Save, Shield, UserRound } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useDepartments, type ChurchDepartment } from "../../composables/useDepartments";
 import { useUser, type MyProfileDTO } from "../../composables/useUser";
@@ -452,23 +440,6 @@ const accentColor = computed(() => isDark.value ? "#f0975a" : "#B5472A");
 const { getMyProfile, updateMyProfile, updateMyPassword } = useUser();
 const { getDepartments } = useDepartments();
 
-const profileHelpItems = [
-  {
-    title: "Como atualizar seus dados",
-    description: "Revise telefone, ministério principal e função; depois toque em Salvar alterações.",
-    icon: UserRound,
-  },
-  {
-    title: "Como ver seus ministérios",
-    description: "A seção Meus ministérios mostra as equipes em que você serve nesta igreja.",
-    icon: ClipboardList,
-  },
-  {
-    title: "Como bloquear datas",
-    description: "Use Indisponibilidades para avisar dias em que você não pode ser escalado.",
-    icon: CalendarX,
-  },
-];
 
 const loadingLogout = ref(false);
 const isLoading = ref(true);

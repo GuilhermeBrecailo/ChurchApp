@@ -9,7 +9,7 @@
           Devocionais
         </h1>
       </div>
-      <UtilsPageHelpButton title="Devocionais" :items="devotionalHelpItems" />
+      <UtilsPageHelpButton title="Devocionais" />
     </div>
 
     <v-btn
@@ -257,9 +257,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
-import { BookOpen, ChevronLeft, Heart, Plus } from "lucide-vue-next";
+import { computed, onMounted, reactive } from "vue";
+import { ChevronLeft, Heart, Plus } from "lucide-vue-next";
 import { useDevotionals, type Devotional } from "../../../composables/useDevotionals";
 import { usePermissions } from "../../../composables/usePermissions";
 
@@ -285,23 +284,6 @@ const createForm = reactive({
   chapters: [emptyChapter()],
 });
 
-const devotionalHelpItems = [
-  {
-    title: "Como abrir um devocional",
-    description: "Toque em um card para acessar os capítulos e acompanhar a leitura.",
-    icon: Heart,
-  },
-  {
-    title: "Como acompanhar capítulos",
-    description: "Dentro do devocional, avance pelos capítulos disponíveis da série.",
-    icon: BookOpen,
-  },
-  {
-    title: "Como criar devocional",
-    description: "Quem tem permissão usa Novo devocional para publicar série e capítulos.",
-    icon: Plus,
-  },
-];
 
 // Pastor/admin sempre; demais so com PUBLISH_CONTENT concedido pelo pastor.
 const canPublish = computed(() => can("CONTENT_PUBLISH"));
