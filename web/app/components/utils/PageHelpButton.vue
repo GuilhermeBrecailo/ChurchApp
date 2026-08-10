@@ -30,16 +30,11 @@
         </div>
 
         <div v-if="video" class="page-help-video-wrap">
-          <iframe
-            v-if="videoEmbedUrl"
-            class="page-help-video"
-            :src="videoEmbedUrl"
-            title="Vídeo de ajuda"
-            frameborder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen
-          />
-          <video v-else class="page-help-video" :src="video.videoUrl" controls />
+          <p class="page-help-video-title mb-1">{{ video.label }}</p>
+          <video class="page-help-video" :src="video.videoUrl" controls />
+          <p v-if="video.description" class="page-help-video-desc mt-2 mb-0">
+            {{ video.description }}
+          </p>
         </div>
 
         <div class="page-help-list">
@@ -53,6 +48,19 @@
             </div>
           </div>
         </div>
+
+        <a
+          class="page-help-whatsapp"
+          :href="whatsappHref"
+          target="_blank"
+          rel="noopener"
+        >
+          <MessageCircle size="18" />
+          <span>
+            <strong>Não achou o que procurava?</strong>
+            <span class="page-help-whatsapp-cta">Falar no WhatsApp</span>
+          </span>
+        </a>
       </v-card>
     </UtilsResponsiveOverlay>
   </div>
@@ -61,11 +69,11 @@
 <script setup lang="ts">
 import type { Component } from "vue";
 import { computed, onMounted, ref } from "vue";
-import { HelpCircle, X } from "lucide-vue-next";
+import { HelpCircle, MessageCircle, X } from "lucide-vue-next";
 import { useRoute } from "#app";
 import { useHelpVideos } from "../../../composables/useHelpVideos";
 
-defineProps<{
+const props = defineProps<{
   title: string;
   items: Array<{
     title: string;
@@ -86,16 +94,11 @@ onMounted(() => {
 
 const video = computed(() => getHelpVideo(route.path));
 
-const videoEmbedUrl = computed(() => {
-  const url = video.value?.videoUrl;
-  if (!url) return null;
+const WHATSAPP_NUMBER = "5543996644544";
 
-  const youtubeWatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
-  if (youtubeWatch) return `https://www.youtube.com/embed/${youtubeWatch[1]}`;
-
-  if (url.includes("youtube.com/embed/")) return url;
-
-  return null;
+const whatsappHref = computed(() => {
+  const message = `Olá! Não encontrei ajuda sobre a tela "${props.title}" no app.`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 });
 </script>
 
@@ -149,6 +152,18 @@ const videoEmbedUrl = computed(() => {
   background: #000;
 }
 
+.page-help-video-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--app-color-text);
+}
+
+.page-help-video-desc {
+  font-size: 0.8rem;
+  color: var(--app-color-text-muted);
+  line-height: 1.45;
+}
+
 .page-help-list {
   display: grid;
   gap: 10px;
@@ -187,5 +202,31 @@ const videoEmbedUrl = computed(() => {
   font-size: 0.8rem;
   color: var(--app-color-text-muted);
   line-height: 1.45;
+}
+
+.page-help-whatsapp {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 14px 14px;
+  padding: 14px;
+  border: 1px solid var(--app-color-border);
+  border-radius: 8px;
+  background: var(--app-color-accent-tint);
+  color: var(--app-color-accent);
+  text-decoration: none;
+}
+
+.page-help-whatsapp strong {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--app-color-text);
+}
+
+.page-help-whatsapp-cta {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--app-color-accent);
 }
 </style>

@@ -7,5 +7,9 @@ export async function HelpVideoRoutes(app: FastifyInstance) {
 
   app.get("/api/help-videos", controllerHandler(adapters.list.bind(adapters)));
   app.put("/api/help-videos", controllerHandler(adapters.upsert.bind(adapters)));
+  app.post(
+    "/api/help-videos/upload",
+    controllerHandler(adapters.uploadVideo.bind(adapters)),
+  );
   app.delete("/api/help-videos", controllerHandler(adapters.remove.bind(adapters)));
 }

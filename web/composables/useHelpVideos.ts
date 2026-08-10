@@ -6,8 +6,17 @@ import { useAuth } from "./useAuth";
 export interface PageHelpVideo {
   pageKey: string;
   label: string;
+  description?: string | null;
   videoUrl: string;
   updatedAt: string;
+}
+
+export interface UploadedHelpVideo {
+  url: string;
+  key: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
 }
 
 export const useHelpVideos = () => {
@@ -23,6 +32,12 @@ export const useHelpVideos = () => {
 
   const authHeaders = () => ({
     "Content-Type": "application/json",
+    ...(access_token.value
+      ? { Authorization: `Bearer ${access_token.value}` }
+      : {}),
+  });
+
+  const authOnlyHeaders = () => ({
     ...(access_token.value
       ? { Authorization: `Bearer ${access_token.value}` }
       : {}),
@@ -52,8 +67,25 @@ export const useHelpVideos = () => {
     }
   };
 
+  const uploadHelpVideo = async (
+    pageKey: string,
+    file: File,
+  ): Promise<ApiResponse<UploadedHelpVideo>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return await $customFetch<UploadedHelpVideo>(
+      `${config.public.URL_BACKEND}/api/help-videos/upload?pageKey=${encodeURIComponent(pageKey)}`,
+      {
+        method: "POST",
+        headers: authOnlyHeaders(),
+        body: formData,
+      },
+    );
+  };
+
   const saveHelpVideo = async (
-    payload: { pageKey: string; label: string; videoUrl: string },
+    payload: { pageKey: string; label: string; description?: string; videoUrl: string },
   ): Promise<ApiResponse<PageHelpVideo>> => {
     const result = await $customFetch<PageHelpVideo>(
       `${config.public.URL_BACKEND}/api/help-videos`,
@@ -95,6 +127,7 @@ export const useHelpVideos = () => {
     loading,
     error,
     loadHelpVideos,
+    uploadHelpVideo,
     saveHelpVideo,
     removeHelpVideo,
     getHelpVideo,

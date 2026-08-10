@@ -6,7 +6,7 @@
           Vídeos de ajuda
         </h2>
         <p class="text-body-2 text-grey-darken-1 mb-0">
-          Cole o link de um vídeo (YouTube ou arquivo .mp4) pra cada tela. Ele aparece dentro do modal de ajuda (o ícone "?") daquela tela.
+          Escolha uma tela, defina título e descrição, e envie o vídeo. Ele aparece dentro do modal de ajuda (o ícone "?") daquela tela.
         </p>
       </div>
     </div>
@@ -15,68 +15,119 @@
       {{ error }}
     </v-alert>
 
-    <div class="help-video-grid">
-      <v-card
-        v-for="page in HELP_VIDEO_PAGES"
-        :key="page.pageKey"
-        class="help-video-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
-      >
-        <div class="help-video-card-head mb-2">
-          <div class="min-w-0">
-            <p class="help-video-card-title mb-0">{{ page.label }}</p>
-            <p class="help-video-card-path mb-0">{{ page.pageKey }}</p>
-          </div>
-          <v-chip
-            size="small"
-            variant="tonal"
-            :color="getHelpVideo(page.pageKey) ? 'green-darken-2' : 'grey-darken-1'"
-          >
-            {{ getHelpVideo(page.pageKey) ? "Configurado" : "Sem vídeo" }}
-          </v-chip>
-        </div>
+    <v-alert v-if="formError" type="error" variant="tonal" density="compact" class="mb-4">
+      {{ formError }}
+    </v-alert>
 
-        <v-text-field
-          v-model="drafts[page.pageKey]"
-          placeholder="https://youtube.com/watch?v=..."
-          variant="outlined"
-          density="comfortable"
+    <v-select
+      v-model="selectedPageKey"
+      :items="pageSelectItems"
+      item-title="label"
+      item-value="pageKey"
+      label="Tela"
+      variant="outlined"
+      density="comfortable"
+      color="purple-darken-3"
+      bg-color="white"
+      hide-details="auto"
+      class="admin-input mb-4"
+    >
+      <template #item="{ props: itemProps, item }">
+        <v-list-item v-bind="itemProps">
+          <template #append>
+            <v-chip
+              size="small"
+              variant="tonal"
+              :color="getHelpVideo(item.raw.pageKey) ? 'green-darken-2' : 'grey-darken-1'"
+            >
+              {{ getHelpVideo(item.raw.pageKey) ? "Configurado" : "Sem vídeo" }}
+            </v-chip>
+          </template>
+        </v-list-item>
+      </template>
+    </v-select>
+
+    <v-card
+      v-if="selectedPage"
+      class="help-video-form rounded-xl pa-4 elevation-1 bg-white border-subtle"
+    >
+      <video
+        v-if="currentVideo?.videoUrl"
+        class="help-video-preview mb-4"
+        :src="currentVideo.videoUrl"
+        controls
+      />
+
+      <v-text-field
+        v-model="draft.title"
+        label="Título"
+        variant="outlined"
+        density="comfortable"
+        color="purple-darken-3"
+        bg-color="white"
+        hide-details="auto"
+        class="admin-input mb-3"
+        :disabled="isSaving"
+      />
+
+      <v-textarea
+        v-model="draft.description"
+        label="Descrição"
+        variant="outlined"
+        density="comfortable"
+        color="purple-darken-3"
+        bg-color="white"
+        rows="2"
+        auto-grow
+        hide-details="auto"
+        class="admin-input mb-3"
+        :disabled="isSaving"
+      />
+
+      <v-file-input
+        v-model="draft.file"
+        label="Vídeo (MP4, WebM ou OGG — até 100 MB)"
+        accept="video/mp4,video/webm,video/ogg"
+        variant="outlined"
+        density="comfortable"
+        color="purple-darken-3"
+        bg-color="white"
+        prepend-icon=""
+        prepend-inner-icon="mdi-video-outline"
+        hide-details="auto"
+        class="admin-input mb-3"
+        :disabled="isSaving"
+      />
+
+      <div class="d-flex ga-2">
+        <v-btn
           color="purple-darken-3"
-          bg-color="white"
-          hide-details="auto"
-          class="help-video-input mb-3"
-          :disabled="savingKey === page.pageKey"
-        />
-
-        <div class="d-flex ga-2">
-          <v-btn
-            color="purple-darken-3"
-            class="text-none font-weight-bold"
-            size="small"
-            :loading="savingKey === page.pageKey"
-            :disabled="!drafts[page.pageKey]?.trim()"
-            @click="handleSave(page)"
-          >
-            <Save size="16" class="mr-1" /> Salvar
-          </v-btn>
-          <v-btn
-            v-if="getHelpVideo(page.pageKey)"
-            variant="text"
-            color="red-darken-2"
-            class="text-none"
-            size="small"
-            :disabled="savingKey === page.pageKey"
-            @click="handleRemove(page)"
-          >
-            <Trash2 size="16" class="mr-1" /> Remover
-          </v-btn>
-        </div>
-      </v-card>
-    </div>
+          class="text-none font-weight-bold"
+          size="small"
+          :loading="isSaving"
+          :disabled="!canSave"
+          @click="handleSave"
+        >
+          <Save size="16" class="mr-1" /> Salvar
+        </v-btn>
+        <v-btn
+          v-if="currentVideo"
+          variant="text"
+          color="red-darken-2"
+          class="text-none"
+          size="small"
+          :disabled="isSaving"
+          @click="handleRemove"
+        >
+          <Trash2 size="16" class="mr-1" /> Remover
+        </v-btn>
+      </div>
+    </v-card>
   </section>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { Save, Trash2 } from "lucide-vue-next";
 import { useHelpVideos } from "../../../../composables/useHelpVideos";
 
@@ -100,76 +151,122 @@ const HELP_VIDEO_PAGES = [
   { pageKey: "/admin", label: "Administração" },
 ];
 
-const { error, loadHelpVideos, saveHelpVideo, removeHelpVideo, getHelpVideo } =
+const { error, loadHelpVideos, uploadHelpVideo, saveHelpVideo, removeHelpVideo, getHelpVideo } =
   useHelpVideos();
 
-const savingKey = ref<string | null>(null);
-const drafts = reactive<Record<string, string>>(
-  Object.fromEntries(HELP_VIDEO_PAGES.map((page) => [page.pageKey, ""])),
+const pageSelectItems = HELP_VIDEO_PAGES;
+const selectedPageKey = ref<string | null>(null);
+const isSaving = ref(false);
+const formError = ref("");
+
+const draft = reactive<{ title: string; description: string; file: File | null }>({
+  title: "",
+  description: "",
+  file: null,
+});
+
+const selectedPage = computed(
+  () => pageSelectItems.find((page) => page.pageKey === selectedPageKey.value) ?? null,
+);
+const currentVideo = computed(() =>
+  selectedPageKey.value ? getHelpVideo(selectedPageKey.value) : null,
 );
 
-const syncDraftsFromVideos = () => {
-  for (const page of HELP_VIDEO_PAGES) {
-    const existing = getHelpVideo(page.pageKey);
-    drafts[page.pageKey] = existing?.videoUrl ?? "";
-  }
+const canSave = computed(
+  () => Boolean(draft.title.trim()) && Boolean(draft.file || currentVideo.value?.videoUrl) && !isSaving.value,
+);
+
+const syncDraftFromSelection = () => {
+  const existing = currentVideo.value;
+  draft.title = existing?.label ?? "";
+  draft.description = existing?.description ?? "";
+  draft.file = null;
+  formError.value = "";
 };
+
+watch(selectedPageKey, syncDraftFromSelection);
 
 onMounted(async () => {
   await loadHelpVideos();
-  syncDraftsFromVideos();
+  syncDraftFromSelection();
 });
 
-const handleSave = async (page: { pageKey: string; label: string }) => {
-  const videoUrl = drafts[page.pageKey]?.trim();
-  if (!videoUrl) return;
+const handleSave = async () => {
+  if (!selectedPage.value) return;
+  const title = draft.title.trim();
+  if (!title) return;
 
-  savingKey.value = page.pageKey;
+  isSaving.value = true;
+  formError.value = "";
+
   try {
-    await saveHelpVideo({ pageKey: page.pageKey, label: page.label, videoUrl });
+    let videoUrl = currentVideo.value?.videoUrl ?? "";
+
+    if (draft.file) {
+      const uploadResult = await uploadHelpVideo(selectedPage.value.pageKey, draft.file);
+      if (uploadResult.error || !uploadResult.data) {
+        formError.value = uploadResult.error || "Falha ao enviar o vídeo";
+        return;
+      }
+      videoUrl = uploadResult.data.url;
+    }
+
+    if (!videoUrl) {
+      formError.value = "Envie um vídeo";
+      return;
+    }
+
+    const saveResult = await saveHelpVideo({
+      pageKey: selectedPage.value.pageKey,
+      label: title,
+      description: draft.description.trim() || undefined,
+      videoUrl,
+    });
+
+    if (saveResult.error) {
+      formError.value = saveResult.error;
+      return;
+    }
+
+    draft.file = null;
   } finally {
-    savingKey.value = null;
+    isSaving.value = false;
   }
 };
 
-const handleRemove = async (page: { pageKey: string }) => {
-  savingKey.value = page.pageKey;
+const handleRemove = async () => {
+  if (!selectedPage.value) return;
+
+  isSaving.value = true;
+  formError.value = "";
+
   try {
-    await removeHelpVideo(page.pageKey);
-    drafts[page.pageKey] = "";
+    const result = await removeHelpVideo(selectedPage.value.pageKey);
+    if (result.error) {
+      formError.value = result.error;
+      return;
+    }
+    syncDraftFromSelection();
   } finally {
-    savingKey.value = null;
+    isSaving.value = false;
   }
 };
 </script>
 
 <style scoped>
-.help-video-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 12px;
+.help-video-form {
+  max-width: 520px;
 }
 
-.help-video-card-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
+.help-video-preview {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  background: #000;
+  display: block;
 }
 
-.help-video-card-title {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: #111827;
-}
-
-.help-video-card-path {
-  font-size: 0.75rem;
-  font-family: monospace;
-  color: #6b7280;
-}
-
-.help-video-input :deep(.v-field) {
+.help-video-form :deep(.v-field) {
   border-radius: 10px;
 }
 </style>

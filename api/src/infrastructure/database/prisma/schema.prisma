@@ -528,9 +528,10 @@ model PrayerRequest {
 // path da rota (ex: "/scale", "/ministery") - o UtilsPageHelpButton busca
 // pelo path atual, sem precisar mudar nenhuma pagina que ja usa o botao.
 model PageHelpVideo {
-    id        String   @id @default(uuid())
-    pageKey   String   @unique
-    label     String
-    videoUrl  String
-    updatedAt DateTime @updatedAt
+    id          String   @id @default(uuid())
+    pageKey     String   @unique
+    label       String
+    description String?
+    videoUrl    String
+    updatedAt   DateTime @updatedAt
 }
