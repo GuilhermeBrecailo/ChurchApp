@@ -999,7 +999,7 @@
         <v-tab v-if="isChurchWideManager" value="conteudo" class="text-none font-weight-medium admin-tab">Conteúdo</v-tab>
         <v-tab v-if="isChurchWideManager" value="relatorios" class="text-none font-weight-medium admin-tab">Relatórios</v-tab>
         <v-tab v-if="isChurchWideManager" value="cargos" class="text-none font-weight-medium admin-tab">Cargos</v-tab>
-        <v-tab v-if="isChurchWideManager" value="videos" class="text-none font-weight-medium admin-tab">Vídeos</v-tab>
+        <v-tab v-if="isPlatformAdmin" value="videos" class="text-none font-weight-medium admin-tab">Vídeos</v-tab>
       </v-tabs>
     </div>
 
@@ -2036,7 +2036,7 @@
       :departments="departments"
     />
 
-    <AdminHelpVideos v-if="isChurchWideManager && activeAdminTab === 'videos'" />
+    <AdminHelpVideos v-if="isPlatformAdmin && activeAdminTab === 'videos'" />
 
     <section v-show="isChurchWideManager && activeAdminTab === 'relatorios'" class="church-admin-section mb-8">
       <div class="section-heading mb-4">

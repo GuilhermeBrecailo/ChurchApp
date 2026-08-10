@@ -35,13 +35,12 @@ function getAuthUserId(request: FastifyRequest) {
 async function assertCanManageHelpVideos(request: FastifyRequest) {
   const userId = getAuthUserId(request);
   const context = request.churchContext ?? (await resolveActiveChurchContext(request, userId));
-  const isManager =
-    context.role === "PASTOR" ||
-    context.role === "ADMIN" ||
-    context.role === "SUPER_ADMIN";
+  // Conteudo global (sem crunchId, visivel pra todas as igrejas) - so admin
+  // de plataforma gerencia, nao o pastor de uma igreja individual.
+  const isPlatformAdmin = context.role === "ADMIN" || context.role === "SUPER_ADMIN";
 
-  if (!isManager) {
-    throw new DomainError("Apenas pastor ou administrador pode gerenciar os videos de ajuda");
+  if (!isPlatformAdmin) {
+    throw new DomainError("Apenas administrador da plataforma pode gerenciar os videos de ajuda");
   }
 }
 

@@ -30,11 +30,27 @@
         </div>
 
         <div v-if="video" class="page-help-video-wrap">
-          <p class="page-help-video-title mb-1">{{ video.label }}</p>
-          <video class="page-help-video" :src="video.videoUrl" controls />
-          <p v-if="video.description" class="page-help-video-desc mt-2 mb-0">
-            {{ video.description }}
-          </p>
+          <div
+            v-if="!videoOpen"
+            class="page-help-video-card"
+            role="button"
+            tabindex="0"
+            :aria-label="`Assistir vídeo: ${video.label}`"
+            @click="videoOpen = true"
+            @keydown.enter="videoOpen = true"
+            @keydown.space.prevent="videoOpen = true"
+          >
+            <div class="page-help-video-play">
+              <Play size="18" />
+            </div>
+            <div class="min-w-0">
+              <h3 class="page-help-card-title mb-1">{{ video.label }}</h3>
+              <p v-if="video.description" class="page-help-card-desc mb-0">
+                {{ video.description }}
+              </p>
+            </div>
+          </div>
+          <video v-else class="page-help-video" :src="video.videoUrl" controls autoplay />
         </div>
 
         <div class="page-help-list">
@@ -68,8 +84,8 @@
 
 <script setup lang="ts">
 import type { Component } from "vue";
-import { computed, onMounted, ref } from "vue";
-import { HelpCircle, MessageCircle, X } from "lucide-vue-next";
+import { computed, onMounted, ref, watch } from "vue";
+import { HelpCircle, MessageCircle, Play, X } from "lucide-vue-next";
 import { useRoute } from "#app";
 import { useHelpVideos } from "../../../composables/useHelpVideos";
 
@@ -83,6 +99,7 @@ const props = defineProps<{
 }>();
 
 const isOpen = ref(false);
+const videoOpen = ref(false);
 const route = useRoute();
 const { helpVideos, loading, loadHelpVideos, getHelpVideo } = useHelpVideos();
 
@@ -90,6 +107,10 @@ onMounted(() => {
   if (!helpVideos.value.length && !loading.value) {
     loadHelpVideos();
   }
+});
+
+watch(isOpen, (open) => {
+  if (!open) videoOpen.value = false;
 });
 
 const video = computed(() => getHelpVideo(route.path));
@@ -152,16 +173,30 @@ const whatsappHref = computed(() => {
   background: #000;
 }
 
-.page-help-video-title {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: var(--app-color-text);
+.page-help-video-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--app-color-border);
+  border-radius: 8px;
+  background: var(--app-color-surface-soft);
+  cursor: pointer;
 }
 
-.page-help-video-desc {
-  font-size: 0.8rem;
-  color: var(--app-color-text-muted);
-  line-height: 1.45;
+.page-help-video-card:hover {
+  border-color: var(--app-color-accent);
+}
+
+.page-help-video-play {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--app-color-accent);
+  color: #fff;
+  flex: 0 0 auto;
 }
 
 .page-help-list {
