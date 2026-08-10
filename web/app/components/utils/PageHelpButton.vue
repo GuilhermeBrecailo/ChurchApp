@@ -115,7 +115,7 @@ watch(isOpen, (open) => {
 
 const video = computed(() => getHelpVideo(route.path));
 
-const WHATSAPP_NUMBER = "5543996644544";
+const WHATSAPP_NUMBER = "554396644655";
 
 const whatsappHref = computed(() => {
   const message = `Olá! Não encontrei ajuda sobre a tela "${props.title}" no app.`;
