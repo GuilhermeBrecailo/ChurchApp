@@ -78,7 +78,14 @@ Assinatura recorrente via API de assinaturas (preapproval) do Mercado Pago. O `m
 
 O MCP oficial do Mercado Pago (`https://mcp.mercadopago.com/mcp`) expõe `search-documentation`, `save_webhook`, `notifications_history_diagnostics`, `create_test_user`, `add_money_test_user`, `get_credentials`, `create_application` e `application_list`. Não há ferramenta para criar assinatura ou checkout: o MCP serve para consultar documentação, provisionar credenciais e ambiente de teste e configurar/diagnosticar o webhook durante o desenvolvimento. A chamada de cobrança em si é REST/SDK dentro do `api/src`, em runtime, sem MCP envolvido.
 
-Os endpoints exatos de assinatura e os `type`/`topic` das notificações devem ser confirmados via `search-documentation` do MCP no início da implementação, e não assumidos de memória.
+Endpoints e payloads confirmados na documentação oficial (não assumidos de memória):
+
+- **Criar assinatura**: `POST https://api.mercadopago.com/preapproval`. Sem plano associado, `reason`, `external_reference` e `payer_email` são obrigatórios; `auto_recurring` (`frequency`, `frequency_type`, `transaction_amount`, `currency_id`, `start_date`, `end_date`) define a recorrência; `card_token_id` e `back_url` são condicionais. Resposta inclui `id`, `status`, `payer_id`, `next_payment_date`, `date_created` — `id` é o que vira `mpSubscriptionId`.
+- **Status confirmados na documentação**: `pending` e `authorized`. Os demais valores do enum (esperado algo como `paused`/`cancelled`) não apareceram no fetch feito e precisam ser confirmados contra a resposta real de uma assinatura de teste antes de codificar o `switch` no webhook — não assumir a lista completa de memória.
+- **Webhook**: dois topics relevantes — `subscription_preapproval` (criação/atualização da assinatura em si) e `subscription_authorized_payment` (cada cobrança recorrente). Payload da notificação: `{ id, live_mode, type, date_created, user_id, api_version, action, data: { id } }` — o `data.id` é o identificador do recurso, não o conteúdo; o handler precisa buscar o estado atual via `GET /preapproval/{id}` (ou `/preapproval/search`) em vez de confiar em qualquer campo de status que venha dentro da notificação.
+- **Validação de assinatura**: o Mercado Pago manda a notificação assinada no header `x-signature` (formato `ts=<timestamp>,v1=<hmac>`) e `x-request-id`; validar o HMAC é o que impede alguém de forjar uma notificação de pagamento aprovado direto pro endpoint do webhook.
+
+Fonte: documentação oficial do Mercado Pago (developers.mercadopago.com.br), consultada em 2026-08-11. O MCP oficial (`https://mcp.mercadopago.com/mcp`, ferramenta `search-documentation`) é o caminho preferido pra reconfirmar isso no momento exato da implementação, caso a API tenha mudado entre a escrita deste spec e o código.
 
 Fluxo:
 
