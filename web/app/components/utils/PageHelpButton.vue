@@ -24,7 +24,13 @@
             <p class="app-page-kicker mb-1">Ajuda</p>
             <h2 class="page-help-title mb-0">{{ title }}</h2>
           </div>
-          <v-btn icon variant="text" color="grey-darken-1" :aria-label="`Fechar ajuda da tela ${title}`" @click="isOpen = false">
+          <v-btn
+            icon
+            variant="text"
+            color="grey-darken-1"
+            :aria-label="`Fechar ajuda da tela ${title}`"
+            @click="isOpen = false"
+          >
             <X size="20" />
           </v-btn>
         </div>
@@ -50,7 +56,13 @@
               </p>
             </div>
           </div>
-          <video v-else class="page-help-video" :src="video.videoUrl" controls autoplay />
+          <video
+            v-else
+            class="page-help-video"
+            :src="video.videoUrl"
+            controls
+            autoplay
+          />
         </div>
 
         <div class="page-help-list">
@@ -115,7 +127,7 @@ watch(isOpen, (open) => {
 
 const video = computed(() => getHelpVideo(route.path));
 
-const WHATSAPP_NUMBER = "554396644655";
+const WHATSAPP_NUMBER = "554396644544";
 
 const whatsappHref = computed(() => {
   const message = `Olá! Não encontrei ajuda sobre a tela "${props.title}" no app.`;
