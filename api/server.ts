@@ -38,6 +38,7 @@ await server.register(cors, {
   origin: true,
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  exposedHeaders: ["Content-Range", "Accept-Ranges", "Content-Length", "Content-Type"],
 });
 
 await server.register(multipart, {
@@ -50,6 +51,10 @@ await server.register(multipart, {
 await server.register(fastifyStatic, {
   root: uploadsRoot,
   prefix: "/uploads/",
+  acceptRanges: true,
+  setHeaders(response) {
+    response.setHeader("Accept-Ranges", "bytes");
+  },
 });
 
 server.get("/status", async () => {

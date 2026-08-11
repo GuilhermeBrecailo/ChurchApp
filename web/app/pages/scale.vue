@@ -17,7 +17,7 @@
         >
           <Plus size="18" class="mr-1" /> Novo
         </v-btn>
-        <UtilsPageHelpButton title="Escalas" :items="scaleHelpItems" />
+        <UtilsPageHelpButton title="Escalas" />
       </div>
     </div>
 
@@ -1180,26 +1180,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
-import {
-  Calendar,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  GripVertical,
-  Clock,
-  Eye,
-  EyeOff,
-  FileText,
-  Music,
-  Pencil,
-  Play,
-  Plus,
-  Repeat2,
-  Trash2,
-  UserPlus,
-  Users,
-} from "lucide-vue-next";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from "vue";
+import { CheckCircle2, ChevronDown, ChevronUp, GripVertical, Clock, Eye, EyeOff, FileText, Music, Pencil, Play, Plus, Repeat2, Trash2, UserPlus, Users } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import {
@@ -1231,23 +1213,6 @@ const accentColor = computed(() => isDark.value ? "#f0975a" : "#B5472A");
 const avatarBgColor = computed(() => isDark.value ? "rgba(240,151,90,0.16)" : "#F7E2D3");
 const route = useRoute();
 
-const scaleHelpItems = [
-  {
-    title: "Como ver suas escalas",
-    description: "Use os filtros para separar todos os eventos, confirmações pendentes e escalas já vistas.",
-    icon: Calendar,
-  },
-  {
-    title: "Como confirmar presença",
-    description: "Abra uma escala e use as ações do card para confirmar, recusar ou solicitar troca.",
-    icon: CheckCircle2,
-  },
-  {
-    title: "Como criar uma escala",
-    description: "Se você tiver permissão, toque em Novo para cadastrar culto, voluntários e playlist.",
-    icon: UserPlus,
-  },
-];
 
 const activeFilter = ref("Todos");
 const departments = ref<ChurchDepartment[]>([]);

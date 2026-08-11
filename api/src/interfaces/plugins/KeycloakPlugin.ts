@@ -47,13 +47,14 @@ const KeycloakPlugin: FastifyPluginAsync = async (fastify) => {
       "/public/auth/refresh-token",
       "/public/auth/logout",
     ];
-    const path = (request.routeOptions?.url || request.raw.url || "").split(
+    const path = (request.raw.url || request.routeOptions?.url || "").split(
       "?",
     )[0];
     if (
       request.method === "OPTIONS" ||
       !path ||
       path.startsWith("/public") ||
+      path.startsWith("/uploads/") ||
       publicRoutes.includes(path)
     ) {
       return;

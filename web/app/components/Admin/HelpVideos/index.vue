@@ -19,6 +19,60 @@
       {{ formError }}
     </v-alert>
 
+    <v-card
+      v-if="configuredVideos.length"
+      class="help-video-list mb-4 elevation-1 bg-white border-subtle"
+    >
+      <div class="help-video-list-heading">
+        <div>
+          <h3 class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
+            Vídeos cadastrados
+          </h3>
+          <p class="text-caption text-grey-darken-1 mb-0">
+            Telas que já exibem vídeo no botão de ajuda.
+          </p>
+        </div>
+      </div>
+
+      <div class="help-video-table" role="table" aria-label="Vídeos de ajuda cadastrados">
+        <div class="help-video-row help-video-row-head" role="row">
+          <span role="columnheader">Tela</span>
+          <span role="columnheader">Título</span>
+          <span role="columnheader">Atualizado</span>
+          <span role="columnheader" class="text-right">Ações</span>
+        </div>
+
+        <div v-for="row in configuredVideos" :key="row.pageKey" class="help-video-row" role="row">
+          <span role="cell" class="font-weight-medium text-grey-darken-4">{{ row.label }}</span>
+          <span role="cell" class="text-grey-darken-2">{{ row.video.label }}</span>
+          <span role="cell" class="text-grey-darken-1">{{ formatUpdatedAt(row.video.updatedAt) }}</span>
+          <span role="cell" class="help-video-actions">
+            <v-btn
+              icon
+              variant="text"
+              color="purple-darken-3"
+              size="small"
+              :aria-label="`Editar vídeo de ${row.label}`"
+              @click="selectPageVideo(row.pageKey)"
+            >
+              <Pencil size="16" />
+            </v-btn>
+            <v-btn
+              icon
+              variant="text"
+              color="red-darken-2"
+              size="small"
+              :disabled="isSaving"
+              :aria-label="`Remover vídeo de ${row.label}`"
+              @click="handleRemovePage(row.pageKey)"
+            >
+              <Trash2 size="16" />
+            </v-btn>
+          </span>
+        </div>
+      </div>
+    </v-card>
+
     <v-select
       v-model="selectedPageKey"
       :items="pageSelectItems"
@@ -38,9 +92,9 @@
             <v-chip
               size="small"
               variant="tonal"
-              :color="getHelpVideo(item.raw.pageKey) ? 'green-darken-2' : 'grey-darken-1'"
+              :color="hasHelpVideoForSelectItem(item) ? 'green-darken-2' : 'grey-darken-1'"
             >
-              {{ getHelpVideo(item.raw.pageKey) ? "Configurado" : "Sem vídeo" }}
+              {{ hasHelpVideoForSelectItem(item) ? "Configurado" : "Sem vídeo" }}
             </v-chip>
           </template>
         </v-list-item>
@@ -52,9 +106,9 @@
       class="help-video-form rounded-xl pa-4 elevation-1 bg-white border-subtle"
     >
       <video
-        v-if="currentVideo?.videoUrl"
+        v-if="previewVideoUrl"
         class="help-video-preview mb-4"
-        :src="currentVideo.videoUrl"
+        :src="previewVideoUrl"
         controls
       />
 
@@ -127,14 +181,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import { Save, Trash2 } from "lucide-vue-next";
-import { useHelpVideos } from "../../../../composables/useHelpVideos";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { Pencil, Save, Trash2 } from "lucide-vue-next";
+import { useHelpVideos, type PageHelpVideo } from "../../../../composables/useHelpVideos";
 
 // Telas que ja tem o botao UtilsPageHelpButton (o icone "?"). pageKey precisa
 // bater exatamente com route.path daquela tela - e o que o botao usa pra
 // encontrar o video certo, sem precisar mudar nenhuma pagina.
-const HELP_VIDEO_PAGES = [
+type HelpVideoPage = { pageKey: string; label: string };
+type HelpVideoSelectItem = { raw?: Partial<HelpVideoPage>; value?: unknown };
+
+const HELP_VIDEO_PAGES: HelpVideoPage[] = [
   { pageKey: "/", label: "Início" },
   { pageKey: "/content", label: "Conteúdo" },
   { pageKey: "/content/bible", label: "Leitura Bíblica" },
@@ -164,6 +221,7 @@ const draft = reactive<{ title: string; description: string; file: File | null }
   description: "",
   file: null,
 });
+const localPreviewUrl = ref("");
 
 const selectedPage = computed(
   () => pageSelectItems.find((page) => page.pageKey === selectedPageKey.value) ?? null,
@@ -171,6 +229,40 @@ const selectedPage = computed(
 const currentVideo = computed(() =>
   selectedPageKey.value ? getHelpVideo(selectedPageKey.value) : null,
 );
+
+const configuredVideos = computed(() =>
+  pageSelectItems
+    .map((page) => ({ ...page, video: getHelpVideo(page.pageKey) }))
+    .filter((row): row is HelpVideoPage & { video: PageHelpVideo } => Boolean(row.video))
+    .sort((a, b) => a.label.localeCompare(b.label, "pt-BR")),
+);
+const configuredPageKeys = computed(
+  () => new Set(configuredVideos.value.map((row) => row.pageKey)),
+);
+const previewVideoUrl = computed(
+  () => localPreviewUrl.value || currentVideo.value?.videoUrl || "",
+);
+
+const formatUpdatedAt = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sem data";
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+};
+
+const getSelectItemPageKey = (item: HelpVideoSelectItem) => {
+  const rawPageKey = item.raw?.pageKey;
+  if (typeof rawPageKey === "string") return rawPageKey;
+  return typeof item.value === "string" ? item.value : "";
+};
+
+const hasHelpVideoForSelectItem = (item: HelpVideoSelectItem) => {
+  const pageKey = getSelectItemPageKey(item);
+  return Boolean(pageKey && configuredPageKeys.value.has(pageKey));
+};
 
 const canSave = computed(
   () => Boolean(draft.title.trim()) && Boolean(draft.file || currentVideo.value?.videoUrl) && !isSaving.value,
@@ -185,6 +277,26 @@ const syncDraftFromSelection = () => {
 };
 
 watch(selectedPageKey, syncDraftFromSelection);
+
+const clearLocalPreviewUrl = () => {
+  if (localPreviewUrl.value && typeof URL !== "undefined") {
+    URL.revokeObjectURL(localPreviewUrl.value);
+  }
+  localPreviewUrl.value = "";
+};
+
+watch(
+  () => draft.file,
+  (file) => {
+    clearLocalPreviewUrl();
+
+    if (file && typeof URL !== "undefined") {
+      localPreviewUrl.value = URL.createObjectURL(file);
+    }
+  },
+);
+
+onBeforeUnmount(clearLocalPreviewUrl);
 
 onMounted(async () => {
   await loadHelpVideos();
@@ -234,26 +346,95 @@ const handleSave = async () => {
   }
 };
 
-const handleRemove = async () => {
-  if (!selectedPage.value) return;
+const selectPageVideo = (pageKey: string) => {
+  selectedPageKey.value = pageKey;
+};
+
+const handleRemovePage = async (pageKey: string) => {
+  if (!pageKey) return;
 
   isSaving.value = true;
   formError.value = "";
 
   try {
-    const result = await removeHelpVideo(selectedPage.value.pageKey);
+    const result = await removeHelpVideo(pageKey);
     if (result.error) {
       formError.value = result.error;
       return;
     }
-    syncDraftFromSelection();
+    if (selectedPageKey.value === pageKey) {
+      syncDraftFromSelection();
+    }
   } finally {
     isSaving.value = false;
   }
 };
+
+const handleRemove = async () => {
+  if (!selectedPage.value) return;
+  await handleRemovePage(selectedPage.value.pageKey);
+};
 </script>
 
 <style scoped>
+.help-video-list {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.help-video-list-heading {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.help-video-table {
+  display: grid;
+}
+
+.help-video-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(160px, 1.4fr) minmax(96px, 0.7fr) 96px;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 0.84rem;
+}
+
+.help-video-row:last-child {
+  border-bottom: 0;
+}
+
+.help-video-row-head {
+  background: #f7f7fb;
+  color: #6b6472;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.help-video-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+@media (max-width: 720px) {
+  .help-video-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .help-video-row-head {
+    display: none;
+  }
+
+  .help-video-actions {
+    justify-content: flex-start;
+    margin-top: 4px;
+  }
+}
+
 .help-video-form {
   max-width: 520px;
 }

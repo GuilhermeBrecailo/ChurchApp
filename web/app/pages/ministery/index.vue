@@ -17,7 +17,7 @@
         >
           <Plus size="18" class="mr-1" /> Novo
         </v-btn>
-        <UtilsPageHelpButton title="Ministérios" :items="ministeryHelpItems" />
+        <UtilsPageHelpButton title="Ministérios" />
       </div>
     </div>
 
@@ -291,9 +291,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
-import { BarChart3, Building, List, Plus, Trash2 } from "lucide-vue-next";
+import { computed, onMounted, reactive } from "vue";
+import { Building, List, Plus, Trash2 } from "lucide-vue-next";
 import {
   useDepartments,
   DEPARTMENT_MODULE_OPTIONS,
@@ -307,23 +306,6 @@ const { user } = useAuth();
 const { getDepartments, createDepartment, deleteDepartment } = useDepartments();
 const { getMembers } = useMembers();
 
-const ministeryHelpItems = [
-  {
-    title: "Como ver os ministérios",
-    description: "Use os cards da lista para abrir detalhes, equipes, escalas e materiais de cada ministério.",
-    icon: List,
-  },
-  {
-    title: "Como criar um ministério",
-    description: "Se você tiver permissão, toque em Novo e informe nome, líder e módulos ativos.",
-    icon: Plus,
-  },
-  {
-    title: "Como acompanhar a visão geral",
-    description: "A aba de visão geral resume quantos ministérios existem e separa a lista por tipo.",
-    icon: BarChart3,
-  },
-];
 
 const departments = ref<ChurchDepartment[]>([]);
 const members = ref<ChurchMember[]>([]);

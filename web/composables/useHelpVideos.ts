@@ -30,6 +30,18 @@ export const useHelpVideos = () => {
   const loading = useState<boolean>("page-help-videos-loading", () => false);
   const error = useState<string | null>("page-help-videos-error", () => null);
 
+  const normalizeHelpVideos = (videos?: PageHelpVideo[] | null) =>
+    (Array.isArray(videos) ? videos : []).filter(
+      (video): video is PageHelpVideo =>
+        Boolean(
+          video &&
+            typeof video.pageKey === "string" &&
+            video.pageKey &&
+            typeof video.videoUrl === "string" &&
+            video.videoUrl,
+        ),
+    );
+
   const authHeaders = () => ({
     "Content-Type": "application/json",
     ...(access_token.value
@@ -61,7 +73,7 @@ export const useHelpVideos = () => {
         return;
       }
 
-      helpVideos.value = data ?? [];
+      helpVideos.value = normalizeHelpVideos(data);
     } finally {
       loading.value = false;
     }
@@ -94,9 +106,9 @@ export const useHelpVideos = () => {
 
     if (!result.error && result.data) {
       const existing = helpVideos.value.filter(
-        (video) => video.pageKey !== payload.pageKey,
+        (video) => video?.pageKey !== payload.pageKey,
       );
-      helpVideos.value = [...existing, result.data];
+      helpVideos.value = normalizeHelpVideos([...existing, result.data]);
     }
 
     return result;
@@ -107,12 +119,12 @@ export const useHelpVideos = () => {
   ): Promise<ApiResponse<{ success: boolean }>> => {
     const result = await $customFetch<{ success: boolean }>(
       `${config.public.URL_BACKEND}/api/help-videos?pageKey=${encodeURIComponent(pageKey)}`,
-      { method: "DELETE", headers: authHeaders() },
+      { method: "DELETE", headers: authOnlyHeaders() },
     );
 
     if (!result.error) {
       helpVideos.value = helpVideos.value.filter(
-        (video) => video.pageKey !== pageKey,
+        (video) => video?.pageKey !== pageKey,
       );
     }
 
@@ -120,7 +132,7 @@ export const useHelpVideos = () => {
   };
 
   const getHelpVideo = (pageKey: string) =>
-    helpVideos.value.find((video) => video.pageKey === pageKey) ?? null;
+    (helpVideos.value ?? []).find((video) => video?.pageKey === pageKey) ?? null;
 
   return {
     helpVideos,

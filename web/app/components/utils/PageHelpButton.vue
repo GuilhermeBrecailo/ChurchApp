@@ -65,15 +65,18 @@
           />
         </div>
 
-        <div class="page-help-list">
-          <div v-for="item in items" :key="item.title" class="page-help-card">
-            <div class="page-help-icon">
-              <component :is="item.icon" size="18" />
-            </div>
-            <div class="min-w-0">
-              <h3 class="page-help-card-title mb-1">{{ item.title }}</h3>
-              <p class="page-help-card-desc mb-0">{{ item.description }}</p>
-            </div>
+        <div v-else-if="loading" class="page-help-empty">
+          <v-progress-circular indeterminate color="purple-darken-3" size="22" width="2" />
+          <p class="mb-0">Carregando vídeo de ajuda...</p>
+        </div>
+
+        <div v-else class="page-help-empty">
+          <div class="page-help-empty-icon">
+            <VideoOff size="20" />
+          </div>
+          <div class="min-w-0">
+            <h3 class="page-help-card-title mb-1">Ainda não há vídeo de ajuda para esta tela.</h3>
+            <p class="page-help-card-desc mb-0">Fale com o suporte se precisar de orientação agora.</p>
           </div>
         </div>
 
@@ -95,19 +98,13 @@
 </template>
 
 <script setup lang="ts">
-import type { Component } from "vue";
 import { computed, onMounted, ref, watch } from "vue";
-import { HelpCircle, MessageCircle, Play, X } from "lucide-vue-next";
+import { HelpCircle, MessageCircle, Play, VideoOff, X } from "lucide-vue-next";
 import { useRoute } from "#app";
 import { useHelpVideos } from "../../../composables/useHelpVideos";
 
 const props = defineProps<{
   title: string;
-  items: Array<{
-    title: string;
-    description: string;
-    icon: Component;
-  }>;
 }>();
 
 const isOpen = ref(false);
@@ -211,23 +208,23 @@ const whatsappHref = computed(() => {
   flex: 0 0 auto;
 }
 
-.page-help-list {
-  display: grid;
-  gap: 10px;
-  padding: 14px;
-}
-
-.page-help-card {
+.page-help-empty {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   padding: 14px;
+  margin: 14px 14px 0;
   border: 1px solid var(--app-color-border);
   border-radius: 8px;
   background: var(--app-color-surface-soft);
+  color: var(--app-color-text-muted);
 }
 
-.page-help-icon {
+.page-help-empty > p {
+  font-size: 0.85rem;
+}
+
+.page-help-empty-icon {
   display: grid;
   place-items: center;
   width: 34px;

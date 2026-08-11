@@ -141,7 +141,11 @@ export class HelpVideoAdapters {
     await writeFile(targetPath, buffer);
 
     const host = request.headers.host || `localhost:${process.env.API_PORT || 8000}`;
-    const baseUrl = process.env.URL_BACKEND || `http://${host}`;
+    const forwardedProto = request.headers["x-forwarded-proto"];
+    const protocol =
+      (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto) ||
+      (process.env.NODE_ENV === "production" ? "https" : "http");
+    const baseUrl = process.env.URL_BACKEND || `${protocol}://${host}`;
 
     return {
       url: `${baseUrl.replace(/\/$/, "")}/uploads/${key}`,

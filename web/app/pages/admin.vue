@@ -1,5 +1,27 @@
 <template>
-  <div v-if="isPlatformAdmin" class="platform-admin-page pa-4 min-vh-100 pb-20">
+  <div v-if="isPlatformAdmin && canAccessChurchAdmin" class="admin-mode-shell pa-4 pb-0 bg-grey-lighten-4">
+    <div class="admin-mode-selector">
+      <v-btn-toggle
+        v-model="activeAdminMode"
+        mandatory
+        divided
+        class="admin-mode-toggle"
+      >
+        <v-btn value="master" class="admin-mode-button text-none">
+          Admin Master
+        </v-btn>
+        <v-btn value="church" class="admin-mode-button text-none">
+          Administração da Igreja
+        </v-btn>
+      </v-btn-toggle>
+    </div>
+  </div>
+
+  <div
+    v-if="isPlatformAdmin"
+    v-show="!canAccessChurchAdmin || activeAdminMode === 'master'"
+    class="platform-admin-page pa-4 min-vh-100 pb-20"
+  >
     <div class="platform-hero mb-6">
       <div class="min-w-0">
         <p class="platform-kicker mb-2">Admin master</p>
@@ -8,7 +30,7 @@
             Visão geral da plataforma
           </h1>
           <div class="platform-hero-actions">
-            <UtilsPageHelpButton title="Admin master" :items="platformAdminHelpItems" />
+            <UtilsPageHelpButton title="Admin master" />
             <div class="platform-hero-mark">
               <Church size="26" :color="accentColor" />
             </div>
@@ -18,21 +40,6 @@
           Acompanhe igrejas, lideranças, usuários e ministérios em um só lugar.
         </p>
       </div>
-    </div>
-
-    <div v-if="canAccessChurchAdmin" class="platform-switchbar mb-6">
-      <div class="min-w-0">
-        <strong>Administração pastoral disponível</strong>
-        <span>Veja também a mesma área operacional usada pelos pastores da sua igreja.</span>
-      </div>
-      <v-btn
-        variant="tonal"
-        color="indigo-darken-2"
-        class="text-none"
-        href="#pastoral-admin"
-      >
-        Abrir minha igreja
-      </v-btn>
     </div>
 
     <v-alert
@@ -45,7 +52,20 @@
       {{ platformError }}
     </v-alert>
 
-    <MotionStaggerGroup class="stats-grid mb-6">
+    <div class="admin-tabs-bar platform-master-tabs mb-6">
+      <v-tabs
+        v-model="activePlatformTab"
+        density="compact"
+        class="admin-tabs platform-tabs"
+      >
+        <v-tab value="geral" class="text-none font-weight-medium admin-tab">Geral</v-tab>
+        <v-tab value="igrejas" class="text-none font-weight-medium admin-tab">Igrejas Cadastradas</v-tab>
+        <v-tab value="videos" class="text-none font-weight-medium admin-tab">Vídeos de Ajuda</v-tab>
+      </v-tabs>
+    </div>
+
+    <section v-show="activePlatformTab === 'geral'" class="platform-tab-panel">
+      <MotionStaggerGroup class="stats-grid mb-6">
       <MotionStaggerItem>
         <AdminStatCard
           title="Igrejas"
@@ -127,8 +147,10 @@
         </p>
       </v-card>
     </section>
+    </section>
 
-    <section class="platform-directory">
+    <section v-show="activePlatformTab === 'igrejas'" class="platform-tab-panel platform-directory-tab">
+      <section class="platform-directory">
       <div class="directory-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
@@ -964,11 +986,16 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
-    <AdminHelpVideos />
+    </section>
+
+    <section v-show="activePlatformTab === 'videos'" class="platform-tab-panel platform-help-panel">
+      <AdminHelpVideos />
+    </section>
   </div>
 
   <div
     v-if="canAccessChurchAdmin"
+    v-show="!isPlatformAdmin || activeAdminMode === 'church'"
     id="pastoral-admin"
     class="church-admin-page pa-4 bg-grey-lighten-4 min-vh-100 pb-20"
   >
@@ -979,7 +1006,7 @@
           <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">
             Administração da igreja
           </h1>
-          <UtilsPageHelpButton title="Administração da igreja" :items="churchAdminHelpItems" />
+          <UtilsPageHelpButton title="Administração da igreja" />
         </div>
         <p class="text-body-2 text-grey-darken-1 mb-0">
           Gerencie membros, cargos, ministérios e dados operacionais da sua igreja
@@ -1061,43 +1088,69 @@
           </div>
 
           <v-alert
+            v-if="verseSuccess"
+            type="success"
+            variant="tonal"
+            density="compact"
+            class="content-feedback-alert mb-3"
+          >
+            {{ verseSuccess }}
+          </v-alert>
+          <v-alert
             v-if="verseError"
             type="error"
             variant="tonal"
             density="compact"
-            class="mb-3"
+            class="content-feedback-alert mb-3"
           >
             {{ verseError }}
           </v-alert>
 
-          <v-textarea
-            v-model="verseForm.text"
-            label="Texto"
-            variant="outlined"
-            color="purple-darken-3"
-            auto-grow
-            rows="2"
-            class="mb-3"
-            hide-details="auto"
-          />
-          <v-text-field
-            v-model="verseForm.reference"
-            label="Referência"
-            variant="outlined"
-            color="purple-darken-3"
-            class="mb-3"
-            hide-details="auto"
-          />
-          <v-textarea
-            v-model="verseForm.commentary"
-            label="Comentário"
-            variant="outlined"
-            color="purple-darken-3"
-            auto-grow
-            rows="2"
-            class="mb-3"
-            hide-details="auto"
-          />
+          <div class="content-form-stack">
+            <div class="content-field">
+              <div class="content-field-header">
+                <label class="content-field-label">Texto <span class="content-required">*</span></label>
+                <span class="content-field-hint">Obrigatório</span>
+              </div>
+              <v-textarea
+                v-model="verseForm.text"
+                label="Texto"
+                variant="outlined"
+                color="purple-darken-3"
+                auto-grow
+                rows="2"
+                hide-details="auto"
+              />
+            </div>
+            <div class="content-field">
+              <div class="content-field-header">
+                <label class="content-field-label">Referência <span class="content-required">*</span></label>
+                <span class="content-field-hint">Obrigatório</span>
+              </div>
+              <v-text-field
+                v-model="verseForm.reference"
+                label="Referência"
+                variant="outlined"
+                color="purple-darken-3"
+                hide-details="auto"
+              />
+            </div>
+            <div class="content-field">
+              <div class="content-field-header">
+                <label class="content-field-label">Comentário</label>
+                <span class="content-field-hint">Opcional</span>
+              </div>
+              <v-textarea
+                v-model="verseForm.commentary"
+                label="Comentário"
+                variant="outlined"
+                color="purple-darken-3"
+                auto-grow
+                rows="2"
+                hide-details="auto"
+              />
+            </div>
+          </div>
           <AdminMediaAttachmentFields
             v-model:image-url="verseForm.imageUrl"
             v-model:image-key="verseForm.imageKey"
@@ -1174,34 +1227,55 @@
           </div>
 
           <v-alert
+            v-if="announcementSuccess"
+            type="success"
+            variant="tonal"
+            density="compact"
+            class="content-feedback-alert mb-3"
+          >
+            {{ announcementSuccess }}
+          </v-alert>
+          <v-alert
             v-if="announcementError"
             type="error"
             variant="tonal"
             density="compact"
-            class="mb-3"
+            class="content-feedback-alert mb-3"
           >
             {{ announcementError }}
           </v-alert>
 
-          <v-text-field
-            v-model="announcementForm.title"
-            label="Título"
-            variant="outlined"
-            color="purple-darken-3"
-            class="mb-3"
-            hide-details="auto"
-          />
-          <v-textarea
-            v-model="announcementForm.body"
-            label="Texto"
-            variant="outlined"
-            color="purple-darken-3"
-            auto-grow
-            rows="2"
-            class="mb-3"
-            hide-details="auto"
-          />
-          <p class="text-caption font-weight-bold text-grey-darken-2 mb-2">Tipo</p>
+          <div class="content-form-stack">
+            <div class="content-field">
+              <div class="content-field-header">
+                <label class="content-field-label">Título <span class="content-required">*</span></label>
+                <span class="content-field-hint">Obrigatório</span>
+              </div>
+              <v-text-field
+                v-model="announcementForm.title"
+                label="Título"
+                variant="outlined"
+                color="purple-darken-3"
+                hide-details="auto"
+              />
+            </div>
+            <div class="content-field">
+              <div class="content-field-header">
+                <label class="content-field-label">Texto <span class="content-required">*</span></label>
+                <span class="content-char-count">{{ announcementForm.body.length }} caracteres</span>
+              </div>
+              <v-textarea
+                v-model="announcementForm.body"
+                label="Texto"
+                variant="outlined"
+                color="purple-darken-3"
+                auto-grow
+                rows="2"
+                hide-details="auto"
+              />
+            </div>
+          </div>
+          <p class="content-field-label mt-4 mb-2">Tipo <span class="content-required">*</span></p>
           <v-btn-toggle
             v-model="announcementForm.kind"
             color="purple-darken-3"
@@ -1311,65 +1385,104 @@
         </div>
 
         <v-alert
+          v-if="devotionalSuccess"
+          type="success"
+          variant="tonal"
+          density="compact"
+          class="content-feedback-alert mb-3"
+        >
+          {{ devotionalSuccess }}
+        </v-alert>
+        <v-alert
           v-if="devotionalError"
           type="error"
           variant="tonal"
           density="compact"
-          class="mb-3"
+          class="content-feedback-alert mb-3"
         >
           {{ devotionalError }}
         </v-alert>
 
         <div class="content-admin-grid">
           <div>
-            <v-text-field
-              v-model="devotionalForm.title"
-              label="Título"
-              variant="outlined"
-              color="purple-darken-3"
-              class="mb-3"
-              hide-details="auto"
-            />
-            <v-textarea
-              v-model="devotionalForm.description"
-              label="Descrição"
-              variant="outlined"
-              color="purple-darken-3"
-              auto-grow
-              rows="2"
-              class="mb-3"
-              hide-details="auto"
-            />
-            <div
-              v-for="(chapter, index) in devotionalForm.chapters"
-              :key="index"
-              class="chapter-admin-box mb-3"
-            >
-              <v-text-field
-                v-model="chapter.title"
-                :label="`Capítulo ${index + 1}`"
-                variant="outlined"
-                color="purple-darken-3"
-                class="mb-2"
-                hide-details="auto"
-              />
-              <v-text-field
-                v-model="chapter.bibleRef"
-                label="Referência bíblica"
-                variant="outlined"
-                color="purple-darken-3"
-                class="mb-2"
-                hide-details="auto"
-              />
-              <v-textarea
-                v-model="chapter.content"
-                label="Texto"
-                variant="outlined"
-                color="purple-darken-3"
-                auto-grow
-                rows="3"
-                hide-details="auto"
-              />
+            <div class="content-form-stack">
+              <div class="content-field">
+                <div class="content-field-header">
+                  <label class="content-field-label">Título <span class="content-required">*</span></label>
+                  <span class="content-field-hint">Obrigatório</span>
+                </div>
+                <v-text-field
+                  v-model="devotionalForm.title"
+                  label="Título"
+                  variant="outlined"
+                  color="purple-darken-3"
+                  hide-details="auto"
+                />
+              </div>
+              <div class="content-field">
+                <div class="content-field-header">
+                  <label class="content-field-label">Descrição</label>
+                  <span class="content-field-hint">Opcional</span>
+                </div>
+                <v-textarea
+                  v-model="devotionalForm.description"
+                  label="Descrição"
+                  variant="outlined"
+                  color="purple-darken-3"
+                  auto-grow
+                  rows="2"
+                  hide-details="auto"
+                />
+              </div>
+              <div
+                v-for="(chapter, index) in devotionalForm.chapters"
+                :key="index"
+                class="chapter-admin-box mb-3"
+              >
+                <div class="content-field">
+                  <div class="content-field-header">
+                    <label class="content-field-label">Capítulo {{ index + 1 }} <span class="content-required">*</span></label>
+                    <span class="content-field-hint">Obrigatório</span>
+                  </div>
+                  <v-text-field
+                    v-model="chapter.title"
+                    :label="`Capítulo ${index + 1}`"
+                    variant="outlined"
+                    color="purple-darken-3"
+                    class="mb-2"
+                    hide-details="auto"
+                  />
+                </div>
+                <div class="content-field">
+                  <div class="content-field-header">
+                    <label class="content-field-label">Referência bíblica</label>
+                    <span class="content-field-hint">Opcional</span>
+                  </div>
+                  <v-text-field
+                    v-model="chapter.bibleRef"
+                    label="Referência bíblica"
+                    variant="outlined"
+                    color="purple-darken-3"
+                    class="mb-2"
+                    hide-details="auto"
+                  />
+                </div>
+                <div class="content-field">
+                  <div class="content-field-header">
+                    <label class="content-field-label">Texto <span class="content-required">*</span></label>
+                    <span class="content-field-hint">Obrigatório</span>
+                  </div>
+                  <v-textarea
+                    v-model="chapter.content"
+                    label="Texto"
+                    variant="outlined"
+                    color="purple-darken-3"
+                    auto-grow
+                    rows="3"
+                    hide-details="auto"
+                  />
+                </div>
+              </div>
             </div>
             <AdminMediaAttachmentFields
               v-model:image-url="devotionalForm.imageUrl"
@@ -3225,34 +3338,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
-import { useDisplay } from "vuetify";
-import {
-  Users,
-  Building,
-  Calendar,
-  Music,
-  UserPlus,
-  UserCheck,
-  Church,
-  ArrowRight,
-  BarChart3,
-  Pencil,
-  Trash2,
-  Shield,
-  BookMarked,
-  Megaphone,
-  Heart,
-  Link,
-  Plus,
-  QrCode,
-  RefreshCw,
-  Clock,
-  Globe,
-  Palette,
-  Save,
-  Image as ImageIcon,
-} from "lucide-vue-next";
+import { computed, onMounted, reactive } from "vue";
+import { Building, Calendar, Music, UserPlus, UserCheck, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import { useMembers, type ChurchMember } from "../../composables/useMembers";
@@ -3304,41 +3391,7 @@ const purpleAccent = computed(() => isDark.value ? "#f0975a" : "#C2542C");
 const avatarBgIndigo = computed(() => isDark.value ? "rgba(240,151,90,0.16)" : "#F7E2D3");
 const avatarBgPurple = computed(() => isDark.value ? "rgba(240,151,90,0.16)" : "#F7E2D3");
 
-const platformAdminHelpItems = [
-  {
-    title: "Como acompanhar igrejas",
-    description: "Use os cards e a lista para ver igrejas cadastradas, status e detalhes da plataforma.",
-    icon: Church,
-  },
-  {
-    title: "Como abrir detalhes",
-    description: "Selecione uma igreja na lista para consultar usuários, ministérios e próximas escalas.",
-    icon: Users,
-  },
-  {
-    title: "Como acessar a administração pastoral",
-    description: "Use Abrir minha igreja para ir direto para a área operacional da sua igreja.",
-    icon: ArrowRight,
-  },
-];
 
-const churchAdminHelpItems = [
-  {
-    title: "Como gerenciar membros",
-    description: "Na aba Membros você cria usuários, altera dados e acompanha permissões de acesso.",
-    icon: Users,
-  },
-  {
-    title: "Como organizar ministérios",
-    description: "Na aba Ministérios você cria equipes, define líderes e acompanha a estrutura da igreja.",
-    icon: Building,
-  },
-  {
-    title: "Como publicar conteúdo",
-    description: "Na aba Conteúdo você publica versículos, avisos, devocionais, posts e horários públicos.",
-    icon: BookMarked,
-  },
-];
 
 const {
   getMembers,
@@ -3413,11 +3466,14 @@ const handleCopyInviteLink = () => {
 const {
   getAnnouncements,
   createAnnouncement,
+  updateAnnouncement,
   deleteAnnouncement,
 } = useAnnouncements();
 const {
   listDevotionals,
+  getDevotional,
   createDevotional,
+  updateDevotional,
   deleteDevotional,
 } = useDevotionals();
 const {
@@ -3449,6 +3505,11 @@ const churchSchedules = ref<DepartmentSchedule[]>([]);
 const announcements = ref<Announcement[]>([]);
 const devotionals = ref<Devotional[]>([]);
 const adminChurches = ref<AdminChurch[]>([]);
+type AdminMode = "master" | "church";
+type PlatformAdminTab = "geral" | "igrejas" | "videos";
+
+const activeAdminMode = ref<AdminMode>("master");
+const activePlatformTab = ref<PlatformAdminTab>("geral");
 const activeAdminTab = ref("geral");
 const selectedChurch = ref<AdminChurchDetails | null>(null);
 const membersError = ref("");
@@ -3513,11 +3574,17 @@ const roleSearch = ref("");
 const roleModuleFilter = ref<PermissionModuleKey | "ALL">("ALL");
 const contentError = ref("");
 const announcementError = ref("");
+const announcementSuccess = ref("");
 const devotionalError = ref("");
+const devotionalSuccess = ref("");
 const postError = ref("");
 const isPublishingVerse = ref(false);
 const dailyVerses = ref<DailyVerse[]>([]);
 const verseError = ref("");
+const verseSuccess = ref("");
+const editingVerseId = ref("");
+const editingAnnouncementId = ref("");
+const editingDevotionalId = ref("");
 const isSavingAnnouncement = ref(false);
 const isSavingDevotional = ref(false);
 const isSavingServiceTime = ref(false);
@@ -4743,6 +4810,8 @@ const resetVerseForm = () => {
 };
 
 const editVerse = (verse: DailyVerse) => {
+  verseError.value = "";
+  verseSuccess.value = "";
   editingVerseId.value = verse.id;
   verseForm.text = verse.text;
   verseForm.reference = verse.reference;
@@ -4755,6 +4824,7 @@ const editVerse = (verse: DailyVerse) => {
 
 const saveDailyVerse = async () => {
   verseError.value = "";
+  verseSuccess.value = "";
 
   if (!verseForm.text.trim() || !verseForm.reference.trim()) {
     verseError.value = "Informe o texto e a referência do versículo.";
@@ -4763,6 +4833,7 @@ const saveDailyVerse = async () => {
 
   isPublishingVerse.value = true;
   try {
+    const wasEditingVerse = Boolean(editingVerseId.value);
     const payload = {
       text: verseForm.text.trim(),
       reference: verseForm.reference.trim(),
@@ -4786,6 +4857,9 @@ const saveDailyVerse = async () => {
       ? dailyVerses.value.map((verse) => (verse.id === data.id ? data : verse))
       : [data, ...dailyVerses.value];
     resetVerseForm();
+    verseSuccess.value = wasEditingVerse ? "Versículo atualizado!" : "Versículo publicado!";
+  } catch (error) {
+    verseError.value = error instanceof Error ? error.message : "Não foi possível salvar o versículo.";
   } finally {
     isPublishingVerse.value = false;
   }
@@ -4793,6 +4867,7 @@ const saveDailyVerse = async () => {
 
 const removeVerse = async (id: string) => {
   verseError.value = "";
+  verseSuccess.value = "";
   const { error } = await deleteVerse(id);
   if (error) {
     verseError.value = error;
@@ -4815,6 +4890,8 @@ const resetAnnouncementForm = () => {
 };
 
 const editAnnouncement = (announcement: Announcement) => {
+  announcementError.value = "";
+  announcementSuccess.value = "";
   editingAnnouncementId.value = announcement.id;
   announcementForm.title = announcement.title;
   announcementForm.body = announcement.body;
@@ -4829,6 +4906,7 @@ const editAnnouncement = (announcement: Announcement) => {
 
 const saveAnnouncement = async () => {
   announcementError.value = "";
+  announcementSuccess.value = "";
 
   if (!announcementForm.title.trim() || !announcementForm.body.trim()) {
     announcementError.value = "Informe o título e o texto do aviso.";
@@ -4837,6 +4915,7 @@ const saveAnnouncement = async () => {
 
   isSavingAnnouncement.value = true;
   try {
+    const wasEditingAnnouncement = Boolean(editingAnnouncementId.value);
     const payload = {
       title: announcementForm.title.trim(),
       body: announcementForm.body.trim(),
@@ -4864,6 +4943,9 @@ const saveAnnouncement = async () => {
         )
       : [data, ...announcements.value];
     resetAnnouncementForm();
+    announcementSuccess.value = wasEditingAnnouncement ? "Aviso atualizado!" : "Aviso publicado!";
+  } catch (error) {
+    announcementError.value = error instanceof Error ? error.message : "Não foi possível salvar o aviso.";
   } finally {
     isSavingAnnouncement.value = false;
   }
@@ -5014,6 +5096,7 @@ const savePublicChurchSettings = async () => {
 };
 const removeAnnouncement = async (id: string) => {
   announcementError.value = "";
+  announcementSuccess.value = "";
   const { error } = await deleteAnnouncement(id);
   if (error) {
     announcementError.value = error;
@@ -5043,6 +5126,7 @@ const resetDevotionalForm = () => {
 
 const editDevotional = async (devotional: Devotional) => {
   devotionalError.value = "";
+  devotionalSuccess.value = "";
   const fullDevotional = devotional.chapters?.length
     ? devotional
     : (await getDevotional(devotional.id)).data;
@@ -5070,6 +5154,7 @@ const editDevotional = async (devotional: Devotional) => {
 
 const saveDevotional = async () => {
   devotionalError.value = "";
+  devotionalSuccess.value = "";
   const chapters = devotionalForm.chapters
     .map((chapter) => ({
       title: chapter.title.trim(),
@@ -5085,6 +5170,7 @@ const saveDevotional = async () => {
 
   isSavingDevotional.value = true;
   try {
+    const wasEditingDevotional = Boolean(editingDevotionalId.value);
     const payload = {
       title: devotionalForm.title.trim(),
       description: devotionalForm.description.trim() || null,
@@ -5110,6 +5196,9 @@ const saveDevotional = async () => {
         )
       : [data, ...devotionals.value];
     resetDevotionalForm();
+    devotionalSuccess.value = wasEditingDevotional ? "Devocional atualizado!" : "Devocional publicado!";
+  } catch (error) {
+    devotionalError.value = error instanceof Error ? error.message : "Não foi possível salvar o devocional.";
   } finally {
     isSavingDevotional.value = false;
   }
@@ -5117,6 +5206,7 @@ const saveDevotional = async () => {
 
 const removeDevotional = async (id: string) => {
   devotionalError.value = "";
+  devotionalSuccess.value = "";
   const { error } = await deleteDevotional(id);
   if (error) {
     devotionalError.value = error;
@@ -5460,6 +5550,54 @@ onMounted(async () => {
     var(--app-color-background);
   max-width: 1180px;
   margin: 0 auto;
+}
+
+.admin-mode-shell {
+  --church-accent: #B5472A;
+}
+
+.admin-mode-selector {
+  display: flex;
+  justify-content: center;
+}
+
+.admin-mode-toggle {
+  width: min(100%, 560px);
+  border: 1px solid rgba(181, 71, 42, 0.22);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 4px;
+}
+
+.admin-mode-button {
+  flex: 1 1 0;
+  min-height: 44px;
+  border-radius: 8px !important;
+  color: #6B655C;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.admin-mode-button.v-btn--active {
+  background: var(--church-accent, #B5472A) !important;
+  color: #ffffff !important;
+}
+
+.platform-tabs :deep(.v-tab.v-tab--selected) {
+  color: var(--church-accent, #B5472A) !important;
+}
+
+.platform-tabs :deep(.v-tabs-slider) {
+  background: var(--church-accent, #B5472A) !important;
+}
+
+.platform-tab-panel {
+  min-width: 0;
+}
+
+.platform-help-panel {
+  display: grid;
+  gap: 16px;
 }
 
 .platform-hero {
@@ -6220,6 +6358,48 @@ onMounted(async () => {
      largura real do container (padding, app frame, etc). */
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px;
+}
+
+.content-form-stack {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.content-field {
+  min-width: 0;
+}
+
+.content-field-header {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.content-field-label {
+  color: var(--e-ink, #374151);
+  display: inline-block;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.content-required {
+  color: var(--church-accent, #B5472A);
+}
+
+.content-field-hint,
+.content-char-count {
+  color: var(--e-ink-soft, #6B655C);
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.content-feedback-alert {
+  border-radius: 10px;
 }
 
 .footer-fields-grid {

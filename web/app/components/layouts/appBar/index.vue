@@ -81,7 +81,7 @@
           </v-btn>
         </template>
 
-        <v-card class="notification-card" elevation="8">
+        <v-card class="notification-card" elevation="8" :style="notificationCardStyle">
           <v-card-text class="notification-content">
             <div class="notification-header">
               <div>
@@ -112,7 +112,12 @@
                 :class="{ 'notification-item-unread': !notification.readAt }"
                 @click="openNotification(notification)"
               >
-                <span class="notification-item-dot" />
+                <span
+                  class="notification-item-icon"
+                  :class="{ 'notification-item-icon-unread': !notification.readAt }"
+                >
+                  <component :is="notificationIconFor(notification)" size="16" />
+                </span>
                 <span class="notification-item-copy">
                   <span class="notification-item-title">
                     {{ notification.title }}
@@ -120,8 +125,11 @@
                   <span class="notification-item-body">
                     {{ notification.body }}
                   </span>
-                  <span class="notification-item-date">
-                    {{ formatNotificationDate(notification.createdAt) }}
+                  <span class="notification-item-meta">
+                    <span v-if="!notification.readAt" class="notification-unread-label">Nova</span>
+                    <span class="notification-item-date">
+                      {{ formatNotificationDate(notification.createdAt) }}
+                    </span>
                   </span>
                 </span>
               </button>
@@ -164,7 +172,8 @@
             <v-btn
               v-else
               block
-              color="primary"
+              variant="flat"
+              class="notification-enable-btn text-none"
               :disabled="!canAskPermission"
               :loading="loading"
               @click="enable"
@@ -185,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { Bell, BellOff, BellRing, ChevronDown, Church } from "lucide-vue-next";
+import { Bell, BellOff, BellRing, CalendarCheck, ChevronDown, Church, Megaphone, UserCheck } from "lucide-vue-next";
 import { Moon, Sun } from "lucide-vue-next";
 import { computed, onMounted } from "vue";
 import { useAuth } from "../../../../composables/useAuth";
@@ -238,6 +247,10 @@ const hasMultipleChurches = computed(() => activeMemberships.value.length > 1);
 const churchName = computed(
   () => user.value?.activeChurch?.name || user.value?.church?.name || "Sem igreja",
 );
+const churchAccent = computed(
+  () => user.value?.activeChurch?.accentColor || user.value?.church?.accentColor || "#B5472A",
+);
+const notificationCardStyle = computed(() => ({ "--church-accent": churchAccent.value }));
 const hasUnreadNotifications = computed(() => hasUnread.value);
 const themeToggleLabel = computed(() =>
   isDark.value ? "Ativar tema claro" : "Ativar tema escuro",
@@ -274,6 +287,16 @@ const showNotificationMessage = computed({
     }
   },
 });
+
+const notificationIconFor = (notification: AppNotification) => {
+  const context = `${notification.type || ""} ${notification.title} ${notification.body} ${notification.url || ""}`.toLowerCase();
+
+  if (context.includes("escala") || context.includes("schedule")) return CalendarCheck;
+  if (context.includes("membro") || context.includes("user")) return UserCheck;
+  if (context.includes("aviso") || context.includes("conteudo") || context.includes("post")) return Megaphone;
+
+  return Bell;
+};
 
 const formatNotificationDate = (value: string) => {
   const date = new Date(value);
@@ -356,7 +379,8 @@ onMounted(async () => {
 }
 
 .notification-card {
-  width: min(320px, calc(100vw - 32px));
+  --church-accent: #B5472A;
+  width: min(360px, calc(100vw - 32px));
   border-radius: 8px;
   background: var(--app-color-surface);
   color: var(--app-color-text);
@@ -365,20 +389,21 @@ onMounted(async () => {
 
 .notification-content {
   display: grid;
-  gap: 14px;
+  gap: 16px;
+  padding: 16px !important;
 }
 
 .notification-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
 }
 
 .notification-list {
   display: grid;
-  gap: 8px;
-  max-height: 280px;
+  gap: 10px;
+  max-height: 320px;
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -392,38 +417,47 @@ onMounted(async () => {
   color: var(--app-color-text);
   cursor: pointer;
   display: grid;
-  grid-template-columns: 8px minmax(0, 1fr);
-  gap: 10px;
-  padding: 10px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
   text-align: left;
+  transition: border-color 0.16s ease, background-color 0.16s ease, transform 0.16s ease;
+}
+
+.notification-item:hover {
+  border-color: color-mix(in srgb, var(--church-accent) 36%, var(--app-color-border));
 }
 
 .notification-item-unread {
-  border-color: var(--app-color-accent-tint);
-  background: var(--app-color-accent-tint);
+  border-color: color-mix(in srgb, var(--church-accent) 42%, var(--app-color-border));
+  background: color-mix(in srgb, var(--church-accent) 9%, var(--app-color-surface));
 }
 
-.notification-item-dot {
-  width: 8px;
-  height: 8px;
-  margin-top: 5px;
+.notification-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
-  background: transparent;
+  background: var(--app-color-background);
+  color: var(--app-color-text-muted);
 }
 
-.notification-item-unread .notification-item-dot {
-  background: var(--app-color-accent);
+.notification-item-icon-unread {
+  background: color-mix(in srgb, var(--church-accent) 14%, #ffffff);
+  color: var(--church-accent);
 }
 
 .notification-item-copy {
   display: grid;
-  gap: 3px;
+  gap: 5px;
   min-width: 0;
 }
 
 .notification-item-title {
   color: var(--app-color-text);
-  font-size: 0.84rem;
+  font-size: 0.88rem;
   font-weight: 800;
   line-height: 1.25;
 }
@@ -431,12 +465,27 @@ onMounted(async () => {
 .notification-item-body,
 .notification-item-date {
   color: var(--app-color-text-soft);
-  font-size: 0.78rem;
-  line-height: 1.3;
+  font-size: 0.79rem;
+  line-height: 1.35;
 }
 
 .notification-item-body {
   overflow-wrap: anywhere;
+}
+
+.notification-item-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.notification-unread-label {
+  color: var(--church-accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .notification-list-empty {
@@ -450,7 +499,22 @@ onMounted(async () => {
 
 .notification-settings {
   display: grid;
-  gap: 4px;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--app-color-border);
+  border-radius: 8px;
+  background: var(--app-color-background);
+}
+
+.notification-enable-btn {
+  background: var(--church-accent, #B5472A) !important;
+  color: #ffffff !important;
+  font-weight: 800;
+}
+
+.notification-enable-btn.v-btn--disabled {
+  background: color-mix(in srgb, var(--church-accent, #B5472A) 42%, #ffffff) !important;
+  color: #ffffff !important;
 }
 
 .notification-title {

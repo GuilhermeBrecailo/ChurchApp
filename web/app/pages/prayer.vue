@@ -7,7 +7,7 @@
         </v-btn>
         <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-0">Pedidos de Oração</h1>
       </div>
-      <UtilsPageHelpButton title="Pedidos de Oração" :items="prayerHelpItems" />
+      <UtilsPageHelpButton title="Pedidos de Oração" />
     </div>
 
     <v-tabs
@@ -277,9 +277,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { ChevronLeft, Heart, Plus, User, CheckCircle, X } from "lucide-vue-next";
+import { computed, onMounted, reactive } from "vue";
+import { Heart, Plus, User, CheckCircle, X } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { usePrayerRequests } from "../../composables/usePrayerRequests";
 import type { PrayerRequest } from "../../composables/usePrayerRequests";
@@ -314,23 +313,6 @@ const activeTab = ref(route.query.tab === "pending" ? "pending" : "community");
 
 const form = reactive({ title: "", body: "", isAnonymous: false });
 
-const prayerHelpItems = [
-  {
-    title: "Como enviar um pedido",
-    description: "Toque em Novo pedido, escreva o título e detalhe a necessidade de oração.",
-    icon: Plus,
-  },
-  {
-    title: "Como acompanhar pedidos",
-    description: "A aba Comunidade mostra os pedidos aprovados para a igreja acompanhar em oração.",
-    icon: Heart,
-  },
-  {
-    title: "Como revisar pedidos",
-    description: "Líderes usam a aba Pendentes para aprovar, recusar ou marcar pedidos como respondidos.",
-    icon: CheckCircle,
-  },
-];
 
 const isChurchManager = computed(() =>
   ["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(user.value?.role ?? ""),
