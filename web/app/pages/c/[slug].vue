@@ -381,6 +381,19 @@ const churchInitials = computed(() =>
     .join(""),
 );
 
+// Aba do navegador e "adicionar a tela inicial" mostram o nome e a logo da
+// igreja, nao o icone generico do ChurchApp - só quando a igreja tem logo;
+// sem logo, cai no favicon padrao definido em nuxt.config.ts.
+useHead(() => ({
+  title: church.value?.name ? `${church.value.name}` : undefined,
+  link: church.value?.logo
+    ? [
+        { rel: "icon", href: church.value.logo },
+        { rel: "apple-touch-icon", href: church.value.logo },
+      ]
+    : [],
+}));
+
 const churchLocation = computed(() => {
   const city = church.value?.city;
   const state = church.value?.state;
