@@ -19,15 +19,15 @@ Fora de escopo: modo apresentação (adiado para v2), limites por quantidade de 
 
 ### Três planos, diferenciados apenas por funcionalidade
 
-`Crunch.plan` passa a aceitar `FREE`, `PREMIUM` e `ILIMITADO`.
+`Crunch.plan` passa a aceitar `FREE`, `PRO` e `ILIMITADO`.
 
 Nenhum plano impõe limite de quantidade — nem de membros, nem de ministérios, nem de escalas. A diferença entre planos é inteiramente a lista de funcionalidades liberadas. Limitar ministérios foi descartado porque igrejas pequenas costumam ter vários ministérios por natureza da operação, não por porte; limitar membros foi descartado junto, para manter uma regra só, previsível para o usuário.
 
-`ILIMITADO` libera exatamente as mesmas funcionalidades de `PREMIUM`. Ele não é um tier de venda: é um selo atribuído manualmente pelo admin da plataforma a uma igreja específica, sem cobrança e sem trial.
+`ILIMITADO` libera exatamente as mesmas funcionalidades de `PRO`. Ele não é um tier de venda: é um selo atribuído manualmente pelo admin da plataforma a uma igreja específica, sem cobrança e sem trial.
 
 ### Divisão de funcionalidades
 
-Premium (e Ilimitado):
+Pro (e Ilimitado):
 
 - Personalização da página pública
 - Papéis customizados por igreja
@@ -66,7 +66,7 @@ Motivo: a divisão entre pago e gratuito ainda vai mudar conforme o produto enco
 
 Rotas pagas verificam com uma única chamada; quando a igreja não tem direito, a resposta segue o contrato de erro existente do `controllerHandler` (`DomainError` → HTTP 200 com `{ error, status: 409 }` no corpo), para o frontend tratar do mesmo jeito que já trata os demais erros de domínio.
 
-Plano efetivo não é o valor cru da coluna `plan`: uma igreja em `PREMIUM` com `subscriptionStatus` em `CANCELED`/`EXPIRED`, ou com `trialEndsAt` vencido, é tratada como `FREE`. Essa derivação fica em uma função só, usada tanto pelo gate quanto pela tela de assinatura, para não haver duas verdades sobre o que a igreja pode fazer.
+Plano efetivo não é o valor cru da coluna `plan`: uma igreja em `PRO` com `subscriptionStatus` em `CANCELED`/`EXPIRED`, ou com `trialEndsAt` vencido, é tratada como `FREE`. Essa derivação fica em uma função só, usada tanto pelo gate quanto pela tela de assinatura, para não haver duas verdades sobre o que a igreja pode fazer.
 
 ### Atribuição do plano Ilimitado
 
@@ -87,6 +87,14 @@ Endpoints e payloads confirmados na documentação oficial (não assumidos de me
 
 Fonte: documentação oficial do Mercado Pago (developers.mercadopago.com.br), consultada em 2026-08-11. O MCP oficial (`https://mcp.mercadopago.com/mcp`, ferramenta `search-documentation`) é o caminho preferido pra reconfirmar isso no momento exato da implementação, caso a API tenha mudado entre a escrita deste spec e o código.
 
+Reconfirmado em 2026-08-12 direto na documentação (referência da API + guias de Assinaturas):
+
+- A resposta de `POST /preapproval` inclui o campo `init_point` — é essa URL que o backend devolve ao frontend como link de checkout (`https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_id=...`), não estava nomeado no draft original.
+- Confirmado o fluxo "com pagamento pendente" (sem `card_token_id` na criação): `POST /preapproval` com `status: "pending"`, sem meio de pagamento definido — o pagador escolhe o meio de pagamento ao acessar o `init_point`. É esse o modelo que bate com o fluxo descrito abaixo (pastor cria a assinatura, recebe a URL, paga no ambiente do Mercado Pago).
+- **Novidade que muda uma premissa**: a documentação de Webhooks afirma explicitamente que a configuração via painel "Suas integrações" **não está disponível para Assinaturas** (nem QR Code) — para essas duas integrações a notificação precisa ser configurada "durante a criação de pagamentos" (ou seja, por recurso, não globalmente pelo painel do app). Isso não estava explícito no design original, que assumia implicitamente configuração única no painel. Precisa ser confirmado no momento da implementação do webhook (parte do Codex) qual o campo exato no `POST /preapproval` que define essa URL por assinatura — não localizado ainda nos parâmetros documentados publicamente (`preapproval_plan_id`, `reason`, `external_reference`, `payer_email`, `card_token_id`, `auto_recurring`, `back_url`, `status`).
+- Payload de notificação do webhook confirmado batendo exatamente com o que já estava no design: `{ id, live_mode, type, date_created, user_id, api_version, action, data: { id } }`, header `x-signature` no formato `ts=...,v1=...`.
+- Endpoints de busca do estado real confirmados: `subscription_preapproval` → `GET https://api.mercadopago.com/preapproval/search`; `subscription_authorized_payment` → `GET https://api.mercadopago.com/authorized_payments/{id}`.
+
 Fluxo:
 
 1. Pastor pede upgrade na tela de assinatura.
@@ -106,7 +114,7 @@ O gate já trata trial vencido como `FREE` em tempo de requisição, então o jo
 
 ### Tela de assinatura
 
-Página no `web/app` mostrando plano atual, dias restantes de trial quando aplicável, comparação entre Free e Premium e botão de upgrade que abre o checkout.
+Página no `web/app` mostrando plano atual, dias restantes de trial quando aplicável, comparação entre Free e Pro e botão de upgrade que abre o checkout.
 
 Inclui link visível de cancelamento (exigência prática de relação de consumo em assinatura recorrente no Brasil) e link para a política de privacidade, dado que o produto armazena dados pessoais de membros de igreja.
 
@@ -135,8 +143,8 @@ A fronteira entre os dois é estreita de propósito — o lado do Mercado Pago s
 ## Testes
 
 - `planConfig.ts`: cada plano libera exatamente a lista esperada.
-- Resolução de plano efetivo: premium com trial vencido, com assinatura cancelada e com assinatura ativa; ilimitado ignora status e trial.
-- Gate: rota paga recusa igreja Free e aceita igreja Premium.
+- Resolução de plano efetivo: pro com trial vencido, com assinatura cancelada e com assinatura ativa; ilimitado ignora status e trial.
+- Gate: rota paga recusa igreja Free e aceita igreja Pro.
 - Webhook: notificação de pagamento aprovado ativa a assinatura; notificação repetida não duplica efeito; notificação com assinatura desconhecida não derruba a rota.
 - Job de trial: rebaixa trial vencido, preserva assinatura ativa, ignora Ilimitado.
 
