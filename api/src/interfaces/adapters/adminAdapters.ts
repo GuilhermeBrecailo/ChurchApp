@@ -2,6 +2,7 @@ import { FastifyRequest } from "fastify/types/request";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { KeycloakProvider } from "../../infrastructure/identity/KeycloakProvider";
+import { PLANS, Plan } from "../../domain/planConfig";
 
 function generateTempPassword() {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
@@ -99,10 +100,69 @@ export class AdminAdapters {
       isActive: church.isActive,
       createdAt: church.createdAt,
       userMainId: church.userMainId,
+      plan: church.plan,
+      subscriptionStatus: church.subscriptionStatus,
+      trialEndsAt: church.trialEndsAt,
       membersCount: church._count.users,
       departmentsCount: church._count.departments,
       pastorHistoryCount: church._count.pastorHistory,
     }));
+  }
+
+  async setChurchPlan(request: FastifyRequest) {
+    await assertPlatformAdmin(request);
+
+    const { id } = request.params as { id?: string };
+    const body = request.body as { plan?: string; trialEndsAt?: string | null };
+
+    if (!id) {
+      throw new DomainError("Igreja não informada");
+    }
+
+    if (body.plan !== undefined && !PLANS.includes(body.plan as Plan)) {
+      throw new DomainError(`Plano inválido. Use um de: ${PLANS.join(", ")}`);
+    }
+
+    if (body.plan === undefined && body.trialEndsAt === undefined) {
+      throw new DomainError("Informe plan e/ou trialEndsAt");
+    }
+
+    let trialEndsAt: Date | null | undefined;
+    if (body.trialEndsAt !== undefined) {
+      if (body.trialEndsAt === null) {
+        trialEndsAt = null;
+      } else {
+        const parsed = new Date(body.trialEndsAt);
+        if (Number.isNaN(parsed.getTime())) {
+          throw new DomainError("Data de expiração do trial inválida");
+        }
+        trialEndsAt = parsed;
+      }
+    }
+
+    const church = await $prismaClient.crunch.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!church) {
+      throw new DomainError("Igreja não encontrada");
+    }
+
+    return await $prismaClient.crunch.update({
+      where: { id },
+      data: {
+        ...(body.plan !== undefined ? { plan: body.plan } : {}),
+        ...(trialEndsAt !== undefined ? { trialEndsAt } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        plan: true,
+        subscriptionStatus: true,
+        trialEndsAt: true,
+      },
+    });
   }
 
   async getDepartments(request: FastifyRequest) {

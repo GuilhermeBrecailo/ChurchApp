@@ -21,6 +21,11 @@ export async function AdminRoutes(app: FastifyInstance) {
   );
 
   app.patch(
+    "/api/admin/churches/:id/plan",
+    controllerHandler(adapters.setChurchPlan.bind(adapters)),
+  );
+
+  app.patch(
     "/api/admin/churches/:churchId/users/:userId",
     controllerHandler(adapters.updateChurchUserByAdmin.bind(adapters)),
   );
