@@ -211,6 +211,11 @@ export class MercadoPagoSubscriptionService {
       getOptionalUrl(input.backUrl) ||
       getOptionalUrl(process.env.MERCADOPAGO_CHECKOUT_BACK_URL);
 
+    // Mercado Pago rejeita start_date "agora" como data passada (latencia de
+    // rede + clock skew entre este servidor e o deles) - da uma margem de
+    // seguranca em vez de usar o instante exato da requisicao.
+    const startDate = new Date(Date.now() + 10 * 60 * 1000);
+
     const body: Record<string, unknown> = {
       reason: `Plano Pro - ${input.churchName}`,
       external_reference: input.churchId,
@@ -220,7 +225,7 @@ export class MercadoPagoSubscriptionService {
       auto_recurring: {
         frequency: 1,
         frequency_type: "months",
-        start_date: new Date().toISOString(),
+        start_date: startDate.toISOString(),
         transaction_amount: amount,
         currency_id: currency,
       },
