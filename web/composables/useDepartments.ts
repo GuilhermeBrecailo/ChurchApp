@@ -76,6 +76,7 @@ export interface DepartmentSchedule {
   description: string;
   rehearsalAt?: string | null;
   rehearsalNotes?: string | null;
+  createdAt?: string;
   departmentId: string;
   department?: {
     id: string;

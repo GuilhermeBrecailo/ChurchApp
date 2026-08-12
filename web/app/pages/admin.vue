@@ -1046,6 +1046,7 @@
         slider-color="indigo-darken-2"
         class="admin-tabs"
       >
+        <v-tab value="plano" class="text-none font-weight-medium admin-tab">Plano</v-tab>
         <v-tab value="geral" class="text-none font-weight-medium admin-tab">Geral</v-tab>
         <v-tab value="membros" class="text-none font-weight-medium admin-tab">Membros</v-tab>
         <v-tab value="ministerios" class="text-none font-weight-medium admin-tab">Ministérios</v-tab>
@@ -1085,6 +1086,63 @@
         bgColor="#FEFCE8"
       />
     </div>
+
+    <section v-show="activeAdminTab === 'plano'" class="church-admin-section mb-8">
+      <div class="section-heading mb-4">
+        <div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+            Plano da igreja
+          </h2>
+          <p class="text-caption text-grey-darken-1 mb-0">
+            Veja o plano atual e os recursos liberados para {{ user?.church?.name || "sua igreja" }}.
+          </p>
+        </div>
+      </div>
+
+      <v-card class="pa-4 elevation-1 mb-4 d-flex align-center justify-space-between flex-wrap ga-3">
+        <div>
+          <p class="text-caption text-grey-darken-1 mb-1">Plano atual</p>
+          <div class="d-flex align-center ga-2">
+            <v-chip
+              size="small"
+              :color="churchPlanLabel === 'Free' ? 'grey-darken-1' : 'amber-darken-3'"
+              variant="flat"
+              class="font-weight-bold"
+            >
+              {{ churchPlanLabel }}
+            </v-chip>
+            <span v-if="churchIsOnTrial && currentChurchTrialDaysLeft !== null" class="text-caption text-grey-darken-1">
+              trial: {{ currentChurchTrialDaysLeft }} {{ currentChurchTrialDaysLeft === 1 ? "dia restante" : "dias restantes" }}
+            </span>
+          </div>
+        </div>
+        <v-btn
+          v-if="isChurchWideManager"
+          to="/plans"
+          variant="tonal"
+          color="purple-darken-3"
+          size="small"
+          class="text-none font-weight-bold"
+        >
+          Ver planos
+        </v-btn>
+      </v-card>
+
+      <v-card class="pa-4 elevation-1">
+        <p class="text-caption font-weight-bold text-grey-darken-4 mb-3">
+          Recursos do plano Pro
+        </p>
+        <div class="plan-feature-list">
+          <div v-for="feature in proFeatureList" :key="feature.key" class="plan-feature-row">
+            <CheckCircle2 v-if="churchHasFeature(feature.key)" size="16" color="#16A34A" />
+            <Lock v-else size="16" color="#9CA3AF" />
+            <span :class="churchHasFeature(feature.key) ? 'text-grey-darken-4' : 'text-grey-darken-1'">
+              {{ feature.label }}
+            </span>
+          </div>
+        </div>
+      </v-card>
+    </section>
 
     <section v-show="isChurchWideManager && activeAdminTab === 'conteudo'" class="church-admin-section mb-8">
       <div class="section-heading mb-4">
@@ -3376,7 +3434,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive } from "vue";
-import { Building, Calendar, Music, UserPlus, UserCheck, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon } from "lucide-vue-next";
+import { Building, Calendar, Music, UserPlus, UserCheck, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon, CheckCircle2, Lock } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import { useMembers, type ChurchMember } from "../../composables/useMembers";
@@ -3420,7 +3478,7 @@ import { useChurch } from "../../composables/useChurch";
 import { useServiceTimes, type ServiceTime } from "../../composables/useServiceTimes";
 import { usePosts, type ChurchPost } from "../../composables/usePosts";
 import { FONT_OPTIONS } from "../../composables/useChurchAppearance";
-import { PLAN_LABELS, type Plan } from "../../composables/usePlan";
+import { useChurchPlan, PLAN_LABELS, PLAN_FEATURE_LABELS, type Plan, type PlanFeature } from "../../composables/usePlan";
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
@@ -3663,6 +3721,19 @@ const isPlatformAdmin = computed(
 );
 const isChurchWideManager = computed(
   () => user.value?.role === "PASTOR" || isPlatformAdmin.value,
+);
+const {
+  plan: churchPlan,
+  isOnTrial: churchIsOnTrial,
+  trialDaysLeft: currentChurchTrialDaysLeft,
+  hasFeature: churchHasFeature,
+} = useChurchPlan();
+const churchPlanLabel = computed(() => PLAN_LABELS[churchPlan.value] ?? churchPlan.value);
+const proFeatureList = computed(() =>
+  (Object.keys(PLAN_FEATURE_LABELS) as PlanFeature[]).map((key) => ({
+    key,
+    label: PLAN_FEATURE_LABELS[key],
+  })),
 );
 const canManageMembersByRole = computed(
   () =>
@@ -6184,6 +6255,19 @@ onMounted(async () => {
 
 .church-admin-section {
   min-width: 0;
+}
+
+.plan-feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plan-feature-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
 }
 
 .admin-tabs-bar {

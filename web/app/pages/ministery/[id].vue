@@ -440,7 +440,7 @@
 
         <div v-else class="ministery-card-grid">
           <v-card
-            v-for="schedule in schedules"
+            v-for="schedule in visibleSchedules"
             :key="schedule.id"
             class="ministery-content-card pa-4 elevation-1 bg-white"
           >
@@ -524,6 +524,17 @@
               </v-btn>
             </div>
           </v-card>
+        </div>
+
+        <div v-if="schedules.length > 1" class="d-flex justify-center mt-4">
+          <v-btn
+            variant="text"
+            color="purple-darken-3"
+            class="text-none font-weight-medium"
+            @click="showAllSchedules = !showAllSchedules"
+          >
+            {{ showAllSchedules ? "Ver menos" : `Ver mais (${schedules.length - 1})` }}
+          </v-btn>
         </div>
 
         <v-alert
@@ -1106,10 +1117,11 @@
             :disabled="isCreatingSchedule"
           />
 
-          <v-select
+          <v-autocomplete
             v-if="songOptions.length"
             v-model="scheduleForm.songIds"
             label="Músicas"
+            placeholder="Digite para filtrar por nome"
             :items="songOptions"
             item-title="label"
             item-value="value"
@@ -1123,6 +1135,7 @@
             multiple
             chips
             closable-chips
+            no-data-text="Nenhuma música encontrada"
             :disabled="isCreatingSchedule"
           />
 
@@ -1455,7 +1468,7 @@
                 density="comfortable"
                 color="purple-darken-3"
                 bg-color="white"
-                class="ministery-input"
+                class="ministery-input mb-4"
                 hide-details="auto"
                 :disabled="isCreatingSong || isImportingCifraClubSong"
               />
@@ -2493,6 +2506,10 @@ const { can } = usePermissions();
 const department = ref<ChurchDepartment | null>(null);
 const tasks = ref<DepartmentTask[]>([]);
 const schedules = ref<DepartmentSchedule[]>([]);
+const showAllSchedules = ref(false);
+const visibleSchedules = computed(() =>
+  showAllSchedules.value ? schedules.value : schedules.value.slice(0, 1),
+);
 const resources = ref<DepartmentResource[]>([]);
 const songs = ref<DepartmentSong[]>([]);
 const members = ref<ChurchMember[]>([]);
@@ -3616,14 +3633,12 @@ const handleSaveSchedule = async () => {
       return;
     }
 
-    const nextSchedules = editingScheduleId.value
-      ? schedules.value.map((schedule) => (schedule.id === data.id ? data : schedule))
-      : [...schedules.value, data];
-
-    schedules.value = nextSchedules.sort(
-      (current, next) =>
-        new Date(current.date).getTime() - new Date(next.date).getTime(),
-    );
+    schedules.value = editingScheduleId.value
+      ? [
+          data,
+          ...schedules.value.filter((schedule) => schedule.id !== data.id),
+        ]
+      : [data, ...schedules.value];
     closeScheduleDialog();
   } finally {
     isCreatingSchedule.value = false;
@@ -3853,6 +3868,17 @@ const handleSaveSong = async () => {
 
   if (!title) {
     createSongError.value = "Informe o título da música.";
+    return;
+  }
+
+  const isDuplicateTitle = songs.value.some(
+    (song) =>
+      song.id !== editingSongId.value &&
+      song.title.trim().toLowerCase() === title.toLowerCase(),
+  );
+
+  if (isDuplicateTitle) {
+    createSongError.value = "Já existe uma música com esse nome neste ministério.";
     return;
   }
 

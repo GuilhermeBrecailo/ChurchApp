@@ -456,6 +456,7 @@ model Schedule {
     description String
     rehearsalAt DateTime?
     rehearsalNotes String?
+    createdAt   DateTime @default(now())
 
     departmentId String
     department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)

@@ -305,6 +305,7 @@ export class ChurchDepartmentAdapters {
     description: true,
     rehearsalAt: true,
     rehearsalNotes: true,
+    createdAt: true,
     departmentId: true,
     department: {
       select: {
@@ -1373,7 +1374,7 @@ export class ChurchDepartmentAdapters {
         departmentId: id,
       },
       orderBy: {
-        date: "asc",
+        createdAt: "desc",
       },
       select: this.scheduleSelect,
     });
@@ -2353,6 +2354,26 @@ export class ChurchDepartmentAdapters {
     });
   }
 
+  private async assertUniqueSongTitle(
+    departmentId: string,
+    title: string,
+    excludeId?: string,
+  ) {
+    const existing = await $prismaClient.mediaItem.findFirst({
+      where: {
+        departmentId,
+        category: "MUSIC",
+        title: { equals: title, mode: "insensitive" },
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      throw new DomainError("Ja existe uma musica com esse nome neste ministerio");
+    }
+  }
+
   async createChurchDepartmentSong(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
     const { id } = request.params as { id?: string };
@@ -2389,6 +2410,8 @@ export class ChurchDepartmentAdapters {
       "SONG_CREATE",
       "Apenas pastores, admins ou cargos com permissao podem adicionar musicas deste ministerio",
     );
+
+    await this.assertUniqueSongTitle(id, body.title.trim());
 
     const metadata = {
       artist: body.artist?.trim() || "",
@@ -2626,6 +2649,8 @@ export class ChurchDepartmentAdapters {
       if (!body.title.trim()) {
         throw new DomainError("Titulo da musica e obrigatorio");
       }
+
+      await this.assertUniqueSongTitle(departmentId, body.title.trim(), songId);
 
       data.title = body.title.trim();
     }
