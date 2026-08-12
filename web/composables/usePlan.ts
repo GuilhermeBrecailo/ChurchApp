@@ -64,8 +64,11 @@ export const useChurchPlan = () => {
     () => subscriptionStatus.value === "TRIALING" && plan.value !== "FREE",
   );
 
+  // null sempre que a igreja nao estiver de fato em trial (ex: plano ja
+  // caiu pra FREE mas trialEndsAt antigo ainda esta no futuro) - quem usa
+  // isso nao precisa lembrar de checar isOnTrial tambem.
   const trialDaysLeft = computed(() => {
-    if (!trialEndsAt.value) return null;
+    if (!isOnTrial.value || !trialEndsAt.value) return null;
     const diffMs = trialEndsAt.value.getTime() - Date.now();
     return Math.max(0, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
   });

@@ -28,7 +28,7 @@
           >
             {{ planLabel }}
           </v-chip>
-          <span v-if="trialDaysLeft !== null" class="text-caption text-grey-darken-1">
+          <span v-if="isOnTrial && trialDaysLeft !== null" class="text-caption text-grey-darken-1">
             trial: {{ trialDaysLeft }} {{ trialDaysLeft === 1 ? "dia restante" : "dias restantes" }}
           </span>
         </div>
@@ -228,7 +228,7 @@ import { useChurchPlan, PLAN_LABELS, type Plan } from "../../composables/usePlan
 const { user } = useAuth();
 const { updateOwnChurch, uploadChurchPhoto } = useChurch();
 const { isDark } = useThemeMode();
-const { plan, trialDaysLeft } = useChurchPlan();
+const { plan, isOnTrial, trialDaysLeft } = useChurchPlan();
 
 const planLabel = computed(() => PLAN_LABELS[plan.value as Plan] ?? plan.value);
 
