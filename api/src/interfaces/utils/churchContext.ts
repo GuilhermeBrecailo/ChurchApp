@@ -1,6 +1,7 @@
 import { FastifyRequest } from "fastify";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
+import { hasFeature, PlanFeature } from "../../domain/planConfig";
 
 export type RoleContext = {
   id: string;
@@ -16,6 +17,7 @@ export type ActiveChurchContext = {
   canManageMembers: boolean;
   roles: RoleContext[];
   membershipId: string | null;
+  hasFeature: (feature: PlanFeature) => boolean;
 };
 
 function getHeaderValue(request: FastifyRequest, name: string) {
@@ -51,6 +53,21 @@ function mapRoles(
     departmentId: mr.churchRole.departmentId,
     permissions: mr.churchRole.permissions,
   }));
+}
+
+async function buildHasFeature(
+  crunchId: string | null,
+): Promise<(feature: PlanFeature) => boolean> {
+  if (!crunchId) return () => false;
+
+  const crunch = await $prismaClient.crunch.findUnique({
+    where: { id: crunchId },
+    select: { plan: true, subscriptionStatus: true, trialEndsAt: true },
+  });
+
+  if (!crunch) return () => false;
+
+  return (feature: PlanFeature) => hasFeature(crunch, feature);
 }
 
 export async function resolveActiveChurchContext(
@@ -95,31 +112,32 @@ export async function resolveActiveChurchContext(
     throw new DomainError("Usuário não possui vínculo ativo com esta igreja");
   }
 
-  if (membership) {
-    return {
-      activeChurchId: membership.crunchId,
-      role: membership.role,
-      canManageMembers: membership.canManageMembers,
-      roles: mapRoles(membership.membershipRoles),
-      membershipId: membership.id,
-    };
-  }
-
-  if (user.crunchId) {
-    return {
-      activeChurchId: user.crunchId,
-      role: user.role,
-      canManageMembers: user.canManageMembers,
-      roles: [],
-      membershipId: null,
-    };
-  }
+  const base = membership
+    ? {
+        activeChurchId: membership.crunchId,
+        role: membership.role,
+        canManageMembers: membership.canManageMembers,
+        roles: mapRoles(membership.membershipRoles),
+        membershipId: membership.id,
+      }
+    : user.crunchId
+      ? {
+          activeChurchId: user.crunchId,
+          role: user.role,
+          canManageMembers: user.canManageMembers,
+          roles: [],
+          membershipId: null,
+        }
+      : {
+          activeChurchId: null,
+          role: user.role,
+          canManageMembers: user.canManageMembers,
+          roles: [],
+          membershipId: null,
+        };
 
   return {
-    activeChurchId: null,
-    role: user.role,
-    canManageMembers: user.canManageMembers,
-    roles: [],
-    membershipId: null,
+    ...base,
+    hasFeature: await buildHasFeature(base.activeChurchId),
   };
 }
