@@ -2,7 +2,9 @@
   <div class="pa-4 bg-grey-lighten-4 min-vh-100">
     <div class="ministery-page-header mb-5">
       <div class="min-w-0">
-        <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">Ministérios</h1>
+        <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">
+          Ministérios
+        </h1>
         <p class="text-body-2 text-grey-darken-1 mb-0">
           Organize equipes, escalas e repertórios
         </p>
@@ -235,8 +237,16 @@
             <v-chip
               v-for="module in moduleOptions"
               :key="module.value"
-              :variant="departmentForm.modules.includes(module.value) ? 'flat' : 'outlined'"
-              :color="departmentForm.modules.includes(module.value) ? 'purple-darken-3' : 'grey-darken-1'"
+              :variant="
+                departmentForm.modules.includes(module.value)
+                  ? 'flat'
+                  : 'outlined'
+              "
+              :color="
+                departmentForm.modules.includes(module.value)
+                  ? 'purple-darken-3'
+                  : 'grey-darken-1'
+              "
               class="cursor-pointer font-weight-medium"
               :disabled="isCreatingDepartment"
               @click="toggleModule(module.value)"
@@ -305,7 +315,6 @@ const router = useRouter();
 const { user } = useAuth();
 const { getDepartments, createDepartment, deleteDepartment } = useDepartments();
 const { getMembers } = useMembers();
-
 
 const departments = ref<ChurchDepartment[]>([]);
 const members = ref<ChurchMember[]>([]);
@@ -427,7 +436,9 @@ const resetDepartmentForm = () => {
   departmentForm.name = "";
   departmentForm.type = "OTHER";
   departmentForm.leaderId = "";
-  departmentForm.modules = DEPARTMENT_MODULE_OPTIONS.map((module) => module.value);
+  departmentForm.modules = DEPARTMENT_MODULE_OPTIONS.map(
+    (module) => module.value,
+  );
 };
 
 const closeDepartmentDialog = () => {
@@ -446,7 +457,8 @@ const handleCreateDepartment = async () => {
   }
 
   if (!departmentForm.modules.length) {
-    createDepartmentError.value = "Selecione ao menos um módulo para o ministério.";
+    createDepartmentError.value =
+      "Selecione ao menos um módulo para o ministério.";
     return;
   }
 
@@ -461,7 +473,8 @@ const handleCreateDepartment = async () => {
     });
 
     if (error || !data) {
-      createDepartmentError.value = error || "Não foi possível criar o ministério.";
+      createDepartmentError.value =
+        error || "Não foi possível criar o ministério.";
       return;
     }
 
