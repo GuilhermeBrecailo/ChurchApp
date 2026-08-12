@@ -104,13 +104,17 @@ export async function resolveActiveChurchContext(
     throw new DomainError("Usuário não encontrado");
   }
 
-  const membership = requestedChurchId
+  // Um x-church-id pedido que nao bate com nenhuma membership do usuario
+  // (cookie active_church_id desatualizado - troca de conta no mesmo
+  // navegador, usuario removido da igreja, dispositivo compartilhado) cai
+  // no fallback da primeira membership em vez de virar erro fatal: o
+  // usuario so pode acabar ativo numa igreja que ele realmente tem
+  // vinculo, entao isso nunca abre acesso indevido - so evita que um
+  // cookie preso derrube toda a sessao com 403.
+  const requestedMembership = requestedChurchId
     ? user.churchMemberships.find((item) => item.crunchId === requestedChurchId)
-    : user.churchMemberships[0] ?? null;
-
-  if (requestedChurchId && !membership) {
-    throw new DomainError("Usuário não possui vínculo ativo com esta igreja");
-  }
+    : null;
+  const membership = requestedMembership ?? user.churchMemberships[0] ?? null;
 
   const base = membership
     ? {
