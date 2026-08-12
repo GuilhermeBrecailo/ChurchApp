@@ -259,6 +259,16 @@ export class MercadoPagoSubscriptionService {
     );
   }
 
+  async cancelSubscription(subscriptionId: string) {
+    await this.requestJson<MercadoPagoPreapproval>(
+      `/preapproval/${encodeURIComponent(subscriptionId)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ status: "cancelled" }),
+      },
+    );
+  }
+
   async getAuthorizedPayment(paymentId: string) {
     return await this.requestJson<MercadoPagoAuthorizedPayment>(
       `/authorized_payments/${encodeURIComponent(paymentId)}`,

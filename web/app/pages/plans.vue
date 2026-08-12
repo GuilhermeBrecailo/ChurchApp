@@ -31,7 +31,7 @@
         </div>
 
         <v-btn
-          v-if="plan === 'FREE'"
+          v-if="rawPlan === 'FREE'"
           color="purple-darken-3"
           variant="flat"
           class="text-none font-weight-bold"
@@ -39,6 +39,26 @@
           @click="handleSubscribe"
         >
           Assinar Pro
+        </v-btn>
+
+        <v-btn
+          v-else-if="rawPlan === 'PRO'"
+          variant="outlined"
+          color="grey-darken-2"
+          class="text-none font-weight-bold"
+          @click="openConfirm('downgrade')"
+        >
+          Voltar para o Free
+        </v-btn>
+
+        <v-btn
+          v-else-if="rawPlan === 'ILIMITADO'"
+          variant="tonal"
+          color="purple-darken-3"
+          class="text-none font-weight-bold"
+          @click="openConfirm('upgrade-from-ilimitado')"
+        >
+          Quero assinar o Pro
         </v-btn>
       </div>
 
@@ -52,6 +72,41 @@
         {{ checkoutError }}
       </v-alert>
     </v-card>
+
+    <v-dialog v-model="isConfirmOpen" max-width="420">
+      <v-card class="rounded-xl pa-2">
+        <v-card-title class="text-subtitle-1 font-weight-bold">
+          {{ confirmTitle }}
+        </v-card-title>
+        <v-card-text>
+          <p class="text-body-2 text-grey-darken-1 mb-0">{{ confirmMessage }}</p>
+          <v-alert
+            v-if="confirmError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mt-4"
+          >
+            {{ confirmError }}
+          </v-alert>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="closeConfirm">
+            Cancelar
+          </v-btn>
+          <v-btn
+            :color="confirmAction === 'downgrade' ? 'red-darken-2' : 'purple-darken-3'"
+            variant="flat"
+            class="text-none font-weight-bold"
+            :loading="isConfirmLoading"
+            @click="handleConfirm"
+          >
+            Tenho certeza
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <div class="plans-compare">
       <v-card class="plans-column rounded-xl pa-5 elevation-1">
@@ -107,9 +162,11 @@ import {
   type Plan,
 } from "../../composables/usePlan";
 import { useBilling } from "../../composables/useBilling";
+import { useAuth } from "../../composables/useAuth";
 
-const { plan, isOnTrial, trialDaysLeft } = useChurchPlan();
-const { createSubscriptionCheckout } = useBilling();
+const { plan, rawPlan, isOnTrial, trialDaysLeft } = useChurchPlan();
+const { createSubscriptionCheckout, cancelSubscription } = useBilling();
+const { fetchMe } = useAuth();
 
 const planLabel = computed(() => PLAN_LABELS[plan.value as Plan] ?? plan.value);
 const proFeatures = PRO_FEATURES;
@@ -135,6 +192,73 @@ async function handleSubscribe() {
     window.location.href = data.checkoutUrl;
   } finally {
     isCreatingCheckout.value = false;
+  }
+}
+
+type ConfirmAction = "downgrade" | "upgrade-from-ilimitado";
+
+const confirmAction = ref<ConfirmAction | null>(null);
+const isConfirmLoading = ref(false);
+const confirmError = ref("");
+
+const isConfirmOpen = computed({
+  get: () => confirmAction.value !== null,
+  set: (value: boolean) => {
+    if (!value) confirmAction.value = null;
+  },
+});
+
+const confirmTitle = computed(() => {
+  if (confirmAction.value === "downgrade") return "Voltar para o plano Free?";
+  if (confirmAction.value === "upgrade-from-ilimitado") return "Assinar o plano Pro?";
+  return "";
+});
+
+const confirmMessage = computed(() => {
+  if (confirmAction.value === "downgrade") {
+    return "Sua igreja perde acesso aos recursos do Pro imediatamente — papéis customizados, relatórios, notificações em massa e os outros itens da lista. Se houver uma assinatura ativa no Mercado Pago, ela será cancelada. Essa ação não pode ser desfeita sozinha; para voltar ao Pro será preciso assinar de novo.";
+  }
+  if (confirmAction.value === "upgrade-from-ilimitado") {
+    return "Sua igreja já tem acesso ilimitado sem custo, concedido pela equipe do ChurchApp — assinar o Pro não libera nada de novo. É só uma forma de ajudar a manter o projeto, totalmente opcional.";
+  }
+  return "";
+});
+
+function openConfirm(action: ConfirmAction) {
+  confirmError.value = "";
+  confirmAction.value = action;
+}
+
+function closeConfirm() {
+  if (isConfirmLoading.value) return;
+  confirmAction.value = null;
+}
+
+async function handleConfirm() {
+  if (confirmAction.value === "downgrade") {
+    await handleCancelSubscription();
+  } else if (confirmAction.value === "upgrade-from-ilimitado") {
+    confirmAction.value = null;
+    await handleSubscribe();
+  }
+}
+
+async function handleCancelSubscription() {
+  confirmError.value = "";
+  isConfirmLoading.value = true;
+
+  try {
+    const { error } = await cancelSubscription();
+
+    if (error) {
+      confirmError.value = error;
+      return;
+    }
+
+    await fetchMe();
+    confirmAction.value = null;
+  } finally {
+    isConfirmLoading.value = false;
   }
 }
 </script>

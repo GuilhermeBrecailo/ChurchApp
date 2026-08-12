@@ -42,9 +42,8 @@ export class BillingAdapters {
     private readonly mercadoPagoService = new MercadoPagoSubscriptionService(),
   ) {}
 
-  async createSubscriptionCheckout(request: FastifyRequest) {
+  private async getChurchManagerContext(request: FastifyRequest) {
     const userId = getAuthUserId(request);
-    const body = request.body as { backUrl?: string } | undefined;
     const user = await $prismaClient.user.findUnique({
       where: { id: userId },
       select: { id: true, email: true },
@@ -63,8 +62,15 @@ export class BillingAdapters {
       throw new DomainError("Acesso restrito a pastores ou admins");
     }
 
+    return { user, churchId: context.activeChurchId };
+  }
+
+  async createSubscriptionCheckout(request: FastifyRequest) {
+    const body = request.body as { backUrl?: string } | undefined;
+    const { user, churchId } = await this.getChurchManagerContext(request);
+
     const church = await $prismaClient.crunch.findUnique({
-      where: { id: context.activeChurchId },
+      where: { id: churchId },
       select: {
         id: true,
         name: true,
@@ -97,6 +103,45 @@ export class BillingAdapters {
       }
       throw error;
     }
+  }
+
+  // Downgrade voluntario pra Free, disparado pelo pastor na tela de planos.
+  // Cobre os dois casos: assinatura MP real ativa (cancela de verdade no MP)
+  // e trial PRO dado manualmente sem checkout (so reverte o registro local).
+  async cancelSubscription(request: FastifyRequest) {
+    const { churchId } = await this.getChurchManagerContext(request);
+
+    const church = await $prismaClient.crunch.findUnique({
+      where: { id: churchId },
+      select: { id: true, plan: true, mpSubscriptionId: true },
+    });
+
+    if (!church) {
+      throw new DomainError("Igreja nao encontrada");
+    }
+
+    if (church.plan !== "PRO") {
+      throw new DomainError("Igreja nao possui um plano Pro para cancelar");
+    }
+
+    if (church.mpSubscriptionId) {
+      await this.mercadoPagoService.cancelSubscription(church.mpSubscriptionId);
+    }
+
+    return await $prismaClient.crunch.update({
+      where: { id: church.id },
+      data: {
+        plan: "FREE",
+        subscriptionStatus: "CANCELED",
+        mpSubscriptionId: null,
+      },
+      select: {
+        id: true,
+        plan: true,
+        subscriptionStatus: true,
+        trialEndsAt: true,
+      },
+    });
   }
 
   async handleMercadoPagoWebhook(request: FastifyRequest, reply: FastifyReply) {

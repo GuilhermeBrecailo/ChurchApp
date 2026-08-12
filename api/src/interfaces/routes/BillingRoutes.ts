@@ -11,6 +11,11 @@ export async function BillingRoutes(app: FastifyInstance) {
   );
 
   app.post(
+    "/api/church/subscription/cancel",
+    controllerHandler(adapters.cancelSubscription.bind(adapters)),
+  );
+
+  app.post(
     "/public/mercadopago/webhook",
     adapters.handleMercadoPagoWebhook.bind(adapters),
   );

@@ -459,6 +459,23 @@
           </v-btn>
         </div>
 
+        <div v-if="selectedChurch" class="church-sheet-tabs-bar">
+          <v-tabs
+            v-model="activeChurchSheetTab"
+            density="compact"
+            color="indigo-darken-2"
+            slider-color="indigo-darken-2"
+            class="church-sheet-tabs"
+            grow
+          >
+            <v-tab value="geral" class="text-none font-weight-medium">Geral</v-tab>
+            <v-tab value="plano" class="text-none font-weight-medium">Plano</v-tab>
+            <v-tab value="membros" class="text-none font-weight-medium">Membros</v-tab>
+            <v-tab value="ministerios" class="text-none font-weight-medium">Ministérios</v-tab>
+            <v-tab value="escalas" class="text-none font-weight-medium">Escalas</v-tab>
+          </v-tabs>
+        </div>
+
         <div class="church-details-body">
           <v-skeleton-loader
             v-if="isLoadingChurch"
@@ -466,7 +483,7 @@
           />
 
           <div v-else-if="selectedChurch" class="church-details-content">
-            <div class="church-sheet-summary">
+            <div v-show="activeChurchSheetTab === 'geral'" class="church-sheet-summary">
               <div class="sheet-summary-tile">
                 <Users size="18" />
                 <span>{{ selectedChurch.users.length }}</span>
@@ -489,7 +506,7 @@
               </div>
             </div>
 
-            <div class="church-detail-grid">
+            <div v-show="activeChurchSheetTab === 'geral'" class="church-detail-grid">
               <div class="detail-tile">
                 <p class="text-caption text-grey-darken-1 mb-1">Cidade</p>
                 <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
@@ -520,10 +537,46 @@
               </div>
             </div>
 
-            <section class="detail-section">
+            <section v-show="activeChurchSheetTab === 'plano'" class="detail-section">
               <div class="detail-section-heading">
                 <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
-                  Usuários
+                  Plano
+                </h3>
+              </div>
+              <div class="church-sheet-plan-card">
+                <div>
+                  <p class="text-caption text-grey-darken-1 mb-1">Plano atual</p>
+                  <div class="d-flex align-center ga-2">
+                    <v-chip
+                      size="small"
+                      :color="planLabel(selectedChurch) === 'Free' ? 'grey-darken-1' : 'amber-darken-3'"
+                      variant="flat"
+                      class="font-weight-bold"
+                    >
+                      {{ planLabel(selectedChurch) }}
+                    </v-chip>
+                    <span v-if="churchTrialDaysLeft(selectedChurch) !== null" class="text-caption text-grey-darken-1">
+                      trial: {{ churchTrialDaysLeft(selectedChurch) }}
+                      {{ churchTrialDaysLeft(selectedChurch) === 1 ? "dia restante" : "dias restantes" }}
+                    </span>
+                  </div>
+                </div>
+                <v-btn
+                  variant="tonal"
+                  color="indigo-darken-2"
+                  size="small"
+                  class="text-none font-weight-bold"
+                  @click="openPlanDialog(selectedChurch)"
+                >
+                  <Pencil size="14" class="mr-1" /> Editar
+                </v-btn>
+              </div>
+            </section>
+
+            <section v-show="activeChurchSheetTab === 'membros'" class="detail-section">
+              <div class="detail-section-heading">
+                <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+                  Membros
                 </h3>
                 <div class="detail-heading-actions">
                   <v-chip size="small" color="indigo-darken-2" variant="tonal">
@@ -563,7 +616,7 @@
               </div>
             </section>
 
-            <section class="detail-section">
+            <section v-show="activeChurchSheetTab === 'ministerios'" class="detail-section">
               <div class="detail-section-heading">
                 <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
                   Ministérios
@@ -607,7 +660,7 @@
               </div>
             </section>
 
-            <section class="detail-section">
+            <section v-show="activeChurchSheetTab === 'escalas'" class="detail-section">
               <div class="detail-section-heading">
                 <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
                   Escalas
@@ -3680,6 +3733,7 @@ const adminUserEditError = ref("");
 const isResettingAdminUserPassword = ref(false);
 const adminUserResetPasswordResult = ref("");
 const churchPreviewLimit = 3;
+const activeChurchSheetTab = ref("geral");
 const showAllChurchUsers = ref(false);
 const showAllChurchDepartments = ref(false);
 const showAllChurchSchedules = ref(false);
@@ -4435,6 +4489,7 @@ const selectChurch = async (id: string) => {
   isLoadingChurch.value = true;
   closeAdminUserDetails();
   selectedChurch.value = null;
+  activeChurchSheetTab.value = "geral";
   showAllChurchUsers.value = false;
   showAllChurchDepartments.value = false;
   showAllChurchSchedules.value = false;
@@ -6087,6 +6142,27 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 12px;
   padding: 18px;
+}
+
+.church-sheet-tabs-bar {
+  padding: 0 18px 12px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.church-sheet-tabs {
+  min-height: 38px !important;
+}
+
+.church-sheet-plan-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  background: #f9fafb;
+  padding: 14px 16px;
 }
 
 .church-details-body {

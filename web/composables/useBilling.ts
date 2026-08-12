@@ -8,6 +8,13 @@ export interface SubscriptionCheckout {
   mpSubscriptionId: string;
 }
 
+export interface CanceledSubscription {
+  id: string;
+  plan: string;
+  subscriptionStatus: string;
+  trialEndsAt: string | null;
+}
+
 export const useBilling = () => {
   const config = useRuntimeConfig();
   const { access_token } = useAuth();
@@ -32,5 +39,19 @@ export const useBilling = () => {
     );
   };
 
-  return { createSubscriptionCheckout };
+  const cancelSubscription = async (): Promise<ApiResponse<CanceledSubscription>> => {
+    return await $customFetch<CanceledSubscription>(
+      `${config.public.URL_BACKEND}/api/church/subscription/cancel`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(access_token.value ? { Authorization: `Bearer ${access_token.value}` } : {}),
+        },
+        body: {},
+      },
+    );
+  };
+
+  return { createSubscriptionCheckout, cancelSubscription };
 };
