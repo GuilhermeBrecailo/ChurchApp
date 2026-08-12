@@ -69,6 +69,15 @@ model Crunch {
     posts         Post[]
 }
 
+model MercadoPagoWebhookNotification {
+    id          String   @id
+    topic       String
+    action      String?
+    resourceId  String
+    processedAt DateTime @default(now())
+
+    @@index([resourceId])
+}
 model Post {
     id          String   @id @default(uuid())
     title       String
@@ -534,3 +543,4 @@ model PageHelpVideo {
     videoUrl    String
     updatedAt   DateTime @updatedAt
 }
+

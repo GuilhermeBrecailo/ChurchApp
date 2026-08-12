@@ -15,7 +15,8 @@
     "prisma:reset": "prisma migrate reset --schema=src/infrastructure/database/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=src/infrastructure/database/prisma/schema.prisma",
     "demo:seed": "tsx --env-file=.env scripts/demo-seed.ts",
-    "demo:reset": "tsx --env-file=.env scripts/demo-reset.ts"
+    "demo:reset": "tsx --env-file=.env scripts/demo-reset.ts",
+    "trial:expire": "tsx --env-file=.env scripts/expire-trials.ts"
   },
   "keywords": [],
   "author": "",
@@ -64,3 +65,4 @@
     "schema": "src/infrastructure/database/prisma/schema.prisma"
   }
 }
+
