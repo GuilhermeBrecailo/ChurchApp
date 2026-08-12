@@ -366,7 +366,7 @@ export class MercadoPagoSubscriptionService {
   ) {
     const church = await $prismaClient.crunch.findFirst({
       where: { mpSubscriptionId: subscriptionId },
-      select: { id: true, plan: true },
+      select: { id: true, plan: true, subscriptionStatus: true },
     });
 
     if (!church) {
@@ -374,13 +374,26 @@ export class MercadoPagoSubscriptionService {
       return;
     }
 
+    // PAST_DUE nao derruba pro Free na hora - so marca quando a carencia
+    // comecou (resolveEffectivePlan cuida do prazo) e mantem o plano PRO
+    // que ja estava valendo. expireTrials/expirePastDue e' quem de fato
+    // rebaixa depois que a carencia acaba.
+    const wasAlreadyPastDue = church.subscriptionStatus === "PAST_DUE";
+
     await $prismaClient.crunch.update({
       where: { id: church.id },
       data: {
         subscriptionStatus,
         ...(church.plan === "ILIMITADO"
           ? {}
-          : { plan: subscriptionStatus === "ACTIVE" ? "PRO" : "FREE" }),
+          : subscriptionStatus === "ACTIVE"
+            ? { plan: "PRO" }
+            : subscriptionStatus === "CANCELED"
+              ? { plan: "FREE" }
+              : {}),
+        ...(subscriptionStatus === "PAST_DUE"
+          ? { pastDueSince: wasAlreadyPastDue ? undefined : new Date() }
+          : { pastDueSince: null }),
       },
     });
   }

@@ -134,6 +134,7 @@ export class BillingAdapters {
         plan: "FREE",
         subscriptionStatus: "CANCELED",
         mpSubscriptionId: null,
+        pastDueSince: null,
       },
       select: {
         id: true,

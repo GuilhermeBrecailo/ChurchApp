@@ -45,6 +45,18 @@
     </v-card>
 
     <v-alert
+      v-if="isPastDue && pastDueGraceDaysLeft !== null"
+      type="warning"
+      variant="tonal"
+      density="compact"
+      class="mb-4"
+    >
+      Não conseguimos cobrar seu cartão. Atualize a forma de pagamento em até
+      {{ pastDueGraceDaysLeft }} {{ pastDueGraceDaysLeft === 1 ? "dia" : "dias" }} para não perder
+      o acesso ao plano Pro.
+    </v-alert>
+
+    <v-alert
       v-if="!canEditChurch"
       type="info"
       variant="tonal"
@@ -228,7 +240,7 @@ import { useChurchPlan, PLAN_LABELS, type Plan } from "../../composables/usePlan
 const { user } = useAuth();
 const { updateOwnChurch, uploadChurchPhoto } = useChurch();
 const { isDark } = useThemeMode();
-const { plan, isOnTrial, trialDaysLeft } = useChurchPlan();
+const { plan, isOnTrial, trialDaysLeft, isPastDue, pastDueGraceDaysLeft } = useChurchPlan();
 
 const planLabel = computed(() => PLAN_LABELS[plan.value as Plan] ?? plan.value);
 

@@ -77,6 +77,14 @@ export const useChurchPlan = () => {
 
   const hasFeature = (feature: PlanFeature) => features.value.includes(feature);
 
+  const isPastDue = computed(() => subscriptionStatus.value === "PAST_DUE");
+
+  // Vem pronto do backend (pastDueGraceDaysLeft em planConfig.ts) - null
+  // sempre que a igreja nao estiver de fato em carencia de pagamento.
+  const pastDueGraceDaysLeft = computed<number | null>(
+    () => (church.value?.pastDueGraceDaysLeft as number | null | undefined) ?? null,
+  );
+
   return {
     plan,
     rawPlan,
@@ -84,6 +92,8 @@ export const useChurchPlan = () => {
     trialEndsAt,
     isOnTrial,
     trialDaysLeft,
+    isPastDue,
+    pastDueGraceDaysLeft,
     features,
     hasFeature,
   };

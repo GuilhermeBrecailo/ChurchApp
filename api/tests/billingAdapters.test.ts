@@ -210,7 +210,7 @@ describe("BillingAdapters.handleMercadoPagoWebhook", () => {
     expect(reply.code).toHaveBeenCalledWith(200);
     expect(mockPrismaClient.crunch.update).toHaveBeenCalledWith({
       where: { id: "church-1" },
-      data: { subscriptionStatus: "ACTIVE", plan: "PRO" },
+      data: { subscriptionStatus: "ACTIVE", plan: "PRO", pastDueSince: null },
     });
     expect(mockPrismaClient.mercadoPagoWebhookNotification.create).toHaveBeenCalledWith({
       data: {
@@ -273,7 +273,7 @@ describe("BillingAdapters.handleMercadoPagoWebhook", () => {
     expect(mockPrismaClient.crunch.update).toHaveBeenCalledTimes(1);
     expect(mockPrismaClient.crunch.update).toHaveBeenCalledWith({
       where: { id: "church-1" },
-      data: { subscriptionStatus: "ACTIVE", plan: "PRO" },
+      data: { subscriptionStatus: "ACTIVE", plan: "PRO", pastDueSince: null },
     });
   });
 

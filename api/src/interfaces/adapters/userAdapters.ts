@@ -18,7 +18,7 @@ import path from "node:path";
 import { isValidFontKey } from "../../domain/appearance";
 import { hasPermission } from "../../application/Services/Auth/AuthorizationService";
 import { PermissionKey } from "../../domain/permissions";
-import { PLAN_FEATURES, resolveEffectivePlan } from "../../domain/planConfig";
+import { PLAN_FEATURES, resolveEffectivePlan, pastDueGraceDaysLeft } from "../../domain/planConfig";
 
 const TRIAL_PERIOD_DAYS = 90;
 
@@ -64,6 +64,7 @@ function formatChurch(church: {
   plan: string;
   subscriptionStatus: string;
   trialEndsAt: Date | null;
+  pastDueSince: Date | null;
 }) {
   const effectivePlan = resolveEffectivePlan(church);
 
@@ -94,6 +95,7 @@ function formatChurch(church: {
     plan: church.plan,
     subscriptionStatus: church.subscriptionStatus,
     trialEndsAt: church.trialEndsAt,
+    pastDueGraceDaysLeft: pastDueGraceDaysLeft(church),
     effectivePlan,
     features: PLAN_FEATURES[effectivePlan],
   };

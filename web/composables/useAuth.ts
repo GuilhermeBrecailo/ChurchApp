@@ -29,6 +29,7 @@ interface AuthChurch {
   plan?: string;
   subscriptionStatus?: string;
   trialEndsAt?: string | null;
+  pastDueGraceDaysLeft?: number | null;
   effectivePlan?: string;
   features?: string[];
 }

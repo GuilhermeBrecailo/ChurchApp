@@ -153,7 +153,10 @@ export class AdminAdapters {
       where: { id },
       data: {
         ...(body.plan !== undefined ? { plan: body.plan } : {}),
-        ...(trialEndsAt !== undefined ? { trialEndsAt } : {}),
+        // Data de trial alterada manualmente pelo admin: reseta o marcador
+        // de lembrete ja enviado, senao sendTrialReminders nunca avisa de
+        // novo sobre o prazo estendido.
+        ...(trialEndsAt !== undefined ? { trialEndsAt, trialReminderSentAt: null } : {}),
       },
       select: {
         id: true,

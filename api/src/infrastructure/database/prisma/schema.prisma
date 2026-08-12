@@ -41,6 +41,14 @@ model Crunch {
     subscriptionStatus String    @default("TRIALING")
     trialEndsAt        DateTime?
     mpSubscriptionId   String?
+    // Quando o status virou PAST_DUE pela ultima vez - da uma carencia de
+    // PAST_DUE_GRACE_DAYS (ver planConfig.ts) antes de derrubar pro Free, em
+    // vez de cortar acesso no primeiro pagamento recusado. Null quando nao
+    // esta em PAST_DUE.
+    pastDueSince          DateTime?
+    // Marca que o lembrete de trial acabando ja foi enviado, pra
+    // sendTrialReminders() nao mandar de novo a cada execucao do cron.
+    trialReminderSentAt   DateTime?
 
     inviteCode    String?  @unique
 

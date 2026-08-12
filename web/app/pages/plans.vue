@@ -63,6 +63,18 @@
       </div>
 
       <v-alert
+        v-if="isPastDue && pastDueGraceDaysLeft !== null"
+        type="warning"
+        variant="tonal"
+        density="compact"
+        class="mt-4"
+      >
+        Não conseguimos cobrar seu cartão. Atualize a forma de pagamento em até
+        {{ pastDueGraceDaysLeft }} {{ pastDueGraceDaysLeft === 1 ? "dia" : "dias" }}
+        para não perder o acesso ao plano Pro.
+      </v-alert>
+
+      <v-alert
         v-if="checkoutError"
         type="error"
         variant="tonal"
@@ -164,7 +176,7 @@ import {
 import { useBilling } from "../../composables/useBilling";
 import { useAuth } from "../../composables/useAuth";
 
-const { plan, rawPlan, isOnTrial, trialDaysLeft } = useChurchPlan();
+const { plan, rawPlan, isOnTrial, trialDaysLeft, isPastDue, pastDueGraceDaysLeft } = useChurchPlan();
 const { createSubscriptionCheckout, cancelSubscription } = useBilling();
 const { fetchMe } = useAuth();
 

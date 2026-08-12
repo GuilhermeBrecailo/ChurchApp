@@ -16,7 +16,10 @@
     "prisma:studio": "prisma studio --schema=src/infrastructure/database/prisma/schema.prisma",
     "demo:seed": "tsx --env-file=.env scripts/demo-seed.ts",
     "demo:reset": "tsx --env-file=.env scripts/demo-reset.ts",
-    "trial:expire": "tsx --env-file=.env scripts/expire-trials.ts"
+    "trial:expire": "tsx --env-file=.env scripts/expire-trials.ts",
+    "billing:expire-past-due": "tsx --env-file=.env scripts/expire-past-due.ts",
+    "billing:send-trial-reminders": "tsx --env-file=.env scripts/send-trial-reminders.ts",
+    "billing:cron": "tsx --env-file=.env scripts/run-billing-jobs.ts"
   },
   "keywords": [],
   "author": "",

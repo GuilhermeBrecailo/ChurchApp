@@ -128,7 +128,7 @@ describe("AdminAdapters.setChurchPlan", () => {
 
     expect(mockPrismaClient.crunch.update).toHaveBeenCalledWith({
       where: { id: "church-1" },
-      data: { trialEndsAt: new Date("2027-01-01T00:00:00.000Z") },
+      data: { trialEndsAt: new Date("2027-01-01T00:00:00.000Z"), trialReminderSentAt: null },
       select: {
         id: true,
         name: true,
@@ -157,7 +157,11 @@ describe("AdminAdapters.setChurchPlan", () => {
 
     expect(mockPrismaClient.crunch.update).toHaveBeenCalledWith({
       where: { id: "church-1" },
-      data: { plan: "PRO", trialEndsAt: new Date("2027-01-01T00:00:00.000Z") },
+      data: {
+        plan: "PRO",
+        trialEndsAt: new Date("2027-01-01T00:00:00.000Z"),
+        trialReminderSentAt: null,
+      },
       select: {
         id: true,
         name: true,

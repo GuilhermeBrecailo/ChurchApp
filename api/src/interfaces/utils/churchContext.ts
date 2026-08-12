@@ -62,7 +62,7 @@ async function buildHasFeature(
 
   const crunch = await $prismaClient.crunch.findUnique({
     where: { id: crunchId },
-    select: { plan: true, subscriptionStatus: true, trialEndsAt: true },
+    select: { plan: true, subscriptionStatus: true, trialEndsAt: true, pastDueSince: true },
   });
 
   if (!crunch) return () => false;
