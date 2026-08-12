@@ -292,7 +292,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive } from "vue";
-import { Building, List, Plus, Trash2 } from "lucide-vue-next";
+import { Building, BarChart3, List, Plus, Trash2 } from "lucide-vue-next";
 import {
   useDepartments,
   DEPARTMENT_MODULE_OPTIONS,
