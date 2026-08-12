@@ -2027,6 +2027,17 @@
           </v-btn>
         </div>
 
+        <v-alert
+          v-if="!memberOptions.length"
+          type="info"
+          variant="tonal"
+          density="comfortable"
+          class="mb-4"
+        >
+          Este ministério ainda não tem membros. Adicione membros na Visão geral antes de montar a
+          escala.
+        </v-alert>
+
         <div class="ministery-field-grid mb-4">
           <v-select
             v-model="assignmentForm.userId"
@@ -2041,7 +2052,8 @@
             bg-color="white"
             class="ministery-input"
             hide-details="auto"
-            :disabled="isSavingAssignments"
+            no-data-text="Nenhum membro disponível no ministério"
+            :disabled="isSavingAssignments || !memberOptions.length"
           />
           <v-combobox
             v-model="assignmentForm.role"
@@ -2054,7 +2066,8 @@
             bg-color="white"
             class="ministery-input"
             hide-details="auto"
-            :disabled="isSavingAssignments"
+            no-data-text="Digite pra criar uma função"
+            :disabled="isSavingAssignments || !memberOptions.length"
           />
         </div>
 
@@ -2062,7 +2075,7 @@
           color="purple-darken-3"
           variant="tonal"
           class="text-none mb-4"
-          :disabled="isSavingAssignments"
+          :disabled="isSavingAssignments || !assignmentForm.userId"
           @click="addDraftAssignment"
         >
           <Plus size="18" class="mr-1" /> Adicionar voluntário
@@ -2075,14 +2088,21 @@
             class="rounded-lg pa-3 bg-grey-lighten-5"
             elevation="0"
           >
-            <div class="d-flex justify-space-between align-center ga-3">
-              <div class="min-w-0">
-                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
+            <div class="d-flex justify-space-between align-start ga-3 flex-wrap">
+              <div class="min-w-0 flex-grow-1">
+                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-1">
                   {{ assignment.name }}
                 </p>
-                <p class="text-caption text-grey-darken-1 mb-0">
-                  {{ assignment.role }}
-                </p>
+                <v-text-field
+                  v-model="assignment.role"
+                  placeholder="Função (ex: Teclado)"
+                  variant="underlined"
+                  density="compact"
+                  color="purple-darken-3"
+                  hide-details
+                  class="assignment-role-input mb-1"
+                  :disabled="isSavingAssignments"
+                />
                 <div class="d-flex flex-wrap ga-2 mt-2">
                   <v-chip
                     size="x-small"
@@ -2115,7 +2135,7 @@
                   </v-chip>
                 </div>
               </div>
-              <div class="d-flex align-center ga-1">
+              <div class="d-flex align-center ga-1 flex-shrink-0">
                 <v-btn
                   icon
                   variant="text"
@@ -2136,17 +2156,17 @@
                 >
                   <v-icon size="18">mdi-close-circle-outline</v-icon>
                 </v-btn>
+                <v-btn
+                  icon
+                  variant="text"
+                  color="grey-darken-1"
+                  size="small"
+                  :disabled="isSavingAssignments"
+                  @click="removeDraftAssignment(assignment.userId)"
+                >
+                  <v-icon size="18">mdi-close</v-icon>
+                </v-btn>
               </div>
-              <v-btn
-                icon
-                variant="text"
-                color="grey-darken-1"
-                size="small"
-                :disabled="isSavingAssignments"
-                @click="removeDraftAssignment(assignment.userId)"
-              >
-                <v-icon size="18">mdi-close</v-icon>
-              </v-btn>
             </div>
           </v-card>
         </div>
@@ -4776,6 +4796,19 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
+}
+.assignment-role-input {
+  max-width: 220px;
+}
+.assignment-role-input :deep(.v-field__input) {
+  font-size: 0.75rem;
+  min-height: unset;
+  padding: 0;
+  color: var(--app-color-text-muted);
+}
+.assignment-role-input :deep(.v-field__outline),
+.assignment-role-input :deep(.v-input__details) {
+  display: none;
 }
 .dialog-actions {
   display: flex;
