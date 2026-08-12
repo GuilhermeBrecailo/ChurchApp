@@ -244,6 +244,9 @@ export class DevotionalAdapters {
   }
 
   async updateProgress(request: FastifyRequest) {
+    if (!request.churchContext?.hasFeature("DEVOTIONAL_PROGRESS")) {
+      throw new DomainError("Progresso de leitura do devocional está disponível apenas no plano Pro");
+    }
     const user = await this.getCurrentUser(request);
     const { id } = request.params as { id?: string };
     const body = request.body as { chapterId?: string };
