@@ -324,6 +324,12 @@
       <LogOut size="18" class="mr-2" /> Sair
     </v-btn>
 
+    <p class="text-caption text-center text-grey-darken-1 mt-4 mb-0">
+      <NuxtLink to="/termos" target="_blank" class="text-grey-darken-1">Termos de Uso</NuxtLink>
+      ·
+      <NuxtLink to="/privacidade" target="_blank" class="text-grey-darken-1">Política de Privacidade</NuxtLink>
+    </p>
+
     <UtilsResponsiveOverlay
       v-model="isPasswordDialogOpen"
       max-width="480"

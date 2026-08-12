@@ -112,6 +112,14 @@
             {{ errorMessage }}
           </v-alert>
 
+          <p class="auth-terms-hint text-center mb-4">
+            Ao se cadastrar, você concorda com os
+            <NuxtLink to="/termos" target="_blank">Termos de Uso</NuxtLink>
+            e a
+            <NuxtLink to="/privacidade" target="_blank">Política de Privacidade</NuxtLink>
+            do ChurchApp.
+          </p>
+
           <MotionPressableScale>
           <v-btn
             type="submit"
@@ -320,5 +328,16 @@ const handleRegister = async () => {
   color: var(--app-color-text-muted);
   text-align: center;
   line-height: 1.5;
+}
+
+.auth-terms-hint {
+  font-size: 0.78rem;
+  color: var(--app-color-text-muted);
+  line-height: 1.5;
+}
+
+.auth-terms-hint a {
+  color: var(--app-color-accent);
+  font-weight: 600;
 }
 </style>
