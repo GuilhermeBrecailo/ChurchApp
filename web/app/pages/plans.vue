@@ -30,22 +30,27 @@
           </div>
         </div>
 
-        <v-tooltip location="top">
-          <template #activator="{ props: tooltipProps }">
-            <span v-bind="tooltipProps">
-              <v-btn
-                color="purple-darken-3"
-                variant="flat"
-                class="text-none font-weight-bold"
-                disabled
-              >
-                Assinar Pro
-              </v-btn>
-            </span>
-          </template>
-          Pagamento via Mercado Pago em breve. Fale com o suporte se quiser assinar agora.
-        </v-tooltip>
+        <v-btn
+          v-if="plan === 'FREE'"
+          color="purple-darken-3"
+          variant="flat"
+          class="text-none font-weight-bold"
+          :loading="isCreatingCheckout"
+          @click="handleSubscribe"
+        >
+          Assinar Pro
+        </v-btn>
       </div>
+
+      <v-alert
+        v-if="checkoutError"
+        type="error"
+        variant="tonal"
+        density="compact"
+        class="mt-4"
+      >
+        {{ checkoutError }}
+      </v-alert>
     </v-card>
 
     <div class="plans-compare">
@@ -88,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { Check } from "lucide-vue-next";
 import {
   useChurchPlan,
@@ -98,13 +103,37 @@ import {
   FREE_HIGHLIGHTS,
   type Plan,
 } from "../../composables/usePlan";
+import { useBilling } from "../../composables/useBilling";
 
 const { plan, isOnTrial, trialDaysLeft } = useChurchPlan();
+const { createSubscriptionCheckout } = useBilling();
 
 const planLabel = computed(() => PLAN_LABELS[plan.value as Plan] ?? plan.value);
 const proFeatures = PRO_FEATURES;
 const planFeatureLabels = PLAN_FEATURE_LABELS;
 const freeHighlights = FREE_HIGHLIGHTS;
+
+const isCreatingCheckout = ref(false);
+const checkoutError = ref("");
+
+async function handleSubscribe() {
+  checkoutError.value = "";
+  isCreatingCheckout.value = true;
+
+  try {
+    const backUrl = `${window.location.origin}/plans`;
+    const { data, error } = await createSubscriptionCheckout(backUrl);
+
+    if (error || !data) {
+      checkoutError.value = error || "Não foi possível iniciar a assinatura.";
+      return;
+    }
+
+    window.location.href = data.checkoutUrl;
+  } finally {
+    isCreatingCheckout.value = false;
+  }
+}
 </script>
 
 <style scoped>
