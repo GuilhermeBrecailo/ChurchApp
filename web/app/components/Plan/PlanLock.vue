@@ -47,7 +47,7 @@ function goToPlans() {
 .plan-lock {
   position: relative;
   display: inline-block;
-  width: 100%;
+  max-width: 100%;
 }
 
 .plan-lock--locked .plan-lock__content {

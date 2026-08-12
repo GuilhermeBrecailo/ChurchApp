@@ -2169,10 +2169,13 @@
       </div>
     </section>
 
-    <AdminReports
+    <PlanLock
       v-if="isChurchWideManager && activeAdminTab === 'relatorios'"
-      :departments="departments"
-    />
+      feature="REPORTS"
+      class="mb-8"
+    >
+      <AdminReports :departments="departments" />
+    </PlanLock>
 
     <section v-show="isChurchWideManager && activeAdminTab === 'relatorios'" class="church-admin-section mb-8">
       <div class="section-heading mb-4">
@@ -2533,15 +2536,17 @@
             Crie cargos com permissões específicas e atribua aos membros.
           </p>
         </div>
-        <v-btn
-          color="purple-darken-3"
-          class="rounded-lg text-none px-4"
-          size="small"
-          elevation="1"
-          @click="openCreateRole"
-        >
-          <Shield size="16" class="mr-2" /> Novo cargo
-        </v-btn>
+        <PlanLock feature="CUSTOM_ROLES">
+          <v-btn
+            color="purple-darken-3"
+            class="rounded-lg text-none px-4"
+            size="small"
+            elevation="1"
+            @click="openCreateRole"
+          >
+            <Shield size="16" class="mr-2" /> Novo cargo
+          </v-btn>
+        </PlanLock>
       </div>
 
       <div class="admin-filter-bar mb-4">
@@ -2613,26 +2618,28 @@
               </span>
             </div>
           </div>
-          <div class="ministry-actions">
-            <v-btn
-              icon
-              variant="text"
-              color="grey-darken-1"
-              size="small"
-              @click="openEditRole(role)"
-            >
-              <Pencil size="16" />
-            </v-btn>
-            <v-btn
-              icon
-              variant="text"
-              color="red-darken-2"
-              size="small"
-              @click="pendingDeleteRoleId = role.id"
-            >
-              <Trash2 size="16" />
-            </v-btn>
-          </div>
+          <PlanLock feature="CUSTOM_ROLES" class="ministry-actions">
+            <div class="d-flex">
+              <v-btn
+                icon
+                variant="text"
+                color="grey-darken-1"
+                size="small"
+                @click="openEditRole(role)"
+              >
+                <Pencil size="16" />
+              </v-btn>
+              <v-btn
+                icon
+                variant="text"
+                color="red-darken-2"
+                size="small"
+                @click="pendingDeleteRoleId = role.id"
+              >
+                <Trash2 size="16" />
+              </v-btn>
+            </div>
+          </PlanLock>
         </div>
       </div>
 
