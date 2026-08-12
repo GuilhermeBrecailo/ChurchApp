@@ -31,6 +31,9 @@ export class ReportAdapters {
     if (!["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(context.role)) {
       throw new DomainError("Acesso restrito a pastores ou admins");
     }
+    if (!context.hasFeature("REPORTS")) {
+      throw new DomainError("Relatórios estão disponíveis apenas no plano Pro");
+    }
     return {
       ...user,
       crunchId: context.activeChurchId,
