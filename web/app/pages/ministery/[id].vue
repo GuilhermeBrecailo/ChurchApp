@@ -396,17 +396,18 @@
                 </div>
               </div>
 
-              <v-btn
-                v-if="canSendNotifications"
-                variant="tonal"
-                color="purple-darken-3"
-                class="text-none leader-reminder-btn"
-                :loading="isSendingReminderId === schedule.id"
-                :disabled="Boolean(isSendingReminderId) || !(schedule.assignments?.length)"
-                @click="sendReminder(schedule)"
-              >
-                <Send size="16" class="mr-2" /> Lembrar
-              </v-btn>
+              <PlanLock v-if="canSendNotifications" feature="SCHEDULE_REMINDER">
+                <v-btn
+                  variant="tonal"
+                  color="purple-darken-3"
+                  class="text-none leader-reminder-btn"
+                  :loading="isSendingReminderId === schedule.id"
+                  :disabled="Boolean(isSendingReminderId) || !(schedule.assignments?.length)"
+                  @click="sendReminder(schedule)"
+                >
+                  <Send size="16" class="mr-2" /> Lembrar
+                </v-btn>
+              </PlanLock>
             </div>
           </div>
           <p v-else class="text-caption text-grey-darken-1 mb-0">
@@ -619,14 +620,15 @@
 
       <section v-if="activeTab === 'resources'">
         <div class="ministery-section-actions mb-4">
-          <v-btn
-            v-if="canManageSongs"
-            color="purple-darken-3"
-            class="rounded-lg text-none"
-            @click="isResourceDialogOpen = true"
-          >
-            <Plus size="18" class="mr-1" /> Novo recurso
-          </v-btn>
+          <PlanLock v-if="canManageSongs" feature="MINISTRY_RESOURCES">
+            <v-btn
+              color="purple-darken-3"
+              class="rounded-lg text-none"
+              @click="isResourceDialogOpen = true"
+            >
+              <Plus size="18" class="mr-1" /> Novo recurso
+            </v-btn>
+          </PlanLock>
         </div>
 
         <v-card
@@ -920,14 +922,15 @@
 
       <section v-if="activeTab === 'classes'">
         <div class="ministery-section-actions mb-4">
-          <v-btn
-            v-if="canManageDepartment"
-            color="purple-darken-3"
-            class="rounded-lg text-none"
-            @click="isActivityDialogOpen = true"
-          >
-            <Plus size="18" class="mr-1" /> Nova atividade
-          </v-btn>
+          <PlanLock v-if="canManageDepartment" feature="MINISTRY_RESOURCES">
+            <v-btn
+              color="purple-darken-3"
+              class="rounded-lg text-none"
+              @click="isActivityDialogOpen = true"
+            >
+              <Plus size="18" class="mr-1" /> Nova atividade
+            </v-btn>
+          </PlanLock>
         </div>
 
         <v-card
@@ -1356,17 +1359,18 @@
           </v-btn>
         </div>
 
-        <v-btn
-          v-if="!editingSongId"
-          variant="tonal"
-          color="purple-darken-3"
-          class="rounded-lg text-none mb-5"
-          block
-          :disabled="isCreatingSong || isImportingCifraClubSong"
-          @click="switchToImportPdfFromSongDialog"
-        >
-          <FileText size="18" class="mr-2" /> Prefere importar de um PDF?
-        </v-btn>
+        <PlanLock v-if="!editingSongId" feature="PDF_SONG_IMPORT">
+          <v-btn
+            variant="tonal"
+            color="purple-darken-3"
+            class="rounded-lg text-none mb-5"
+            block
+            :disabled="isCreatingSong || isImportingCifraClubSong"
+            @click="switchToImportPdfFromSongDialog"
+          >
+            <FileText size="18" class="mr-2" /> Prefere importar de um PDF?
+          </v-btn>
+        </PlanLock>
 
         <v-form autocomplete="off" @submit.prevent="handleSaveSong">
           <v-tabs
@@ -1484,16 +1488,18 @@
               </v-alert>
 
               <div class="d-flex justify-end mb-4">
-                <v-btn
-                  variant="tonal"
-                  color="deep-purple-darken-2"
-                  class="text-none font-weight-bold"
-                  :loading="isImportingCifraClubSong"
-                  :disabled="isCreatingSong || isImportingCifraClubSong || (!songForm.url && (!songForm.title || !songForm.artist))"
-                  @click="handleImportCifraClubSong"
-                >
-                  Buscar no Cifra Club
-                </v-btn>
+                <PlanLock feature="CIFRA_CLUB_IMPORT">
+                  <v-btn
+                    variant="tonal"
+                    color="deep-purple-darken-2"
+                    class="text-none font-weight-bold"
+                    :loading="isImportingCifraClubSong"
+                    :disabled="isCreatingSong || isImportingCifraClubSong || (!songForm.url && (!songForm.title || !songForm.artist))"
+                    @click="handleImportCifraClubSong"
+                  >
+                    Buscar no Cifra Club
+                  </v-btn>
+                </PlanLock>
               </div>
 
               <v-textarea
