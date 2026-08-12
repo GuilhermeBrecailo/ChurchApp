@@ -26,6 +26,11 @@ interface AuthChurch {
   facebook?: string | null;
   youtube?: string | null;
   website?: string | null;
+  plan?: string;
+  subscriptionStatus?: string;
+  trialEndsAt?: string | null;
+  effectivePlan?: string;
+  features?: string[];
 }
 
 interface AuthRole {

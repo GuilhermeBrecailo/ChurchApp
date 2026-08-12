@@ -14,6 +14,36 @@
       </div>
     </div>
 
+    <v-card
+      class="settings-card pa-4 elevation-1 mb-4 d-flex align-center justify-space-between flex-wrap ga-3"
+    >
+      <div>
+        <p class="text-caption text-grey-darken-1 mb-1">Plano atual</p>
+        <div class="d-flex align-center ga-2">
+          <v-chip
+            size="small"
+            :color="planLabel === 'Free' ? 'grey-darken-1' : 'amber-darken-3'"
+            variant="flat"
+            class="font-weight-bold"
+          >
+            {{ planLabel }}
+          </v-chip>
+          <span v-if="trialDaysLeft !== null" class="text-caption text-grey-darken-1">
+            trial: {{ trialDaysLeft }} {{ trialDaysLeft === 1 ? "dia restante" : "dias restantes" }}
+          </span>
+        </div>
+      </div>
+      <v-btn
+        to="/plans"
+        variant="tonal"
+        color="purple-darken-3"
+        size="small"
+        class="text-none font-weight-bold"
+      >
+        Ver planos
+      </v-btn>
+    </v-card>
+
     <v-alert
       v-if="!canEditChurch"
       type="info"
@@ -193,10 +223,14 @@ import { computed, reactive, ref, watch } from "vue";
 import { useAuth } from "../../composables/useAuth";
 import { useChurch } from "../../composables/useChurch";
 import { useThemeMode } from "../../../composables/useThemeMode";
+import { useChurchPlan, PLAN_LABELS, type Plan } from "../../composables/usePlan";
 
 const { user } = useAuth();
 const { updateOwnChurch, uploadChurchPhoto } = useChurch();
 const { isDark } = useThemeMode();
+const { plan, trialDaysLeft } = useChurchPlan();
+
+const planLabel = computed(() => PLAN_LABELS[plan.value as Plan] ?? plan.value);
 
 const loading = ref(false);
 const photoFile = ref<File | File[] | null>(null);

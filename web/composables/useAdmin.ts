@@ -14,6 +14,9 @@ export interface AdminChurch {
   isActive: boolean;
   createdAt: string;
   userMainId?: string | null;
+  plan: string;
+  subscriptionStatus: string;
+  trialEndsAt: string | null;
   membersCount: number;
   departmentsCount: number;
   pastorHistoryCount: number;
@@ -178,6 +181,26 @@ export const useAdmin = () => {
     );
   };
 
+  const setChurchPlan = async (
+    churchId: string,
+    payload: { plan?: string; trialEndsAt?: string | null },
+  ): Promise<ApiResponse<{
+    id: string;
+    name: string;
+    plan: string;
+    subscriptionStatus: string;
+    trialEndsAt: string | null;
+  }>> => {
+    return await $customFetch(
+      `${config.public.URL_BACKEND}/api/admin/churches/${churchId}/plan`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: payload,
+      },
+    );
+  };
+
   return {
     getChurches,
     getDepartments,
@@ -185,5 +208,6 @@ export const useAdmin = () => {
     updateChurchUserByAdmin,
     resetChurchUserPasswordByAdmin,
     removeChurchUserByAdmin,
+    setChurchPlan,
   };
 };

@@ -243,6 +243,30 @@
             </span>
           </span>
 
+          <span class="church-plan-row">
+            <v-chip
+              size="x-small"
+              :color="church.plan === 'FREE' ? 'grey-darken-1' : 'amber-darken-3'"
+              variant="flat"
+              class="font-weight-bold"
+            >
+              {{ planLabel(church) }}
+            </v-chip>
+            <span v-if="churchTrialDaysLeft(church) !== null" class="church-trial-note">
+              trial: {{ churchTrialDaysLeft(church) }}d restantes
+            </span>
+            <span
+              class="church-plan-edit"
+              role="button"
+              tabindex="0"
+              aria-label="Editar plano"
+              @click.stop="openPlanDialog(church)"
+              @keydown.enter.stop="openPlanDialog(church)"
+            >
+              <Pencil size="13" />
+            </span>
+          </span>
+
           <span class="church-metrics">
             <span>
               <strong>{{ church.membersCount }}</strong>
@@ -3320,6 +3344,12 @@
       @cancel="pendingDeleteRoleId = ''"
       @confirm="confirmDeleteRole"
     />
+
+    <AdminChurchPlanDialog
+      v-model="isPlanDialogOpen"
+      :church="planDialogChurch"
+      @updated="handlePlanUpdated"
+    />
   </div>
 
   <div v-if="!isPlatformAdmin && !canAccessChurchAdmin" class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
@@ -3383,6 +3413,7 @@ import { useChurch } from "../../composables/useChurch";
 import { useServiceTimes, type ServiceTime } from "../../composables/useServiceTimes";
 import { usePosts, type ChurchPost } from "../../composables/usePosts";
 import { FONT_OPTIONS } from "../../composables/useChurchAppearance";
+import { PLAN_LABELS, type Plan } from "../../composables/usePlan";
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
@@ -3505,6 +3536,30 @@ const churchSchedules = ref<DepartmentSchedule[]>([]);
 const announcements = ref<Announcement[]>([]);
 const devotionals = ref<Devotional[]>([]);
 const adminChurches = ref<AdminChurch[]>([]);
+const planDialogChurch = ref<AdminChurch | null>(null);
+const isPlanDialogOpen = ref(false);
+
+function openPlanDialog(church: AdminChurch) {
+  planDialogChurch.value = church;
+  isPlanDialogOpen.value = true;
+}
+
+function handlePlanUpdated(updated: Partial<AdminChurch> & { id: string }) {
+  adminChurches.value = adminChurches.value.map((church) =>
+    church.id === updated.id ? { ...church, ...updated } : church,
+  );
+}
+
+function planLabel(church: AdminChurch): string {
+  return PLAN_LABELS[(church.plan as Plan) ?? "FREE"] ?? church.plan;
+}
+
+function churchTrialDaysLeft(church: AdminChurch): number | null {
+  if (!church.trialEndsAt || church.subscriptionStatus !== "TRIALING") return null;
+  const diffMs = new Date(church.trialEndsAt).getTime() - Date.now();
+  return Math.max(0, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
+}
+
 type AdminMode = "master" | "church";
 type PlatformAdminTab = "geral" | "igrejas" | "videos";
 
@@ -5858,6 +5913,37 @@ onMounted(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.church-plan-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 4px;
+}
+
+.church-trial-note {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--app-color-text-muted);
+}
+
+.church-plan-edit {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  color: var(--app-color-text-muted);
+  cursor: pointer;
+}
+
+.church-plan-edit:hover,
+.church-plan-edit:focus-visible {
+  background: var(--app-color-surface-soft);
+  color: var(--app-color-text);
 }
 
 .church-metrics {
