@@ -714,6 +714,12 @@ export class UserAdapters {
       fontFamily: true,
     } as const;
 
+    const wantsAppearanceChange =
+      body.logo !== undefined ||
+      body.accentColor !== undefined ||
+      body.textColor !== undefined ||
+      body.fontFamily !== undefined;
+
     const user = await $prismaClient.user.findUnique({
       where: {
         id: userId,
@@ -738,6 +744,12 @@ export class UserAdapters {
 
       if (!canEditChurch) {
         throw new DomainError("Apenas pastores ou admins podem editar a igreja");
+      }
+
+      if (wantsAppearanceChange && !context.hasFeature("CUSTOM_PUBLIC_PAGE")) {
+        throw new DomainError(
+          "Personalização da página pública está disponível apenas no plano Pro",
+        );
       }
 
       if (body.name !== undefined && !body.name.trim()) {
@@ -809,6 +821,12 @@ export class UserAdapters {
 
     if (!canEditChurch) {
       throw new DomainError("Apenas pastores ou admins podem editar a igreja");
+    }
+
+    if (wantsAppearanceChange && !context.hasFeature("CUSTOM_PUBLIC_PAGE")) {
+      throw new DomainError(
+        "Personalização da página pública está disponível apenas no plano Pro",
+      );
     }
 
     if (body.name !== undefined && !body.name.trim()) {
