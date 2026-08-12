@@ -172,7 +172,7 @@ export class PrayerAdapters {
 
     const prayer = await $prismaClient.prayerRequest.findUnique({ where: { id } });
 
-    if (prayer) {
+    if (prayer && request.churchContext?.hasFeature("MASS_NOTIFICATIONS")) {
       await this.notifyChurch(user.crunchId!, { title: prayer.title, body: prayer.body });
     }
 

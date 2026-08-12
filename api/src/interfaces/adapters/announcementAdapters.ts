@@ -97,7 +97,7 @@ export class AnnouncementAdapters {
       include: { author: { select: { id: true, name: true } } },
     });
 
-    if (announcement.isPublic) {
+    if (announcement.isPublic && request.churchContext?.hasFeature("MASS_NOTIFICATIONS")) {
       await pushNotificationService.sendPublicChurchContent(user.crunchId!, {
         title: announcement.title,
         body: announcement.body.slice(0, 160),
@@ -160,7 +160,7 @@ export class AnnouncementAdapters {
       include: { author: { select: { id: true, name: true } } },
     });
 
-    if (!announcement.isPublic && updated.isPublic) {
+    if (!announcement.isPublic && updated.isPublic && request.churchContext?.hasFeature("MASS_NOTIFICATIONS")) {
       const church = await $prismaClient.crunch.findUnique({ where: { id: user.crunchId! }, select: { slug: true } });
       await pushNotificationService.sendPublicChurchContent(user.crunchId!, {
         title: updated.title,

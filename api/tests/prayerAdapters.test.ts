@@ -40,6 +40,7 @@ type ChurchContext = {
   role: string;
   canManageMembers: boolean;
   roles: unknown[];
+  hasFeature: (feature: string) => boolean;
 };
 
 function makeRequest(options: {
@@ -63,6 +64,7 @@ const memberContext: ChurchContext = {
   role: "MEMBRO",
   canManageMembers: false,
   roles: [],
+  hasFeature: () => true,
 };
 
 const pastorContext: ChurchContext = {
@@ -70,6 +72,7 @@ const pastorContext: ChurchContext = {
   role: "PASTOR",
   canManageMembers: true,
   roles: [],
+  hasFeature: () => true,
 };
 
 const adminContext: ChurchContext = {
@@ -77,6 +80,7 @@ const adminContext: ChurchContext = {
   role: "ADMIN",
   canManageMembers: true,
   roles: [],
+  hasFeature: () => true,
 };
 
 describe("PrayerAdapters", () => {
@@ -301,5 +305,44 @@ describe("PrayerAdapters", () => {
       const request = makeRequest({ churchContext: pastorContext, params: { id: "prayer-1" } });
       await expect(adapters.rejectPrayerRequest(request)).rejects.toThrow(DomainError);
     });
+  });
+});
+
+describe("PrayerAdapters mass notification gate", () => {
+  let adapters: PrayerAdapters;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    adapters = new PrayerAdapters();
+    mockPrismaClient.user.findUnique.mockResolvedValue({ id: "user-1", name: "Pastor Teste" });
+    mockPrismaClient.prayerRequest.updateMany.mockResolvedValue({ count: 1 });
+    mockPrismaClient.prayerRequest.findUnique.mockResolvedValue({
+      id: "prayer-1",
+      title: "Pedido",
+      body: "Texto do pedido",
+    });
+  });
+
+  it("approves the prayer request but skips the broadcast on a FREE church", async () => {
+    const request = makeRequest({
+      churchContext: { ...pastorContext, hasFeature: () => false },
+      params: { id: "prayer-1" },
+    });
+
+    await adapters.approvePrayerRequest(request);
+
+    expect(mockPrismaClient.prayerRequest.updateMany).toHaveBeenCalled();
+    expect(mockSendPublicChurchContent).not.toHaveBeenCalled();
+  });
+
+  it("approves the prayer request and broadcasts on a PRO church", async () => {
+    const request = makeRequest({
+      churchContext: { ...pastorContext, hasFeature: () => true },
+      params: { id: "prayer-1" },
+    });
+
+    await adapters.approvePrayerRequest(request);
+
+    expect(mockSendPublicChurchContent).toHaveBeenCalled();
   });
 });
