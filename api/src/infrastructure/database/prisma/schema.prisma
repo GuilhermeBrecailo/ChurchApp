@@ -41,7 +41,6 @@ model Crunch {
     subscriptionStatus String    @default("TRIALING")
     trialEndsAt        DateTime?
     mpSubscriptionId   String?
-    mpPreapprovalId    String?
 
     inviteCode    String?  @unique
 
