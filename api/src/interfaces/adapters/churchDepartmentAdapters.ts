@@ -656,6 +656,9 @@ export class ChurchDepartmentAdapters {
   }
 
   async uploadChurchDepartmentPdf(request: FastifyRequest) {
+    if (!request.churchContext?.hasFeature("MINISTRY_RESOURCES")) {
+      throw new DomainError("Recursos do ministério estão disponíveis apenas no plano Pro");
+    }
     const user = await this.getCurrentUser(request);
     const { id } = request.params as { id?: string };
 
@@ -1629,6 +1632,9 @@ export class ChurchDepartmentAdapters {
   }
 
   async sendChurchScheduleReminder(request: FastifyRequest) {
+    if (!request.churchContext?.hasFeature("SCHEDULE_REMINDER")) {
+      throw new DomainError("Lembrete automático de escala está disponível apenas no plano Pro");
+    }
     const user = await this.getCurrentUser(request);
     const { id } = request.params as { id?: string };
 
@@ -2253,6 +2259,9 @@ export class ChurchDepartmentAdapters {
   }
 
   async importCifraClubSong(request: FastifyRequest): Promise<CifraClubSongImport> {
+    if (!request.churchContext?.hasFeature("CIFRA_CLUB_IMPORT")) {
+      throw new DomainError("Importar música do Cifra Club está disponível apenas no plano Pro");
+    }
     const user = await this.getCurrentUser(request);
     const { id } = request.params as { id?: string };
     const body = request.body as {
@@ -2411,6 +2420,9 @@ export class ChurchDepartmentAdapters {
   // letra) SEM criar nada ainda - o usuario revisa/edita antes de confirmar
   // em importSongsFromPdf. Mesma permissao de SONG_CREATE do cadastro manual.
   async previewSongsFromPdf(request: FastifyRequest) {
+    if (!request.churchContext?.hasFeature("PDF_SONG_IMPORT")) {
+      throw new DomainError("Importar músicas via PDF está disponível apenas no plano Pro");
+    }
     const user = await this.getCurrentUser(request);
     const { id } = request.params as { id?: string };
 
@@ -2467,6 +2479,9 @@ export class ChurchDepartmentAdapters {
   // Cria de fato as musicas revisadas pelo usuario, na ordem enviada
   // (a ordem detectada no PDF vira a ordem do repertorio/playlist).
   async importSongsFromPdf(request: FastifyRequest) {
+    if (!request.churchContext?.hasFeature("PDF_SONG_IMPORT")) {
+      throw new DomainError("Importar músicas via PDF está disponível apenas no plano Pro");
+    }
     const user = await this.getCurrentUser(request);
     const { id } = request.params as { id?: string };
 
@@ -2817,6 +2832,9 @@ export class ChurchDepartmentAdapters {
   }
 
   async createChurchDepartmentResource(request: FastifyRequest) {
+    if (!request.churchContext?.hasFeature("MINISTRY_RESOURCES")) {
+      throw new DomainError("Recursos do ministério estão disponíveis apenas no plano Pro");
+    }
     const user = await this.getCurrentUser(request);
     const { id } = request.params as { id?: string };
     const body = request.body as {
