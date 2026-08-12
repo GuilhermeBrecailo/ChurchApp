@@ -81,12 +81,22 @@ export class BillingAdapters {
       throw new DomainError("Igreja ja possui assinatura vinculada");
     }
 
-    return await this.mercadoPagoService.createCheckout({
-      churchId: church.id,
-      churchName: church.name,
-      payerEmail: user.email,
-      backUrl: body?.backUrl,
-    });
+    try {
+      return await this.mercadoPagoService.createCheckout({
+        churchId: church.id,
+        churchName: church.name,
+        payerEmail: user.email,
+        backUrl: body?.backUrl,
+      });
+    } catch (error) {
+      if (error instanceof DomainError && /variavel de ambiente/i.test(error.message)) {
+        console.error("Mercado Pago checkout misconfigured:", error.message);
+        throw new DomainError(
+          "Pagamento indisponível no momento. Fale com o suporte da igreja.",
+        );
+      }
+      throw error;
+    }
   }
 
   async handleMercadoPagoWebhook(request: FastifyRequest, reply: FastifyReply) {
