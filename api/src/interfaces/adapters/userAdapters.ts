@@ -18,6 +18,7 @@ import path from "node:path";
 import { isValidFontKey } from "../../domain/appearance";
 import { hasPermission } from "../../application/Services/Auth/AuthorizationService";
 import { PermissionKey } from "../../domain/permissions";
+import { PLAN_FEATURES, resolveEffectivePlan } from "../../domain/planConfig";
 
 const TRIAL_PERIOD_DAYS = 90;
 
@@ -60,7 +61,12 @@ function formatChurch(church: {
   facebook?: string | null;
   youtube?: string | null;
   website?: string | null;
+  plan: string;
+  subscriptionStatus: string;
+  trialEndsAt: Date | null;
 }) {
+  const effectivePlan = resolveEffectivePlan(church);
+
   return {
     id: church.id,
     name: church.name,
@@ -85,6 +91,11 @@ function formatChurch(church: {
     facebook: church.facebook ?? null,
     youtube: church.youtube ?? null,
     website: church.website ?? null,
+    plan: church.plan,
+    subscriptionStatus: church.subscriptionStatus,
+    trialEndsAt: church.trialEndsAt,
+    effectivePlan,
+    features: PLAN_FEATURES[effectivePlan],
   };
 }
 

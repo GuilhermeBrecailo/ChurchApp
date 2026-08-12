@@ -84,3 +84,97 @@ describe("UserAdapters.updateOwnChurch plan gate", () => {
     expect(mockPrismaClient.crunch.update).toHaveBeenCalled();
   });
 });
+
+function makeCrunch(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: "church-1",
+    name: "Igreja Central",
+    slug: "igreja-central",
+    city: "Maringá",
+    road: "Rua A",
+    number: null,
+    localZipCode: "87000-000",
+    state: "PR",
+    complement: null,
+    document: null,
+    logo: null,
+    accentColor: null,
+    textColor: null,
+    fontFamily: null,
+    isActive: true,
+    userMainId: "pastor-1",
+    phone: null,
+    whatsapp: null,
+    email: null,
+    instagram: null,
+    facebook: null,
+    youtube: null,
+    website: null,
+    plan: "FREE",
+    subscriptionStatus: "TRIALING",
+    trialEndsAt: null,
+    ...overrides,
+  };
+}
+
+function makeMeRequest(): FastifyRequest {
+  return {
+    headers: { authorization: `Bearer ${fakeToken("pastor-1")}` },
+    churchContext: {
+      activeChurchId: "church-1",
+      role: "PASTOR",
+      canManageMembers: true,
+      roles: [],
+      membershipId: "membership-1",
+      hasFeature: () => false,
+    },
+    params: {},
+    body: {},
+  } as unknown as FastifyRequest;
+}
+
+describe("UserAdapters.getMe exposes plan features", () => {
+  let adapters: UserAdapters;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    adapters = new UserAdapters();
+  });
+
+  it("returns an empty features list for a FREE church", async () => {
+    mockPrismaClient.user.findUnique.mockResolvedValue({
+      id: "pastor-1",
+      name: "Pastor Teste",
+      email: "pastor@teste.com",
+      phone: null,
+      mustChangePassword: false,
+      isDemoUser: false,
+      crunch: makeCrunch({ plan: "FREE" }),
+      churchMemberships: [],
+    });
+
+    const result = await adapters.getMe(makeMeRequest());
+
+    expect(result.church?.plan).toBe("FREE");
+    expect(result.church?.features).toEqual([]);
+  });
+
+  it("returns the full Pro feature list for an active PRO church", async () => {
+    mockPrismaClient.user.findUnique.mockResolvedValue({
+      id: "pastor-1",
+      name: "Pastor Teste",
+      email: "pastor@teste.com",
+      phone: null,
+      mustChangePassword: false,
+      isDemoUser: false,
+      crunch: makeCrunch({ plan: "PRO", subscriptionStatus: "ACTIVE" }),
+      churchMemberships: [],
+    });
+
+    const result = await adapters.getMe(makeMeRequest());
+
+    expect(result.church?.plan).toBe("PRO");
+    expect(result.church?.features).toContain("REPORTS");
+    expect(result.church?.features).toContain("CUSTOM_ROLES");
+  });
+});
