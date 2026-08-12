@@ -150,6 +150,9 @@ export class ChurchRoleAdapters {
   }
 
   async createRole(request: FastifyRequest) {
+    if (!request.churchContext?.hasFeature("CUSTOM_ROLES")) {
+      throw new DomainError("Papéis customizados estão disponíveis apenas no plano Pro");
+    }
     const user = await this.getCurrentUser(request);
     this.assertIsChurchManager(user);
 
@@ -184,6 +187,9 @@ export class ChurchRoleAdapters {
   }
 
   async updateRole(request: FastifyRequest) {
+    if (!request.churchContext?.hasFeature("CUSTOM_ROLES")) {
+      throw new DomainError("Papéis customizados estão disponíveis apenas no plano Pro");
+    }
     const user = await this.getCurrentUser(request);
     this.assertIsChurchManager(user);
 
@@ -238,6 +244,9 @@ export class ChurchRoleAdapters {
   }
 
   async deleteRole(request: FastifyRequest) {
+    if (!request.churchContext?.hasFeature("CUSTOM_ROLES")) {
+      throw new DomainError("Papéis customizados estão disponíveis apenas no plano Pro");
+    }
     const user = await this.getCurrentUser(request);
     this.assertIsChurchManager(user);
 
