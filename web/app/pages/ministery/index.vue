@@ -1,25 +1,27 @@
 <template>
   <div class="pa-4 bg-grey-lighten-4 min-vh-100">
-    <div class="ministery-page-header mb-5">
+    <div class="app-help-header mb-5">
       <div class="min-w-0">
-        <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">
-          Ministérios
-        </h1>
+        <div class="app-help-title-row">
+          <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">
+            Ministérios
+          </h1>
+          <div class="ministery-header-actions">
+            <v-btn
+              v-if="canCreateDepartment"
+              color="purple-darken-3"
+              class="rounded-lg text-none px-4"
+              elevation="2"
+              @click="isDepartmentDialogOpen = true"
+            >
+              <Plus size="18" class="mr-1" /> Novo
+            </v-btn>
+            <UtilsPageHelpButton title="Ministérios" />
+          </div>
+        </div>
         <p class="text-body-2 text-grey-darken-1 mb-0">
           Organize equipes, escalas e repertórios
         </p>
-      </div>
-      <div class="ministery-header-actions">
-        <v-btn
-          v-if="canCreateDepartment"
-          color="purple-darken-3"
-          class="rounded-lg text-none px-4"
-          elevation="2"
-          @click="isDepartmentDialogOpen = true"
-        >
-          <Plus size="18" class="mr-1" /> Novo
-        </v-btn>
-        <UtilsPageHelpButton title="Ministérios" />
       </div>
     </div>
 
@@ -533,12 +535,6 @@ onMounted(async () => {
 .gap-3 {
   gap: 12px;
 }
-.ministery-page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
 .ministery-header-actions {
   display: flex;
   align-items: center;
@@ -632,14 +628,6 @@ onMounted(async () => {
   gap: 12px;
 }
 @media (max-width: 520px) {
-  .ministery-page-header {
-    align-items: flex-start;
-  }
-
-  .ministery-header-actions {
-    align-items: flex-start;
-  }
-
   .ministery-summary {
     grid-template-columns: 1fr;
   }
