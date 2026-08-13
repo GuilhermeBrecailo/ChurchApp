@@ -1390,7 +1390,7 @@ export class ChurchDepartmentAdapters {
         },
       },
       orderBy: {
-        date: "asc",
+        date: "desc",
       },
       select: this.scheduleSelect,
     });
@@ -1840,8 +1840,19 @@ export class ChurchDepartmentAdapters {
 
     const updatedSchedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
 
-    await Promise.all(
-      newlyAssignedUserIds.map((userId) => {
+    // Quem entrou agora ja tem seu proprio aviso ("Nova escala publicada")
+    // abaixo - o resto de quem ja estava e continua (nao entrou nem saiu)
+    // precisa saber que o time da escala mudou, e quem foi removido precisa
+    // saber que nao esta mais nela (senao so descobre chegando no dia).
+    const removedUserIds = [...previousUserIds].filter(
+      (userId) => !uniqueUserIds.includes(userId),
+    );
+    const unchangedUserIds = uniqueUserIds.filter(
+      (userId) => previousUserIds.has(userId) && !newlyAssignedUserIds.includes(userId),
+    );
+
+    await Promise.all([
+      ...newlyAssignedUserIds.map((userId) => {
         const assignment = normalizedAssignments.find((item) => item.userId === userId);
         const roleText = assignment?.role ? ` como ${assignment.role}` : "";
 
@@ -1853,7 +1864,25 @@ export class ChurchDepartmentAdapters {
           scheduleId: updatedSchedule.id,
         });
       }),
-    );
+      removedUserIds.length > 0
+        ? pushNotificationService.sendToUsers(removedUserIds, {
+            title: "Você foi removido de uma escala",
+            body: `${updatedSchedule.department.name} - ${updatedSchedule.description}`,
+            url: "/scale",
+            type: "schedule-removed",
+            scheduleId: updatedSchedule.id,
+          })
+        : Promise.resolve(),
+      unchangedUserIds.length > 0
+        ? pushNotificationService.sendToUsers(unchangedUserIds, {
+            title: "Escala atualizada",
+            body: `${updatedSchedule.department.name} - ${updatedSchedule.description}`,
+            url: `/scale?schedule=${updatedSchedule.id}`,
+            type: "schedule-updated",
+            scheduleId: updatedSchedule.id,
+          })
+        : Promise.resolve(),
+    ]);
 
     return updatedSchedule;
   }

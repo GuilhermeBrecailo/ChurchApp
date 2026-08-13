@@ -2171,7 +2171,7 @@ const handleSaveSchedule = async () => {
 
     schedules.value = nextSchedules.sort(
       (current, next) =>
-        new Date(current.date).getTime() - new Date(next.date).getTime(),
+        new Date(next.date).getTime() - new Date(current.date).getTime(),
     );
     closeScheduleDialog();
   } finally {
