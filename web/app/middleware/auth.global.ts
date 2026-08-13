@@ -1,6 +1,6 @@
 import { defineNuxtRouteMiddleware, navigateTo, useCookie, useState } from "#app";
 
-const publicRoutes = ["/login", "/register", "/forgot-password", "/c", "/termos", "/privacidade"];
+const publicRoutes = ["/login", "/register", "/forgot-password", "/c", "/termos", "/privacidade", "/comece"];
 const onboardingRoutes = ["/onboarding/church"];
 const noChurchAllowedRoutes = ["/", "/user", "/admin", "/join", ...onboardingRoutes];
 const refreshCookieName = "refresh_token";
@@ -90,6 +90,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (!access_token.value) {
+    if (to.path === "/") {
+      return navigateTo("/comece");
+    }
+
     return navigateTo({
       path: "/login",
       query: {

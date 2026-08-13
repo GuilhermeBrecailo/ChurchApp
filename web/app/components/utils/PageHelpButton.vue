@@ -35,13 +35,71 @@
           </v-btn>
         </div>
 
-        <div v-if="video" class="page-help-video-wrap">
+        <div v-if="helpEntry && helpEntry.contentType === 'STEPS'" class="page-help-steps-wrap">
+          <div class="page-help-steps-intro">
+            <h3 class="page-help-card-title mb-1">{{ helpEntry.label }}</h3>
+            <p v-if="helpEntry.description" class="page-help-card-desc mb-0">
+              {{ helpEntry.description }}
+            </p>
+          </div>
+
+          <div v-if="currentStep" class="page-help-step">
+            <img
+              v-if="currentStep.imageUrl"
+              :src="currentStep.imageUrl"
+              :alt="currentStep.caption"
+              class="page-help-step-image"
+            />
+            <div v-else class="page-help-step-image page-help-step-image-empty">
+              <ImageOff size="22" />
+            </div>
+            <p class="page-help-step-caption">{{ currentStep.caption }}</p>
+          </div>
+
+          <div v-if="steps.length > 1" class="page-help-step-nav">
+            <v-btn
+              icon
+              variant="text"
+              size="small"
+              color="purple-darken-3"
+              :disabled="stepIndex === 0"
+              aria-label="Passo anterior"
+              @click="stepIndex--"
+            >
+              <ChevronLeft size="18" />
+            </v-btn>
+            <div class="page-help-step-dots">
+              <button
+                v-for="(step, i) in steps"
+                :key="step.order"
+                type="button"
+                class="page-help-step-dot"
+                :class="{ 'page-help-step-dot-active': i === stepIndex }"
+                :aria-label="`Ir para o passo ${i + 1}`"
+                @click="stepIndex = i"
+              />
+            </div>
+            <v-btn
+              icon
+              variant="text"
+              size="small"
+              color="purple-darken-3"
+              :disabled="stepIndex === steps.length - 1"
+              aria-label="Próximo passo"
+              @click="stepIndex++"
+            >
+              <ChevronRight size="18" />
+            </v-btn>
+          </div>
+        </div>
+
+        <div v-else-if="helpEntry && helpEntry.videoUrl" class="page-help-video-wrap">
           <div
             v-if="!videoOpen"
             class="page-help-video-card"
             role="button"
             tabindex="0"
-            :aria-label="`Assistir vídeo: ${video.label}`"
+            :aria-label="`Assistir vídeo: ${helpEntry.label}`"
             @click="videoOpen = true"
             @keydown.enter="videoOpen = true"
             @keydown.space.prevent="videoOpen = true"
@@ -50,16 +108,16 @@
               <Play size="18" />
             </div>
             <div class="min-w-0">
-              <h3 class="page-help-card-title mb-1">{{ video.label }}</h3>
-              <p v-if="video.description" class="page-help-card-desc mb-0">
-                {{ video.description }}
+              <h3 class="page-help-card-title mb-1">{{ helpEntry.label }}</h3>
+              <p v-if="helpEntry.description" class="page-help-card-desc mb-0">
+                {{ helpEntry.description }}
               </p>
             </div>
           </div>
           <video
             v-else
             class="page-help-video"
-            :src="video.videoUrl"
+            :src="helpEntry.videoUrl"
             controls
             autoplay
           />
@@ -67,7 +125,7 @@
 
         <div v-else-if="loading" class="page-help-empty">
           <v-progress-circular indeterminate color="purple-darken-3" size="22" width="2" />
-          <p class="mb-0">Carregando vídeo de ajuda...</p>
+          <p class="mb-0">Carregando ajuda...</p>
         </div>
 
         <div v-else class="page-help-empty">
@@ -75,7 +133,7 @@
             <VideoOff size="20" />
           </div>
           <div class="min-w-0">
-            <h3 class="page-help-card-title mb-1">Ainda não há vídeo de ajuda para esta tela.</h3>
+            <h3 class="page-help-card-title mb-1">Ainda não há tutorial para esta tela.</h3>
             <p class="page-help-card-desc mb-0">Fale com o suporte se precisar de orientação agora.</p>
           </div>
         </div>
@@ -99,7 +157,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { HelpCircle, MessageCircle, Play, VideoOff, X } from "lucide-vue-next";
+import { ChevronLeft, ChevronRight, HelpCircle, ImageOff, MessageCircle, Play, VideoOff, X } from "lucide-vue-next";
 import { useRoute } from "#app";
 import { useHelpVideos } from "../../../composables/useHelpVideos";
 
@@ -109,6 +167,7 @@ const props = defineProps<{
 
 const isOpen = ref(false);
 const videoOpen = ref(false);
+const stepIndex = ref(0);
 const route = useRoute();
 const { helpVideos, loading, loadHelpVideos, getHelpVideo } = useHelpVideos();
 
@@ -122,7 +181,15 @@ watch(isOpen, (open) => {
   if (!open) videoOpen.value = false;
 });
 
-const video = computed(() => getHelpVideo(route.path));
+const helpEntry = computed(() => getHelpVideo(route.path));
+const steps = computed(() =>
+  helpEntry.value?.contentType === "STEPS" ? helpEntry.value.steps ?? [] : [],
+);
+const currentStep = computed(() => steps.value[stepIndex.value] ?? steps.value[0] ?? null);
+
+watch(helpEntry, () => {
+  stepIndex.value = 0;
+});
 
 const WHATSAPP_NUMBER = "5543996445444";
 
@@ -172,6 +239,76 @@ const whatsappHref = computed(() => {
 
 .page-help-video-wrap {
   padding: 14px 14px 0;
+}
+
+.page-help-steps-wrap {
+  padding: 14px 14px 0;
+}
+
+.page-help-steps-intro {
+  margin-bottom: 10px;
+}
+
+.page-help-step {
+  border: 1px solid var(--app-color-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--app-color-surface-soft);
+}
+
+.page-help-step-image {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  background: #000;
+}
+
+.page-help-step-image-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  background: var(--app-color-surface-soft);
+  color: var(--app-color-text-muted);
+}
+
+.page-help-step-caption {
+  padding: 12px 14px;
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--app-color-text);
+}
+
+.page-help-step-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0 4px;
+}
+
+.page-help-step-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-help-step-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: var(--app-color-border);
+  cursor: pointer;
+}
+
+.page-help-step-dot-active {
+  background: var(--app-color-accent);
+  width: 18px;
+  border-radius: 4px;
 }
 
 .page-help-video {

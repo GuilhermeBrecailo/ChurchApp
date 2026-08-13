@@ -394,6 +394,36 @@ useHead(() => ({
     : [],
 }));
 
+const config = useRuntimeConfig();
+
+// og:image precisa de URL absoluta - WhatsApp/Instagram nao resolvem
+// caminho relativo ao montar o preview do link compartilhado. Sem logo da
+// igreja, cai no icone padrao do ChurchApp (mesmo fallback do nuxt.config.ts).
+const absoluteChurchImage = computed(() => {
+  const logo = church.value?.logo;
+  if (!logo) return `${config.public.siteUrl}/og-banner.png`;
+  return logo.startsWith("http") ? logo : `${config.public.siteUrl}${logo}`;
+});
+
+const churchSeoDescription = computed(() => {
+  if (!church.value) return undefined;
+  if (church.value.welcomeMessage?.trim()) return church.value.welcomeMessage.trim();
+  return `Acompanhe avisos, horários de culto e devocionais da ${church.value.name}${churchLocation.value ? ` em ${churchLocation.value}` : ""}.`;
+});
+
+useSeoMeta({
+  title: () => church.value?.name,
+  description: () => churchSeoDescription.value,
+  ogTitle: () => church.value?.name,
+  ogDescription: () => churchSeoDescription.value,
+  ogType: "website",
+  ogImage: () => absoluteChurchImage.value,
+  twitterCard: "summary_large_image",
+  twitterTitle: () => church.value?.name,
+  twitterDescription: () => churchSeoDescription.value,
+  twitterImage: () => absoluteChurchImage.value,
+});
+
 const churchLocation = computed(() => {
   const city = church.value?.city;
   const state = church.value?.state;

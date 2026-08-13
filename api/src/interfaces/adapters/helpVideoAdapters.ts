@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { resolveActiveChurchContext } from "../utils/churchContext";
@@ -14,12 +15,39 @@ const ALLOWED_VIDEO_MIME: Record<string, string> = {
   "video/ogg": "ogv",
 };
 
-const upsertHelpVideoSchema = z.object({
-  pageKey: z.string().trim().min(1, "Pagina e obrigatoria"),
-  label: z.string().trim().min(1, "Titulo e obrigatorio"),
-  description: z.string().trim().max(500).optional().nullable(),
-  videoUrl: z.string().trim().min(1, "Video e obrigatorio"),
+const HELP_IMAGE_MAX_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_MIME: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+// Imagem e opcional por passo de proposito - um passo so-texto (sem print
+// ainda) e um estado valido, mostrado com placeholder no front, pra nao
+// bloquear cadastrar o texto do tutorial antes de ter a captura de tela.
+const helpStepSchema = z.object({
+  order: z.number().int().min(0),
+  imageUrl: z.string().trim().optional().default(""),
+  imageKey: z.string().trim().optional().default(""),
+  caption: z.string().trim().min(1, "Legenda do passo e obrigatoria").max(300),
 });
+
+const upsertHelpVideoSchema = z
+  .object({
+    pageKey: z.string().trim().min(1, "Pagina e obrigatoria"),
+    label: z.string().trim().min(1, "Titulo e obrigatorio"),
+    description: z.string().trim().max(500).optional().nullable(),
+    contentType: z.enum(["VIDEO", "STEPS"]).default("VIDEO"),
+    videoUrl: z.string().trim().min(1).optional().nullable(),
+    steps: z.array(helpStepSchema).optional().nullable(),
+  })
+  .refine(
+    (body) =>
+      body.contentType === "VIDEO"
+        ? Boolean(body.videoUrl?.trim())
+        : Boolean(body.steps && body.steps.length > 0),
+    { message: "Envie um video, ou pelo menos um passo com imagem e texto" },
+  );
 
 function getAuthUserId(request: FastifyRequest) {
   const authHeader = request.headers.authorization;
@@ -54,6 +82,16 @@ function slugifyPageKey(pageKey: string) {
   return slug || "home";
 }
 
+function buildUploadBaseUrl(request: FastifyRequest) {
+  const host = request.headers.host || `localhost:${process.env.API_PORT || 8000}`;
+  const forwardedProto = request.headers["x-forwarded-proto"];
+  const protocol =
+    (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto) ||
+    (process.env.NODE_ENV === "production" ? "https" : "http");
+  const baseUrl = process.env.URL_BACKEND || `${protocol}://${host}`;
+  return baseUrl.replace(/\/$/, "");
+}
+
 export class HelpVideoAdapters {
   async list() {
     const videos = await $prismaClient.pageHelpVideo.findMany({
@@ -64,7 +102,9 @@ export class HelpVideoAdapters {
       pageKey: video.pageKey,
       label: video.label,
       description: video.description,
+      contentType: video.contentType,
       videoUrl: video.videoUrl,
+      steps: video.steps,
       updatedAt: video.updatedAt,
     }));
   }
@@ -72,27 +112,32 @@ export class HelpVideoAdapters {
   async upsert(request: FastifyRequest) {
     await assertCanManageHelpVideos(request);
     const body = upsertHelpVideoSchema.parse(request.body);
+    const sortedSteps =
+      body.contentType === "STEPS" && body.steps
+        ? [...body.steps].sort((a, b) => a.order - b.order)
+        : null;
+
+    const data = {
+      label: body.label,
+      description: body.description ?? null,
+      contentType: body.contentType,
+      videoUrl: body.contentType === "VIDEO" ? body.videoUrl ?? null : null,
+      steps: sortedSteps ? (sortedSteps as Prisma.InputJsonValue) : Prisma.DbNull,
+    };
 
     const video = await $prismaClient.pageHelpVideo.upsert({
       where: { pageKey: body.pageKey },
-      update: {
-        label: body.label,
-        description: body.description ?? null,
-        videoUrl: body.videoUrl,
-      },
-      create: {
-        pageKey: body.pageKey,
-        label: body.label,
-        description: body.description ?? null,
-        videoUrl: body.videoUrl,
-      },
+      update: data,
+      create: { pageKey: body.pageKey, ...data },
     });
 
     return {
       pageKey: video.pageKey,
       label: video.label,
       description: video.description,
+      contentType: video.contentType,
       videoUrl: video.videoUrl,
+      steps: video.steps,
       updatedAt: video.updatedAt,
     };
   }
@@ -140,15 +185,64 @@ export class HelpVideoAdapters {
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, buffer);
 
-    const host = request.headers.host || `localhost:${process.env.API_PORT || 8000}`;
-    const forwardedProto = request.headers["x-forwarded-proto"];
-    const protocol =
-      (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto) ||
-      (process.env.NODE_ENV === "production" ? "https" : "http");
-    const baseUrl = process.env.URL_BACKEND || `${protocol}://${host}`;
+    return {
+      url: `${buildUploadBaseUrl(request)}/uploads/${key}`,
+      key,
+      fileName: file.filename,
+      mimeType: file.mimetype,
+      size: buffer.byteLength,
+    };
+  }
+
+  // Mesmo padrao de uploadVideo, mas pra imagem de um passo de tutorial
+  // (formato STEPS). Endpoint proprio em vez de reusar
+  // postAdapters#uploadImage porque aquele e escopado por crunchId de uma
+  // igreja - conteudo de ajuda e global, gerenciado por admin de plataforma.
+  async uploadImage(request: FastifyRequest) {
+    await assertCanManageHelpVideos(request);
+
+    const { pageKey } = request.query as { pageKey?: string };
+    if (!pageKey?.trim()) {
+      throw new DomainError("Pagina nao informada");
+    }
+
+    const multipartRequest = request as FastifyRequest & {
+      file: (options?: unknown) => Promise<{
+        filename: string;
+        mimetype: string;
+        toBuffer: () => Promise<Buffer>;
+      } | undefined>;
+    };
+    const file = await multipartRequest.file({
+      limits: { fileSize: HELP_IMAGE_MAX_SIZE_BYTES, files: 1 },
+    });
+
+    if (!file) {
+      throw new DomainError("Imagem nao enviada");
+    }
+
+    const extension = ALLOWED_IMAGE_MIME[file.mimetype];
+    if (!extension) {
+      throw new DomainError("Envie uma imagem JPEG, PNG ou WebP");
+    }
+
+    const buffer = await file.toBuffer();
+    if (buffer.byteLength > HELP_IMAGE_MAX_SIZE_BYTES) {
+      throw new DomainError("A imagem deve ter no maximo 5 MB");
+    }
+
+    const key = path.posix.join(
+      "help-content",
+      slugifyPageKey(pageKey),
+      `${crypto.randomUUID()}.${extension}`,
+    );
+    const targetPath = path.join(process.cwd(), "uploads", key);
+
+    await mkdir(path.dirname(targetPath), { recursive: true });
+    await writeFile(targetPath, buffer);
 
     return {
-      url: `${baseUrl.replace(/\/$/, "")}/uploads/${key}`,
+      url: `${buildUploadBaseUrl(request)}/uploads/${key}`,
       key,
       fileName: file.filename,
       mimeType: file.mimetype,

@@ -1,0 +1,101 @@
+<h2>Tela de detalhe do membro — qual direção visual?</h2>
+<p class="subtitle">Mesmo conteúdo (nome, contato, cargos, campos editáveis) — muda a hierarquia e o respiro visual. Clique numa opção.</p>
+
+<style>
+  .mm-mock { border-radius: 14px; border: 1px solid #e5e7eb; background: #fff; overflow: hidden; font-family: system-ui, sans-serif; }
+  .mm-avatar { width: 44px; height: 44px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; flex:0 0 auto; }
+  .mm-line { height: 8px; border-radius: 4px; background: #e5e7eb; }
+  .mm-chip { display:inline-block; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+  .mm-btn { border-radius: 8px; font-size: 11px; font-weight: 700; padding: 6px 12px; text-align:center; }
+  .mm-field { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; font-size: 10px; color: #9ca3af; }
+  .mm-label { font-size: 9px; text-transform: uppercase; letter-spacing: .04em; color: #9ca3af; font-weight: 700; margin-bottom: 4px; }
+</style>
+
+<div class="options" data-multiselect="false">
+
+  <div class="option" data-choice="hero" onclick="toggleSelect(this)">
+    <div class="content" style="width:100%">
+      <h3>A — Hero compacto</h3>
+      <p>Faixa de destaque no topo com avatar grande e status; seções abaixo com ícone + rótulo separando contato / dados / cargos.</p>
+      <div class="mm-mock" style="margin-top:10px">
+        <div style="background:linear-gradient(135deg,#6d28d9,#a855f7); padding:16px; display:flex; align-items:center; gap:10px;">
+          <div class="mm-avatar" style="background:#fff; color:#6d28d9;">GS</div>
+          <div style="flex:1">
+            <div style="color:#fff; font-weight:800; font-size:13px;">Guilherme Silva</div>
+            <div style="color:#e9d5ff; font-size:10px;">guilherme@igreja.com</div>
+          </div>
+          <span class="mm-chip" style="background:#fff; color:#6d28d9;">Pastor</span>
+        </div>
+        <div style="padding:14px;">
+          <div class="mm-label">📞 Contato</div>
+          <div class="mm-line" style="width:70%; margin-bottom:10px;"></div>
+          <div class="mm-label">🏷️ Cargos</div>
+          <div style="display:flex; gap:6px; margin-bottom:10px;">
+            <span class="mm-chip" style="background:#fef3c7; color:#92400e;">Líder Louvor</span>
+            <span class="mm-chip" style="background:#dcfce7; color:#166534;">Diácono</span>
+          </div>
+          <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <div class="mm-btn" style="color:#9ca3af;">Fechar</div>
+            <div class="mm-btn" style="background:#6d28d9; color:#fff;">Salvar</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="split" onclick="toggleSelect(this)">
+    <div class="content" style="width:100%">
+      <h3>B — Duas colunas</h3>
+      <p>Coluna esquerda fixa com foto/resumo (contato, tipo, cargos); coluna direita só com os campos editáveis. Empilha em mobile.</p>
+      <div class="mm-mock" style="margin-top:10px; display:flex;">
+        <div style="width:38%; background:#faf5ff; padding:14px; border-right:1px solid #e5e7eb;">
+          <div class="mm-avatar" style="background:#6d28d9; color:#fff; margin-bottom:8px;">GS</div>
+          <div style="font-weight:800; font-size:12px; color:#111827;">Guilherme Silva</div>
+          <div class="mm-label" style="margin-top:10px;">Telefone</div>
+          <div class="mm-line" style="width:80%"></div>
+          <div class="mm-label" style="margin-top:10px;">Cargos</div>
+          <span class="mm-chip" style="background:#fef3c7; color:#92400e;">Líder</span>
+        </div>
+        <div style="flex:1; padding:14px;">
+          <div class="mm-label">Nome</div>
+          <div class="mm-field" style="margin-bottom:8px;">Guilherme Silva</div>
+          <div class="mm-label">E-mail</div>
+          <div class="mm-field" style="margin-bottom:8px;">guilherme@igreja.com</div>
+          <div class="mm-label">Telefone</div>
+          <div class="mm-field">(43) 99664-4544</div>
+          <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+            <div class="mm-btn" style="color:#9ca3af;">Fechar</div>
+            <div class="mm-btn" style="background:#6d28d9; color:#fff;">Salvar</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="minimal" onclick="toggleSelect(this)">
+    <div class="content" style="width:100%">
+      <h3>C — Minimalista com trilha de cor</h3>
+      <p>Estrutura atual (uma coluna) mantida — ganha respiro, avatar com foto real, chip de tipo ao lado do nome, e um traço de cor separando cada seção. Mudança mais sutil.</p>
+      <div class="mm-mock" style="margin-top:10px; padding:14px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <div class="mm-avatar" style="background:#ede9fe; color:#6d28d9; border:2px solid #6d28d9;">GS</div>
+          <div style="flex:1">
+            <div style="font-weight:800; font-size:13px; color:#111827;">Guilherme Silva <span class="mm-chip" style="background:#ede9fe; color:#6d28d9;">Pastor</span></div>
+            <div style="color:#6b7280; font-size:10px;">guilherme@igreja.com</div>
+          </div>
+        </div>
+        <div style="height:2px; background:linear-gradient(90deg,#6d28d9,transparent); margin-bottom:10px;"></div>
+        <div class="mm-label">Dados</div>
+        <div class="mm-field" style="margin-bottom:6px;">Telefone: (43) 99664-4544</div>
+        <div style="height:2px; background:linear-gradient(90deg,#6d28d9,transparent); margin:10px 0;"></div>
+        <div class="mm-label">Cargos</div>
+        <span class="mm-chip" style="background:#fef3c7; color:#92400e;">Líder Louvor</span>
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+          <div class="mm-btn" style="color:#9ca3af;">Fechar</div>
+          <div class="mm-btn" style="background:#6d28d9; color:#fff;">Salvar</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

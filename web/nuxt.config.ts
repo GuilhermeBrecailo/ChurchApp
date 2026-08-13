@@ -3,7 +3,31 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   buildDir: process.env.NUXT_BUILD_DIR || ".nuxt",
   devtools: { enabled: process.env.NUXT_DEVTOOLS === "true" },
-  modules: ["@nuxtjs/tailwindcss", "vuetify-nuxt-module", "motion-v/nuxt"],
+  modules: ["@nuxtjs/tailwindcss", "vuetify-nuxt-module", "motion-v/nuxt", "@nuxtjs/sitemap"],
+  // site.url ancora as URLs absolutas do sitemap e do og:url - sem isso o
+  // modulo gera loc relativo e o Google rejeita as entradas.
+  site: {
+    url: process.env.NUXT_PUBLIC_SITE_URL || "https://churchapp.site",
+  },
+  sitemap: {
+    exclude: [
+      "/login",
+      "/register",
+      "/forgot-password",
+      "/onboarding",
+      "/join",
+      "/admin/**",
+      "/user",
+      "/settings",
+      "/notifications",
+      "/scale/**",
+      "/ministery/**",
+      "/content/**",
+      "/prayer",
+      "/cultos",
+    ],
+    sources: ["/api/__sitemap__/churches"],
+  },
   css: ["~/assets/css/theme.css"],
   imports: {
     dirs: ["../composables"],
@@ -73,8 +97,24 @@ export default defineNuxtConfig({
         { name: "apple-mobile-web-app-status-bar-style", content: "default" },
         {
           name: "description",
-          content: "Gestao de igrejas, ministerios e escalas.",
+          content:
+            "Gestão de igreja sem depender de grupo de WhatsApp e planilha: escala de ministério, cifra por instrumento, devocional, avisos e pedidos de oração num só app. Comece grátis.",
         },
+        { property: "og:site_name", content: "ChurchApp" },
+        { property: "og:type", content: "website" },
+        {
+          property: "og:title",
+          content: "ChurchApp — gestão de igreja e ministérios",
+        },
+        {
+          property: "og:description",
+          content:
+            "Escala de ministério, cifra por instrumento, devocional, avisos e pedidos de oração num só app. Comece grátis.",
+        },
+        { property: "og:image", content: "https://churchapp.site/og-banner.png" },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { name: "twitter:card", content: "summary_large_image" },
       ],
       link: [
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -94,6 +134,10 @@ export default defineNuxtConfig({
     apiInternalBase: process.env.NUXT_API_INTERNAL_BASE || process.env.NUXT_PUBLIC_URL_BACKEND || "https://api.appcunch.shop",
     public: {
       URL_BACKEND: process.env.NUXT_PUBLIC_URL_BACKEND || "https://api.appcunch.shop",
+      // Usado pra montar URL absoluta de og:image/canonical nas paginas
+      // publicas (c/[slug].vue, comece.vue) - precisa ser absoluta porque
+      // WhatsApp/Instagram nao resolvem caminho relativo ao gerar preview.
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "https://churchapp.site",
     },
   },
 });

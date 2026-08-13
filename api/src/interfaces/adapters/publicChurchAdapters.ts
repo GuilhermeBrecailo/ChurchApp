@@ -18,6 +18,21 @@ export class PublicChurchAdapters {
     return church;
   }
 
+  // Usado pelo modulo @nuxtjs/sitemap (web/nuxt.config.ts) pra gerar uma
+  // entrada de sitemap por igreja publica - sem isso o Google nunca descobre
+  // as paginas /c/[slug] sozinho, ja que nada mais linka pra todas elas.
+  async listSitemapSlugs() {
+    // Crunch nao tem updatedAt (so createdAt) - usa createdAt como
+    // lastmod aproximado, e melhor que omitir a data no sitemap.
+    const churches = await $prismaClient.crunch.findMany({
+      where: { isActive: true },
+      select: { slug: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return churches.map((church) => ({ slug: church.slug, updatedAt: church.createdAt }));
+  }
+
   async getChurch(request: FastifyRequest, reply: FastifyReply) {
     const { slug } = request.params as { slug?: string };
     const church = await this.getActiveChurch(slug);

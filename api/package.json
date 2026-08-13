@@ -16,13 +16,16 @@
     "prisma:studio": "prisma studio --schema=src/infrastructure/database/prisma/schema.prisma",
     "demo:seed": "npx tsx --env-file=.env scripts/demo-seed.ts",
     "demo:reset": "npx tsx --env-file=.env scripts/demo-reset.ts",
+    "help:seed": "npx tsx --env-file=.env scripts/seed-help-content.ts",
+    "help:upload-images": "npx tsx --env-file=.env scripts/upload-help-images.ts",
     "trial:expire": "npx tsx --env-file=.env scripts/expire-trials.ts",
     "billing:expire-past-due": "npx tsx --env-file=.env scripts/expire-past-due.ts",
     "billing:send-trial-reminders": "npx tsx --env-file=.env scripts/send-trial-reminders.ts",
     "billing:cron": "npx tsx --env-file=.env scripts/run-billing-jobs.ts",
     "whatsapp:setup": "npx tsx --env-file=.env scripts/whatsapp-setup.ts",
     "whatsapp:business-digest": "npx tsx --env-file=.env scripts/send-business-digest.ts",
-    "whatsapp:alert": "npx tsx --env-file=.env scripts/send-whatsapp-alert.ts"
+    "whatsapp:alert": "npx tsx --env-file=.env scripts/send-whatsapp-alert.ts",
+    "leads:find": "npx tsx --env-file=.env scripts/find-church-leads.ts"
   },
   "keywords": [],
   "author": "",

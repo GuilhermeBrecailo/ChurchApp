@@ -3,11 +3,22 @@ import type { ApiResponse } from "./useTypes";
 import { useNuxtApp, useRuntimeConfig, useState } from "#app";
 import { useAuth } from "./useAuth";
 
+export type HelpContentType = "VIDEO" | "STEPS";
+
+export interface PageHelpStep {
+  order: number;
+  imageUrl: string;
+  imageKey: string;
+  caption: string;
+}
+
 export interface PageHelpVideo {
   pageKey: string;
   label: string;
   description?: string | null;
-  videoUrl: string;
+  contentType: HelpContentType;
+  videoUrl?: string | null;
+  steps?: PageHelpStep[] | null;
   updatedAt: string;
 }
 
@@ -18,6 +29,8 @@ export interface UploadedHelpVideo {
   mimeType: string;
   size: number;
 }
+
+export type UploadedHelpImage = UploadedHelpVideo;
 
 export const useHelpVideos = () => {
   const config = useRuntimeConfig();
@@ -37,8 +50,9 @@ export const useHelpVideos = () => {
           video &&
             typeof video.pageKey === "string" &&
             video.pageKey &&
-            typeof video.videoUrl === "string" &&
-            video.videoUrl,
+            (video.contentType === "STEPS"
+              ? Array.isArray(video.steps) && video.steps.length > 0
+              : typeof video.videoUrl === "string" && video.videoUrl),
         ),
     );
 
@@ -96,8 +110,32 @@ export const useHelpVideos = () => {
     );
   };
 
+  const uploadHelpImage = async (
+    pageKey: string,
+    file: File,
+  ): Promise<ApiResponse<UploadedHelpImage>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return await $customFetch<UploadedHelpImage>(
+      `${config.public.URL_BACKEND}/api/help-videos/upload-image?pageKey=${encodeURIComponent(pageKey)}`,
+      {
+        method: "POST",
+        headers: authOnlyHeaders(),
+        body: formData,
+      },
+    );
+  };
+
   const saveHelpVideo = async (
-    payload: { pageKey: string; label: string; description?: string; videoUrl: string },
+    payload: {
+      pageKey: string;
+      label: string;
+      description?: string;
+      contentType: HelpContentType;
+      videoUrl?: string;
+      steps?: PageHelpStep[];
+    },
   ): Promise<ApiResponse<PageHelpVideo>> => {
     const result = await $customFetch<PageHelpVideo>(
       `${config.public.URL_BACKEND}/api/help-videos`,
@@ -140,6 +178,7 @@ export const useHelpVideos = () => {
     error,
     loadHelpVideos,
     uploadHelpVideo,
+    uploadHelpImage,
     saveHelpVideo,
     removeHelpVideo,
     getHelpVideo,

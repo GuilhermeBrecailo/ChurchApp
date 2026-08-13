@@ -42,3 +42,7 @@ node_modules/
 
 # Uploaded files (dev/local runtime data)
 api/uploads/
+
+# Listas de leads geradas por api/scripts/find-church-leads.ts (contato de
+# terceiros - nunca commitar)
+api/leads/

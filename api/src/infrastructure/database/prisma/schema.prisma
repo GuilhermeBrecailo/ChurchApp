@@ -541,15 +541,20 @@ model PrayerRequest {
     @@index([crunchId, status, createdAt])
 }
 
-// Video tutorial anexado ao modal de ajuda de uma tela do app. pageKey e o
+// Tutorial anexado ao modal de ajuda de uma tela do app. pageKey e o
 // path da rota (ex: "/scale", "/ministery") - o UtilsPageHelpButton busca
 // pelo path atual, sem precisar mudar nenhuma pagina que ja usa o botao.
+// contentType "VIDEO" usa videoUrl; "STEPS" usa steps (passo a passo
+// imagem+texto, array de { order, imageUrl, imageKey, caption }). Exatamente
+// um dos dois formatos e preenchido por linha - ver validacao no adapter.
 model PageHelpVideo {
     id          String   @id @default(uuid())
     pageKey     String   @unique
     label       String
     description String?
-    videoUrl    String
+    contentType String   @default("VIDEO")
+    videoUrl    String?
+    steps       Json?
     updatedAt   DateTime @updatedAt
 }
 
