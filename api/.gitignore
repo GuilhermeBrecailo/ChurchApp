@@ -24,3 +24,6 @@ pnpm-debug.log*
 
 # Docker (se usar)
 docker-compose.override.yml
+
+# Sessao autenticada do WhatsApp (credenciais - nunca versionar)
+.whatsapp-auth/
