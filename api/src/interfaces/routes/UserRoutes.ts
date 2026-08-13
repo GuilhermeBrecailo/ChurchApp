@@ -52,6 +52,21 @@ export async function UserRoutes(app: FastifyInstance) {
     controllerHandler(adapters.createChurchMember.bind(adapters)),
   );
 
+  app.get(
+    "/api/church/members/pending",
+    controllerHandler(adapters.listPendingMembers.bind(adapters)),
+  );
+
+  app.patch(
+    "/api/church/members/pending/:id/approve",
+    controllerHandler(adapters.approveMember.bind(adapters)),
+  );
+
+  app.patch(
+    "/api/church/members/pending/:id/reject",
+    controllerHandler(adapters.rejectMember.bind(adapters)),
+  );
+
   app.patch(
     "/api/church/members/:id/permissions",
     controllerHandler(adapters.updateChurchMemberPermissions.bind(adapters)),

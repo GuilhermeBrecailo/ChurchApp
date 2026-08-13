@@ -251,6 +251,20 @@ export class UserAdapters {
       ...new Set(context.roles.flatMap((role) => role.permissions)),
     ];
 
+    // Memberships isActive:false do proprio usuario - auto-cadastro pelo
+    // link de convite aguardando aprovacao do pastor (churchInviteAdapters
+    // .ts#registerByCode). Consulta separada da lista de `memberships` acima
+    // (que fica so com as ativas) pra nao mudar `hasChurch`/`memberships` e
+    // acabar destravando acesso indevido antes da aprovacao.
+    const pendingMemberships = await $prismaClient.churchMembership.findMany({
+      where: { userId: user.id, isActive: false },
+      select: { crunch: { select: { id: true, name: true } } },
+    });
+    const pendingChurches = pendingMemberships.map((membership) => ({
+      id: membership.crunch.id,
+      name: membership.crunch.name,
+    }));
+
     return {
       id: user.id,
       name: user.name,
@@ -269,6 +283,7 @@ export class UserAdapters {
       roles: context.roles,
       permissions,
       isDemoUser: user.isDemoUser,
+      pendingChurches,
     };
   }
 
@@ -1106,6 +1121,75 @@ export class UserAdapters {
       await identityProvider.deleteUser(keycloakId).catch(() => undefined);
       throw error;
     }
+  }
+
+  // Membros que se auto-cadastraram pelo link de convite
+  // (churchInviteAdapters.ts#registerByCode) e ainda nao foram aprovados -
+  // membership fica isActive:false ate um pastor/admin aprovar aqui.
+  async listPendingMembers(request: FastifyRequest) {
+    const manager = await this.getChurchMemberManager(request, "MEMBER_CREATE");
+
+    const memberships = await $prismaClient.churchMembership.findMany({
+      where: {
+        crunchId: manager.crunchId,
+        isActive: false,
+      },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        createdAt: true,
+        user: {
+          select: { id: true, name: true, email: true, phone: true },
+        },
+      },
+    });
+
+    return memberships.map((membership) => ({
+      membershipId: membership.id,
+      requestedAt: membership.createdAt,
+      id: membership.user.id,
+      name: membership.user.name,
+      email: membership.user.email,
+      phone: membership.user.phone,
+    }));
+  }
+
+  async approveMember(request: FastifyRequest) {
+    const manager = await this.getChurchMemberManager(request, "MEMBER_CREATE");
+    const { id } = request.params as { id?: string };
+    if (!id) throw new DomainError("Membro não informado");
+
+    const membership = await $prismaClient.churchMembership.findFirst({
+      where: { id, crunchId: manager.crunchId, isActive: false },
+    });
+
+    if (!membership) throw new DomainError("Solicitação pendente não encontrada");
+
+    await $prismaClient.churchMembership.update({
+      where: { id: membership.id },
+      data: { isActive: true },
+    });
+
+    return { success: true };
+  }
+
+  // So remove o vinculo pendente com essa igreja - a conta em si (e outras
+  // memberships que a pessoa ja tenha) continua existindo, ela so nao entra
+  // nessa igreja.
+  async rejectMember(request: FastifyRequest) {
+    const manager = await this.getChurchMemberManager(request, "MEMBER_CREATE");
+    const { id } = request.params as { id?: string };
+    if (!id) throw new DomainError("Membro não informado");
+
+    const membership = await $prismaClient.churchMembership.findFirst({
+      where: { id, crunchId: manager.crunchId, isActive: false },
+    });
+
+    if (!membership) throw new DomainError("Solicitação pendente não encontrada");
+
+    await $prismaClient.churchMembership.delete({ where: { id: membership.id } });
+
+    return { success: true };
   }
 
   async updateChurchMemberPermissions(request: FastifyRequest) {

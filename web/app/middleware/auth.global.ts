@@ -1,6 +1,11 @@
 import { defineNuxtRouteMiddleware, navigateTo, useCookie, useState } from "#app";
 
-const publicRoutes = ["/login", "/register", "/forgot-password", "/c", "/termos", "/privacidade", "/comece"];
+// /join fica publica porque agora tambem serve auto-cadastro por link de
+// convite pra quem ainda nao tem conta (ver web/app/pages/join.vue) - mas
+// precisa continuar acessivel logado tambem (fluxo antigo de entrar com
+// codigo numa conta existente), entao tambem entra em alwaysAccessibleRoutes
+// abaixo pra nao ser expulsa de volta pra "/" quando autenticado.
+const publicRoutes = ["/login", "/register", "/forgot-password", "/c", "/termos", "/privacidade", "/comece", "/join"];
 const onboardingRoutes = ["/onboarding/church"];
 const noChurchAllowedRoutes = ["/", "/user", "/admin", "/join", ...onboardingRoutes];
 const refreshCookieName = "refresh_token";
@@ -59,7 +64,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (isPublicRoute) {
     const access_token = useState<string | null>("access_token", () => null);
-    const alwaysAccessibleRoutes = ["/termos", "/privacidade"];
+    const alwaysAccessibleRoutes = ["/termos", "/privacidade", "/join"];
     const shouldRedirectAuthenticated =
       !to.path.startsWith("/c/") &&
       to.path !== "/c" &&

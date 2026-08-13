@@ -168,6 +168,43 @@ export class AdminAdapters {
     });
   }
 
+  // Exclusao definitiva de uma igreja - exige SUPER_ADMIN especificamente
+  // (nao ADMIN comum), diferente das outras acoes deste arquivo que so
+  // pedem assertPlatformAdmin, porque isso apaga TODOS os dados da igreja em
+  // cascata (membros, escalas, ministerios, devocionais, avisos etc - ver
+  // schema.prisma, todo relation com Crunch tem onDelete:Cascade). So
+  // User.crunchId nao tem cascade (campo legado, ver linha ~161 do schema) -
+  // zera ele manualmente antes do delete, senao o Postgres recusa a
+  // exclusao por violar a foreign key.
+  async deleteChurch(request: FastifyRequest) {
+    const manager = await assertPlatformAdmin(request);
+
+    if (manager?.role !== "SUPER_ADMIN") {
+      throw new DomainError("Apenas super admin pode excluir uma igreja");
+    }
+
+    const { id } = request.params as { id?: string };
+    if (!id) throw new DomainError("Igreja não informada");
+
+    const church = await $prismaClient.crunch.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
+
+    if (!church) throw new DomainError("Igreja não encontrada");
+
+    await $prismaClient.$transaction(async (tx) => {
+      await tx.user.updateMany({
+        where: { crunchId: id },
+        data: { crunchId: null },
+      });
+
+      await tx.crunch.delete({ where: { id } });
+    });
+
+    return { success: true, churchName: church.name };
+  }
+
   async getDepartments(request: FastifyRequest) {
     await assertPlatformAdmin(request);
 

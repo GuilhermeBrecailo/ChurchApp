@@ -537,6 +537,46 @@
               </div>
             </div>
 
+            <section
+              v-if="isCurrentUserSuperAdmin"
+              v-show="activeChurchSheetTab === 'geral'"
+              class="danger-zone"
+            >
+              <div class="detail-section-heading">
+                <h3 class="text-subtitle-2 font-weight-bold text-red-darken-2 mb-0">
+                  Zona de risco
+                </h3>
+              </div>
+              <v-alert
+                v-if="deleteChurchError"
+                type="error"
+                variant="tonal"
+                density="compact"
+                class="mb-3"
+              >
+                {{ deleteChurchError }}
+              </v-alert>
+              <div class="danger-zone-row">
+                <div>
+                  <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
+                    Excluir igreja
+                  </p>
+                  <p class="text-caption text-grey-darken-1 mb-0">
+                    Apaga a igreja e todos os dados vinculados. Não pode ser desfeito.
+                  </p>
+                </div>
+                <v-btn
+                  variant="tonal"
+                  color="red-darken-2"
+                  size="small"
+                  class="text-none font-weight-bold"
+                  @click="handleDeleteChurch(selectedChurch)"
+                >
+                  <Trash2 size="14" class="mr-1" /> Excluir
+                </v-btn>
+              </div>
+            </section>
+
             <section v-show="activeChurchSheetTab === 'plano'" class="detail-section">
               <div class="detail-section-heading">
                 <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
@@ -2401,6 +2441,69 @@
         </v-btn>
       </div>
 
+      <v-alert
+        v-if="pendingMembersError"
+        type="error"
+        variant="tonal"
+        density="compact"
+        class="mb-4"
+      >
+        {{ pendingMembersError }}
+      </v-alert>
+
+      <v-card
+        v-if="canManageMembersByRole && pendingMembers.length"
+        class="pending-members-card rounded-xl mb-5 elevation-1 bg-white border-subtle"
+      >
+        <div class="pending-members-heading">
+          <Clock size="16" color="#B45309" />
+          <h3 class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
+            Pendentes de aprovação ({{ pendingMembers.length }})
+          </h3>
+        </div>
+
+        <div
+          v-for="pending in pendingMembers"
+          :key="pending.membershipId"
+          class="pending-member-row"
+        >
+          <div class="min-w-0">
+            <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
+              {{ pending.name }}
+            </p>
+            <p class="text-caption text-grey-darken-1 mb-0">
+              {{ pending.email }} · {{ pending.phone }}
+            </p>
+          </div>
+          <div class="pending-member-actions">
+            <v-btn
+              icon
+              variant="tonal"
+              color="green-darken-2"
+              size="small"
+              :loading="pendingActionId === pending.membershipId"
+              :disabled="Boolean(pendingActionId) && pendingActionId !== pending.membershipId"
+              :aria-label="`Aprovar ${pending.name}`"
+              @click="handleApproveMember(pending.membershipId)"
+            >
+              <CheckCircle2 size="16" />
+            </v-btn>
+            <v-btn
+              icon
+              variant="tonal"
+              color="red-darken-2"
+              size="small"
+              :loading="pendingActionId === pending.membershipId"
+              :disabled="Boolean(pendingActionId) && pendingActionId !== pending.membershipId"
+              :aria-label="`Recusar ${pending.name}`"
+              @click="handleRejectMember(pending.membershipId)"
+            >
+              <X size="16" />
+            </v-btn>
+          </div>
+        </div>
+      </v-card>
+
       <div class="admin-filter-bar mb-4">
         <v-text-field
           v-model="memberSearch"
@@ -3487,10 +3590,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive } from "vue";
-import { Building, Calendar, Music, UserPlus, UserCheck, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon, CheckCircle2, Lock } from "lucide-vue-next";
+import { Building, Calendar, Music, UserPlus, UserCheck, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon, CheckCircle2, Lock, Clock, X } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
-import { useMembers, type ChurchMember } from "../../composables/useMembers";
+import { useMembers, type ChurchMember, type PendingMember } from "../../composables/useMembers";
 import {
   useDepartments,
   type ChurchDepartment,
@@ -3547,6 +3650,9 @@ const {
   createMember,
   updateMember,
   deleteMember,
+  getPendingMembers,
+  approveMember,
+  rejectMember,
 } = useMembers();
 const {
   getDepartments,
@@ -3561,6 +3667,7 @@ const {
   updateChurchUserByAdmin,
   resetChurchUserPasswordByAdmin,
   removeChurchUserByAdmin,
+  deleteChurch,
 } = useAdmin();
 const { listVerses, publishVerse, updateVerse, deleteVerse } = useDailyVerse();
 const { getInviteCode, regenerateInviteCode } = useChurchInvite();
@@ -3649,6 +3756,9 @@ const postForm = reactive({
 });
 
 const members = ref<ChurchMember[]>([]);
+const pendingMembers = ref<PendingMember[]>([]);
+const pendingMembersError = ref("");
+const pendingActionId = ref<string | null>(null);
 const departments = ref<ChurchDepartment[]>([]);
 const churchSchedules = ref<DepartmentSchedule[]>([]);
 const announcements = ref<Announcement[]>([]);
@@ -3722,6 +3832,8 @@ const editingDepartmentId = ref("");
 const pendingDeleteDepartment = ref<ChurchDepartment | null>(null);
 const pendingDeleteMember = ref<ChurchMember | null>(null);
 const pendingRemoveAdminUser = ref<AdminChurchUser | null>(null);
+const pendingDeleteChurch = ref<AdminChurch | null>(null);
+const deleteChurchError = ref("");
 const isConfirmingDelete = ref(false);
 const adminUserEditForm = reactive({
   name: "",
@@ -4084,13 +4196,15 @@ const isDeleteDialogOpen = computed({
     Boolean(
       pendingDeleteDepartment.value ||
         pendingDeleteMember.value ||
-        pendingRemoveAdminUser.value,
+        pendingRemoveAdminUser.value ||
+        pendingDeleteChurch.value,
     ),
   set: (value: boolean) => {
     if (!value && !isConfirmingDelete.value) {
       pendingDeleteDepartment.value = null;
       pendingDeleteMember.value = null;
       pendingRemoveAdminUser.value = null;
+      pendingDeleteChurch.value = null;
     }
   },
 });
@@ -4098,6 +4212,7 @@ const isDeleteDialogOpen = computed({
 const deleteDialogTitle = computed(() => {
   if (pendingDeleteDepartment.value) return "Remover ministério";
   if (pendingRemoveAdminUser.value) return "Remover usuário da igreja";
+  if (pendingDeleteChurch.value) return "Excluir igreja";
   return "Remover membro";
 });
 
@@ -4108,6 +4223,10 @@ const deleteDialogMessage = computed(() => {
 
   if (pendingRemoveAdminUser.value) {
     return `${pendingRemoveAdminUser.value.name} será removido desta igreja.`;
+  }
+
+  if (pendingDeleteChurch.value) {
+    return `A igreja ${pendingDeleteChurch.value.name} será excluída permanentemente, junto com todos os membros, ministérios, escalas, avisos e devocionais. Essa ação não pode ser desfeita.`;
   }
 
   if (pendingDeleteMember.value) {
@@ -4330,6 +4449,54 @@ const loadMembers = async () => {
   members.value = data ?? [];
 };
 
+const loadPendingMembers = async () => {
+  pendingMembersError.value = "";
+
+  const { data, error } = await getPendingMembers();
+
+  if (error) {
+    pendingMembersError.value = error;
+    return;
+  }
+
+  pendingMembers.value = data ?? [];
+};
+
+const handleApproveMember = async (membershipId: string) => {
+  pendingActionId.value = membershipId;
+  pendingMembersError.value = "";
+
+  const { error } = await approveMember(membershipId);
+  pendingActionId.value = null;
+
+  if (error) {
+    pendingMembersError.value = error;
+    return;
+  }
+
+  pendingMembers.value = pendingMembers.value.filter(
+    (member) => member.membershipId !== membershipId,
+  );
+  await loadMembers();
+};
+
+const handleRejectMember = async (membershipId: string) => {
+  pendingActionId.value = membershipId;
+  pendingMembersError.value = "";
+
+  const { error } = await rejectMember(membershipId);
+  pendingActionId.value = null;
+
+  if (error) {
+    pendingMembersError.value = error;
+    return;
+  }
+
+  pendingMembers.value = pendingMembers.value.filter(
+    (member) => member.membershipId !== membershipId,
+  );
+};
+
 const loadDepartments = async () => {
   departmentsError.value = "";
 
@@ -4454,6 +4621,7 @@ const loadChurchAdminData = async () => {
   syncPublicChurchForm();
   await Promise.all([
     loadMembers(),
+    loadPendingMembers(),
     loadDepartments(),
     loadChurchSchedules(),
     loadRoles(),
@@ -4845,6 +5013,7 @@ const closeDeleteDialog = () => {
     pendingDeleteDepartment.value = null;
     pendingDeleteMember.value = null;
     pendingRemoveAdminUser.value = null;
+    pendingDeleteChurch.value = null;
   }
 };
 
@@ -4859,8 +5028,44 @@ const confirmDelete = async () => {
     return;
   }
 
+  if (pendingDeleteChurch.value) {
+    await confirmDeleteChurchAction();
+    return;
+  }
+
   if (pendingDeleteMember.value) {
     await confirmDeleteMember();
+  }
+};
+
+const handleDeleteChurch = (church: AdminChurch) => {
+  deleteChurchError.value = "";
+  pendingDeleteChurch.value = church;
+};
+
+const confirmDeleteChurchAction = async () => {
+  if (!pendingDeleteChurch.value) return;
+
+  deleteChurchError.value = "";
+  isConfirmingDelete.value = true;
+  const churchId = pendingDeleteChurch.value.id;
+
+  try {
+    const { error } = await deleteChurch(churchId);
+
+    if (error) {
+      deleteChurchError.value = error;
+      return;
+    }
+
+    adminChurches.value = adminChurches.value.filter((church) => church.id !== churchId);
+    if (selectedChurch.value?.id === churchId) {
+      isChurchDetailsSheetOpen.value = false;
+      selectedChurch.value = null;
+    }
+    pendingDeleteChurch.value = null;
+  } finally {
+    isConfirmingDelete.value = false;
   }
 };
 
@@ -6165,6 +6370,22 @@ onMounted(async () => {
   padding: 14px 16px;
 }
 
+.danger-zone {
+  margin-top: 20px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  padding: 14px 16px;
+}
+
+.danger-zone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .church-details-body {
   max-height: min(680px, 78vh);
   overflow-y: auto;
@@ -6519,6 +6740,38 @@ onMounted(async () => {
 }
 
 .section-heading .v-btn {
+  flex: 0 0 auto;
+}
+
+.pending-members-card {
+  overflow: hidden;
+}
+
+.pending-members-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  background: #fffbeb;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.pending-member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.pending-member-row:last-child {
+  border-bottom: none;
+}
+
+.pending-member-actions {
+  display: flex;
+  gap: 6px;
   flex: 0 0 auto;
 }
 

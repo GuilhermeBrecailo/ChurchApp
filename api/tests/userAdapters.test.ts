@@ -1,6 +1,7 @@
 const mockPrismaClient = {
   user: { findUnique: jest.fn() },
   crunch: { update: jest.fn() },
+  churchMembership: { findMany: jest.fn().mockResolvedValue([]) },
 };
 
 jest.mock("../config/database", () => ({

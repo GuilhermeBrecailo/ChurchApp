@@ -67,6 +67,7 @@ interface AuthUser {
   activeChurchId?: string | null;
   activeChurch?: AuthChurch | null;
   memberships?: AuthMembership[];
+  pendingChurches?: { id: string; name: string }[];
   isDemoUser?: boolean;
   permissions?: string[];
   roles?: AuthRole[];

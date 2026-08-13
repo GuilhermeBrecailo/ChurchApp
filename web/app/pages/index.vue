@@ -169,6 +169,36 @@
       </v-card>
     </template>
 
+    <template v-else-if="isMemberWithPendingChurch">
+      <v-card class="rounded-xl pa-6 elevation-1 border-subtle">
+        <div class="d-flex align-center mb-4">
+          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="48" class="mr-3">
+            <Clock size="24" :color="isDark ? '#f0975a' : '#B5472A'" />
+          </v-avatar>
+          <div>
+            <h1 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+              Aguardando aprovação
+            </h1>
+            <p class="text-body-2 text-grey-darken-1 mb-0">
+              Sua solicitação para entrar em <strong>{{ pendingChurchName }}</strong> está com o pastor.
+              Assim que for aprovada, você acessa normalmente.
+            </p>
+          </div>
+        </div>
+
+        <v-btn
+          block
+          variant="tonal"
+          color="purple-darken-3"
+          class="text-none font-weight-bold rounded-lg"
+          size="large"
+          @click="fetchMe"
+        >
+          Já fui aprovado, verificar de novo
+        </v-btn>
+      </v-card>
+    </template>
+
     <template v-else-if="isMemberWithoutChurch">
       <v-card class="rounded-xl pa-6 elevation-1 border-subtle">
         <div class="d-flex align-center mb-4">
@@ -201,7 +231,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { Church } from "lucide-vue-next";
+import { Church, Clock } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import { useChurch } from "../../composables/useChurch";
@@ -212,7 +242,7 @@ import {
 import { useMembers } from "../../composables/useMembers";
 
 const router = useRouter();
-const { user } = useAuth();
+const { user, fetchMe } = useAuth();
 const { isDark } = useThemeMode();
 const { createOwnChurch } = useChurch();
 const { getChurchSchedules, getDepartments } = useDepartments();
@@ -223,8 +253,17 @@ const hasChurch = computed(() => user.value?.hasChurch === true);
 const isPastorWithoutChurch = computed(
   () => !hasChurch.value && user.value?.role === "PASTOR",
 );
+const pendingChurchName = computed(
+  () => user.value?.pendingChurches?.[0]?.name ?? null,
+);
+const isMemberWithPendingChurch = computed(
+  () => !hasChurch.value && user.value?.role !== "PASTOR" && !!pendingChurchName.value,
+);
 const isMemberWithoutChurch = computed(
-  () => !hasChurch.value && user.value?.role !== "PASTOR",
+  () =>
+    !hasChurch.value &&
+    user.value?.role !== "PASTOR" &&
+    !pendingChurchName.value,
 );
 
 const loading = ref(false);

@@ -46,5 +46,31 @@ export function useChurchInvite() {
     );
   };
 
-  return { getInviteCode, regenerateInviteCode, joinByCode };
+  // Publicas - sem token, quem esta chamando ainda nao tem conta.
+  const getChurchByCode = async (
+    code: string,
+  ): Promise<ApiResponse<{ name: string; logo: string | null }>> => {
+    return await $customFetch<{ name: string; logo: string | null }>(
+      `${config.public.URL_BACKEND}/public/church/invite/${encodeURIComponent(code)}`,
+      { method: "GET" },
+    );
+  };
+
+  const registerByCode = async (
+    code: string,
+    member: { name: string; email: string; phone: string; password: string },
+  ): Promise<ApiResponse<{ success: boolean; churchName: string }>> => {
+    return await $customFetch<{ success: boolean; churchName: string }>(
+      `${config.public.URL_BACKEND}/public/church/invite/${encodeURIComponent(code)}/register`,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: member },
+    );
+  };
+
+  return {
+    getInviteCode,
+    regenerateInviteCode,
+    joinByCode,
+    getChurchByCode,
+    registerByCode,
+  };
 }

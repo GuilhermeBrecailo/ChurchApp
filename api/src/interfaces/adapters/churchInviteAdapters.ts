@@ -4,6 +4,7 @@ import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { resolveActiveChurchContext, RoleContext } from "../utils/churchContext";
 import { hasPermission } from "../../application/Services/Auth/AuthorizationService";
+import { KeycloakProvider } from "../../infrastructure/identity/KeycloakProvider";
 
 type InviteManagerContext = {
   role: string;
@@ -167,5 +168,105 @@ export class ChurchInviteAdapters {
       membershipId: result.membership.id,
       alreadyMember: result.alreadyMember,
     };
+  }
+
+  // Endpoint publico (sem auth, ver /public/church/invite/:code em
+  // ChurchInviteRoutes.ts) pra pagina de cadastro mostrar o nome da igreja
+  // antes da pessoa preencher qualquer dado.
+  async getChurchByCode(request: FastifyRequest) {
+    const { code } = request.params as { code?: string };
+    if (!code?.trim()) throw new DomainError("Código de convite é obrigatório");
+
+    const church = await $prismaClient.crunch.findFirst({
+      where: { inviteCode: code.trim().toUpperCase(), isActive: true },
+      select: { name: true, logo: true },
+    });
+
+    if (!church) throw new DomainError("Código de convite inválido ou expirado");
+
+    return church;
+  }
+
+  // Endpoint publico - pessoa sem conta se cadastra sozinha a partir do link
+  // de convite. Cria o usuario e o vinculo com a igreja, mas o vinculo nasce
+  // isActive:false (pendente): resolveActiveChurchContext so considera
+  // membership isActive:true pra montar o contexto de acesso, entao esse
+  // usuario nao acessa nada da igreja ate um pastor/admin aprovar em
+  // "Membros > Pendentes" (userAdapters.ts#approveMember). Nao seta
+  // user.crunchId aqui de proposito: esse campo e' o fallback que
+  // resolveActiveChurchContext usa quando nao ha nenhuma membership ativa -
+  // setar isso destravaria acesso indevido antes da aprovacao.
+  async registerByCode(request: FastifyRequest) {
+    const { code } = request.params as { code?: string };
+    if (!code?.trim()) throw new DomainError("Código de convite é obrigatório");
+
+    const body = request.body as {
+      name?: string;
+      email?: string;
+      phone?: string;
+      password?: string;
+    };
+
+    if (!body.name?.trim()) throw new DomainError("Nome é obrigatório");
+    if (!body.email?.trim()) throw new DomainError("Email é obrigatório");
+    if (!body.phone?.trim()) throw new DomainError("Telefone é obrigatório");
+    if (!body.password || body.password.length < 6) {
+      throw new DomainError("A senha deve ter pelo menos 6 caracteres");
+    }
+
+    const church = await $prismaClient.crunch.findFirst({
+      where: { inviteCode: code.trim().toUpperCase(), isActive: true },
+    });
+
+    if (!church) throw new DomainError("Código de convite inválido ou expirado");
+
+    const normalizedEmail = body.email.trim().toLowerCase();
+    const existingUser = await $prismaClient.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (existingUser) {
+      throw new DomainError(
+        "Já existe uma conta com esse email. Faça login e use o código de convite pela tela Entrar em uma igreja.",
+      );
+    }
+
+    const identityProvider = new KeycloakProvider();
+    const keycloakId = await identityProvider.createUser(
+      normalizedEmail,
+      body.name.trim(),
+      body.password,
+    );
+
+    try {
+      await $prismaClient.$transaction(async (tx) => {
+        await tx.user.create({
+          data: {
+            id: keycloakId,
+            name: body.name!.trim(),
+            email: normalizedEmail,
+            phone: body.phone!.trim(),
+            role: "MEMBER",
+            canManageMembers: false,
+          },
+        });
+
+        await tx.churchMembership.create({
+          data: {
+            userId: keycloakId,
+            crunchId: church.id,
+            role: "MEMBER",
+            canManageMembers: false,
+            isPrimary: true,
+            isActive: false,
+          },
+        });
+      });
+    } catch (error) {
+      await identityProvider.deleteUser(keycloakId).catch(() => undefined);
+      throw error;
+    }
+
+    return { success: true, churchName: church.name };
   }
 }

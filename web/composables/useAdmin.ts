@@ -106,6 +106,16 @@ export const useAdmin = () => {
       : {}),
   });
 
+  // Sem "Content-Type: application/json" - deleteChurch nao manda body, e o
+  // fastify rejeita corpo vazio com content-type json
+  // (FST_ERR_CTP_EMPTY_JSON_BODY). Mesmo motivo documentado em
+  // useChurchInvite.ts/useMembers.ts.
+  const authHeadersNoBody = () => ({
+    ...(access_token.value
+      ? { Authorization: `Bearer ${access_token.value}` }
+      : {}),
+  });
+
   const getChurches = async (): Promise<ApiResponse<AdminChurch[]>> => {
     return await $customFetch<AdminChurch[]>(
       `${config.public.URL_BACKEND}/api/admin/churches`,
@@ -201,6 +211,18 @@ export const useAdmin = () => {
     );
   };
 
+  const deleteChurch = async (
+    churchId: string,
+  ): Promise<ApiResponse<{ success: boolean; churchName: string }>> => {
+    return await $customFetch<{ success: boolean; churchName: string }>(
+      `${config.public.URL_BACKEND}/api/admin/churches/${churchId}`,
+      {
+        method: "DELETE",
+        headers: authHeadersNoBody(),
+      },
+    );
+  };
+
   return {
     getChurches,
     getDepartments,
@@ -209,5 +231,6 @@ export const useAdmin = () => {
     resetChurchUserPasswordByAdmin,
     removeChurchUserByAdmin,
     setChurchPlan,
+    deleteChurch,
   };
 };

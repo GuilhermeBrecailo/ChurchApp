@@ -16,6 +16,15 @@ export interface ChurchMember {
   roles?: MemberRole[];
 }
 
+export interface PendingMember {
+  membershipId: string;
+  requestedAt: string;
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+}
+
 interface CreateMemberDTO {
   name: string;
   email: string;
@@ -40,6 +49,16 @@ export const useMembers = () => {
 
   const authHeaders = () => ({
     "Content-Type": "application/json",
+    ...(access_token.value
+      ? { Authorization: `Bearer ${access_token.value}` }
+      : {}),
+  });
+
+  // Sem "Content-Type: application/json" aqui de proposito - approve/reject
+  // nao mandam body, e o fastify rejeita corpo vazio com content-type json
+  // (FST_ERR_CTP_EMPTY_JSON_BODY). Mesmo motivo documentado em
+  // useChurchInvite.ts.
+  const authHeadersNoBody = () => ({
     ...(access_token.value
       ? { Authorization: `Bearer ${access_token.value}` }
       : {}),
@@ -108,11 +127,39 @@ export const useMembers = () => {
     );
   };
 
+  const getPendingMembers = async (): Promise<ApiResponse<PendingMember[]>> => {
+    return await $customFetch<PendingMember[]>(
+      `${config.public.URL_BACKEND}/api/church/members/pending`,
+      { method: "GET", headers: authHeaders() },
+    );
+  };
+
+  const approveMember = async (
+    membershipId: string,
+  ): Promise<ApiResponse<{ success: boolean }>> => {
+    return await $customFetch<{ success: boolean }>(
+      `${config.public.URL_BACKEND}/api/church/members/pending/${membershipId}/approve`,
+      { method: "PATCH", headers: authHeadersNoBody() },
+    );
+  };
+
+  const rejectMember = async (
+    membershipId: string,
+  ): Promise<ApiResponse<{ success: boolean }>> => {
+    return await $customFetch<{ success: boolean }>(
+      `${config.public.URL_BACKEND}/api/church/members/pending/${membershipId}/reject`,
+      { method: "PATCH", headers: authHeadersNoBody() },
+    );
+  };
+
   return {
     getMembers,
     createMember,
     updateMemberPermissions,
     updateMember,
     deleteMember,
+    getPendingMembers,
+    approveMember,
+    rejectMember,
   };
 };
