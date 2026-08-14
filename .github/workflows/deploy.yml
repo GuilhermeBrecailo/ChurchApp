@@ -17,12 +17,7 @@ jobs:
           username: root
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            set -e
             cd /root/CrunchApp
             git pull origin main
-            npm install
-            npm --prefix api install
-            npm --prefix web install
-            npm --prefix api run prisma:deploy
-            npm --prefix api run prisma:generate
-            npm run web:build
-            pm2 restart all
+            docker compose up -d --build web api
