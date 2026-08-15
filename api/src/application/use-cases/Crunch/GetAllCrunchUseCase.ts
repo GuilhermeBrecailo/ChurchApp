@@ -5,7 +5,6 @@ export class GetAllCrunchUseCase {
   constructor(private repository: ICrunchRepository) {}
 
   async execute(): Promise<Crunch[]> {
-    console.log("sdads");
     const result = await this.repository.getAllCrunchs();
     return result;
   }
