@@ -53,6 +53,11 @@ export default defineNuxtConfig({
     "/register": { ssr: true },
     "/forgot-password": { ssr: true },
     "/c/**": { ssr: true },
+    // Landing publica de conversao - precisa de SSR pra Google/crawlers e
+    // pra unfurling de link (WhatsApp/Instagram) verem titulo, meta e o
+    // schema.org que useSeoMeta/useHead geram; sem isso cai na regra geral
+    // "/**": ssr:false e vira uma casca vazia pra qualquer bot que nao roda JS.
+    "/comece": { ssr: true },
   },
   nitro: {
     compressPublicAssets: true,
