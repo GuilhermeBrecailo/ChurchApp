@@ -73,6 +73,14 @@ interface AuthUser {
   roles?: AuthRole[];
   phone?: string;
   church?: AuthChurch | null;
+  avatarUrl?: string | null;
+}
+
+export interface UploadedAvatar {
+  url: string;
+  key: string;
+  mimeType: string;
+  size: number;
 }
 
 interface KeycloakPayload {
@@ -255,6 +263,35 @@ export const useAuth = () => {
     await fetchMe();
   };
 
+  const uploadMyAvatar = async (file: File) => {
+    if (!access_token.value) {
+      return {
+        error: "Sessão expirada. Faça login novamente.",
+        status: 401,
+      };
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await $customFetch<UploadedAvatar>(
+      `${apiBase()}/api/me/avatar`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${access_token.value}`,
+        },
+        body: formData,
+      },
+    );
+
+    if (!response.error) {
+      await fetchMe();
+    }
+
+    return response;
+  };
+
   const should_refresh = () => {
     if (!access_token.value) return false;
 
@@ -280,5 +317,6 @@ export const useAuth = () => {
     fetchMe,
     setActiveChurch,
     activeChurchId,
+    uploadMyAvatar,
   };
 };

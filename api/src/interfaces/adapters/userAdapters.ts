@@ -36,6 +36,8 @@ const updateUserService = new UpdateUserService(
 
 const CHURCH_PHOTO_MAX_SIZE_BYTES = 5 * 1024 * 1024;
 const CHURCH_PHOTO_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const USER_AVATAR_MAX_SIZE_BYTES = CHURCH_PHOTO_MAX_SIZE_BYTES;
+const USER_AVATAR_MIME_TYPES = CHURCH_PHOTO_MIME_TYPES;
 
 function formatChurch(church: {
   id: string;
@@ -270,6 +272,7 @@ export class UserAdapters {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      avatarUrl: user.avatarUrl,
       role: context.role,
       crunchId: context.activeChurchId,
       activeChurchId: context.activeChurchId,
@@ -329,6 +332,7 @@ export class UserAdapters {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      avatarUrl: user.avatarUrl,
       role: user.role,
       profileSuggestion: user.profileSuggestion,
       mustChangePassword: user.mustChangePassword,
@@ -664,6 +668,75 @@ export class UserAdapters {
     await $prismaClient.crunch.update({
       where: { id: context.activeChurchId },
       data: { logo: url },
+    });
+
+    return {
+      url,
+      key,
+      mimeType: file.mimetype,
+      size: buffer.byteLength,
+    };
+  }
+
+  // Foto de perfil do proprio usuario. Mesmo contrato do upload de foto da
+  // igreja: o binario vai pro disco em uploads/ e o banco guarda so a URL.
+  // Diferente da foto da igreja, qualquer usuario autenticado pode trocar a
+  // propria - nao ha checagem de papel aqui.
+  async uploadMyAvatar(request: FastifyRequest) {
+    const userId = getAuthUserId(request);
+
+    const multipartRequest = request as FastifyRequest & {
+      file: (options?: unknown) => Promise<{
+        filename: string;
+        mimetype: string;
+        toBuffer: () => Promise<Buffer>;
+      } | undefined>;
+    };
+    const file = await multipartRequest.file({
+      limits: {
+        fileSize: USER_AVATAR_MAX_SIZE_BYTES,
+        files: 1,
+      },
+    });
+
+    if (!file) {
+      throw new DomainError("Imagem nao enviada");
+    }
+
+    if (!USER_AVATAR_MIME_TYPES.includes(file.mimetype)) {
+      throw new DomainError("Envie uma imagem PNG, JPG ou WEBP");
+    }
+
+    const buffer = await file.toBuffer();
+
+    if (buffer.byteLength > USER_AVATAR_MAX_SIZE_BYTES) {
+      throw new DomainError("A imagem deve ter no maximo 5 MB");
+    }
+
+    const extension =
+      {
+        "image/png": "png",
+        "image/jpeg": "jpg",
+        "image/webp": "webp",
+      }[file.mimetype] || "png";
+    const key = path.posix.join(
+      "user",
+      userId,
+      "avatar",
+      `${crypto.randomUUID()}.${extension}`,
+    );
+    const targetPath = path.join(process.cwd(), "uploads", key);
+
+    await mkdir(path.dirname(targetPath), { recursive: true });
+    await writeFile(targetPath, buffer);
+
+    const host = request.headers.host || `localhost:${process.env.API_PORT || 8000}`;
+    const baseUrl = process.env.URL_BACKEND || `http://${host}`;
+    const url = `${baseUrl.replace(/\/$/, "")}/uploads/${key}`;
+
+    await $prismaClient.user.update({
+      where: { id: userId },
+      data: { avatarUrl: url },
     });
 
     return {

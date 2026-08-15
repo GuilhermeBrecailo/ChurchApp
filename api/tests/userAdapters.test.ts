@@ -1,5 +1,5 @@
 const mockPrismaClient = {
-  user: { findUnique: jest.fn() },
+  user: { findUnique: jest.fn(), update: jest.fn() },
   crunch: { update: jest.fn() },
   churchMembership: { findMany: jest.fn().mockResolvedValue([]) },
 };
@@ -10,6 +10,14 @@ jest.mock("../config/database", () => ({
 
 jest.mock("../src/infrastructure/identity/KeycloakProvider", () => ({
   KeycloakProvider: jest.fn().mockImplementation(() => ({})),
+}));
+
+const mockMkdir = jest.fn().mockResolvedValue(undefined);
+const mockWriteFile = jest.fn().mockResolvedValue(undefined);
+
+jest.mock("node:fs/promises", () => ({
+  mkdir: (...args: unknown[]) => mockMkdir(...args),
+  writeFile: (...args: unknown[]) => mockWriteFile(...args),
 }));
 
 import { FastifyRequest } from "fastify";
@@ -177,5 +185,78 @@ describe("UserAdapters.getMe exposes plan features", () => {
     expect(result.church?.plan).toBe("PRO");
     expect(result.church?.features).toContain("REPORTS");
     expect(result.church?.features).toContain("CUSTOM_ROLES");
+  });
+});
+
+function makeUploadRequest(
+  file: { filename: string; mimetype: string; toBuffer: () => Promise<Buffer> } | undefined,
+): FastifyRequest {
+  return {
+    headers: { authorization: `Bearer ${fakeToken("pastor-1")}`, host: "localhost:8000" },
+    file: async () => file,
+  } as unknown as FastifyRequest;
+}
+
+describe("UserAdapters.uploadMyAvatar", () => {
+  let adapters: UserAdapters;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    adapters = new UserAdapters();
+    mockPrismaClient.user.update.mockResolvedValue({ id: "pastor-1" });
+  });
+
+  it("rejects when no file is sent", async () => {
+    await expect(adapters.uploadMyAvatar(makeUploadRequest(undefined))).rejects.toThrow(
+      DomainError,
+    );
+  });
+
+  it("rejects an invalid mimetype", async () => {
+    await expect(
+      adapters.uploadMyAvatar(
+        makeUploadRequest({
+          filename: "malware.exe",
+          mimetype: "application/octet-stream",
+          toBuffer: async () => Buffer.from("x"),
+        }),
+      ),
+    ).rejects.toThrow(DomainError);
+  });
+
+  it("rejects a file over 5MB", async () => {
+    const bigBuffer = Buffer.alloc(6 * 1024 * 1024);
+
+    await expect(
+      adapters.uploadMyAvatar(
+        makeUploadRequest({
+          filename: "big.png",
+          mimetype: "image/png",
+          toBuffer: async () => bigBuffer,
+        }),
+      ),
+    ).rejects.toThrow(DomainError);
+  });
+
+  it("saves the file, updates avatarUrl and returns the upload metadata", async () => {
+    const buffer = Buffer.from("conteudo da imagem");
+
+    const result = await adapters.uploadMyAvatar(
+      makeUploadRequest({
+        filename: "eu.png",
+        mimetype: "image/png",
+        toBuffer: async () => buffer,
+      }),
+    );
+
+    expect(mockMkdir).toHaveBeenCalled();
+    expect(mockWriteFile).toHaveBeenCalled();
+    expect(mockPrismaClient.user.update).toHaveBeenCalledWith({
+      where: { id: "pastor-1" },
+      data: { avatarUrl: expect.stringContaining("/uploads/user/pastor-1/avatar/") },
+    });
+    expect(result.url).toContain("/uploads/user/pastor-1/avatar/");
+    expect(result.mimeType).toBe("image/png");
+    expect(result.size).toBe(buffer.byteLength);
   });
 });

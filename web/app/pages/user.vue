@@ -8,9 +8,29 @@
         </div>
       </div>
       <div class="profile-hero-body">
-        <v-avatar class="profile-avatar" size="72">
-          <span class="profile-initials">{{ initials }}</span>
-        </v-avatar>
+        <button
+          type="button"
+          class="profile-avatar-button"
+          :disabled="isUploadingAvatar"
+          aria-label="Trocar foto de perfil"
+          @click="openAvatarPicker"
+        >
+          <v-avatar class="profile-avatar" size="72">
+            <v-img v-if="user?.avatarUrl" :src="user.avatarUrl" alt="Foto de perfil" cover />
+            <span v-else class="profile-initials">{{ initials }}</span>
+            <div class="profile-avatar-overlay">
+              <v-progress-circular v-if="isUploadingAvatar" size="18" width="2" indeterminate color="white" />
+              <Camera v-else size="18" />
+            </div>
+          </v-avatar>
+        </button>
+        <input
+          ref="avatarInput"
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          class="d-none"
+          @change="onAvatarSelected"
+        />
         <div class="profile-summary-copy">
           <div class="profile-chip-row mb-2">
             <v-chip size="x-small" color="indigo-darken-2" variant="flat" class="font-weight-bold rounded-sm">
@@ -55,6 +75,18 @@
       class="mb-4"
     >
       {{ loadError }}
+    </v-alert>
+
+    <v-alert
+      v-if="avatarError"
+      type="error"
+      variant="tonal"
+      density="compact"
+      class="mb-4"
+      closable
+      @click:close="avatarError = ''"
+    >
+      {{ avatarError }}
     </v-alert>
 
     <v-alert
@@ -433,14 +465,14 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive } from "vue";
-import { CalendarDays, CalendarX, ChevronRight, Church, ClipboardList, LogOut, Plus, Save, Shield, UserRound } from "lucide-vue-next";
+import { CalendarDays, CalendarX, Camera, ChevronRight, Church, ClipboardList, LogOut, Plus, Save, Shield, UserRound } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useDepartments, type ChurchDepartment } from "../../composables/useDepartments";
 import { useUser, type MyProfileDTO } from "../../composables/useUser";
 import { useThemeMode } from "../../../composables/useThemeMode";
 
 const router = useRouter();
-const { logout, user, fetchMe } = useAuth();
+const { logout, user, fetchMe, uploadMyAvatar } = useAuth();
 const { isDark } = useThemeMode();
 const accentColor = computed(() => isDark.value ? "#f0975a" : "#B5472A");
 const { getMyProfile, updateMyProfile, updateMyPassword } = useUser();
@@ -463,6 +495,47 @@ const profile = ref<MyProfileDTO | null>(null);
 const departments = ref<ChurchDepartment[]>([]);
 const newUnavailableDate = ref("");
 const unavailableDates = ref<string[]>([]);
+const avatarInput = ref<HTMLInputElement | null>(null);
+const isUploadingAvatar = ref(false);
+const avatarError = ref("");
+
+const AVATAR_MAX_SIZE_BYTES = 5 * 1024 * 1024;
+const AVATAR_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
+const openAvatarPicker = () => {
+  avatarInput.value?.click();
+};
+
+const onAvatarSelected = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = "";
+
+  if (!file) return;
+
+  avatarError.value = "";
+
+  if (!AVATAR_MIME_TYPES.includes(file.type)) {
+    avatarError.value = "Envie uma imagem PNG, JPG ou WEBP.";
+    return;
+  }
+
+  if (file.size > AVATAR_MAX_SIZE_BYTES) {
+    avatarError.value = "A imagem deve ter no máximo 5 MB.";
+    return;
+  }
+
+  isUploadingAvatar.value = true;
+
+  const response = await uploadMyAvatar(file);
+
+  isUploadingAvatar.value = false;
+
+  if (response.error) {
+    avatarError.value =
+      typeof response.error === "string" ? response.error : "Não foi possível enviar a foto.";
+  }
+};
 
 const form = reactive({
   primaryDepartmentId: "",
@@ -770,6 +843,39 @@ onMounted(loadPageData);
   font-weight: 800;
   font-size: 1.35rem;
   letter-spacing: -0.01em;
+}
+
+.profile-avatar-button {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.profile-avatar-button:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.profile-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+
+.profile-avatar-button:hover .profile-avatar-overlay,
+.profile-avatar-button:focus-visible .profile-avatar-overlay,
+.profile-avatar-button:disabled .profile-avatar-overlay {
+  opacity: 1;
 }
 
 .profile-chip-row,

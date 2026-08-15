@@ -3,7 +3,8 @@
     <div class="d-flex align-center">
       <v-btn icon variant="text" aria-label="Abrir meu perfil" @click="router.push('/user')">
         <v-avatar class="user-avatar" size="40">
-          <span class="avatar-text">{{ userInitials }}</span>
+          <v-img v-if="user?.avatarUrl" :src="user.avatarUrl" alt="Foto de perfil" cover />
+          <span v-else class="avatar-text">{{ userInitials }}</span>
         </v-avatar>
       </v-btn>
 
