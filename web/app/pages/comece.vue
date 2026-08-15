@@ -302,6 +302,61 @@ useSeoMeta({
   twitterImage: `${config.public.siteUrl}/og-banner.png`,
 });
 
+// Dados estruturados (schema.org) pro Google poder gerar rich snippet de
+// preco/oferta na busca - Organization fica separada do SoftwareApplication
+// porque sao entidades distintas (empresa vs. produto), como o schema.org
+// espera.
+const structuredDataOffers = [
+  {
+    "@type": "Offer",
+    name: "Free",
+    price: "0",
+    priceCurrency: "BRL",
+    url: `${config.public.siteUrl}/comece`,
+  },
+  ...(PRO_MONTHLY_PRICE === null
+    ? []
+    : [
+        {
+          "@type": "Offer",
+          name: "Pro",
+          price: String(PRO_MONTHLY_PRICE),
+          priceCurrency: "BRL",
+          url: `${config.public.siteUrl}/comece`,
+        },
+      ]),
+];
+
+useHead({
+  script: [
+    {
+      type: "application/ld+json",
+      innerHTML: JSON.stringify({
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            name: "ChurchApp",
+            url: config.public.siteUrl,
+            logo: `${config.public.siteUrl}/pwa-icon-512.png`,
+            sameAs: ["https://instagram.com/app_church"],
+          },
+          {
+            "@type": "SoftwareApplication",
+            name: "ChurchApp",
+            applicationCategory: "BusinessApplication",
+            operatingSystem: "Web",
+            url: `${config.public.siteUrl}/comece`,
+            description:
+              "Organize membros, ministérios, escalas, cifras, avisos, devocionais e pedidos de oração em um único lugar.",
+            offers: structuredDataOffers,
+          },
+        ],
+      }),
+    },
+  ],
+});
+
 const featureHighlights = [
   {
     title: "Gestão de membros",
