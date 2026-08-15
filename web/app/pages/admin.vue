@@ -3504,18 +3504,26 @@
             v-for="module in visibleRoleModules"
             :key="module.key"
             class="permission-module-card"
+            :class="{ 'permission-module-card--full': countModuleSelected(module) === module.permissions.length }"
           >
             <button
               type="button"
               class="permission-module-title"
               @click="toggleModuleExpanded(module.key)"
             >
+              <div class="permission-module-icon">
+                <component :is="moduleIcon(module.key)" size="15" />
+              </div>
               <div class="permission-module-title-text">
                 <strong>{{ module.label }}</strong>
                 <span>{{ module.description }}</span>
               </div>
               <div class="permission-module-meta">
-                <v-chip size="x-small" color="purple-darken-3" variant="tonal">
+                <v-chip
+                  size="x-small"
+                  color="purple-darken-3"
+                  :variant="countModuleSelected(module) === 0 ? 'outlined' : countModuleSelected(module) === module.permissions.length ? 'flat' : 'tonal'"
+                >
                   {{ countModuleSelected(module) }}/{{ module.permissions.length }}
                 </v-chip>
                 <ChevronDown
@@ -3526,26 +3534,28 @@
               </div>
             </button>
 
-            <div v-show="isModuleExpanded(module.key)" class="permission-module-body">
-              <div
-                v-for="perm in module.permissions"
-                :key="perm.key"
-                class="permission-row"
-              >
-                <div class="permission-row-text">
-                  <p class="text-body-2 font-weight-medium mb-0">{{ perm.label }}</p>
-                  <p class="text-caption text-grey-darken-1 mb-0">{{ perm.description }}</p>
+            <Transition name="permission-body">
+              <div v-show="isModuleExpanded(module.key)" class="permission-module-body">
+                <div
+                  v-for="perm in module.permissions"
+                  :key="perm.key"
+                  class="permission-row"
+                >
+                  <div class="permission-row-text">
+                    <p class="text-body-2 font-weight-medium mb-0">{{ perm.label }}</p>
+                    <p class="text-caption text-grey-darken-1 mb-0">{{ perm.description }}</p>
+                  </div>
+                  <v-switch
+                    v-model="roleForm.permissions"
+                    :value="perm.key"
+                    color="purple-darken-3"
+                    density="compact"
+                    hide-details
+                    class="permission-row-switch"
+                  />
                 </div>
-                <v-switch
-                  v-model="roleForm.permissions"
-                  :value="perm.key"
-                  color="purple-darken-3"
-                  density="compact"
-                  hide-details
-                  class="permission-row-switch"
-                />
               </div>
-            </div>
+            </Transition>
           </div>
         </div>
 
@@ -3613,7 +3623,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive } from "vue";
-import { Building, Calendar, Music, UserPlus, UserCheck, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon, CheckCircle2, Lock, Clock, X, ChevronDown } from "lucide-vue-next";
+import { Building, Calendar, Music, UserPlus, UserCheck, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon, CheckCircle2, Lock, Clock, X, ChevronDown, Bell, Settings2 } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import { useMembers, type ChurchMember, type PendingMember } from "../../composables/useMembers";
@@ -5700,6 +5710,21 @@ const applyRolePreset = (presetKey: string | null) => {
 const countModuleSelected = (module: PermissionModule) =>
   module.permissions.filter((perm) => roleForm.permissions.includes(perm.key)).length;
 
+// Icone por modulo so pra escaneabilidade na lista de cargos - nao faz
+// parte do modelo de dados (usePermissions.ts), e so apresentacao.
+const moduleIconMap = {
+  songs: Music,
+  schedules: Calendar,
+  ministryMembers: UserPlus,
+  ministryNotify: Bell,
+  ministry: Settings2,
+  members: UserCheck,
+  content: BookMarked,
+  announcements: Megaphone,
+} as const;
+
+const moduleIcon = (key: PermissionModuleKey) => moduleIconMap[key];
+
 const totalVisiblePermissions = computed(() =>
   visibleRoleModules.value.reduce((total, module) => total + module.permissions.length, 0),
 );
@@ -6904,7 +6929,7 @@ onMounted(async () => {
   padding: 0;
   font-size: 0.78rem;
   font-weight: 700;
-  color: #6a1b9a;
+  color: var(--app-color-accent);
   cursor: pointer;
 }
 
@@ -7209,10 +7234,16 @@ onMounted(async () => {
 }
 
 .permission-module-card {
-  border: 1px solid #eef2f7;
-  border-radius: 8px;
-  background: #f9fafb;
-  padding: 12px;
+  border: 1px solid var(--app-color-border);
+  border-radius: 10px;
+  background: var(--app-color-surface-soft);
+  padding: 13px 14px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.permission-module-card--full {
+  background: var(--app-color-accent-tint);
+  border-color: var(--app-color-accent-muted);
 }
 
 .permission-module-title {
@@ -7228,6 +7259,28 @@ onMounted(async () => {
   cursor: pointer;
 }
 
+.permission-module-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin-top: 1px;
+  border-radius: 8px;
+  background: var(--app-color-accent-tint);
+  color: var(--app-color-accent);
+}
+
+.permission-module-card--full .permission-module-icon {
+  background: var(--app-color-surface);
+}
+
+.permission-module-title-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .permission-module-title-text strong,
 .permission-module-title-text span {
   display: block;
@@ -7237,6 +7290,11 @@ onMounted(async () => {
   color: var(--app-color-text, #111827);
   font-size: 0.86rem;
   font-weight: 850;
+  transition: color 0.15s ease;
+}
+
+.permission-module-title:hover .permission-module-title-text strong {
+  color: var(--app-color-accent);
 }
 
 .permission-module-title-text span {
@@ -7250,6 +7308,7 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  padding-top: 2px;
 }
 
 .permission-module-chevron {
@@ -7266,7 +7325,8 @@ onMounted(async () => {
   flex-direction: column;
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid #eef2f7;
+  padding-left: 38px;
+  border-top: 1px solid var(--app-color-border);
 }
 
 .permission-row {
@@ -7274,7 +7334,13 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 6px 0;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--app-color-border);
+}
+
+.permission-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .permission-row-text {
@@ -7283,6 +7349,27 @@ onMounted(async () => {
 
 .permission-row-switch {
   flex-shrink: 0;
+}
+
+.permission-body-enter-active,
+.permission-body-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.permission-body-enter-from,
+.permission-body-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .permission-body-enter-active,
+  .permission-body-leave-active,
+  .permission-module-chevron,
+  .permission-module-card,
+  .permission-module-title-text strong {
+    transition: none !important;
+  }
 }
 
 .ministry-item:focus-visible,
