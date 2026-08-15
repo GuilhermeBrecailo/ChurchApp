@@ -72,6 +72,7 @@ model Crunch {
     serviceTimes  ServiceTime[]
     devotionals Devotional[]
     devotionalProgresses DevotionalProgress[]
+    devotionalComments DevotionalComment[]
     prayerRequests PrayerRequest[]
     pushSubscriptions PushSubscription[]
     posts         Post[]
@@ -156,6 +157,7 @@ model User {
     mustChangePassword Boolean @default(false)
     isDemoUser   Boolean @default(false)
     profileSuggestion String?
+    avatarUrl String?
 
     crunchId String?
     crunch   Crunch? @relation(fields: [crunchId], references: [id])
@@ -174,6 +176,7 @@ model User {
     announcements Announcement[]
     devotionals Devotional[]
     devotionalProgresses DevotionalProgress[]
+    devotionalComments DevotionalComment[]
     prayerRequests PrayerRequest[]
     posts Post[]
 }
@@ -281,6 +284,7 @@ model Devotional {
 
     chapters   DevotionalChapter[]
     progresses DevotionalProgress[]
+    comments   DevotionalComment[]
 
     @@index([crunchId, publishedAt])
     @@index([crunchId, isPublic, publishedAt])
@@ -311,6 +315,23 @@ model DevotionalProgress {
     crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
 
     @@unique([userId, devotionalId])
+}
+
+model DevotionalComment {
+    id        String   @id @default(uuid())
+    body      String
+    createdAt DateTime @default(now())
+
+    devotionalId String
+    devotional   Devotional @relation(fields: [devotionalId], references: [id], onDelete: Cascade)
+
+    authorId String
+    author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    @@index([devotionalId, createdAt])
 }
 
 model PushSubscription {
