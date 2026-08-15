@@ -1,0 +1,244 @@
+<template>
+  <UtilsResponsiveOverlay v-model="isOpen" max-width="520">
+    <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+      <div class="responsive-dialog-header mb-5">
+        <div class="d-flex align-center min-w-0">
+          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
+            <Calendar size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
+          </v-avatar>
+          <div class="min-w-0">
+            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+              {{ editingScheduleId ? "Editar escala" : "Nova escala" }}
+            </h2>
+            <p class="text-body-2 text-grey-darken-1 mb-0">
+              Crie uma escala para este ministério.
+            </p>
+          </div>
+        </div>
+        <v-btn icon variant="text" color="grey-darken-1" size="small" @click="$emit('close')">
+          <v-icon size="20">mdi-close</v-icon>
+        </v-btn>
+      </div>
+
+      <v-form autocomplete="off" @submit.prevent="$emit('submit')">
+        <v-text-field
+          v-model="scheduleForm.title"
+          label="Título"
+          prepend-inner-icon="mdi-calendar-text-outline"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
+          class="ministery-input mb-4"
+          hide-details="auto"
+          :disabled="isCreatingSchedule"
+        />
+
+        <div class="ministery-field-grid mb-4">
+          <v-text-field
+            v-model="scheduleForm.date"
+            label="Data"
+            type="date"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input"
+            hide-details="auto"
+            :disabled="isCreatingSchedule"
+          />
+          <v-text-field
+            v-model="scheduleForm.time"
+            label="Horário"
+            type="time"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input"
+            hide-details="auto"
+            :disabled="isCreatingSchedule"
+          />
+        </div>
+
+        <div class="ministery-field-grid mb-4">
+          <v-text-field
+            v-model="scheduleForm.rehearsalDate"
+            label="Data do ensaio"
+            type="date"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input"
+            hide-details="auto"
+            :disabled="isCreatingSchedule"
+          />
+          <v-text-field
+            v-model="scheduleForm.rehearsalTime"
+            label="Hora do ensaio"
+            type="time"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input"
+            hide-details="auto"
+            :disabled="isCreatingSchedule"
+          />
+        </div>
+
+        <v-text-field
+          v-model="scheduleForm.rehearsalNotes"
+          label="Observações do ensaio"
+          prepend-inner-icon="mdi-text"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
+          class="ministery-input mb-4"
+          hide-details="auto"
+          :disabled="isCreatingSchedule"
+        />
+
+        <v-autocomplete
+          v-if="songOptions.length"
+          v-model="scheduleForm.songIds"
+          label="Músicas"
+          placeholder="Digite para filtrar por nome"
+          :items="songOptions"
+          item-title="label"
+          item-value="value"
+          prepend-inner-icon="mdi-music-note-outline"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
+          class="ministery-input mb-4"
+          hide-details="auto"
+          multiple
+          chips
+          closable-chips
+          no-data-text="Nenhuma música encontrada"
+          :disabled="isCreatingSchedule"
+        />
+
+        <v-select
+          v-if="resourceOptions.length"
+          v-model="scheduleForm.resourceIds"
+          label="Recursos"
+          :items="resourceOptions"
+          item-title="label"
+          item-value="value"
+          prepend-inner-icon="mdi-file-document-outline"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
+          class="ministery-input mb-4"
+          hide-details="auto"
+          multiple
+          chips
+          closable-chips
+          :disabled="isCreatingSchedule"
+        />
+
+        <v-alert
+          v-if="createScheduleError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ createScheduleError }}
+        </v-alert>
+
+        <div class="dialog-actions">
+          <v-btn
+            variant="text"
+            color="grey-darken-1"
+            class="text-none"
+            :disabled="isCreatingSchedule"
+            @click="$emit('close')"
+          >
+            Cancelar
+          </v-btn>
+          <v-btn
+            type="submit"
+            color="purple-darken-3"
+            class="text-none font-weight-bold"
+            :loading="isCreatingSchedule"
+            :disabled="isCreatingSchedule"
+          >
+            {{ editingScheduleId ? "Salvar escala" : "Criar escala" }}
+          </v-btn>
+        </div>
+      </v-form>
+    </v-card>
+  </UtilsResponsiveOverlay>
+</template>
+
+<script setup lang="ts">
+import { Calendar } from "lucide-vue-next";
+
+const isOpen = defineModel<boolean>({ required: true });
+
+defineProps<{
+  isDark: boolean;
+  editingScheduleId: string;
+  scheduleForm: {
+    title: string;
+    date: string;
+    time: string;
+    rehearsalDate: string;
+    rehearsalTime: string;
+    rehearsalNotes: string;
+    songIds: string[];
+    resourceIds: string[];
+  };
+  songOptions: { label: string; value: string }[];
+  resourceOptions: { label: string; value: string }[];
+  createScheduleError: string;
+  isCreatingSchedule: boolean;
+}>();
+
+defineEmits<{
+  (event: "close"): void;
+  (event: "submit"): void;
+}>();
+</script>
+
+<style scoped>
+.ministery-input :deep(.v-field) {
+  border-radius: 14px;
+}
+.ministery-input :deep(.v-field__input) {
+  min-height: 48px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.ministery-field-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.dialog-actions .v-btn {
+  min-width: 112px;
+}
+@media (min-width: 560px) {
+  .ministery-field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 420px) {
+  .dialog-actions .v-btn {
+    flex: 1 1 100%;
+  }
+}
+</style>
