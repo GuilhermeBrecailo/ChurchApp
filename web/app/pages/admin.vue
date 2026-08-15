@@ -3475,15 +3475,29 @@
         <div class="role-permission-header mb-3">
           <div>
             <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">
-              O que este cargo pode fazer
+              Permissões
             </p>
             <p class="text-caption text-grey-darken-1 mb-0">
-              Marque as ações permitidas. Você ajusta caixa por caixa ou usa "tudo".
+              {{ roleForm.permissions.length }} de {{ totalVisiblePermissions }} ativas
             </p>
           </div>
-          <v-chip size="small" color="purple-darken-3" variant="tonal">
-            {{ roleForm.permissions.length }} selecionadas
-          </v-chip>
+          <div class="role-permission-actions">
+            <button
+              type="button"
+              class="role-permission-action-link"
+              @click="selectAllVisiblePermissions"
+            >
+              Marcar todas
+            </button>
+            <span class="role-permission-action-divider">·</span>
+            <button
+              type="button"
+              class="role-permission-action-link"
+              @click="clearAllVisiblePermissions"
+            >
+              Limpar
+            </button>
+          </div>
         </div>
         <div class="permission-module-list mb-4">
           <div
@@ -3491,38 +3505,47 @@
             :key="module.key"
             class="permission-module-card"
           >
-            <div class="permission-module-title">
-              <div>
+            <button
+              type="button"
+              class="permission-module-title"
+              @click="toggleModuleExpanded(module.key)"
+            >
+              <div class="permission-module-title-text">
                 <strong>{{ module.label }}</strong>
                 <span>{{ module.description }}</span>
               </div>
-              <v-btn
-                variant="tonal"
-                color="indigo-darken-2"
-                size="x-small"
-                class="text-none"
-                @click="toggleModulePermissions(module.key)"
-              >
-                {{ isModuleFullySelected(module.key) ? "Limpar" : "Tudo" }}
-              </v-btn>
-            </div>
+              <div class="permission-module-meta">
+                <v-chip size="x-small" color="purple-darken-3" variant="tonal">
+                  {{ countModuleSelected(module) }}/{{ module.permissions.length }}
+                </v-chip>
+                <ChevronDown
+                  size="16"
+                  class="permission-module-chevron"
+                  :class="{ 'permission-module-chevron--open': isModuleExpanded(module.key) }"
+                />
+              </div>
+            </button>
 
-            <v-checkbox
-              v-for="perm in module.permissions"
-              :key="perm.key"
-              v-model="roleForm.permissions"
-              :value="perm.key"
-              density="compact"
-              color="purple-darken-3"
-              hide-details
-            >
-              <template #label>
-                <div class="ml-1">
+            <div v-show="isModuleExpanded(module.key)" class="permission-module-body">
+              <div
+                v-for="perm in module.permissions"
+                :key="perm.key"
+                class="permission-row"
+              >
+                <div class="permission-row-text">
                   <p class="text-body-2 font-weight-medium mb-0">{{ perm.label }}</p>
                   <p class="text-caption text-grey-darken-1 mb-0">{{ perm.description }}</p>
                 </div>
-              </template>
-            </v-checkbox>
+                <v-switch
+                  v-model="roleForm.permissions"
+                  :value="perm.key"
+                  color="purple-darken-3"
+                  density="compact"
+                  hide-details
+                  class="permission-row-switch"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -3590,7 +3613,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive } from "vue";
-import { Building, Calendar, Music, UserPlus, UserCheck, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon, CheckCircle2, Lock, Clock, X } from "lucide-vue-next";
+import { Building, Calendar, Music, UserPlus, UserCheck, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon, CheckCircle2, Lock, Clock, X, ChevronDown } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import { useMembers, type ChurchMember, type PendingMember } from "../../composables/useMembers";
@@ -3616,6 +3639,7 @@ import {
   PERMISSION_MODULES,
   modulesForScope,
   ROLE_PRESETS,
+  type PermissionModule,
   type PermissionModuleKey,
   type PermissionScope,
   type AppPermission,
@@ -5673,27 +5697,36 @@ const applyRolePreset = (presetKey: string | null) => {
   roleForm.permissions = [...preset.permissions];
 };
 
-const isModuleFullySelected = (moduleKey: PermissionModuleKey) => {
-  const module = PERMISSION_MODULES.find((item) => item.key === moduleKey);
-  if (!module) return false;
-  return module.permissions.every((perm) =>
-    roleForm.permissions.includes(perm.key),
+const countModuleSelected = (module: PermissionModule) =>
+  module.permissions.filter((perm) => roleForm.permissions.includes(perm.key)).length;
+
+const totalVisiblePermissions = computed(() =>
+  visibleRoleModules.value.reduce((total, module) => total + module.permissions.length, 0),
+);
+
+const selectAllVisiblePermissions = () => {
+  const visibleKeys = visibleRoleModules.value.flatMap((module) =>
+    module.permissions.map((perm) => perm.key),
   );
+  roleForm.permissions = [...new Set([...roleForm.permissions, ...visibleKeys])];
 };
 
-const toggleModulePermissions = (moduleKey: PermissionModuleKey) => {
-  const module = PERMISSION_MODULES.find((item) => item.key === moduleKey);
-  if (!module) return;
-  const keys = module.permissions.map((perm) => perm.key);
-  if (isModuleFullySelected(moduleKey)) {
-    roleForm.permissions = roleForm.permissions.filter(
-      (perm) => !keys.includes(perm),
-    );
-  } else {
-    roleForm.permissions = [
-      ...new Set([...roleForm.permissions, ...keys]),
-    ];
-  }
+const clearAllVisiblePermissions = () => {
+  const visibleKeys = new Set(
+    visibleRoleModules.value.flatMap((module) => module.permissions.map((perm) => perm.key)),
+  );
+  roleForm.permissions = roleForm.permissions.filter((perm) => !visibleKeys.has(perm));
+};
+
+// Colapsavel por modulo - comeca tudo aberto pra nao esconder nada na
+// primeira visita; guarda estado por module.key, nao por indice.
+const expandedPermissionModules = reactive<Record<string, boolean>>({});
+
+const isModuleExpanded = (moduleKey: PermissionModuleKey) =>
+  expandedPermissionModules[moduleKey] !== false;
+
+const toggleModuleExpanded = (moduleKey: PermissionModuleKey) => {
+  expandedPermissionModules[moduleKey] = !isModuleExpanded(moduleKey);
 };
 
 const roleFilterOptions = computed(() => [
@@ -6857,6 +6890,33 @@ onMounted(async () => {
   gap: 12px;
 }
 
+.role-permission-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.role-permission-action-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #6a1b9a;
+  cursor: pointer;
+}
+
+.role-permission-action-link:hover {
+  text-decoration: underline;
+}
+
+.role-permission-action-divider {
+  color: var(--app-color-text-muted, #6b7280);
+  font-size: 0.78rem;
+}
+
 .content-admin-grid {
   display: grid;
   /* auto-fit + minmax faz o grid decidir sozinho quantas colunas cabem,
@@ -7160,24 +7220,69 @@ onMounted(async () => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 6px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
 }
 
-.permission-module-title strong,
-.permission-module-title span {
+.permission-module-title-text strong,
+.permission-module-title-text span {
   display: block;
 }
 
-.permission-module-title strong {
+.permission-module-title-text strong {
   color: var(--app-color-text, #111827);
   font-size: 0.86rem;
   font-weight: 850;
 }
 
-.permission-module-title span {
+.permission-module-title-text span {
   color: var(--app-color-text-muted, #6b7280);
   font-size: 0.74rem;
   font-weight: 650;
+}
+
+.permission-module-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.permission-module-chevron {
+  color: var(--app-color-text-muted, #6b7280);
+  transition: transform 0.15s ease;
+}
+
+.permission-module-chevron--open {
+  transform: rotate(180deg);
+}
+
+.permission-module-body {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eef2f7;
+}
+
+.permission-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.permission-row-text {
+  min-width: 0;
+}
+
+.permission-row-switch {
+  flex-shrink: 0;
 }
 
 .ministry-item:focus-visible,
