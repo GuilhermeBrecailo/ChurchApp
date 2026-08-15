@@ -34,4 +34,19 @@ export async function DevotionalRoutes(app: FastifyInstance) {
     "/api/church/devotionals/:id/progress",
     controllerHandler(adapters.updateProgress.bind(adapters)),
   );
+
+  app.get(
+    "/api/church/devotionals/:id/comments",
+    controllerHandler(adapters.listComments.bind(adapters)),
+  );
+
+  app.post(
+    "/api/church/devotionals/:id/comments",
+    controllerHandler(adapters.createComment.bind(adapters)),
+  );
+
+  app.delete(
+    "/api/church/devotionals/:id/comments/:commentId",
+    controllerHandler(adapters.deleteComment.bind(adapters)),
+  );
 }

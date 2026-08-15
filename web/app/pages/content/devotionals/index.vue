@@ -259,8 +259,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive } from "vue";
 import { ChevronLeft, Heart, Plus } from "lucide-vue-next";
-import { useDevotionals, type Devotional } from "../../../composables/useDevotionals";
-import { usePermissions } from "../../../composables/usePermissions";
+import { useDevotionals, type Devotional } from "../../../../composables/useDevotionals";
+import { usePermissions } from "../../../../composables/usePermissions";
 
 const router = useRouter();
 const { listDevotionals, createDevotional } = useDevotionals();

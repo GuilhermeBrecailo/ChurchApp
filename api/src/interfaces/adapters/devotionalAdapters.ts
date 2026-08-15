@@ -280,4 +280,79 @@ export class DevotionalAdapters {
       },
     });
   }
+
+  // Comentario e livre, sem moderacao previa (diferente do pedido de oracao):
+  // qualquer membro autenticado da igreja pode comentar assim que publica.
+  async listComments(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+    if (!id) throw new DomainError("Devocional não informado");
+
+    const devotional = await $prismaClient.devotional.findFirst({
+      where: { id, crunchId: user.crunchId! },
+      select: { id: true },
+    });
+    if (!devotional) throw new DomainError("Devocional não encontrado");
+
+    return await $prismaClient.devotionalComment.findMany({
+      where: { devotionalId: id },
+      orderBy: { createdAt: "asc" },
+      include: {
+        author: { select: { id: true, name: true } },
+      },
+    });
+  }
+
+  async createComment(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+    const body = request.body as { body?: string };
+    if (!id) throw new DomainError("Devocional não informado");
+    if (!body.body?.trim()) throw new DomainError("Comentário não pode ser vazio");
+
+    const devotional = await $prismaClient.devotional.findFirst({
+      where: { id, crunchId: user.crunchId! },
+      select: { id: true },
+    });
+    if (!devotional) throw new DomainError("Devocional não encontrado");
+
+    return await $prismaClient.devotionalComment.create({
+      data: {
+        id: crypto.randomUUID(),
+        body: body.body.trim(),
+        devotionalId: id,
+        authorId: user.id,
+        crunchId: user.crunchId!,
+      },
+      include: {
+        author: { select: { id: true, name: true } },
+      },
+    });
+  }
+
+  // Autor apaga o proprio comentario; pastor/admin apaga qualquer um da
+  // igreja (moderacao so de remocao, sem aprovacao previa).
+  async deleteComment(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id, commentId } = request.params as { id?: string; commentId?: string };
+    if (!id) throw new DomainError("Devocional não informado");
+    if (!commentId) throw new DomainError("Comentário não informado");
+
+    const comment = await $prismaClient.devotionalComment.findFirst({
+      where: { id: commentId, devotionalId: id, crunchId: user.crunchId! },
+      select: { id: true, authorId: true },
+    });
+    if (!comment) throw new DomainError("Comentário não encontrado");
+
+    const isOwnComment = comment.authorId === user.id;
+    const isChurchManager =
+      user.role === "PASTOR" || user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+
+    if (!isOwnComment && !isChurchManager) {
+      throw new DomainError("Você não tem permissão para apagar este comentário");
+    }
+
+    await $prismaClient.devotionalComment.delete({ where: { id: commentId } });
+    return { success: true };
+  }
 }

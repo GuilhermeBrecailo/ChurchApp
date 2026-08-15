@@ -62,6 +62,66 @@
           </div>
         </v-card>
       </div>
+
+      <v-card class="rounded-xl pa-5 elevation-1 bg-white border-subtle mt-5 comments-card">
+        <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-4">
+          Comentários
+          <span class="text-body-2 text-grey-darken-1 font-weight-regular">({{ comments.length }})</span>
+        </h3>
+
+        <v-alert v-if="commentsError" type="error" variant="tonal" density="compact" class="mb-4">
+          {{ commentsError }}
+        </v-alert>
+
+        <div class="d-flex gap-2 mb-5">
+          <v-textarea
+            v-model="newComment"
+            placeholder="O que você achou desse devocional?"
+            variant="outlined"
+            density="comfortable"
+            rows="1"
+            auto-grow
+            hide-details
+            class="flex-grow-1"
+          />
+          <v-btn
+            color="purple-darken-3"
+            class="text-none align-self-end"
+            :disabled="!newComment.trim() || postingComment"
+            :loading="postingComment"
+            @click="submitComment"
+          >
+            Enviar
+          </v-btn>
+        </div>
+
+        <p v-if="commentsLoading" class="text-body-2 text-grey-darken-1">Carregando comentários...</p>
+        <p v-else-if="comments.length === 0" class="text-body-2 text-grey-darken-1">
+          Nenhum comentário ainda. Seja o primeiro a comentar.
+        </p>
+
+        <div v-else class="comments-list">
+          <div v-for="comment in comments" :key="comment.id" class="comment-item">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <span class="text-body-2 font-weight-bold text-grey-darken-4">{{ comment.author.name }}</span>
+                <span class="text-caption text-grey-darken-1 ml-2">{{ formatRelativeDate(comment.createdAt) }}</span>
+              </div>
+              <v-btn
+                v-if="canDeleteComment(comment)"
+                size="x-small"
+                variant="text"
+                color="grey-darken-1"
+                icon
+                @click="removeComment(comment.id)"
+              >
+                <Trash2 size="16" />
+              </v-btn>
+            </div>
+            <p class="text-body-2 text-grey-darken-3 mb-0 mt-1 comment-body">{{ comment.body }}</p>
+          </div>
+        </div>
+      </v-card>
     </template>
   </div>
 </template>
@@ -69,16 +129,29 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { Check } from "lucide-vue-next";
-import { useDevotionals, type Devotional } from "../../../../composables/useDevotionals";
+import { Check, Trash2 } from "lucide-vue-next";
+import {
+  useDevotionals,
+  type Devotional,
+  type DevotionalComment,
+} from "../../../../composables/useDevotionals";
+import { useAuth } from "../../../../composables/useAuth";
 
 const route = useRoute();
-const { getDevotional, updateProgress } = useDevotionals();
+const { getDevotional, updateProgress, listComments, createComment, deleteComment } =
+  useDevotionals();
+const { user } = useAuth();
 
 const devotional = ref<Devotional | null>(null);
 const currentChapterId = ref("");
 const loading = ref(false);
 const errorMessage = ref("");
+
+const comments = ref<DevotionalComment[]>([]);
+const commentsLoading = ref(false);
+const commentsError = ref("");
+const newComment = ref("");
+const postingComment = ref(false);
 
 const chapters = computed(() => devotional.value?.chapters ?? []);
 const currentIndex = computed(() =>
@@ -114,7 +187,63 @@ watch(currentChapterId, async (chapterId) => {
   await updateProgress(devotional.value.id, chapterId);
 });
 
-onMounted(loadDevotional);
+const loadComments = async () => {
+  if (!devotional.value?.id) return;
+  commentsLoading.value = true;
+  commentsError.value = "";
+  const { data, error } = await listComments(devotional.value.id);
+  comments.value = data ?? [];
+  if (error) commentsError.value = error;
+  commentsLoading.value = false;
+};
+
+const submitComment = async () => {
+  const body = newComment.value.trim();
+  if (!body || !devotional.value?.id) return;
+  postingComment.value = true;
+  commentsError.value = "";
+  const { data, error } = await createComment(devotional.value.id, body);
+  if (error) {
+    commentsError.value = error;
+  } else if (data) {
+    comments.value.push(data);
+    newComment.value = "";
+  }
+  postingComment.value = false;
+};
+
+const removeComment = async (commentId: string) => {
+  if (!devotional.value?.id) return;
+  const { error } = await deleteComment(devotional.value.id, commentId);
+  if (error) {
+    commentsError.value = error;
+    return;
+  }
+  comments.value = comments.value.filter((comment) => comment.id !== commentId);
+};
+
+const canDeleteComment = (comment: DevotionalComment) => {
+  if (!user.value) return false;
+  if (comment.authorId === user.value.id) return true;
+  return ["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(user.value.role ?? "");
+};
+
+const formatRelativeDate = (isoDate: string) => {
+  const diffMs = Date.now() - new Date(isoDate).getTime();
+  const diffMinutes = Math.round(diffMs / 60000);
+  if (diffMinutes < 1) return "agora mesmo";
+  if (diffMinutes < 60) return `há ${diffMinutes} min`;
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `há ${diffHours}h`;
+  const diffDays = Math.round(diffHours / 24);
+  if (diffDays < 7) return `há ${diffDays}d`;
+  return new Date(isoDate).toLocaleDateString("pt-BR");
+};
+
+onMounted(async () => {
+  await loadDevotional();
+  await loadComments();
+});
 </script>
 
 <style scoped>
@@ -166,6 +295,25 @@ onMounted(loadDevotional);
 
 .gap-3 {
   gap: 12px;
+}
+
+.comments-list {
+  display: grid;
+  gap: 16px;
+}
+
+.comment-item {
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.comment-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.comment-body {
+  white-space: pre-line;
 }
 
 @media (max-width: 800px) {

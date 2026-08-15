@@ -30,6 +30,17 @@ export interface Devotional {
   }[];
 }
 
+export interface DevotionalComment {
+  id: string;
+  body: string;
+  createdAt: string;
+  authorId: string;
+  author: {
+    id: string;
+    name: string;
+  };
+}
+
 export interface DevotionalPayload {
   title: string;
   description?: string;
@@ -137,6 +148,45 @@ const updateDevotional = async (
     );
   };
 
+  const listComments = async (
+    devotionalId: string,
+  ): Promise<ApiResponse<DevotionalComment[]>> => {
+    return await $customFetch<DevotionalComment[]>(
+      `${config.public.URL_BACKEND}/api/church/devotionals/${devotionalId}/comments`,
+      {
+        method: "GET",
+        headers: authHeaders(),
+      },
+    );
+  };
+
+  const createComment = async (
+    devotionalId: string,
+    body: string,
+  ): Promise<ApiResponse<DevotionalComment>> => {
+    return await $customFetch<DevotionalComment>(
+      `${config.public.URL_BACKEND}/api/church/devotionals/${devotionalId}/comments`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+        body: { body },
+      },
+    );
+  };
+
+  const deleteComment = async (
+    devotionalId: string,
+    commentId: string,
+  ): Promise<ApiResponse<{ success: boolean }>> => {
+    return await $customFetch<{ success: boolean }>(
+      `${config.public.URL_BACKEND}/api/church/devotionals/${devotionalId}/comments/${commentId}`,
+      {
+        method: "DELETE",
+        headers: authOnlyHeaders(),
+      },
+    );
+  };
+
   return {
     listDevotionals,
     getDevotional,
@@ -144,5 +194,8 @@ const updateDevotional = async (
     createDevotional,
     updateDevotional,
     deleteDevotional,
+    listComments,
+    createComment,
+    deleteComment,
   };
 };
