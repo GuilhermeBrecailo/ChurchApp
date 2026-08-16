@@ -101,26 +101,43 @@
           :disabled="isCreatingSchedule"
         />
 
-        <v-autocomplete
-          v-if="songOptions.length"
-          v-model="scheduleForm.songIds"
-          label="Músicas"
-          placeholder="Digite para filtrar por nome"
-          :items="songOptions"
-          item-title="label"
-          item-value="value"
-          prepend-inner-icon="mdi-music-note-outline"
-          variant="outlined"
-          density="comfortable"
-          color="purple-darken-3"
-          bg-color="white"
-          class="ministery-input mb-4"
-          hide-details="auto"
-          multiple
-          chips
-          closable-chips
-          no-data-text="Nenhuma música encontrada"
-          :disabled="isCreatingSchedule"
+        <div v-if="songOptions.length" class="mb-4">
+          <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">
+            Músicas
+          </p>
+          <button
+            type="button"
+            class="song-picker-trigger"
+            :disabled="isCreatingSchedule"
+            @click="isSongPickerOpen = true"
+          >
+            <v-icon size="20" color="grey-darken-1">mdi-music-note-outline</v-icon>
+
+            <div v-if="selectedSongOptions.length" class="song-picker-trigger-chips">
+              <v-chip
+                v-for="song in selectedSongOptions"
+                :key="song.value"
+                size="small"
+                closable
+                @click.stop
+                @click:close="toggleSong(song.value)"
+              >
+                {{ song.label }}
+              </v-chip>
+            </div>
+            <span v-else class="text-body-2 text-grey-darken-1">
+              Toque para escolher as músicas da escala
+            </span>
+
+            <v-icon size="20" color="grey-darken-1" class="ml-auto">mdi-chevron-right</v-icon>
+          </button>
+        </div>
+
+        <MinisterySongPickerDialog
+          v-model="isSongPickerOpen"
+          :song-options="songOptions"
+          :selected-ids="scheduleForm.songIds"
+          @toggle="toggleSong"
         />
 
         <v-select
@@ -179,11 +196,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from "vue";
 import { Calendar } from "lucide-vue-next";
 
 const isOpen = defineModel<boolean>({ required: true });
 
-defineProps<{
+const props = defineProps<{
   isDark: boolean;
   editingScheduleId: string;
   scheduleForm: {
@@ -206,6 +224,21 @@ defineEmits<{
   (event: "close"): void;
   (event: "submit"): void;
 }>();
+
+const isSongPickerOpen = ref(false);
+
+const selectedSongOptions = computed(() =>
+  props.songOptions.filter((song) => props.scheduleForm.songIds.includes(song.value)),
+);
+
+function toggleSong(songId: string) {
+  const index = props.scheduleForm.songIds.indexOf(songId);
+  if (index === -1) {
+    props.scheduleForm.songIds.push(songId);
+  } else {
+    props.scheduleForm.songIds.splice(index, 1);
+  }
+}
 </script>
 
 <style scoped>
@@ -221,6 +254,27 @@ defineEmits<{
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
+}
+.song-picker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(0, 0, 0, 0.38);
+  border-radius: 14px;
+  background: white;
+  padding: 10px 14px;
+  text-align: left;
+}
+.song-picker-trigger:disabled {
+  opacity: 0.6;
+}
+.song-picker-trigger-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1 1 auto;
 }
 .dialog-actions {
   display: flex;
