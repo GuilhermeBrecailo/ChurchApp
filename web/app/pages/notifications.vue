@@ -8,7 +8,7 @@
             <UtilsPageHelpButton title="Notificações" />
             <v-btn
               v-if="unreadCount > 0"
-              color="primary"
+              color="purple-darken-3"
               variant="tonal"
               size="small"
               class="text-none font-weight-bold rounded-lg"

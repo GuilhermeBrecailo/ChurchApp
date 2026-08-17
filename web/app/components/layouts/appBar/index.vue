@@ -94,7 +94,7 @@
               <v-btn
                 v-if="notifications.length"
                 variant="text"
-                color="primary"
+                color="purple-darken-3"
                 size="small"
                 class="text-none"
                 :disabled="inboxLoading || unreadCount === 0"

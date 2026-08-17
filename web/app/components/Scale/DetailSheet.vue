@@ -30,7 +30,7 @@
                 v-bind="activatorProps"
                 icon
                 variant="tonal"
-                color="primary"
+                color="purple-darken-3"
                 @click="$emit('manage-volunteers', localEvent)"
               >
                 <UserPlus size="18" />

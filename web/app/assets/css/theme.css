@@ -69,6 +69,17 @@ body,
   letter-spacing: -0.01em;
 }
 
+/* O navegador aplica margin-top/bottom padrao em h1-h6 por conta propria.
+   Todo espacamento de titulo no app ja e explicito via classes Vuetify
+   (mb-1, mb-2, mb-4...), entao essa margem nativa nunca e o espacamento
+   desejado - so sobra como resto que desalinha titulo+icone em flex rows
+   (o icone fica centralizado na caixa cheia, o texto empurrado pela
+   margem que ninguem pediu). Zerando na raiz em vez de remendar caso a
+   caso. */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+}
+
 /* Transições globais suaves */
 *,
 *::before,

@@ -79,7 +79,7 @@
         <div v-if="canManageSchedules" class="ministery-card-actions mt-3">
           <v-btn
             variant="text"
-            color="primary"
+            color="purple-darken-3"
             class="text-none font-weight-medium"
             size="small"
             @click="$emit('open-assignments', schedule)"

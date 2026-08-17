@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { BookOpen, FileText, Trash2 } from "lucide-vue-next";
+import { BookOpen, FileText, Plus, Trash2 } from "lucide-vue-next";
 import type { DepartmentResource } from "../../../composables/useDepartments";
 
 defineProps<{

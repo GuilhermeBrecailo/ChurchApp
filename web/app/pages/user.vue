@@ -465,7 +465,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive } from "vue";
-import { CalendarDays, CalendarX, Camera, ChevronRight, Church, ClipboardList, LogOut, Plus, Save, Shield, UserRound } from "lucide-vue-next";
+import { BadgeCheck, CalendarDays, CalendarX, Camera, ChevronRight, Church, ClipboardList, LogOut, Plus, Save, Shield, UserRound } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useDepartments, type ChurchDepartment } from "../../composables/useDepartments";
 import { useUser, type MyProfileDTO } from "../../composables/useUser";

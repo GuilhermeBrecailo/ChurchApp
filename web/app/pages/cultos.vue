@@ -88,7 +88,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
-import { ChevronLeft, ChevronRight } from "lucide-vue-next";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-vue-next";
 import {
   useDepartments,
   type DepartmentSchedule,

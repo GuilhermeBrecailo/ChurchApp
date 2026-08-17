@@ -68,8 +68,11 @@ function goToPlans() {
 
 .plan-lock__badge {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  /* Fica no canto, meio pra fora do conteudo (como um badge de notificacao)
+     em vez de "top: 4px; right: 4px" - isso ficava DENTRO da area do botao
+     e cobria o texto em botoes estreitos (ex: "Novo recurso", "Lembrar"). */
+  top: -8px;
+  right: -8px;
   display: inline-flex;
   align-items: center;
   gap: 3px;

@@ -3623,7 +3623,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive } from "vue";
-import { Building, Calendar, Music, UserPlus, UserCheck, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon, CheckCircle2, Lock, Clock, X, ChevronDown, Bell, Settings2 } from "lucide-vue-next";
+import { Building, Calendar, Music, UserPlus, UserCheck, Users, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon, CheckCircle2, Lock, Clock, X, ChevronDown, Bell, Settings2 } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import { useMembers, type ChurchMember, type PendingMember } from "../../composables/useMembers";

@@ -278,7 +278,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive } from "vue";
-import { Heart, Plus, User, CheckCircle, X } from "lucide-vue-next";
+import { ChevronLeft, Heart, Plus, User, CheckCircle, X } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { usePrayerRequests } from "../../composables/usePrayerRequests";
 import type { PrayerRequest } from "../../composables/usePrayerRequests";

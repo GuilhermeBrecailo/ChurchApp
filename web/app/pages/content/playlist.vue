@@ -194,7 +194,11 @@ onMounted(async () => {
 
 .content-detail-title-group {
   display: flex;
-  align-items: center;
+  /* Este título tem subtítulo embaixo (h1 + p), então "center" centraliza o
+     botão contra o bloco inteiro de duas linhas - ele acaba caindo no vão
+     entre elas, mais baixo que o título. flex-start alinha com o topo do
+     título, que é o esperado aqui. */
+  align-items: flex-start;
 }
 
 .playlist-header h1 {
