@@ -142,7 +142,7 @@
       :text="readerText"
       :empty-text="tab === 'chords' ? 'Cifra não cadastrada.' : 'Letra não cadastrada.'"
       :auto-scroll="scrollSpeed > 0"
-      :scroll-speed="scrollSpeed"
+      :scroll-speed="effectiveScrollSpeed"
     />
 
     <div v-if="$slots.extra" class="song-reader-extra">
@@ -310,6 +310,27 @@ const scrollSpeedLabel = computed(() =>
     ? `Velocidade ${Math.round(scrollSpeed.value)}`
     : "Rolagem pausada",
 );
+
+// O slider vai de 0 a 80 em passos lineares, mas rolagem de letra "sentida"
+// não é linear: os primeiros passos precisam ficar bem devagar (pra dar pra
+// ler junto) e os últimos precisam acelerar de verdade, senão de 60 pra 80
+// parece que "quase não muda" (só +33%). Curva quadrática: mesmo intervalo
+// no slider representa um salto de velocidade cada vez maior conforme sobe.
+const SCROLL_SPEED_SLIDER_MAX = 80;
+const SCROLL_SPEED_FLOOR_PX_PER_SEC = 4;
+const SCROLL_SPEED_CEILING_PX_PER_SEC = 220;
+
+const effectiveScrollSpeed = computed(() => {
+  if (scrollSpeed.value <= 0) return 0;
+
+  const normalized = Math.min(1, scrollSpeed.value / SCROLL_SPEED_SLIDER_MAX);
+  const curved = normalized * normalized;
+
+  return (
+    SCROLL_SPEED_FLOOR_PX_PER_SEC +
+    curved * (SCROLL_SPEED_CEILING_PX_PER_SEC - SCROLL_SPEED_FLOOR_PX_PER_SEC)
+  );
+});
 
 const transposeBy = (steps: number) => {
   const current = transposeStepsByInstrument[activeInstrumentKey.value];
