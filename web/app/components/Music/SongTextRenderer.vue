@@ -9,6 +9,7 @@
     @pointercancel="resumeAutoScroll"
     @touchstart.passive="pauseAutoScroll"
     @touchend.passive="resumeAutoScroll"
+    @touchcancel.passive="resumeAutoScroll"
   >
     <span
       v-for="(line, lineIndex) in renderedLines"
@@ -202,6 +203,14 @@ const stopAutoScroll = () => {
   lastFrameAt.value = 0;
 };
 
+// Se a aba fica em segundo plano (tela apaga, troca de app), o navegador
+// para de chamar requestAnimationFrame - às vezes por minutos. Sem esse teto,
+// o primeiro frame depois de voltar calcula um elapsedSeconds gigante e a
+// letra pula direto pro fim da música. Um frame normal a 60fps dura ~16ms;
+// 250ms já é um frame perdido generoso, então qualquer coisa acima disso é
+// tratada como uma pausa (mesma lógica do primeiro frame) em vez de saltar.
+const MAX_FRAME_GAP_SECONDS = 0.25;
+
 const runAutoScroll = (timestamp: number) => {
   const container = scrollContainer.value;
 
@@ -211,7 +220,7 @@ const runAutoScroll = (timestamp: number) => {
   }
 
   if (!isAutoScrollPaused.value) {
-    if (lastFrameAt.value) {
+    if (lastFrameAt.value && (timestamp - lastFrameAt.value) / 1000 <= MAX_FRAME_GAP_SECONDS) {
       const elapsedSeconds = (timestamp - lastFrameAt.value) / 1000;
       const maxScrollTop = container.scrollHeight - container.clientHeight;
 
