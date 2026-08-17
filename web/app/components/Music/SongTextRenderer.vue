@@ -84,6 +84,12 @@ const scrollContainer = ref<HTMLElement | null>(null);
 const isAutoScrollPaused = ref(false);
 const animationFrameId = ref<number | null>(null);
 const lastFrameAt = ref(0);
+/** Posição de scroll em ponto flutuante. `container.scrollTop` é sempre
+ * arredondado pra inteiro pelo navegador ao ser lido, então acumular a
+ * partir dele descarta a fração a cada frame - em velocidades baixas
+ * (< 1px por frame) o incremento nunca chega a somar 1px e a rolagem
+ * trava. Mantendo o acumulador aqui, a fração sobrevive entre frames. */
+const scrollPosition = ref(0);
 
 const isChordToken = (token: string) => {
   const cleanToken = token.replace(/[()[\],.;:]+$/g, "").replace(/^[()[\],.;:]+/g, "");
@@ -209,12 +215,15 @@ const runAutoScroll = (timestamp: number) => {
       const elapsedSeconds = (timestamp - lastFrameAt.value) / 1000;
       const maxScrollTop = container.scrollHeight - container.clientHeight;
 
-      if (container.scrollTop < maxScrollTop) {
-        container.scrollTop = Math.min(
-          maxScrollTop,
-          container.scrollTop + props.scrollSpeed * elapsedSeconds,
-        );
-      }
+      scrollPosition.value = Math.min(
+        maxScrollTop,
+        scrollPosition.value + props.scrollSpeed * elapsedSeconds,
+      );
+      container.scrollTop = scrollPosition.value;
+    } else {
+      // Primeiro frame após iniciar/retomar: sincroniza com a posição
+      // atual do DOM (pode ter mudado por scroll manual durante a pausa).
+      scrollPosition.value = container.scrollTop;
     }
 
     lastFrameAt.value = timestamp;

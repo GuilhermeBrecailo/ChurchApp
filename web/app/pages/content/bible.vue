@@ -104,6 +104,53 @@
       </p>
     </div>
 
+    <div v-if="!loading && !error" class="bible-note-editor mb-6">
+      <details :open="hasUnsavedNote">
+        <summary>
+          Meu comentário particular
+          <v-icon v-if="originalNoteContent" size="14" color="purple-darken-3" class="ml-1">
+            mdi-note-text-outline
+          </v-icon>
+        </summary>
+        <p class="text-caption text-grey-darken-1 mt-2 mb-3">
+          Só você vê esse comentário sobre {{ currentBook()?.pt }} {{ selectedChapter }} - não aparece pra mais ninguém.
+        </p>
+
+        <v-textarea
+          v-model="noteContent"
+          label="Comentário"
+          placeholder="Suas anotações sobre este capítulo..."
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
+          class="bible-note-input mb-3"
+          hide-details="auto"
+          rows="3"
+          auto-grow
+          :disabled="isLoadingNote || isSavingNote"
+        />
+
+        <div class="bible-note-actions">
+          <span v-if="noteSavedJustNow" class="text-caption text-green-darken-2">Comentário salvo</span>
+          <v-spacer />
+          <v-btn
+            color="purple-darken-3"
+            class="text-none"
+            :loading="isSavingNote"
+            :disabled="isLoadingNote || !hasUnsavedNote"
+            @click="saveNote"
+          >
+            Salvar comentário
+          </v-btn>
+        </div>
+
+        <v-alert v-if="noteError" type="error" variant="tonal" density="compact" class="mt-3">
+          {{ noteError }}
+        </v-alert>
+      </details>
+    </div>
+
     <div class="bible-nav mt-6">
       <v-btn
         variant="outlined"
@@ -132,9 +179,10 @@
 
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from "lucide-vue-next";
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useBible, BIBLE_BOOKS, BIBLE_VERSIONS } from "../../../composables/useBible";
+import { useBibleNotes } from "../../../composables/useBibleNotes";
 
 const router = useRouter();
 const {
@@ -154,6 +202,7 @@ const {
   nextChapter,
 } = useBible();
 
+const { getBibleNote, saveBibleNote } = useBibleNotes();
 
 const bookOptions = BIBLE_BOOKS.map((book, index) => ({
   label: book.pt,
@@ -175,9 +224,62 @@ const onBookChange = () => {
   fetchChapter();
 };
 
+const noteContent = ref("");
+const originalNoteContent = ref("");
+const isLoadingNote = ref(false);
+const isSavingNote = ref(false);
+const noteError = ref("");
+const noteSavedJustNow = ref(false);
+let noteRequestToken = 0;
+
+const hasUnsavedNote = computed(() => noteContent.value !== originalNoteContent.value);
+
+const loadNote = async () => {
+  const book = currentBook();
+  if (!book) return;
+
+  const token = ++noteRequestToken;
+  isLoadingNote.value = true;
+  noteError.value = "";
+  noteSavedJustNow.value = false;
+
+  try {
+    const { data } = await getBibleNote(book.abbrev, selectedChapter.value);
+    if (token !== noteRequestToken) return;
+    noteContent.value = data?.content || "";
+    originalNoteContent.value = data?.content || "";
+  } catch {
+    if (token !== noteRequestToken) return;
+    noteError.value = "Não foi possível carregar seu comentário agora.";
+  } finally {
+    if (token === noteRequestToken) isLoadingNote.value = false;
+  }
+};
+
+const saveNote = async () => {
+  const book = currentBook();
+  if (!book) return;
+
+  isSavingNote.value = true;
+  noteError.value = "";
+  try {
+    const { data } = await saveBibleNote(book.abbrev, selectedChapter.value, noteContent.value);
+    noteContent.value = data?.content || "";
+    originalNoteContent.value = data?.content || "";
+    noteSavedJustNow.value = true;
+  } catch {
+    noteError.value = "Não foi possível salvar seu comentário agora.";
+  } finally {
+    isSavingNote.value = false;
+  }
+};
+
+watch([selectedBookIndex, selectedChapter], loadNote);
+
 onMounted(() => {
   restoreState();
   fetchChapter();
+  loadNote();
 });
 </script>
 
@@ -264,6 +366,30 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   max-width: 680px;
+}
+
+.bible-note-editor {
+  max-width: 680px;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 12px;
+}
+
+.bible-note-editor summary {
+  color: var(--app-color-accent);
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.bible-note-input :deep(.v-field) {
+  border-radius: 14px;
+}
+
+.bible-note-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .flex-1 { flex: 1 1 0; }

@@ -81,6 +81,41 @@
             {{ songPreferenceError }}
           </v-alert>
         </details>
+
+        <details class="personal-chords-editor mt-3">
+          <summary>Meu comentário particular</summary>
+          <p class="text-caption text-grey-darken-1 mt-2 mb-3">
+            Só você vê esse comentário - não aparece pra mais ninguém da igreja.
+          </p>
+
+          <v-textarea
+            v-model="personalSongForm.notes"
+            label="Comentário"
+            placeholder="Ex: acelerar no refrão, atenção na ponte..."
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input mb-3"
+            hide-details="auto"
+            rows="3"
+            auto-grow
+            :disabled="isLoadingSongPreference || isSavingSongPreference"
+          />
+
+          <div class="personal-chords-actions">
+            <v-spacer />
+            <v-btn
+              color="purple-darken-3"
+              class="text-none"
+              :loading="isSavingSongPreference"
+              :disabled="isLoadingSongPreference"
+              @click="$emit('save-preference')"
+            >
+              Salvar comentário
+            </v-btn>
+          </div>
+        </details>
       </template>
     </MusicSongReader>
   </UtilsResponsiveOverlay>
@@ -94,7 +129,7 @@ const isOpen = defineModel<boolean>({ required: true });
 defineProps<{
   song: DepartmentSong | null;
   songViewerTab: "lyrics" | "chords";
-  personalSongForm: { personalKey: string; chords: string };
+  personalSongForm: { personalKey: string; chords: string; notes: string };
   songKeyOptions: string[];
   isLoadingSongPreference: boolean;
   isSavingSongPreference: boolean;

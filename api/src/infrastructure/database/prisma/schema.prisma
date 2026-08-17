@@ -171,6 +171,7 @@ model User {
     userAuth       UserAuth?
     pushSubscriptions PushSubscription[]
     songPreferences UserSongPreference[]
+    bibleNotes      UserBibleNote[]
     notifications AppNotification[]
     dailyVerses DailyVerse[]
     announcements Announcement[]
@@ -467,6 +468,7 @@ model UserSongPreference {
     id          String   @id @default(uuid())
     personalKey String?
     chords      String?
+    notes       String?
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
@@ -477,6 +479,24 @@ model UserSongPreference {
     mediaItem   MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
 
     @@unique([userId, mediaItemId])
+}
+
+// Anotacao pessoal e privada de um usuario sobre um capitulo da biblia.
+// O texto biblico vem de uma API externa (bolls.life) e nao e persistido
+// aqui - so a nota do usuario, chaveada por livro+capitulo (independente
+// da versao/traducao escolhida).
+model UserBibleNote {
+    id         String   @id @default(uuid())
+    bookAbbrev String
+    chapter    Int
+    content    String
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    userId String
+    user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, bookAbbrev, chapter])
 }
 
 model Schedule {

@@ -181,6 +181,7 @@ export interface SongPreference {
   id: string | null;
   personalKey?: string | null;
   chords?: string | null;
+  notes?: string | null;
   updatedAt?: string | null;
 }
 
@@ -335,6 +336,7 @@ interface ImportCifraClubSongDTO {
 interface UpdateSongPreferenceDTO {
   personalKey?: string | null;
   chords?: string | null;
+  notes?: string | null;
 }
 
 export const useDepartments = () => {

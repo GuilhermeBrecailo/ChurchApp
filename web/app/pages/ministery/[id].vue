@@ -618,6 +618,7 @@ const resourcePdfFile = ref<File | File[] | null>(null);
 const personalSongForm = reactive({
   personalKey: "",
   chords: "",
+  notes: "",
 });
 
 const assignmentForm = reactive({
@@ -1372,6 +1373,7 @@ const closeSongViewer = () => {
   songPreferenceError.value = "";
   personalSongForm.personalKey = "";
   personalSongForm.chords = "";
+  personalSongForm.notes = "";
 };
 
 const loadSongPreference = async (song: DepartmentSong) => {
@@ -1379,6 +1381,7 @@ const loadSongPreference = async (song: DepartmentSong) => {
   isLoadingSongPreference.value = true;
   personalSongForm.personalKey = "";
   personalSongForm.chords = song.metadata?.chords || "";
+  personalSongForm.notes = "";
 
   try {
     const { data, error } = await getSongPreference(song.id);
@@ -1390,6 +1393,7 @@ const loadSongPreference = async (song: DepartmentSong) => {
 
     personalSongForm.personalKey = data?.personalKey || "";
     personalSongForm.chords = data?.chords || song.metadata?.chords || "";
+    personalSongForm.notes = data?.notes || "";
     lastPersonalKey.value = normalizeSongKey(
       personalSongForm.personalKey || song.metadata?.key || "",
     );
@@ -1432,6 +1436,7 @@ const saveSongPreference = async () => {
     const { data, error } = await updateSongPreference(selectedSong.value.id, {
       personalKey: personalSongForm.personalKey,
       chords: personalSongForm.chords,
+      notes: personalSongForm.notes,
     });
 
     if (error || !data) {
@@ -1441,6 +1446,7 @@ const saveSongPreference = async () => {
 
     personalSongForm.personalKey = data.personalKey || "";
     personalSongForm.chords = data.chords || "";
+    personalSongForm.notes = data.notes || "";
   } finally {
     isSavingSongPreference.value = false;
   }

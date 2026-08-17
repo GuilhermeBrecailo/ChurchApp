@@ -524,6 +524,7 @@ export class SongAdapters {
         id: true,
         personalKey: true,
         chords: true,
+        notes: true,
         updatedAt: true,
       },
     });
@@ -533,6 +534,7 @@ export class SongAdapters {
         id: null,
         personalKey: "",
         chords: "",
+        notes: "",
         updatedAt: null,
       }
     );
@@ -544,6 +546,7 @@ export class SongAdapters {
     const body = request.body as {
       personalKey?: string | null;
       chords?: string | null;
+      notes?: string | null;
     };
 
     if (!songId) {
@@ -580,15 +583,18 @@ export class SongAdapters {
         mediaItemId: songId,
         personalKey: body.personalKey?.trim() || null,
         chords: body.chords?.trim() || null,
+        notes: body.notes?.trim() || null,
       },
       update: {
         personalKey: body.personalKey?.trim() || null,
         chords: body.chords?.trim() || null,
+        notes: body.notes?.trim() || null,
       },
       select: {
         id: true,
         personalKey: true,
         chords: true,
+        notes: true,
         updatedAt: true,
       },
     });
@@ -613,6 +619,7 @@ export class SongAdapters {
         id: true,
         personalKey: true,
         chords: true,
+        notes: true,
         updatedAt: true,
         mediaItem: {
           select: {
