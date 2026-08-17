@@ -625,7 +625,7 @@
                   <v-btn
                     v-if="selectedChurch.users.length > churchPreviewLimit"
                     variant="text"
-                    color="primary"
+                    color="indigo-darken-2"
                     size="small"
                     class="text-none"
                     @click="showAllChurchUsers = !showAllChurchUsers"
@@ -668,7 +668,7 @@
                   <v-btn
                     v-if="selectedChurch.departments.length > churchPreviewLimit"
                     variant="text"
-                    color="primary"
+                    color="indigo-darken-2"
                     size="small"
                     class="text-none"
                     @click="showAllChurchDepartments = !showAllChurchDepartments"
@@ -712,7 +712,7 @@
                   <v-btn
                     v-if="(selectedChurch.schedules?.length || 0) > churchPreviewLimit"
                     variant="text"
-                    color="primary"
+                    color="indigo-darken-2"
                     size="small"
                     class="text-none"
                     @click="showAllChurchSchedules = !showAllChurchSchedules"
@@ -2431,7 +2431,7 @@
         </h2>
         <v-btn
           v-if="canManageMembersByRole"
-          color="primary"
+          color="purple-darken-3"
           class="rounded-lg text-none px-4"
           size="small"
           elevation="1"
