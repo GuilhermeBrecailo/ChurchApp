@@ -1957,6 +1957,109 @@
         </template>
       </v-card>
 
+      <div v-if="isChurchWideManager" class="mt-6">
+        <div class="section-heading mb-4">
+          <div>
+            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">WhatsApp</h2>
+            <p class="text-caption text-grey-darken-1 mb-0">Conecte um número para enviar mensagens da igreja</p>
+          </div>
+        </div>
+
+        <v-card class="invite-code-card rounded-xl pa-5 elevation-1 border-subtle">
+          <div class="d-flex align-center gap-3 mb-4">
+            <v-avatar size="40" :color="avatarBgIndigo">
+              <QrCode size="20" :color="accentColor" />
+            </v-avatar>
+            <div>
+              <p class="font-weight-bold mb-0" style="font-size:0.9rem;">
+                {{ whatsappConnected ? "WhatsApp conectado" : "WhatsApp não conectado" }}
+              </p>
+              <p class="text-caption text-grey-darken-1 mb-0">
+                {{ whatsappConnected ? "As mensagens da igreja saem por este número" : "Escaneie o QR code com o celular da igreja" }}
+              </p>
+            </div>
+          </div>
+
+          <div v-if="whatsappStatusLoading" class="d-flex justify-center pa-4">
+            <v-progress-circular indeterminate size="28" color="purple-darken-3" />
+          </div>
+
+          <template v-else>
+            <v-alert
+              v-if="whatsappError && !isWhatsAppDialogOpen"
+              type="error"
+              variant="tonal"
+              density="compact"
+              class="mb-4"
+            >
+              {{ whatsappError }}
+            </v-alert>
+
+            <div class="d-flex gap-2 flex-wrap">
+              <v-btn
+                v-if="!whatsappConnected"
+                color="purple-darken-3"
+                variant="flat"
+                size="small"
+                class="text-none font-weight-bold"
+                @click="handleConnectWhatsApp"
+              >
+                <QrCode size="15" class="mr-1" /> Conectar WhatsApp
+              </v-btn>
+              <v-btn
+                v-else
+                color="red-darken-2"
+                variant="tonal"
+                size="small"
+                class="text-none"
+                :loading="isDisconnectingWhatsApp"
+                @click="handleDisconnectWhatsApp"
+              >
+                Desconectar
+              </v-btn>
+            </div>
+          </template>
+        </v-card>
+      </div>
+
+      <UtilsResponsiveOverlay v-model="isWhatsAppDialogOpen" max-width="420" @after-leave="stopWhatsAppPolling">
+        <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+          <div class="responsive-dialog-header mb-4">
+            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">Conectar WhatsApp</h2>
+            <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeWhatsAppDialog">
+              <v-icon size="20">mdi-close</v-icon>
+            </v-btn>
+          </div>
+
+          <div v-if="isConnectingWhatsApp" class="d-flex flex-column align-center pa-6">
+            <v-progress-circular indeterminate size="32" color="purple-darken-3" class="mb-3" />
+            <p class="text-caption text-grey-darken-1 mb-0">Gerando QR code...</p>
+          </div>
+
+          <v-alert
+            v-else-if="whatsappError"
+            type="error"
+            variant="tonal"
+            density="compact"
+          >
+            {{ whatsappError }}
+          </v-alert>
+
+          <template v-else-if="whatsappQr">
+            <p class="text-body-2 text-grey-darken-1 mb-4">
+              Abra o WhatsApp no celular da igreja → Aparelhos conectados → Conectar um aparelho, e aponte a câmera pra esse código.
+            </p>
+            <div class="d-flex justify-center mb-4">
+              <img :src="whatsappQr" alt="QR code do WhatsApp" style="width: 240px; height: 240px; border-radius: 12px;" />
+            </div>
+            <div class="d-flex align-center justify-center ga-2">
+              <v-progress-circular indeterminate size="16" width="2" color="purple-darken-3" />
+              <span class="text-caption text-grey-darken-1">Aguardando leitura...</span>
+            </div>
+          </template>
+        </v-card>
+      </UtilsResponsiveOverlay>
+
       <div class="mt-6">
       <div class="section-heading mb-4">
         <div>
@@ -3622,7 +3725,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive } from "vue";
+import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { Building, Calendar, Music, UserPlus, UserCheck, Users, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon, CheckCircle2, Lock, Clock, X, ChevronDown, Bell, Settings2 } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
@@ -3667,6 +3770,7 @@ import { useChurchInvite } from "../../composables/useChurchInvite";
 import { useChurch } from "../../composables/useChurch";
 import { useServiceTimes, type ServiceTime } from "../../composables/useServiceTimes";
 import { usePosts, type ChurchPost } from "../../composables/usePosts";
+import { useWhatsApp } from "../../composables/useWhatsApp";
 import { FONT_OPTIONS } from "../../composables/useChurchAppearance";
 import { useChurchPlan, PLAN_LABELS, PLAN_FEATURE_LABELS, type Plan, type PlanFeature } from "../../composables/usePlan";
 
@@ -3753,6 +3857,87 @@ const handleCopyInviteLink = () => {
     setTimeout(() => { inviteCodeCopied.value = false; }, 2000);
   });
 };
+
+const { getWhatsAppStatus, connectWhatsApp, disconnectWhatsApp } = useWhatsApp();
+
+const whatsappConnected = ref(false);
+const whatsappStatusLoading = ref(false);
+const whatsappQr = ref("");
+const isWhatsAppDialogOpen = ref(false);
+const isConnectingWhatsApp = ref(false);
+const isDisconnectingWhatsApp = ref(false);
+const whatsappError = ref("");
+let whatsappPollTimer: ReturnType<typeof setInterval> | null = null;
+
+const loadWhatsAppStatus = async () => {
+  if (!isChurchWideManager.value) return;
+  whatsappStatusLoading.value = true;
+  const { data } = await getWhatsAppStatus();
+  whatsappConnected.value = data?.connected ?? false;
+  whatsappStatusLoading.value = false;
+};
+
+const stopWhatsAppPolling = () => {
+  if (whatsappPollTimer) {
+    clearInterval(whatsappPollTimer);
+    whatsappPollTimer = null;
+  }
+};
+
+// Sem webhook do servico de WhatsApp pra avisar quando o QR foi lido -
+// enquanto o dialogo estiver aberto e nao conectado, pergunta de novo a
+// cada poucos segundos.
+const startWhatsAppPolling = () => {
+  stopWhatsAppPolling();
+  whatsappPollTimer = setInterval(async () => {
+    const { data } = await getWhatsAppStatus();
+    if (data?.connected) {
+      whatsappConnected.value = true;
+      isWhatsAppDialogOpen.value = false;
+      stopWhatsAppPolling();
+    }
+  }, 3000);
+};
+
+const handleConnectWhatsApp = async () => {
+  whatsappError.value = "";
+  whatsappQr.value = "";
+  isWhatsAppDialogOpen.value = true;
+  isConnectingWhatsApp.value = true;
+  const { data, error } = await connectWhatsApp();
+  isConnectingWhatsApp.value = false;
+
+  if (error || !data?.qr) {
+    whatsappError.value = error || "Não foi possível gerar o QR code agora. Tente novamente.";
+    return;
+  }
+
+  whatsappQr.value = data.qr;
+  startWhatsAppPolling();
+};
+
+const closeWhatsAppDialog = () => {
+  isWhatsAppDialogOpen.value = false;
+  stopWhatsAppPolling();
+};
+
+const handleDisconnectWhatsApp = async () => {
+  isDisconnectingWhatsApp.value = true;
+  whatsappError.value = "";
+  const { error } = await disconnectWhatsApp();
+  isDisconnectingWhatsApp.value = false;
+
+  if (error) {
+    whatsappError.value = error;
+    return;
+  }
+
+  whatsappConnected.value = false;
+};
+
+onUnmounted(() => {
+  stopWhatsAppPolling();
+});
 const {
   getAnnouncements,
   createAnnouncement,
@@ -5975,6 +6160,7 @@ onMounted(async () => {
     isPlatformAdmin.value ? loadPlatformChurches() : Promise.resolve(),
     canAccessChurchAdmin.value ? loadChurchAdminData() : Promise.resolve(),
     loadInviteCode(),
+    loadWhatsAppStatus(),
   ]);
 });
 </script>

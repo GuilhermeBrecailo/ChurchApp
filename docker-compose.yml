@@ -31,6 +31,12 @@ services:
       # "de verdade" pro navegador (dominios registraveis diferentes) e
       # Safari/Chrome mobile passam a bloquear/descartar ele por padrao.
       - REFRESH_COOKIE_DOMAIN=${REFRESH_COOKIE_DOMAIN:-}
+      # Microservico de WhatsApp (Baileys), roda como stack separada no mesmo
+      # host - ver /root/microservice-whatsapp no servidor. URL aponta pro IP
+      # do host porque os dois docker-compose sao projetos independentes, sem
+      # rede compartilhada.
+      - WHATSAPP_SERVICE_URL=${WHATSAPP_SERVICE_URL:-http://192.168.15.8:3060}
+      - WHATSAPP_GATEWAY_SECRET=${WHATSAPP_GATEWAY_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
