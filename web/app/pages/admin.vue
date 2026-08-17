@@ -1146,6 +1146,7 @@
         <v-tab v-if="isChurchWideManager" value="conteudo" class="text-none font-weight-medium admin-tab">Conteúdo</v-tab>
         <v-tab v-if="isChurchWideManager" value="relatorios" class="text-none font-weight-medium admin-tab">Relatórios</v-tab>
         <v-tab v-if="isChurchWideManager" value="cargos" class="text-none font-weight-medium admin-tab">Cargos</v-tab>
+        <v-tab v-if="isChurchWideManager" value="rol" class="text-none font-weight-medium admin-tab">Rol</v-tab>
       </v-tabs>
     </div>
 
@@ -2981,6 +2982,247 @@
       </v-card>
     </section>
 
+    <section v-show="isChurchWideManager && activeAdminTab === 'rol'" class="church-admin-section mb-8">
+      <div class="section-heading mb-4">
+        <div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+            Rol de membros
+          </h2>
+          <p class="text-body-2 text-grey-darken-1 mb-0">
+            Visitante, membro ou desligado - só você vê e mexe nisso. Uso interno pra saber pra quem mandar cada mensagem.
+          </p>
+        </div>
+        <v-btn
+          color="purple-darken-3"
+          class="rounded-lg text-none px-4"
+          size="small"
+          elevation="1"
+          @click="openCreateRosterDialog"
+        >
+          <UserPlus size="16" class="mr-2" /> Adicionar pessoa
+        </v-btn>
+      </div>
+
+      <div class="admin-filter-bar mb-4">
+        <v-text-field
+          v-model="rosterSearch"
+          label="Buscar por nome, e-mail ou telefone"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="compact"
+          color="purple-darken-3"
+          bg-color="white"
+          hide-details
+        />
+        <v-select
+          v-model="rosterStatusFilter"
+          label="Situação"
+          :items="rosterStatusFilterOptions"
+          item-title="title"
+          item-value="value"
+          prepend-inner-icon="mdi-filter-outline"
+          variant="outlined"
+          density="compact"
+          color="purple-darken-3"
+          bg-color="white"
+          hide-details
+        />
+      </div>
+
+      <v-alert
+        v-if="rosterError"
+        type="error"
+        variant="tonal"
+        density="compact"
+        class="mb-4"
+      >
+        {{ rosterError }}
+      </v-alert>
+
+      <div v-if="rosterLoading" class="d-flex justify-center pa-6">
+        <v-progress-circular indeterminate size="28" color="purple-darken-3" />
+      </div>
+
+      <v-card
+        v-else-if="filteredRosterMembers.length === 0"
+        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+      >
+        <Users size="32" color="#9CA3AF" class="mb-3" />
+        <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
+          Ninguém encontrado com esse filtro
+        </p>
+      </v-card>
+
+      <div v-else class="d-flex flex-column ministry-list">
+        <div v-for="member in filteredRosterMembers" :key="member.id" class="role-item">
+          <div class="min-w-0 flex-1">
+            <div class="d-flex align-center gap-2 mb-1 flex-wrap">
+              <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
+                {{ member.name }}
+              </p>
+              <v-chip size="x-small" :color="rosterStatusColor(member.status)" variant="tonal">
+                {{ rosterStatusLabel(member.status) }}
+              </v-chip>
+              <v-chip v-if="member.userId" size="x-small" color="indigo-darken-2" variant="tonal">
+                Tem login
+              </v-chip>
+            </div>
+            <p v-if="member.email || member.phone" class="text-caption text-grey-darken-1 mb-0">
+              {{ [member.email, member.phone].filter(Boolean).join(" · ") }}
+            </p>
+          </div>
+
+          <div class="d-flex flex-wrap gap-1">
+            <v-btn
+              icon
+              variant="text"
+              color="grey-darken-1"
+              size="small"
+              :disabled="Boolean(rosterActionLoadingId)"
+              @click="openEditRosterDialog(member)"
+            >
+              <v-icon size="18">mdi-pencil-outline</v-icon>
+            </v-btn>
+
+            <v-btn
+              v-if="member.status === 'VISITOR'"
+              variant="tonal"
+              color="teal-darken-2"
+              size="small"
+              class="text-none"
+              :loading="rosterActionLoadingId === member.id"
+              @click="handlePromoteRoster(member)"
+            >
+              Tornar membro
+            </v-btn>
+
+            <v-btn
+              v-if="member.status !== 'FORMER'"
+              variant="tonal"
+              color="grey-darken-1"
+              size="small"
+              class="text-none"
+              :loading="rosterActionLoadingId === member.id"
+              @click="handleMarkRosterAsLeft(member)"
+            >
+              Desligar
+            </v-btn>
+
+            <v-btn
+              v-else
+              variant="tonal"
+              color="teal-darken-2"
+              size="small"
+              class="text-none"
+              :loading="rosterActionLoadingId === member.id"
+              @click="handleRestoreRoster(member)"
+            >
+              Restaurar
+            </v-btn>
+
+            <v-btn
+              v-if="!member.userId"
+              icon
+              variant="text"
+              color="red-darken-2"
+              size="small"
+              :disabled="Boolean(rosterActionLoadingId)"
+              @click="handleDeleteRoster(member)"
+            >
+              <v-icon size="18">mdi-delete-outline</v-icon>
+            </v-btn>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <UtilsResponsiveOverlay v-model="isRosterDialogOpen" max-width="480">
+      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+        <div class="responsive-dialog-header mb-5">
+          <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+            {{ editingRosterId ? "Editar pessoa" : "Adicionar ao rol" }}
+          </h2>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="isRosterDialogOpen = false">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <v-text-field
+          v-model="rosterForm.name"
+          label="Nome"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-text-field
+          v-model="rosterForm.email"
+          label="E-mail (opcional)"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-text-field
+          v-model="rosterForm.phone"
+          label="Telefone (opcional)"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-text-field
+          v-model="rosterForm.birthDate"
+          label="Data de nascimento (opcional)"
+          type="date"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-textarea
+          v-model="rosterForm.notes"
+          label="Observações (opcional)"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+          rows="2"
+          auto-grow
+        />
+
+        <v-alert
+          v-if="rosterFormError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-3"
+        >
+          {{ rosterFormError }}
+        </v-alert>
+
+        <div class="d-flex justify-end gap-2">
+          <v-btn variant="text" color="grey-darken-1" class="text-none" @click="isRosterDialogOpen = false">
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="purple-darken-3"
+            variant="flat"
+            class="text-none font-weight-bold"
+            :loading="isSavingRoster"
+            @click="handleSaveRoster"
+          >
+            Salvar
+          </v-btn>
+        </div>
+      </v-card>
+    </UtilsResponsiveOverlay>
+
     <UtilsResponsiveOverlay v-model="isMemberDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="responsive-dialog-header mb-5">
@@ -3725,7 +3967,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive } from "vue";
+import { computed, onMounted, onUnmounted, reactive, watch } from "vue";
 import { Building, Calendar, Music, UserPlus, UserCheck, Users, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon, CheckCircle2, Lock, Clock, X, ChevronDown, Bell, Settings2 } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
@@ -3771,6 +4013,7 @@ import { useChurch } from "../../composables/useChurch";
 import { useServiceTimes, type ServiceTime } from "../../composables/useServiceTimes";
 import { usePosts, type ChurchPost } from "../../composables/usePosts";
 import { useWhatsApp } from "../../composables/useWhatsApp";
+import { useRoster, type RosterMember, type RosterStatus } from "../../composables/useRoster";
 import { FONT_OPTIONS } from "../../composables/useChurchAppearance";
 import { useChurchPlan, PLAN_LABELS, PLAN_FEATURE_LABELS, type Plan, type PlanFeature } from "../../composables/usePlan";
 
@@ -3938,6 +4181,174 @@ const handleDisconnectWhatsApp = async () => {
 onUnmounted(() => {
   stopWhatsAppPolling();
 });
+
+const {
+  listRosterMembers,
+  createRosterMember,
+  updateRosterMember,
+  promoteRosterMember,
+  markRosterMemberAsLeft,
+  restoreRosterMember,
+  deleteRosterMember,
+} = useRoster();
+
+const rosterMembers = ref<RosterMember[]>([]);
+const rosterLoading = ref(false);
+const rosterError = ref("");
+const rosterSearch = ref("");
+const rosterStatusFilter = ref<RosterStatus | "ALL" | "ACTIVE">("ACTIVE");
+const rosterStatusFilterOptions = [
+  { title: "Ativos (visitantes + membros)", value: "ACTIVE" },
+  { title: "Visitantes", value: "VISITOR" },
+  { title: "Membros", value: "MEMBER" },
+  { title: "Desligados", value: "FORMER" },
+  { title: "Todos", value: "ALL" },
+];
+
+const isRosterDialogOpen = ref(false);
+const editingRosterId = ref("");
+const isSavingRoster = ref(false);
+const rosterFormError = ref("");
+const rosterForm = reactive({
+  name: "",
+  email: "",
+  phone: "",
+  birthDate: "",
+  notes: "",
+});
+const rosterActionLoadingId = ref("");
+
+const loadRoster = async () => {
+  if (!isChurchWideManager.value) return;
+  rosterLoading.value = true;
+  rosterError.value = "";
+  const filter = rosterStatusFilter.value === "ACTIVE" ? undefined : rosterStatusFilter.value;
+  const { data, error } = await listRosterMembers(filter as never);
+  if (error) rosterError.value = error;
+  rosterMembers.value = data ?? [];
+  rosterLoading.value = false;
+};
+
+watch(rosterStatusFilter, loadRoster);
+
+const filteredRosterMembers = computed(() => {
+  const term = rosterSearch.value.trim().toLowerCase();
+  if (!term) return rosterMembers.value;
+  return rosterMembers.value.filter(
+    (member) =>
+      member.name.toLowerCase().includes(term) ||
+      member.email?.toLowerCase().includes(term) ||
+      member.phone?.toLowerCase().includes(term),
+  );
+});
+
+const rosterStatusLabel = (status: RosterStatus) =>
+  status === "VISITOR" ? "Visitante" : status === "MEMBER" ? "Membro" : "Desligado";
+
+const rosterStatusColor = (status: RosterStatus) =>
+  status === "VISITOR" ? "amber-darken-3" : status === "MEMBER" ? "teal-darken-2" : "grey-darken-1";
+
+const resetRosterForm = () => {
+  rosterForm.name = "";
+  rosterForm.email = "";
+  rosterForm.phone = "";
+  rosterForm.birthDate = "";
+  rosterForm.notes = "";
+  rosterFormError.value = "";
+};
+
+const openCreateRosterDialog = () => {
+  editingRosterId.value = "";
+  resetRosterForm();
+  isRosterDialogOpen.value = true;
+};
+
+const openEditRosterDialog = (member: RosterMember) => {
+  editingRosterId.value = member.id;
+  rosterForm.name = member.name;
+  rosterForm.email = member.email || "";
+  rosterForm.phone = member.phone || "";
+  rosterForm.birthDate = member.birthDate ? member.birthDate.slice(0, 10) : "";
+  rosterForm.notes = member.notes || "";
+  rosterFormError.value = "";
+  isRosterDialogOpen.value = true;
+};
+
+const handleSaveRoster = async () => {
+  if (!rosterForm.name.trim()) {
+    rosterFormError.value = "Nome é obrigatório";
+    return;
+  }
+
+  isSavingRoster.value = true;
+  rosterFormError.value = "";
+
+  const payload = {
+    name: rosterForm.name,
+    email: rosterForm.email,
+    phone: rosterForm.phone,
+    birthDate: rosterForm.birthDate,
+    notes: rosterForm.notes,
+  };
+
+  const { error } = editingRosterId.value
+    ? await updateRosterMember(editingRosterId.value, payload)
+    : await createRosterMember(payload);
+
+  isSavingRoster.value = false;
+
+  if (error) {
+    rosterFormError.value = error;
+    return;
+  }
+
+  isRosterDialogOpen.value = false;
+  await loadRoster();
+};
+
+const handlePromoteRoster = async (member: RosterMember) => {
+  rosterActionLoadingId.value = member.id;
+  const { error } = await promoteRosterMember(member.id);
+  rosterActionLoadingId.value = "";
+  if (error) {
+    rosterError.value = error;
+    return;
+  }
+  await loadRoster();
+};
+
+const handleMarkRosterAsLeft = async (member: RosterMember) => {
+  rosterActionLoadingId.value = member.id;
+  const { error } = await markRosterMemberAsLeft(member.id);
+  rosterActionLoadingId.value = "";
+  if (error) {
+    rosterError.value = error;
+    return;
+  }
+  await loadRoster();
+};
+
+const handleRestoreRoster = async (member: RosterMember) => {
+  rosterActionLoadingId.value = member.id;
+  const { error } = await restoreRosterMember(member.id);
+  rosterActionLoadingId.value = "";
+  if (error) {
+    rosterError.value = error;
+    return;
+  }
+  await loadRoster();
+};
+
+const handleDeleteRoster = async (member: RosterMember) => {
+  rosterActionLoadingId.value = member.id;
+  const { error } = await deleteRosterMember(member.id);
+  rosterActionLoadingId.value = "";
+  if (error) {
+    rosterError.value = error;
+    return;
+  }
+  await loadRoster();
+};
 const {
   getAnnouncements,
   createAnnouncement,
@@ -6161,6 +6572,7 @@ onMounted(async () => {
     canAccessChurchAdmin.value ? loadChurchAdminData() : Promise.resolve(),
     loadInviteCode(),
     loadWhatsAppStatus(),
+    loadRoster(),
   ]);
 });
 </script>

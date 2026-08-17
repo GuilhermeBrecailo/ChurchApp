@@ -25,6 +25,7 @@ import { HelpVideoRoutes } from "./src/interfaces/routes/HelpVideoRoutes.ts";
 import { BillingRoutes } from "./src/interfaces/routes/BillingRoutes.ts";
 import { BibleNoteRoutes } from "./src/interfaces/routes/BibleNoteRoutes.ts";
 import { WhatsAppRoutes } from "./src/interfaces/routes/WhatsAppRoutes.ts";
+import { RosterRoutes } from "./src/interfaces/routes/RosterRoutes.ts";
 import TenantHandler from "./src/interfaces/plugins/TenantHandler.ts";
 
 const port = Number(process.env.API_PORT || 8000);
@@ -84,6 +85,7 @@ await server.register(HelpVideoRoutes, { prefix: "/" });
 await server.register(BillingRoutes, { prefix: "/" });
 await server.register(BibleNoteRoutes, { prefix: "/" });
 await server.register(WhatsAppRoutes, { prefix: "/" });
+await server.register(RosterRoutes, { prefix: "/" });
 
 await server.listen({ port, host: "0.0.0.0" });
 

@@ -76,6 +76,7 @@ model Crunch {
     prayerRequests PrayerRequest[]
     pushSubscriptions PushSubscription[]
     posts         Post[]
+    rosterMembers RosterMember[]
 }
 
 model MercadoPagoWebhookNotification {
@@ -180,6 +181,7 @@ model User {
     devotionalComments DevotionalComment[]
     prayerRequests PrayerRequest[]
     posts Post[]
+    rosterMember RosterMember?
 }
 
 model ChurchMembership {
@@ -202,6 +204,44 @@ model ChurchMembership {
     @@unique([userId, crunchId])
     @@index([crunchId])
     @@index([userId])
+}
+
+// Rol de pessoas da igreja - visitante, membro ou desligado. Independente de
+// ter login no app: pessoa sem conta (so nome/email/telefone) e pessoa com
+// conta (User) convivem na mesma lista, ligadas por userId quando aplicavel.
+// Nao e o mesmo conceito que ChurchMembership (que so existe pra quem loga) -
+// todo ChurchMembership ativo tem um RosterMember correspondente (sincronizado
+// automaticamente), mas o contrario nao e verdade.
+model RosterMember {
+    id     String @id @default(uuid())
+    name   String
+    email  String?
+    phone  String?
+    // So dia/mes seria suficiente pro lembrete de aniversario, mas guardar a
+    // data inteira e mais simples e nao impede o cron de olhar so dia/mes.
+    birthDate DateTime?
+    notes     String?
+
+    // VISITOR | MEMBER | FORMER
+    status String @default("VISITOR")
+    // Quando virou membro / quando saiu - preenchidos pelas acoes de
+    // promote/leave, nao editaveis direto. So guarda a ultima transicao,
+    // nao um historico completo.
+    joinedAt DateTime?
+    leftAt   DateTime?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    // Preenchido quando a pessoa tem login no app. Nulo pra quem nao tem.
+    userId String? @unique
+    user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+    @@index([crunchId])
+    @@index([crunchId, status])
 }
 
 model DailyVerse {
