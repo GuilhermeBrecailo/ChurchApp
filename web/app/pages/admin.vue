@@ -1147,6 +1147,7 @@
         <v-tab v-if="isChurchWideManager" value="relatorios" class="text-none font-weight-medium admin-tab">Relatórios</v-tab>
         <v-tab v-if="isChurchWideManager" value="cargos" class="text-none font-weight-medium admin-tab">Cargos</v-tab>
         <v-tab v-if="isChurchWideManager" value="rol" class="text-none font-weight-medium admin-tab">Rol</v-tab>
+        <v-tab v-if="isChurchWideManager" value="mensagens" class="text-none font-weight-medium admin-tab">Mensagens</v-tab>
       </v-tabs>
     </div>
 
@@ -2526,7 +2527,165 @@
           </div>
         </v-card>
       </div>
+
+      <v-card class="report-panel pa-4 elevation-1 bg-white border-subtle mt-4">
+        <div class="d-flex align-center justify-space-between flex-wrap ga-3 mb-3">
+          <div class="report-panel-title mb-0">
+            <Users size="18" />
+            <h3>Público do culto</h3>
+          </div>
+          <v-btn
+            color="purple-darken-3"
+            class="rounded-lg text-none px-4"
+            size="small"
+            elevation="1"
+            @click="openAttendanceDialog"
+          >
+            <Plus size="16" class="mr-2" /> Registrar presença
+          </v-btn>
+        </div>
+
+        <v-alert v-if="attendanceError" type="error" variant="tonal" density="compact" class="mb-3">
+          {{ attendanceError }}
+        </v-alert>
+
+        <div v-if="attendanceLoading" class="d-flex justify-center pa-6">
+          <v-progress-circular indeterminate size="28" color="purple-darken-3" />
+        </div>
+
+        <template v-else>
+          <div class="attendance-totals mb-4">
+            <div>
+              <strong>{{ attendanceTotals.visitors }}</strong>
+              <span>visitantes (30 dias)</span>
+            </div>
+            <div>
+              <strong>{{ attendanceTotals.members }}</strong>
+              <span>membros (30 dias)</span>
+            </div>
+            <div>
+              <strong>{{ attendanceTotals.total }}</strong>
+              <span>total</span>
+            </div>
+          </div>
+
+          <p v-if="attendanceEntries.length === 0" class="text-caption text-grey-darken-1 mb-0">
+            Nenhuma presença registrada nos últimos 30 dias.
+          </p>
+          <div v-else class="attendance-list">
+            <div v-for="entry in attendanceEntries" :key="entry.id" class="attendance-row">
+              <div>
+                <strong>{{ formatAttendanceDate(entry.date) }}</strong>
+                <small>{{ entry.serviceTime.label }}</small>
+              </div>
+              <div class="attendance-counts">
+                <span>{{ entry.visitorCount }} visitantes</span>
+                <span>{{ entry.memberCount }} membros</span>
+              </div>
+            </div>
+          </div>
+        </template>
+      </v-card>
     </section>
+
+    <UtilsResponsiveOverlay v-model="isAttendanceDialogOpen" max-width="480">
+      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+        <div class="responsive-dialog-header mb-5">
+          <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+            Registrar presença
+          </h2>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="isAttendanceDialogOpen = false">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <v-alert
+          v-if="sortedServiceTimes.length === 0"
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="mb-3"
+        >
+          Nenhum culto cadastrado ainda. Configure um horário de culto na aba "Geral" antes de registrar presença.
+        </v-alert>
+        <v-select
+          v-else
+          v-model="attendanceForm.serviceTimeId"
+          label="Culto"
+          :items="sortedServiceTimes"
+          :item-title="ruleServiceTimeLabel"
+          item-value="id"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-text-field
+          v-model="attendanceForm.date"
+          label="Data do culto"
+          type="date"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-text-field
+          v-model.number="attendanceForm.visitorCount"
+          label="Visitantes"
+          type="number"
+          min="0"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-text-field
+          v-model.number="attendanceForm.memberCount"
+          label="Membros"
+          type="number"
+          min="0"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-textarea
+          v-model="attendanceForm.notes"
+          label="Observação (opcional)"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+          rows="2"
+          auto-grow
+        />
+
+        <v-alert v-if="attendanceFormError" type="error" variant="tonal" density="compact" class="mb-3">
+          {{ attendanceFormError }}
+        </v-alert>
+
+        <div class="d-flex justify-end gap-2">
+          <v-btn variant="text" color="grey-darken-1" class="text-none" @click="isAttendanceDialogOpen = false">
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="purple-darken-3"
+            variant="flat"
+            class="text-none font-weight-bold"
+            :disabled="sortedServiceTimes.length === 0"
+            :loading="isSavingAttendance"
+            @click="handleSaveAttendance"
+          >
+            Salvar
+          </v-btn>
+        </div>
+      </v-card>
+    </UtilsResponsiveOverlay>
 
     <section v-show="activeAdminTab === 'membros'" class="church-admin-section mb-8">
       <div class="section-heading mb-4">
@@ -3053,86 +3212,48 @@
         </p>
       </v-card>
 
-      <div v-else class="d-flex flex-column ministry-list">
-        <div v-for="member in filteredRosterMembers" :key="member.id" class="role-item">
-          <div class="min-w-0 flex-1">
-            <div class="d-flex align-center gap-2 mb-1 flex-wrap">
-              <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
-                {{ member.name }}
-              </p>
-              <v-chip size="x-small" :color="rosterStatusColor(member.status)" variant="tonal">
-                {{ rosterStatusLabel(member.status) }}
-              </v-chip>
-              <v-chip v-if="member.userId" size="x-small" color="indigo-darken-2" variant="tonal">
-                Tem login
-              </v-chip>
-            </div>
-            <p v-if="member.email || member.phone" class="text-caption text-grey-darken-1 mb-0">
-              {{ [member.email, member.phone].filter(Boolean).join(" · ") }}
+      <div v-else class="church-list d-flex flex-column ga-3">
+        <v-card
+          v-for="member in filteredRosterMembers"
+          :key="member.id"
+          class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
+          role="button"
+          tabindex="0"
+          :aria-label="`Ver detalhes de ${member.name}`"
+          @click="openEditRosterDialog(member)"
+          @keydown.enter="openEditRosterDialog(member)"
+          @keydown.space.prevent="openEditRosterDialog(member)"
+        >
+          <v-avatar :color="avatarBgIndigo" size="44" class="member-avatar">
+            <Users size="20" :color="accentColor" />
+          </v-avatar>
+
+          <div class="member-copy">
+            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+              {{ member.name }}
+            </h3>
+            <p class="text-caption text-grey-darken-1 mb-0">
+              {{ [member.email, member.phone].filter(Boolean).join(" · ") || "Sem contato cadastrado" }}
             </p>
           </div>
 
-          <div class="d-flex flex-wrap gap-1">
-            <v-btn
-              icon
-              variant="text"
-              color="grey-darken-1"
+          <div class="member-badges">
+            <v-chip v-if="member.userId" size="small" color="indigo-darken-2" variant="tonal">
+              Tem login
+            </v-chip>
+            <v-chip
+              v-if="whatsappCheckResults[member.id] !== undefined"
               size="small"
-              :disabled="Boolean(rosterActionLoadingId)"
-              @click="openEditRosterDialog(member)"
-            >
-              <v-icon size="18">mdi-pencil-outline</v-icon>
-            </v-btn>
-
-            <v-btn
-              v-if="member.status === 'VISITOR'"
+              :color="whatsappCheckResults[member.id] ? 'teal-darken-2' : 'red-darken-2'"
               variant="tonal"
-              color="teal-darken-2"
-              size="small"
-              class="text-none"
-              :loading="rosterActionLoadingId === member.id"
-              @click="handlePromoteRoster(member)"
             >
-              Tornar membro
-            </v-btn>
-
-            <v-btn
-              v-if="member.status !== 'FORMER'"
-              variant="tonal"
-              color="grey-darken-1"
-              size="small"
-              class="text-none"
-              :loading="rosterActionLoadingId === member.id"
-              @click="handleMarkRosterAsLeft(member)"
-            >
-              Desligar
-            </v-btn>
-
-            <v-btn
-              v-else
-              variant="tonal"
-              color="teal-darken-2"
-              size="small"
-              class="text-none"
-              :loading="rosterActionLoadingId === member.id"
-              @click="handleRestoreRoster(member)"
-            >
-              Restaurar
-            </v-btn>
-
-            <v-btn
-              v-if="!member.userId"
-              icon
-              variant="text"
-              color="red-darken-2"
-              size="small"
-              :disabled="Boolean(rosterActionLoadingId)"
-              @click="handleDeleteRoster(member)"
-            >
-              <v-icon size="18">mdi-delete-outline</v-icon>
-            </v-btn>
+              {{ whatsappCheckResults[member.id] ? "WhatsApp válido" : "Não é WhatsApp" }}
+            </v-chip>
+            <v-chip size="small" :color="rosterStatusColor(member.status)" variant="tonal">
+              {{ rosterStatusLabel(member.status) }}
+            </v-chip>
           </div>
-        </div>
+        </v-card>
       </div>
     </section>
 
@@ -3196,6 +3317,82 @@
           auto-grow
         />
 
+        <div v-if="rosterEditingMember && rosterEditingMember.phone" class="roster-status-actions mb-4">
+          <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">WhatsApp</p>
+          <div class="d-flex flex-wrap align-center gap-2">
+            <v-btn
+              variant="tonal"
+              color="teal-darken-2"
+              size="small"
+              class="text-none"
+              :loading="whatsappCheckLoadingId === rosterEditingMember.id"
+              @click="handleCheckRosterWhatsApp(rosterEditingMember)"
+            >
+              Verificar WhatsApp
+            </v-btn>
+            <v-chip
+              v-if="whatsappCheckResults[rosterEditingMember.id] !== undefined"
+              size="small"
+              :color="whatsappCheckResults[rosterEditingMember.id] ? 'teal-darken-2' : 'red-darken-2'"
+              variant="tonal"
+            >
+              {{ whatsappCheckResults[rosterEditingMember.id] ? "Número válido no WhatsApp" : "Número não é WhatsApp" }}
+            </v-chip>
+          </div>
+        </div>
+
+        <div v-if="rosterEditingMember" class="roster-status-actions mb-4">
+          <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">Situação</p>
+          <div class="d-flex flex-wrap gap-2">
+            <v-btn
+              v-if="rosterEditingMember.status === 'VISITOR'"
+              variant="tonal"
+              color="teal-darken-2"
+              size="small"
+              class="text-none"
+              :loading="rosterActionLoadingId === rosterEditingMember.id"
+              @click="handlePromoteRoster(rosterEditingMember)"
+            >
+              Tornar membro
+            </v-btn>
+
+            <v-btn
+              v-if="rosterEditingMember.status !== 'FORMER'"
+              variant="tonal"
+              color="grey-darken-1"
+              size="small"
+              class="text-none"
+              :loading="rosterActionLoadingId === rosterEditingMember.id"
+              @click="handleMarkRosterAsLeft(rosterEditingMember)"
+            >
+              Desligar
+            </v-btn>
+
+            <v-btn
+              v-else
+              variant="tonal"
+              color="teal-darken-2"
+              size="small"
+              class="text-none"
+              :loading="rosterActionLoadingId === rosterEditingMember.id"
+              @click="handleRestoreRoster(rosterEditingMember)"
+            >
+              Restaurar
+            </v-btn>
+
+            <v-btn
+              v-if="!rosterEditingMember.userId"
+              variant="text"
+              color="red-darken-2"
+              size="small"
+              class="text-none"
+              @click="handleDeleteRoster(rosterEditingMember)"
+            >
+              Excluir pessoa
+            </v-btn>
+          </div>
+        </div>
+
         <v-alert
           v-if="rosterFormError"
           type="error"
@@ -3219,6 +3416,524 @@
           >
             Salvar
           </v-btn>
+        </div>
+      </v-card>
+    </UtilsResponsiveOverlay>
+
+    <section v-show="isChurchWideManager && activeAdminTab === 'mensagens'" class="church-admin-section mb-8">
+      <div class="section-heading mb-4">
+        <div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+            Mensagens
+          </h2>
+          <p class="text-body-2 text-grey-darken-1 mb-0">
+            Modelos, envio e histórico de mensagens de WhatsApp pra visitantes e membros do rol.
+          </p>
+        </div>
+      </div>
+
+      <div class="messages-subtabs d-flex ga-2 mb-5 flex-wrap">
+        <v-btn
+          v-for="tab in messagesSubTabs"
+          :key="tab.value"
+          :color="messagesSubTab === tab.value ? 'purple-darken-3' : 'grey-lighten-3'"
+          :variant="messagesSubTab === tab.value ? 'flat' : 'tonal'"
+          size="small"
+          class="text-none"
+          @click="messagesSubTab = tab.value"
+        >
+          {{ tab.label }}
+        </v-btn>
+      </div>
+
+      <v-alert v-if="!whatsappConnected" type="warning" variant="tonal" density="compact" class="mb-4">
+        WhatsApp não conectado. Conecte na aba "Geral" antes de enviar mensagens.
+      </v-alert>
+
+      <div v-show="messagesSubTab === 'modelos'">
+        <div class="d-flex justify-end mb-4">
+          <v-btn
+            color="purple-darken-3"
+            class="rounded-lg text-none px-4"
+            size="small"
+            elevation="1"
+            @click="openCreateTemplateDialog"
+          >
+            <Plus size="16" class="mr-2" /> Novo modelo
+          </v-btn>
+        </div>
+
+        <v-alert v-if="templatesError" type="error" variant="tonal" density="compact" class="mb-4">
+          {{ templatesError }}
+        </v-alert>
+
+        <div v-if="templatesLoading" class="d-flex justify-center pa-6">
+          <v-progress-circular indeterminate size="28" color="purple-darken-3" />
+        </div>
+
+        <v-card
+          v-else-if="messageTemplates.length === 0"
+          class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+        >
+          <MessageSquare size="32" color="#9CA3AF" class="mb-3" />
+          <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
+            Nenhum modelo criado ainda
+          </p>
+        </v-card>
+
+        <div v-else class="church-list d-flex flex-column ga-3">
+          <v-card
+            v-for="template in messageTemplates"
+            :key="template.id"
+            class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
+            role="button"
+            tabindex="0"
+            :aria-label="`Editar modelo ${template.name}`"
+            @click="openEditTemplateDialog(template)"
+            @keydown.enter="openEditTemplateDialog(template)"
+            @keydown.space.prevent="openEditTemplateDialog(template)"
+          >
+            <v-avatar :color="avatarBgIndigo" size="44" class="member-avatar">
+              <MessageSquare size="20" :color="accentColor" />
+            </v-avatar>
+            <div class="member-copy">
+              <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+                {{ template.name }}
+              </h3>
+              <p class="text-caption text-grey-darken-1 mb-0 message-template-preview">
+                {{ template.body }}
+              </p>
+            </div>
+          </v-card>
+        </div>
+      </div>
+
+      <div v-show="messagesSubTab === 'enviar'">
+        <v-card class="rounded-xl pa-5 elevation-1 border-subtle">
+          <v-select
+            v-model="sendForm.templateId"
+            label="Modelo"
+            :items="messageTemplates"
+            item-title="name"
+            item-value="id"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            class="mb-3"
+            hide-details="auto"
+          />
+          <v-select
+            v-model="sendForm.audience"
+            label="Público"
+            :items="audienceOptions"
+            item-title="title"
+            item-value="value"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            class="mb-4"
+            hide-details="auto"
+          />
+
+          <v-alert v-if="sendError" type="error" variant="tonal" density="compact" class="mb-4">
+            {{ sendError }}
+          </v-alert>
+          <v-alert v-if="sendSuccess" type="success" variant="tonal" density="compact" class="mb-4">
+            {{ sendSuccess }}
+          </v-alert>
+
+          <v-btn
+            color="purple-darken-3"
+            variant="flat"
+            class="text-none font-weight-bold"
+            :disabled="!whatsappConnected || !sendForm.templateId"
+            :loading="isSendingNow"
+            @click="handleSendNow"
+          >
+            <Send size="16" class="mr-2" /> Enviar agora
+          </v-btn>
+        </v-card>
+      </div>
+
+      <div v-show="messagesSubTab === 'regras'">
+        <div class="d-flex justify-end mb-4">
+          <v-btn
+            color="purple-darken-3"
+            class="rounded-lg text-none px-4"
+            size="small"
+            elevation="1"
+            @click="openCreateRuleDialog"
+          >
+            <Plus size="16" class="mr-2" /> Nova regra
+          </v-btn>
+        </div>
+
+        <v-alert v-if="rulesError" type="error" variant="tonal" density="compact" class="mb-4">
+          {{ rulesError }}
+        </v-alert>
+
+        <div v-if="rulesLoading" class="d-flex justify-center pa-6">
+          <v-progress-circular indeterminate size="28" color="purple-darken-3" />
+        </div>
+
+        <v-card
+          v-else-if="messageRules.length === 0"
+          class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+        >
+          <Clock size="32" color="#9CA3AF" class="mb-3" />
+          <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
+            Nenhuma regra automática criada ainda
+          </p>
+        </v-card>
+
+        <div v-else class="church-list d-flex flex-column ga-3">
+          <v-card
+            v-for="rule in messageRules"
+            :key="rule.id"
+            class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
+            role="button"
+            tabindex="0"
+            :aria-label="`Editar regra`"
+            @click="openEditRuleDialog(rule)"
+            @keydown.enter="openEditRuleDialog(rule)"
+            @keydown.space.prevent="openEditRuleDialog(rule)"
+          >
+            <v-avatar :color="avatarBgIndigo" size="44" class="member-avatar">
+              <Clock size="20" :color="accentColor" />
+            </v-avatar>
+            <div class="member-copy">
+              <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+                {{ rule.template?.name || "Modelo" }}
+              </h3>
+              <p class="text-caption text-grey-darken-1 mb-0">
+                {{ rule.serviceTime ? `${weekdayName(rule.serviceTime.weekday)} ${rule.serviceTime.time}` : "Culto" }} · {{ rule.offsetMinutes }} min depois · {{ audienceLabel(rule.audience) }}
+              </p>
+            </div>
+            <div class="member-badges">
+              <v-chip size="small" :color="rule.isActive ? 'teal-darken-2' : 'grey-darken-1'" variant="tonal">
+                {{ rule.isActive ? "Ativa" : "Inativa" }}
+              </v-chip>
+            </div>
+          </v-card>
+        </div>
+      </div>
+
+      <div v-show="messagesSubTab === 'historico'">
+        <v-alert v-if="logsError" type="error" variant="tonal" density="compact" class="mb-4">
+          {{ logsError }}
+        </v-alert>
+
+        <div v-if="logsLoading" class="d-flex justify-center pa-6">
+          <v-progress-circular indeterminate size="28" color="purple-darken-3" />
+        </div>
+
+        <v-card
+          v-else-if="messageLogs.length === 0"
+          class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+        >
+          <History size="32" color="#9CA3AF" class="mb-3" />
+          <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
+            Nenhum envio registrado ainda
+          </p>
+        </v-card>
+
+        <div v-else class="church-list d-flex flex-column ga-3">
+          <v-card
+            v-for="log in messageLogs"
+            :key="log.id"
+            class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
+          >
+            <v-avatar :color="avatarBgIndigo" size="44" class="member-avatar">
+              <History size="20" :color="accentColor" />
+            </v-avatar>
+            <div class="member-copy">
+              <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+                {{ log.template?.name || "Modelo removido" }}
+              </h3>
+              <p class="text-caption text-grey-darken-1 mb-0">
+                {{ formatLogDate(log.createdAt) }} · {{ audienceLabel(log.audience) }} · {{ log.ruleId ? "Automático" : "Manual" }}
+              </p>
+            </div>
+            <div class="member-badges">
+              <v-chip size="small" color="teal-darken-2" variant="tonal">{{ log.successCount }} ok</v-chip>
+              <v-chip v-if="log.failedCount > 0" size="small" color="red-darken-2" variant="tonal">{{ log.failedCount }} falhou</v-chip>
+              <v-chip v-if="log.status === 'PROCESSING'" size="small" color="amber-darken-3" variant="tonal">Enviando...</v-chip>
+            </div>
+          </v-card>
+        </div>
+      </div>
+
+      <div v-show="messagesSubTab === 'aniversariantes'">
+        <v-card class="rounded-xl pa-5 elevation-1 border-subtle mb-4">
+          <div class="d-flex align-center justify-space-between flex-wrap ga-3 mb-3">
+            <div>
+              <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">Envio automático</h3>
+              <p class="text-caption text-grey-darken-1 mb-0">
+                Ligado, quem faz aniversário recebe a mensagem sozinho, todo dia às 8h. Desligado, você manda na mão.
+              </p>
+            </div>
+            <v-switch
+              :model-value="birthdaySetting?.isActive ?? false"
+              color="purple-darken-3"
+              hide-details
+              :disabled="birthdaySettingSaving || !birthdaySetting?.templateId"
+              @update:model-value="handleToggleBirthdayAuto"
+            />
+          </div>
+          <v-select
+            :model-value="birthdaySetting?.templateId"
+            label="Modelo de mensagem"
+            :items="messageTemplates"
+            item-title="name"
+            item-value="id"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            hide-details="auto"
+            :disabled="birthdaySettingSaving"
+            @update:model-value="handleSetBirthdayTemplate"
+          />
+          <v-alert v-if="birthdaySettingError" type="error" variant="tonal" density="compact" class="mt-3">
+            {{ birthdaySettingError }}
+          </v-alert>
+        </v-card>
+
+        <div class="messages-subtabs d-flex ga-2 mb-4 flex-wrap">
+          <v-btn
+            v-for="option in birthdayRangeOptions"
+            :key="option.value"
+            :color="birthdayRange === option.value ? 'purple-darken-3' : 'grey-lighten-3'"
+            :variant="birthdayRange === option.value ? 'flat' : 'tonal'"
+            size="small"
+            class="text-none"
+            @click="birthdayRange = option.value"
+          >
+            {{ option.label }}
+          </v-btn>
+        </div>
+
+        <v-alert v-if="birthdaysError" type="error" variant="tonal" density="compact" class="mb-4">
+          {{ birthdaysError }}
+        </v-alert>
+
+        <div v-if="birthdaysLoading" class="d-flex justify-center pa-6">
+          <v-progress-circular indeterminate size="28" color="purple-darken-3" />
+        </div>
+
+        <v-card
+          v-else-if="birthdayMembers.length === 0"
+          class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+        >
+          <Cake size="32" color="#9CA3AF" class="mb-3" />
+          <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">{{ birthdayEmptyLabel }}</p>
+        </v-card>
+
+        <div v-else class="church-list d-flex flex-column ga-3">
+          <v-card
+            v-for="member in birthdayMembers"
+            :key="member.id"
+            class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
+          >
+            <v-avatar :color="avatarBgIndigo" size="44" class="member-avatar">
+              <Cake size="20" :color="accentColor" />
+            </v-avatar>
+            <div class="member-copy">
+              <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+                {{ member.name }}
+              </h3>
+              <p class="text-caption text-grey-darken-1 mb-0">
+                Completa {{ member.turningAge }} anos
+                · {{ member.daysUntil === 0 ? "Hoje" : `em ${member.daysUntil} dia${member.daysUntil > 1 ? "s" : ""}` }}
+                <span v-if="!member.phone"> · Sem telefone</span>
+              </p>
+            </div>
+          </v-card>
+        </div>
+
+        <div v-if="birthdayRange === 'today' && birthdayMembers.length > 0" class="mt-4">
+          <v-alert v-if="sendBirthdaysError" type="error" variant="tonal" density="compact" class="mb-3">
+            {{ sendBirthdaysError }}
+          </v-alert>
+          <v-alert v-if="sendBirthdaysSuccess" type="success" variant="tonal" density="compact" class="mb-3">
+            {{ sendBirthdaysSuccess }}
+          </v-alert>
+          <v-btn
+            color="purple-darken-3"
+            variant="flat"
+            class="text-none font-weight-bold"
+            :disabled="!whatsappConnected || !birthdaySetting?.templateId"
+            :loading="isSendingBirthdaysNow"
+            @click="handleSendBirthdaysNow"
+          >
+            <Send size="16" class="mr-2" /> Mandar mensagem agora
+          </v-btn>
+        </div>
+      </div>
+    </section>
+
+    <UtilsResponsiveOverlay v-model="isTemplateDialogOpen" max-width="480">
+      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+        <div class="responsive-dialog-header mb-5">
+          <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+            {{ editingTemplateId ? "Editar modelo" : "Novo modelo" }}
+          </h2>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="isTemplateDialogOpen = false">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <v-text-field
+          v-model="templateForm.name"
+          label="Nome do modelo"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-textarea
+          v-model="templateForm.body"
+          label="Mensagem"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-2"
+          hide-details="auto"
+          rows="4"
+          auto-grow
+        />
+        <p class="text-caption text-grey-darken-1 mb-4">
+          Use <strong>{{ '{nome}' }}</strong> no texto pra ser substituído pelo nome de cada pessoa.
+        </p>
+
+        <v-alert v-if="templateFormError" type="error" variant="tonal" density="compact" class="mb-3">
+          {{ templateFormError }}
+        </v-alert>
+
+        <div class="d-flex justify-space-between align-center">
+          <v-btn v-if="editingTemplateId" variant="text" color="red-darken-2" class="text-none" @click="handleDeleteTemplate">
+            Excluir
+          </v-btn>
+          <div v-else />
+          <div class="d-flex gap-2">
+            <v-btn variant="text" color="grey-darken-1" class="text-none" @click="isTemplateDialogOpen = false">
+              Cancelar
+            </v-btn>
+            <v-btn
+              color="purple-darken-3"
+              variant="flat"
+              class="text-none font-weight-bold"
+              :loading="isSavingTemplate"
+              @click="handleSaveTemplate"
+            >
+              Salvar
+            </v-btn>
+          </div>
+        </div>
+      </v-card>
+    </UtilsResponsiveOverlay>
+
+    <UtilsResponsiveOverlay v-model="isRuleDialogOpen" max-width="480">
+      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+        <div class="responsive-dialog-header mb-5">
+          <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+            {{ editingRuleId ? "Editar regra" : "Nova regra automática" }}
+          </h2>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="isRuleDialogOpen = false">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <v-alert
+          v-if="sortedServiceTimes.length === 0"
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="mb-3"
+        >
+          Nenhum culto cadastrado ainda. Configure um horário de culto na aba "Geral" antes de criar uma regra automática.
+        </v-alert>
+        <v-select
+          v-else
+          v-model="ruleForm.serviceTimeId"
+          label="Culto"
+          :items="sortedServiceTimes"
+          :item-title="ruleServiceTimeLabel"
+          item-value="id"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-text-field
+          v-model.number="ruleForm.offsetMinutes"
+          type="number"
+          min="0"
+          label="Minutos depois do culto"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-select
+          v-model="ruleForm.templateId"
+          label="Modelo"
+          :items="messageTemplates"
+          item-title="name"
+          item-value="id"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-select
+          v-model="ruleForm.audience"
+          label="Público"
+          :items="audienceOptions"
+          item-title="title"
+          item-value="value"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-switch
+          v-model="ruleForm.isActive"
+          label="Regra ativa"
+          color="purple-darken-3"
+          density="comfortable"
+          hide-details
+          class="mb-2"
+        />
+
+        <v-alert v-if="ruleFormError" type="error" variant="tonal" density="compact" class="mb-3">
+          {{ ruleFormError }}
+        </v-alert>
+
+        <div class="d-flex justify-space-between align-center">
+          <v-btn v-if="editingRuleId" variant="text" color="red-darken-2" class="text-none" @click="handleDeleteRule">
+            Excluir
+          </v-btn>
+          <div v-else />
+          <div class="d-flex gap-2">
+            <v-btn variant="text" color="grey-darken-1" class="text-none" @click="isRuleDialogOpen = false">
+              Cancelar
+            </v-btn>
+            <v-btn
+              color="purple-darken-3"
+              variant="flat"
+              class="text-none font-weight-bold"
+              :disabled="sortedServiceTimes.length === 0"
+              :loading="isSavingRule"
+              @click="handleSaveRule"
+            >
+              Salvar
+            </v-btn>
+          </div>
         </div>
       </v-card>
     </UtilsResponsiveOverlay>
@@ -3968,7 +4683,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, watch } from "vue";
-import { Building, Calendar, Music, UserPlus, UserCheck, Users, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon, CheckCircle2, Lock, Clock, X, ChevronDown, Bell, Settings2 } from "lucide-vue-next";
+import { Building, Calendar, Music, UserPlus, UserCheck, Users, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon, CheckCircle2, Lock, Clock, X, ChevronDown, Bell, Settings2, MessageSquare, Send, History, Cake } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import { useMembers, type ChurchMember, type PendingMember } from "../../composables/useMembers";
@@ -4014,6 +4729,15 @@ import { useServiceTimes, type ServiceTime } from "../../composables/useServiceT
 import { usePosts, type ChurchPost } from "../../composables/usePosts";
 import { useWhatsApp } from "../../composables/useWhatsApp";
 import { useRoster, type RosterMember, type RosterStatus } from "../../composables/useRoster";
+import { useBirthdays, type BirthdayMember, type BirthdayRange, type BirthdayMessageSetting } from "../../composables/useBirthdays";
+import { useAttendance, type ServiceAttendance } from "../../composables/useAttendance";
+import {
+  useMessages,
+  type MessageAudience,
+  type MessageTemplate,
+  type MessageRule,
+  type MessageLog,
+} from "../../composables/useMessages";
 import { FONT_OPTIONS } from "../../composables/useChurchAppearance";
 import { useChurchPlan, PLAN_LABELS, PLAN_FEATURE_LABELS, type Plan, type PlanFeature } from "../../composables/usePlan";
 
@@ -4190,6 +4914,7 @@ const {
   markRosterMemberAsLeft,
   restoreRosterMember,
   deleteRosterMember,
+  checkRosterMemberWhatsApp,
 } = useRoster();
 
 const rosterMembers = ref<RosterMember[]>([]);
@@ -4217,6 +4942,11 @@ const rosterForm = reactive({
   notes: "",
 });
 const rosterActionLoadingId = ref("");
+// Resultado do "Verificar WhatsApp" por pessoa (id -> existe ou nao no
+// WhatsApp) - so em memoria, some ao recarregar a lista, ja que o numero
+// pode mudar de status a qualquer momento e nao faz sentido persistir.
+const whatsappCheckResults = reactive<Record<string, boolean>>({});
+const whatsappCheckLoadingId = ref("");
 
 const loadRoster = async () => {
   if (!isChurchWideManager.value) return;
@@ -4306,14 +5036,19 @@ const handleSaveRoster = async () => {
   await loadRoster();
 };
 
+const rosterEditingMember = computed(() =>
+  rosterMembers.value.find((member) => member.id === editingRosterId.value) || null,
+);
+
 const handlePromoteRoster = async (member: RosterMember) => {
   rosterActionLoadingId.value = member.id;
   const { error } = await promoteRosterMember(member.id);
   rosterActionLoadingId.value = "";
   if (error) {
-    rosterError.value = error;
+    rosterFormError.value = error;
     return;
   }
+  isRosterDialogOpen.value = false;
   await loadRoster();
 };
 
@@ -4322,9 +5057,10 @@ const handleMarkRosterAsLeft = async (member: RosterMember) => {
   const { error } = await markRosterMemberAsLeft(member.id);
   rosterActionLoadingId.value = "";
   if (error) {
-    rosterError.value = error;
+    rosterFormError.value = error;
     return;
   }
+  isRosterDialogOpen.value = false;
   await loadRoster();
 };
 
@@ -4333,10 +5069,23 @@ const handleRestoreRoster = async (member: RosterMember) => {
   const { error } = await restoreRosterMember(member.id);
   rosterActionLoadingId.value = "";
   if (error) {
-    rosterError.value = error;
+    rosterFormError.value = error;
     return;
   }
+  isRosterDialogOpen.value = false;
   await loadRoster();
+};
+
+const handleCheckRosterWhatsApp = async (member: RosterMember) => {
+  whatsappCheckLoadingId.value = member.id;
+  rosterFormError.value = "";
+  const { data, error } = await checkRosterMemberWhatsApp(member.id);
+  whatsappCheckLoadingId.value = "";
+  if (error) {
+    rosterFormError.value = error;
+    return;
+  }
+  whatsappCheckResults[member.id] = data?.exists ?? false;
 };
 
 const handleDeleteRoster = async (member: RosterMember) => {
@@ -4344,11 +5093,372 @@ const handleDeleteRoster = async (member: RosterMember) => {
   const { error } = await deleteRosterMember(member.id);
   rosterActionLoadingId.value = "";
   if (error) {
-    rosterError.value = error;
+    rosterFormError.value = error;
     return;
   }
+  isRosterDialogOpen.value = false;
   await loadRoster();
 };
+
+const {
+  listTemplates: listMessageTemplates,
+  createTemplate: createMessageTemplate,
+  updateTemplate: updateMessageTemplate,
+  deleteTemplate: deleteMessageTemplate,
+  listRules: listMessageRules,
+  createRule: createMessageRule,
+  updateRule: updateMessageRule,
+  deleteRule: deleteMessageRule,
+  listLogs: listMessageLogs,
+  sendNow: sendMessageNow,
+} = useMessages();
+
+type MessagesSubTab = "modelos" | "enviar" | "regras" | "historico" | "aniversariantes";
+
+const messagesSubTabs: { value: MessagesSubTab; label: string }[] = [
+  { value: "modelos", label: "Modelos" },
+  { value: "enviar", label: "Enviar agora" },
+  { value: "regras", label: "Regras automáticas" },
+  { value: "historico", label: "Histórico" },
+  { value: "aniversariantes", label: "Aniversariantes" },
+];
+const messagesSubTab = ref<MessagesSubTab>("modelos");
+
+const audienceOptions = [
+  { title: "Visitantes", value: "VISITOR" },
+  { title: "Membros", value: "MEMBER" },
+  { title: "Todos (visitantes + membros)", value: "ALL" },
+];
+const audienceLabel = (audience: MessageAudience) =>
+  audienceOptions.find((option) => option.value === audience)?.title ?? audience;
+
+const ruleServiceTimeLabel = (item: ServiceTime | string) => {
+  if (!item || typeof item !== "object") return "";
+  return `${weekdayName(item.weekday)} · ${item.time} · ${item.label}`;
+};
+
+const formatLogDate = (value: string) =>
+  new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+
+const messageTemplates = ref<MessageTemplate[]>([]);
+const templatesLoading = ref(false);
+const templatesError = ref("");
+
+const messageRules = ref<MessageRule[]>([]);
+const rulesLoading = ref(false);
+const rulesError = ref("");
+
+const messageLogs = ref<MessageLog[]>([]);
+const logsLoading = ref(false);
+const logsError = ref("");
+
+const loadMessageTemplates = async () => {
+  if (!isChurchWideManager.value) return;
+  templatesLoading.value = true;
+  templatesError.value = "";
+  const { data, error } = await listMessageTemplates();
+  if (error) templatesError.value = error;
+  messageTemplates.value = data ?? [];
+  templatesLoading.value = false;
+};
+
+const loadMessageRules = async () => {
+  if (!isChurchWideManager.value) return;
+  rulesLoading.value = true;
+  rulesError.value = "";
+  const { data, error } = await listMessageRules();
+  if (error) rulesError.value = error;
+  messageRules.value = data ?? [];
+  rulesLoading.value = false;
+};
+
+const loadMessageLogs = async () => {
+  if (!isChurchWideManager.value) return;
+  logsLoading.value = true;
+  logsError.value = "";
+  const { data, error } = await listMessageLogs();
+  if (error) logsError.value = error;
+  messageLogs.value = data ?? [];
+  logsLoading.value = false;
+};
+
+const loadMessagesData = async () => {
+  await Promise.all([loadMessageTemplates(), loadMessageRules(), loadMessageLogs()]);
+};
+
+const { listBirthdays, getBirthdaySetting, updateBirthdaySetting, sendBirthdayMessagesNow } = useBirthdays();
+
+const birthdayRangeOptions: { value: BirthdayRange; label: string }[] = [
+  { value: "today", label: "Hoje" },
+  { value: "week", label: "Esta semana" },
+  { value: "month", label: "Este mês" },
+];
+const birthdayRange = ref<BirthdayRange>("today");
+const birthdayMembers = ref<BirthdayMember[]>([]);
+const birthdaysLoading = ref(false);
+const birthdaysError = ref("");
+
+const birthdaySetting = ref<BirthdayMessageSetting | null>(null);
+const birthdaySettingSaving = ref(false);
+const birthdaySettingError = ref("");
+
+const isSendingBirthdaysNow = ref(false);
+const sendBirthdaysError = ref("");
+const sendBirthdaysSuccess = ref("");
+
+const birthdayEmptyLabel = computed(() => {
+  if (birthdayRange.value === "today") return "Ninguém faz aniversário hoje";
+  if (birthdayRange.value === "week") return "Ninguém faz aniversário esta semana";
+  return "Ninguém faz aniversário este mês";
+});
+
+const loadBirthdays = async () => {
+  if (!isChurchWideManager.value) return;
+  birthdaysLoading.value = true;
+  birthdaysError.value = "";
+  const { data, error } = await listBirthdays(birthdayRange.value);
+  if (error) birthdaysError.value = error;
+  birthdayMembers.value = data ?? [];
+  birthdaysLoading.value = false;
+};
+
+watch(birthdayRange, loadBirthdays);
+
+const loadBirthdaySetting = async () => {
+  if (!isChurchWideManager.value) return;
+  const { data, error } = await getBirthdaySetting();
+  if (error) birthdaySettingError.value = error;
+  birthdaySetting.value = data ?? null;
+};
+
+const loadBirthdayData = async () => {
+  await Promise.all([loadBirthdays(), loadBirthdaySetting()]);
+};
+
+const handleToggleBirthdayAuto = async (isActive: boolean) => {
+  birthdaySettingSaving.value = true;
+  birthdaySettingError.value = "";
+  const { data, error } = await updateBirthdaySetting({ isActive });
+  birthdaySettingSaving.value = false;
+  if (error) {
+    birthdaySettingError.value = error;
+    return;
+  }
+  birthdaySetting.value = data ?? birthdaySetting.value;
+};
+
+const handleSetBirthdayTemplate = async (templateId: string | null) => {
+  birthdaySettingSaving.value = true;
+  birthdaySettingError.value = "";
+  const { data, error } = await updateBirthdaySetting({ templateId });
+  birthdaySettingSaving.value = false;
+  if (error) {
+    birthdaySettingError.value = error;
+    return;
+  }
+  birthdaySetting.value = data ?? birthdaySetting.value;
+};
+
+const handleSendBirthdaysNow = async () => {
+  isSendingBirthdaysNow.value = true;
+  sendBirthdaysError.value = "";
+  sendBirthdaysSuccess.value = "";
+
+  const { error } = await sendBirthdayMessagesNow();
+  isSendingBirthdaysNow.value = false;
+
+  if (error) {
+    sendBirthdaysError.value = error;
+    return;
+  }
+
+  sendBirthdaysSuccess.value = "Envio iniciado - acompanhe o progresso no Histórico.";
+  await loadMessageLogs();
+};
+
+const isTemplateDialogOpen = ref(false);
+const editingTemplateId = ref("");
+const isSavingTemplate = ref(false);
+const templateFormError = ref("");
+const templateForm = reactive({ name: "", body: "" });
+
+const resetTemplateForm = () => {
+  templateForm.name = "";
+  templateForm.body = "";
+  templateFormError.value = "";
+};
+
+const openCreateTemplateDialog = () => {
+  editingTemplateId.value = "";
+  resetTemplateForm();
+  isTemplateDialogOpen.value = true;
+};
+
+const openEditTemplateDialog = (template: MessageTemplate) => {
+  editingTemplateId.value = template.id;
+  templateForm.name = template.name;
+  templateForm.body = template.body;
+  templateFormError.value = "";
+  isTemplateDialogOpen.value = true;
+};
+
+const handleSaveTemplate = async () => {
+  if (!templateForm.name.trim() || !templateForm.body.trim()) {
+    templateFormError.value = "Nome e mensagem são obrigatórios";
+    return;
+  }
+
+  isSavingTemplate.value = true;
+  templateFormError.value = "";
+
+  const payload = { name: templateForm.name, body: templateForm.body };
+  const { error } = editingTemplateId.value
+    ? await updateMessageTemplate(editingTemplateId.value, payload)
+    : await createMessageTemplate(payload);
+
+  isSavingTemplate.value = false;
+
+  if (error) {
+    templateFormError.value = error;
+    return;
+  }
+
+  isTemplateDialogOpen.value = false;
+  await loadMessageTemplates();
+};
+
+const handleDeleteTemplate = async () => {
+  if (!editingTemplateId.value) return;
+  isSavingTemplate.value = true;
+  const { error } = await deleteMessageTemplate(editingTemplateId.value);
+  isSavingTemplate.value = false;
+
+  if (error) {
+    templateFormError.value = error;
+    return;
+  }
+
+  isTemplateDialogOpen.value = false;
+  await Promise.all([loadMessageTemplates(), loadMessageRules()]);
+};
+
+const sendForm = reactive<{ templateId: string; audience: MessageAudience }>({
+  templateId: "",
+  audience: "ALL",
+});
+const isSendingNow = ref(false);
+const sendError = ref("");
+const sendSuccess = ref("");
+
+const handleSendNow = async () => {
+  if (!sendForm.templateId) return;
+  isSendingNow.value = true;
+  sendError.value = "";
+  sendSuccess.value = "";
+
+  const { error } = await sendMessageNow(sendForm.templateId, sendForm.audience);
+  isSendingNow.value = false;
+
+  if (error) {
+    sendError.value = error;
+    return;
+  }
+
+  sendSuccess.value = "Envio iniciado - acompanhe o progresso no Histórico.";
+  await loadMessageLogs();
+};
+
+const isRuleDialogOpen = ref(false);
+const editingRuleId = ref("");
+const isSavingRule = ref(false);
+const ruleFormError = ref("");
+const ruleForm = reactive<{
+  serviceTimeId: string;
+  templateId: string;
+  audience: MessageAudience;
+  offsetMinutes: number;
+  isActive: boolean;
+}>({
+  serviceTimeId: "",
+  templateId: "",
+  audience: "ALL",
+  offsetMinutes: 120,
+  isActive: true,
+});
+
+const resetRuleForm = () => {
+  ruleForm.serviceTimeId = sortedServiceTimes.value[0]?.id ?? "";
+  ruleForm.templateId = "";
+  ruleForm.audience = "ALL";
+  ruleForm.offsetMinutes = 120;
+  ruleForm.isActive = true;
+  ruleFormError.value = "";
+};
+
+const openCreateRuleDialog = () => {
+  editingRuleId.value = "";
+  resetRuleForm();
+  isRuleDialogOpen.value = true;
+};
+
+const openEditRuleDialog = (rule: MessageRule) => {
+  editingRuleId.value = rule.id;
+  ruleForm.serviceTimeId = rule.serviceTimeId;
+  ruleForm.templateId = rule.templateId;
+  ruleForm.audience = rule.audience;
+  ruleForm.offsetMinutes = rule.offsetMinutes;
+  ruleForm.isActive = rule.isActive;
+  ruleFormError.value = "";
+  isRuleDialogOpen.value = true;
+};
+
+const handleSaveRule = async () => {
+  if (!ruleForm.serviceTimeId || !ruleForm.templateId) {
+    ruleFormError.value = "Culto e modelo são obrigatórios";
+    return;
+  }
+
+  isSavingRule.value = true;
+  ruleFormError.value = "";
+
+  const payload = {
+    serviceTimeId: ruleForm.serviceTimeId,
+    templateId: ruleForm.templateId,
+    audience: ruleForm.audience,
+    offsetMinutes: ruleForm.offsetMinutes,
+    isActive: ruleForm.isActive,
+  };
+
+  const { error } = editingRuleId.value
+    ? await updateMessageRule(editingRuleId.value, payload)
+    : await createMessageRule(payload);
+
+  isSavingRule.value = false;
+
+  if (error) {
+    ruleFormError.value = error;
+    return;
+  }
+
+  isRuleDialogOpen.value = false;
+  await loadMessageRules();
+};
+
+const handleDeleteRule = async () => {
+  if (!editingRuleId.value) return;
+  isSavingRule.value = true;
+  const { error } = await deleteMessageRule(editingRuleId.value);
+  isSavingRule.value = false;
+
+  if (error) {
+    ruleFormError.value = error;
+    return;
+  }
+
+  isRuleDialogOpen.value = false;
+  await loadMessageRules();
+};
+
 const {
   getAnnouncements,
   createAnnouncement,
@@ -4820,6 +5930,95 @@ const pastoralLeadership = computed(() => {
     managers: members.value.filter((member) => member.canManageMembers),
   };
 });
+
+const { listAttendance, saveAttendance } = useAttendance();
+
+const attendanceEntries = ref<ServiceAttendance[]>([]);
+const attendanceLoading = ref(false);
+const attendanceError = ref("");
+
+const attendanceTotals = computed(() => {
+  const visitors = attendanceEntries.value.reduce((sum, entry) => sum + entry.visitorCount, 0);
+  const members = attendanceEntries.value.reduce((sum, entry) => sum + entry.memberCount, 0);
+  return { visitors, members, total: visitors + members };
+});
+
+const loadAttendance = async () => {
+  if (!isChurchWideManager.value) return;
+  attendanceLoading.value = true;
+  attendanceError.value = "";
+  const { data, error } = await listAttendance(30);
+  if (error) attendanceError.value = error;
+  attendanceEntries.value = data ?? [];
+  attendanceLoading.value = false;
+};
+
+// Data-only (meia-noite UTC) - nao usa toLocaleDateString/Date direto, pois
+// isso reinterpreta no fuso local e pode voltar um dia (mesma classe de bug
+// ja corrigida antes nas escalas). Recorta o "YYYY-MM-DD" puro da string ISO.
+const formatAttendanceDate = (value: string) => {
+  const [year, month, day] = value.slice(0, 10).split("-");
+  return `${day}/${month}/${year}`;
+};
+
+const isAttendanceDialogOpen = ref(false);
+const isSavingAttendance = ref(false);
+const attendanceFormError = ref("");
+const attendanceForm = reactive<{
+  serviceTimeId: string;
+  date: string;
+  visitorCount: number | null;
+  memberCount: number | null;
+  notes: string;
+}>({
+  serviceTimeId: "",
+  date: "",
+  visitorCount: null,
+  memberCount: null,
+  notes: "",
+});
+
+const openAttendanceDialog = () => {
+  attendanceForm.serviceTimeId = sortedServiceTimes.value[0]?.id ?? "";
+  attendanceForm.date = new Date().toISOString().slice(0, 10);
+  attendanceForm.visitorCount = null;
+  attendanceForm.memberCount = null;
+  attendanceForm.notes = "";
+  attendanceFormError.value = "";
+  isAttendanceDialogOpen.value = true;
+};
+
+const handleSaveAttendance = async () => {
+  if (!attendanceForm.serviceTimeId || !attendanceForm.date) {
+    attendanceFormError.value = "Culto e data são obrigatórios";
+    return;
+  }
+  if (attendanceForm.visitorCount === null || attendanceForm.memberCount === null) {
+    attendanceFormError.value = "Informe visitantes e membros (pode ser 0)";
+    return;
+  }
+
+  isSavingAttendance.value = true;
+  attendanceFormError.value = "";
+
+  const { error } = await saveAttendance({
+    serviceTimeId: attendanceForm.serviceTimeId,
+    date: attendanceForm.date,
+    visitorCount: attendanceForm.visitorCount,
+    memberCount: attendanceForm.memberCount,
+    notes: attendanceForm.notes,
+  });
+
+  isSavingAttendance.value = false;
+
+  if (error) {
+    attendanceFormError.value = error;
+    return;
+  }
+
+  isAttendanceDialogOpen.value = false;
+  await loadAttendance();
+};
 
 const isDeleteDialogOpen = computed({
   get: () =>
@@ -6573,6 +7772,9 @@ onMounted(async () => {
     loadInviteCode(),
     loadWhatsAppStatus(),
     loadRoster(),
+    loadMessagesData(),
+    loadBirthdayData(),
+    loadAttendance(),
   ]);
 });
 </script>
@@ -7388,6 +8590,78 @@ onMounted(async () => {
   font-weight: 800;
 }
 
+.attendance-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.attendance-totals div {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #fafafa;
+  padding: 10px;
+  border-color: var(--app-color-border);
+}
+
+.attendance-totals strong {
+  color: #111827;
+  font-size: 1.1rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.attendance-totals span {
+  color: #6b7280;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.attendance-list {
+  display: grid;
+  gap: 8px;
+}
+
+.attendance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px 11px;
+  border-color: var(--app-color-border);
+}
+
+.attendance-row strong {
+  display: block;
+  color: #111827;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.attendance-row small {
+  color: #6b7280;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.attendance-counts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.attendance-counts span {
+  color: #374151;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
 .section-heading {
   display: flex;
   align-items: center;
@@ -7477,6 +8751,13 @@ onMounted(async () => {
   flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
+}
+
+.message-template-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .member-card:active {

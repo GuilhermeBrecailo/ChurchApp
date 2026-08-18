@@ -217,7 +217,7 @@ describe("ChurchDepartmentAdapters - musicas", () => {
         makeRequest({ params: { songId: "song-1" } }),
       );
 
-      expect(result).toEqual({ id: null, personalKey: "", chords: "", updatedAt: null });
+      expect(result).toEqual({ id: null, personalKey: "", chords: "", notes: "", updatedAt: null });
     });
 
     it("getChurchSongPreference rejeita musica de outra igreja", async () => {

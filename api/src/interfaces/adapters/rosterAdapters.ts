@@ -4,6 +4,7 @@ import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { resolveActiveChurchContext, RoleContext } from "../utils/churchContext";
 import { isPrivilegedRole } from "../../application/Services/Auth/AuthorizationService";
+import { WhatsAppServiceClient } from "../../infrastructure/whatsapp/WhatsAppServiceClient";
 
 type CurrentUser = {
   id: string;
@@ -188,6 +189,28 @@ export class RosterAdapters {
       // era membro; senao, visitante.
       data: { status: member.joinedAt ? "MEMBER" : "VISITOR", leftAt: null },
     });
+  }
+
+  // Confere se o telefone cadastrado e um numero real de WhatsApp - mesmo
+  // endpoint (`check-exists`) que o envio em massa usa antes de mandar
+  // mensagem pra cada pessoa, so que sob demanda pra uma pessoa so.
+  async checkWhatsAppNumber(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    this.assertCanManageRoster(user);
+    const { id } = request.params as { id: string };
+    const member = await this.findOwned(id, user.crunchId);
+
+    if (!member.phone) {
+      throw new DomainError("Pessoa não tem telefone cadastrado");
+    }
+
+    const connected = await WhatsAppServiceClient.isConnected(user.crunchId);
+    if (!connected) {
+      throw new DomainError("WhatsApp não conectado - conecte a igreja antes de verificar números");
+    }
+
+    const exists = await WhatsAppServiceClient.checkNumberExists(user.crunchId, member.phone);
+    return { exists };
   }
 
   async remove(request: FastifyRequest) {

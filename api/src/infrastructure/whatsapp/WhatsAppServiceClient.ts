@@ -85,4 +85,29 @@ export const WhatsAppServiceClient = {
       session_id: tenantId,
     });
   },
+
+  async sendText(tenantId: string, number: string, text: string): Promise<void> {
+    await callWhatsAppService("/api/v1/message/send-text", tenantId, {
+      session_id: tenantId,
+      number,
+      text,
+    });
+  },
+
+  // Confere se o numero esta registrado no WhatsApp antes de mandar mensagem
+  // pra ele (evita gastar o rate limit do envio em massa com numero errado).
+  // Mesmo tratamento de erro do isConnected: sessao nao pronta ou numero mal
+  // formatado nao deve derrubar quem chamou, so reporta "nao existe".
+  async checkNumberExists(tenantId: string, number: string): Promise<boolean> {
+    try {
+      const result = await callWhatsAppService<{ exists: boolean }>(
+        "/api/v1/contact/check-exists",
+        tenantId,
+        { session_id: tenantId, number },
+      );
+      return result.exists;
+    } catch {
+      return false;
+    }
+  },
 };

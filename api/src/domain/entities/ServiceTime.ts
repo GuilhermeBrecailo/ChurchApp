@@ -40,4 +40,17 @@ export class ServiceTime {
   set weekday(value: number) { this._weekday = value; }
   set time(value: string) { this._time = value; }
   set isActive(value: boolean) { this._isActive = value; }
+
+  // Sem isso, JSON.stringify serializa os campos privados (_id, _label...)
+  // em vez dos getters publicos - quebra qualquer resposta HTTP desta entidade.
+  toJSON() {
+    return {
+      id: this._id,
+      label: this._label,
+      weekday: this._weekday,
+      time: this._time,
+      isActive: this._isActive,
+      crunchId: this._crunchId,
+    };
+  }
 }

@@ -31,6 +31,9 @@ export default defineConfig([
     },
     rules: {
       ...tseslintPlugin.configs.recommended.rules,
+      // TS types (RequestInit, etc.) don't exist at runtime - base no-undef
+      // false-positives on them. tsc already catches real undefined refs.
+      "no-undef": "off",
     },
   },
 ]);

@@ -26,7 +26,12 @@ import { BillingRoutes } from "./src/interfaces/routes/BillingRoutes.ts";
 import { BibleNoteRoutes } from "./src/interfaces/routes/BibleNoteRoutes.ts";
 import { WhatsAppRoutes } from "./src/interfaces/routes/WhatsAppRoutes.ts";
 import { RosterRoutes } from "./src/interfaces/routes/RosterRoutes.ts";
+import { MessageRoutes } from "./src/interfaces/routes/MessageRoutes.ts";
+import { BirthdayRoutes } from "./src/interfaces/routes/BirthdayRoutes.ts";
+import { AttendanceRoutes } from "./src/interfaces/routes/AttendanceRoutes.ts";
 import TenantHandler from "./src/interfaces/plugins/TenantHandler.ts";
+import { startMessageRuleScheduler } from "./src/infrastructure/whatsapp/messageRuleScheduler.ts";
+import { startBirthdayScheduler } from "./src/infrastructure/whatsapp/birthdayScheduler.ts";
 
 const port = Number(process.env.API_PORT || 8000);
 
@@ -86,8 +91,14 @@ await server.register(BillingRoutes, { prefix: "/" });
 await server.register(BibleNoteRoutes, { prefix: "/" });
 await server.register(WhatsAppRoutes, { prefix: "/" });
 await server.register(RosterRoutes, { prefix: "/" });
+await server.register(MessageRoutes, { prefix: "/" });
+await server.register(BirthdayRoutes, { prefix: "/" });
+await server.register(AttendanceRoutes, { prefix: "/" });
 
 await server.listen({ port, host: "0.0.0.0" });
+
+startMessageRuleScheduler();
+startBirthdayScheduler();
 
 console.log(`Server running on http://localhost:${port}`);
 

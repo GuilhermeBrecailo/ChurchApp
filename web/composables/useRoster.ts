@@ -105,6 +105,15 @@ export const useRoster = () => {
     );
   };
 
+  const checkRosterMemberWhatsApp = async (
+    id: string,
+  ): Promise<ApiResponse<{ exists: boolean }>> => {
+    return await $customFetch<{ exists: boolean }>(
+      `${config.public.URL_BACKEND}/api/church/roster/${id}/check-whatsapp`,
+      { method: "POST", headers: authHeadersNoBody() },
+    );
+  };
+
   return {
     listRosterMembers,
     createRosterMember,
@@ -113,5 +122,6 @@ export const useRoster = () => {
     markRosterMemberAsLeft,
     restoreRosterMember,
     deleteRosterMember,
+    checkRosterMemberWhatsApp,
   };
 };

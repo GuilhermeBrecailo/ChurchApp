@@ -77,6 +77,11 @@ model Crunch {
     pushSubscriptions PushSubscription[]
     posts         Post[]
     rosterMembers RosterMember[]
+    messageTemplates MessageTemplate[]
+    messageRules     MessageRule[]
+    messageLogs      MessageLog[]
+    birthdayMessageSetting BirthdayMessageSetting?
+    serviceAttendances ServiceAttendance[]
 }
 
 model MercadoPagoWebhookNotification {
@@ -302,7 +307,33 @@ model ServiceTime {
     crunchId String
     crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
 
+    messageRules MessageRule[]
+    attendances ServiceAttendance[]
+
     @@index([crunchId, isActive])
+}
+
+// Contagem manual de quem veio no culto - 1 registro por culto+data (unico
+// juntos, entao lancar de novo no mesmo culto/dia edita em vez de duplicar).
+// So numeros agregados (visitantes/membros), nao rastreia pessoa por pessoa -
+// isso ja existe em outro lugar (RosterMember).
+model ServiceAttendance {
+    id           String   @id @default(uuid())
+    date         DateTime
+    visitorCount Int
+    memberCount  Int
+    notes        String?
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    serviceTimeId String
+    serviceTime   ServiceTime @relation(fields: [serviceTimeId], references: [id], onDelete: Cascade)
+
+    @@unique([serviceTimeId, date])
+    @@index([crunchId, date])
 }
 
 model Devotional {
@@ -637,5 +668,100 @@ model PageHelpVideo {
     videoUrl    String?
     steps       Json?
     updatedAt   DateTime @updatedAt
+}
+
+// Modelo reutilizavel de mensagem de WhatsApp. {nome} no body e substituido
+// pelo nome do RosterMember na hora do envio. Sem publico fixo - o publico
+// (visitante/membro/todos) e escolhido no envio manual ou na regra.
+model MessageTemplate {
+    id        String   @id @default(uuid())
+    name      String
+    body      String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    rules MessageRule[]
+    logs  MessageLog[]
+    birthdaySettings BirthdayMessageSetting[]
+
+    @@index([crunchId])
+}
+
+// Regra de envio automatico recorrente, ligada a um ServiceTime ja
+// cadastrado. Dispara offsetMinutes depois do horario do culto. lastFiredAt
+// guarda a ultima vez que disparou, pra o scheduler nao mandar duas vezes na
+// mesma semana.
+model MessageRule {
+    id            String   @id @default(uuid())
+    // VISITOR | MEMBER | ALL
+    audience      String
+    offsetMinutes Int
+    isActive      Boolean  @default(true)
+    lastFiredAt   DateTime?
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    serviceTimeId String
+    serviceTime   ServiceTime @relation(fields: [serviceTimeId], references: [id], onDelete: Cascade)
+
+    templateId String
+    template   MessageTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+    logs MessageLog[]
+
+    @@index([crunchId, isActive])
+}
+
+// Historico de envios (manual ou disparado por MessageRule). Contagem
+// agregada, nao rastreia entrega por destinatario individual. templateId
+// nulo sobrevive a delete do template - so perde o nome/corpo exatos usados,
+// nao o registro do envio em si.
+model MessageLog {
+    id           String    @id @default(uuid())
+    // VISITOR | MEMBER | ALL
+    audience     String
+    // PROCESSING | DONE
+    status       String    @default("PROCESSING")
+    totalCount   Int       @default(0)
+    successCount Int       @default(0)
+    failedCount  Int       @default(0)
+    createdAt    DateTime  @default(now())
+    finishedAt   DateTime?
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    ruleId String?
+    rule   MessageRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+
+    templateId String?
+    template   MessageTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+    @@index([crunchId, createdAt])
+}
+
+// 1 linha por igreja, criada sob demanda pelo scheduler de aniversario na
+// primeira vez que ha aniversariante do dia - mesmo com isActive false, o
+// registro guarda lastNotifiedAt pra nao notificar o pastor duas vezes no
+// mesmo dia. isActive liga o disparo automatico de WhatsApp (alem da
+// notificacao push, que sempre acontece); sem isso, so avisa o pastor.
+model BirthdayMessageSetting {
+    id             String    @id @default(uuid())
+    isActive       Boolean   @default(false)
+    lastNotifiedAt DateTime?
+    createdAt      DateTime  @default(now())
+    updatedAt      DateTime  @updatedAt
+
+    crunchId String @unique
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    templateId String?
+    template   MessageTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 }
 
