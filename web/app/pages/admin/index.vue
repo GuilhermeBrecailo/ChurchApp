@@ -4684,14 +4684,14 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, watch } from "vue";
 import { Building, Calendar, Music, UserPlus, UserCheck, Users, Church, ArrowRight, BarChart3, Pencil, Trash2, Shield, BookMarked, Megaphone, Heart, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Image as ImageIcon, CheckCircle2, Lock, Clock, X, ChevronDown, Bell, Settings2, MessageSquare, Send, History, Cake } from "lucide-vue-next";
-import { useAuth } from "../../composables/useAuth";
+import { useAuth } from "../../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
-import { useMembers, type ChurchMember, type PendingMember } from "../../composables/useMembers";
+import { useMembers, type ChurchMember, type PendingMember } from "../../../composables/useMembers";
 import {
   useDepartments,
   type ChurchDepartment,
   type DepartmentSchedule,
-} from "../../composables/useDepartments";
+} from "../../../composables/useDepartments";
 import {
   useAdmin,
   type AdminChurch,
@@ -4699,7 +4699,7 @@ import {
   type AdminChurchDetails,
   type AdminChurchSchedule,
   type AdminChurchUser,
-} from "../../composables/useAdmin";
+} from "../../../composables/useAdmin";
 import {
   useChurchRoles,
   type ChurchRole,
@@ -4714,32 +4714,32 @@ import {
   type PermissionScope,
   type AppPermission,
 } from "../../../composables/usePermissions";
-import { useDailyVerse, type DailyVerse } from "../../composables/useDailyVerse";
+import { useDailyVerse, type DailyVerse } from "../../../composables/useDailyVerse";
 import {
   useAnnouncements,
   type Announcement,
-} from "../../composables/useAnnouncements";
+} from "../../../composables/useAnnouncements";
 import {
   useDevotionals,
   type Devotional,
-} from "../../composables/useDevotionals";
-import { useChurchInvite } from "../../composables/useChurchInvite";
-import { useChurch } from "../../composables/useChurch";
-import { useServiceTimes, type ServiceTime } from "../../composables/useServiceTimes";
-import { usePosts, type ChurchPost } from "../../composables/usePosts";
-import { useWhatsApp } from "../../composables/useWhatsApp";
-import { useRoster, type RosterMember, type RosterStatus } from "../../composables/useRoster";
-import { useBirthdays, type BirthdayMember, type BirthdayRange, type BirthdayMessageSetting } from "../../composables/useBirthdays";
-import { useAttendance, type ServiceAttendance } from "../../composables/useAttendance";
+} from "../../../composables/useDevotionals";
+import { useChurchInvite } from "../../../composables/useChurchInvite";
+import { useChurch } from "../../../composables/useChurch";
+import { useServiceTimes, type ServiceTime } from "../../../composables/useServiceTimes";
+import { usePosts, type ChurchPost } from "../../../composables/usePosts";
+import { useWhatsApp } from "../../../composables/useWhatsApp";
+import { useRoster, type RosterMember, type RosterStatus } from "../../../composables/useRoster";
+import { useBirthdays, type BirthdayMember, type BirthdayRange, type BirthdayMessageSetting } from "../../../composables/useBirthdays";
+import { useAttendance, type ServiceAttendance } from "../../../composables/useAttendance";
 import {
   useMessages,
   type MessageAudience,
   type MessageTemplate,
   type MessageRule,
   type MessageLog,
-} from "../../composables/useMessages";
-import { FONT_OPTIONS } from "../../composables/useChurchAppearance";
-import { useChurchPlan, PLAN_LABELS, PLAN_FEATURE_LABELS, type Plan, type PlanFeature } from "../../composables/usePlan";
+} from "../../../composables/useMessages";
+import { FONT_OPTIONS } from "../../../composables/useChurchAppearance";
+import { useChurchPlan, PLAN_LABELS, PLAN_FEATURE_LABELS, type Plan, type PlanFeature } from "../../../composables/usePlan";
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
