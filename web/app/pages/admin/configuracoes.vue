@@ -1223,13 +1223,23 @@ onMounted(async () => {
   }
 }
 
-@media (max-width: 599px) {
+@media (max-width: 520px) {
   .footer-fields-grid {
     grid-template-columns: 1fr;
   }
 
   .church-admin-page {
-    padding-bottom: 90px;
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+  }
+
+  .section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .section-heading .v-btn {
+    width: 100%;
   }
 }
 </style>
