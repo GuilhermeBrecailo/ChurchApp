@@ -2196,10 +2196,10 @@ const handleDeleteRoster = async (member: RosterMember) => {
 
 onMounted(async () => {
   await Promise.all([
-    loadMembers(),
-    loadPendingMembers(),
-    loadDepartments(),
-    loadRoles(),
+    canAccessChurchAdmin.value ? loadMembers() : Promise.resolve(),
+    canAccessChurchAdmin.value ? loadPendingMembers() : Promise.resolve(),
+    canAccessChurchAdmin.value ? loadDepartments() : Promise.resolve(),
+    canAccessChurchAdmin.value ? loadRoles() : Promise.resolve(),
     loadRoster(),
   ]);
 });
