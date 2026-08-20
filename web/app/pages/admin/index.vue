@@ -2844,13 +2844,6 @@ const deleteDialogMessage = computed(() => {
   return "Essa ação não pode ser desfeita.";
 });
 
-const currentChurch = computed(() => user.value?.activeChurch ?? user.value?.church ?? null);
-
-// Cor da igreja (mesma da pagina publica) para o tratamento editorial das telas
-// de cadastro. Cai no terracota padrao quando a igreja nao escolheu uma cor.
-const churchAccent = computed(() => currentChurch.value?.accentColor || "#B5472A");
-const editorialStyle = computed(() => ({ "--church-accent": churchAccent.value }));
-
 const announcementKindOptions = [
   { label: "Aviso", value: "ANNOUNCEMENT" },
   { label: "Palavra do Pastor", value: "PASTOR_MESSAGE" },
