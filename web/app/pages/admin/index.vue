@@ -1139,7 +1139,6 @@
         slider-color="indigo-darken-2"
         class="admin-tabs"
       >
-        <v-tab value="ministerios" class="text-none font-weight-medium admin-tab">Ministérios</v-tab>
         <v-tab v-if="isChurchWideManager" value="conteudo" class="text-none font-weight-medium admin-tab">Conteúdo</v-tab>
         <v-tab v-if="isChurchWideManager" value="relatorios" class="text-none font-weight-medium admin-tab">Relatórios</v-tab>
         <v-tab v-if="isChurchWideManager" value="mensagens" class="text-none font-weight-medium admin-tab">Mensagens</v-tab>
@@ -2089,122 +2088,6 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
-    <section v-show="activeAdminTab === 'ministerios'" class="church-admin-section">
-      <div class="section-heading mb-4">
-        <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
-          Ministérios
-        </h2>
-        <v-btn
-          v-if="canManageDepartments"
-          color="purple-darken-3"
-          class="rounded-lg text-none px-4"
-          size="small"
-          elevation="1"
-          @click="isDepartmentDialogOpen = true"
-        >
-          <Building size="16" class="mr-2" /> Novo
-        </v-btn>
-      </div>
-
-      <div class="admin-filter-bar mb-4">
-        <v-text-field
-          v-model="departmentSearch"
-          label="Buscar ministério"
-          prepend-inner-icon="mdi-magnify"
-          variant="outlined"
-          density="compact"
-          color="purple-darken-3"
-          bg-color="white"
-          hide-details
-        />
-        <v-select
-          v-model="departmentTypeFilter"
-          label="Tipo"
-          :items="departmentFilterOptions"
-          item-title="label"
-          item-value="value"
-          prepend-inner-icon="mdi-shape-outline"
-          variant="outlined"
-          density="compact"
-          color="purple-darken-3"
-          bg-color="white"
-          hide-details
-        />
-      </div>
-
-      <v-card
-        v-if="departments.length === 0"
-        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
-      >
-        <Building size="32" color="#9CA3AF" class="mb-3" />
-        <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-          Nenhum ministério cadastrado ainda
-        </p>
-      </v-card>
-
-      <v-card
-        v-else-if="filteredDepartments.length === 0"
-        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
-      >
-        <Building size="32" color="#9CA3AF" class="mb-3" />
-        <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-          Nenhum ministério encontrado
-        </p>
-      </v-card>
-
-      <div v-else class="d-flex flex-column ministry-list">
-        <div
-          v-for="department in filteredDepartments"
-          :key="department.id"
-          class="ministry-item"
-          role="button"
-          tabindex="0"
-          @click="openChurchDepartmentDetails(department)"
-          @keydown.enter="openChurchDepartmentDetails(department)"
-          @keydown.space.prevent="openChurchDepartmentDetails(department)"
-        >
-          <AdminMinisteryCard
-            :ministry="{
-              name: department.name,
-              leader: department.leader.name,
-              status: department.isActive ? 'Ativo' : 'Inativo',
-              type: department.type,
-              typeLabel: departmentTypeLabel(department.type),
-            }"
-          />
-          <div v-if="canManageDepartments" class="ministry-actions">
-            <v-btn
-              icon
-              variant="text"
-              color="grey-darken-1"
-              size="small"
-              @click.stop="openDepartmentEditDialog(department)"
-            >
-              <v-icon size="18">mdi-pencil-outline</v-icon>
-            </v-btn>
-            <v-btn
-              icon
-              variant="text"
-              color="red-darken-2"
-              size="small"
-              @click.stop="handleDeleteDepartment(department)"
-            >
-              <v-icon size="18">mdi-delete-outline</v-icon>
-            </v-btn>
-          </div>
-        </div>
-      </div>
-
-      <v-alert
-        v-if="departmentsError"
-        type="error"
-        variant="tonal"
-        density="compact"
-        class="mt-4"
-      >
-        {{ departmentsError }}
-      </v-alert>
-    </section>
     <section v-show="isChurchWideManager && activeAdminTab === 'mensagens'" class="church-admin-section mb-8">
       <div class="section-heading mb-4">
         <div>
@@ -2723,166 +2606,6 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
-    <UtilsResponsiveOverlay v-model="isDepartmentDialogOpen" max-width="520">
-      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
-        <div class="responsive-dialog-header mb-5">
-          <div class="d-flex align-center min-w-0">
-            <v-avatar :color="avatarBgPurple" size="44" class="mr-3">
-              <Building size="20" :color="purpleAccent" />
-            </v-avatar>
-            <div class="min-w-0">
-              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-                {{ editingDepartmentId ? "Editar ministério" : "Novo ministério" }}
-              </h2>
-              <p class="text-body-2 text-grey-darken-1 mb-0">
-                Cadastre um ministério da sua igreja.
-              </p>
-            </div>
-          </div>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeDepartmentDialog">
-            <v-icon size="20">mdi-close</v-icon>
-          </v-btn>
-        </div>
-
-        <v-form autocomplete="off" @submit.prevent="handleCreateDepartment">
-          <v-text-field
-            v-model="departmentForm.name"
-            label="Nome do ministério"
-            prepend-inner-icon="mdi-domain"
-            variant="outlined"
-            density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
-            class="admin-input mb-4"
-            hide-details="auto"
-            autocomplete="off"
-            :disabled="isCreatingDepartment"
-          />
-
-          <v-select
-            v-model="departmentForm.type"
-            label="Tipo"
-            :items="departmentTypes"
-            item-title="label"
-            item-value="value"
-            prepend-inner-icon="mdi-shape-outline"
-            variant="outlined"
-            density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
-            class="admin-input mb-4"
-            hide-details="auto"
-            :disabled="isCreatingDepartment"
-          />
-
-          <v-select
-            v-model="departmentForm.leaderId"
-            label="Líder"
-            :items="leaderOptions"
-            item-title="label"
-            item-value="value"
-            prepend-inner-icon="mdi-account-star-outline"
-            variant="outlined"
-            density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
-            class="admin-input mb-4"
-            hide-details="auto"
-            :disabled="isCreatingDepartment"
-          />
-
-          <v-alert
-            v-if="createDepartmentError"
-            type="error"
-            variant="tonal"
-            density="compact"
-            class="mb-4"
-          >
-            {{ createDepartmentError }}
-          </v-alert>
-
-          <div class="admin-dialog-actions">
-            <v-btn
-              variant="text"
-              color="grey-darken-1"
-              class="text-none"
-              :disabled="isCreatingDepartment"
-              @click="closeDepartmentDialog"
-            >
-              Cancelar
-            </v-btn>
-            <v-btn
-              type="submit"
-              color="purple-darken-3"
-              class="text-none font-weight-bold"
-              :loading="isCreatingDepartment"
-              :disabled="isCreatingDepartment"
-            >
-              {{ editingDepartmentId ? "Salvar ministério" : "Criar ministério" }}
-            </v-btn>
-          </div>
-        </v-form>
-      </v-card>
-    </UtilsResponsiveOverlay>
-
-    <UtilsResponsiveOverlay v-model="isChurchDepartmentDetailsOpen" max-width="520">
-      <v-card
-        v-if="selectedChurchDepartment"
-        class="rounded-xl pa-6 bg-white"
-        elevation="0"
-      >
-        <div class="responsive-dialog-header mb-5">
-          <div class="d-flex align-center min-w-0">
-            <v-avatar :color="avatarBgPurple" size="48" class="mr-3">
-              <Building size="22" :color="purpleAccent" />
-            </v-avatar>
-            <div class="min-w-0">
-              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
-                {{ selectedChurchDepartment.name }}
-              </h2>
-              <p class="text-body-2 text-grey-darken-1 mb-0 text-truncate">
-                Líder: {{ selectedChurchDepartment.leader.name }}
-              </p>
-            </div>
-          </div>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeChurchDepartmentDetails">
-            <v-icon size="20">mdi-close</v-icon>
-          </v-btn>
-        </div>
-
-        <div class="member-info">
-          <div>
-            <p class="text-caption text-grey-darken-1 mb-1">Tipo</p>
-            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
-              {{ departmentTypeLabel(selectedChurchDepartment.type) }}
-            </p>
-          </div>
-          <div>
-            <p class="text-caption text-grey-darken-1 mb-1">Status</p>
-            <v-chip
-              size="small"
-              :color="selectedChurchDepartment.isActive ? 'teal-darken-2' : 'grey'"
-              variant="tonal"
-            >
-              {{ selectedChurchDepartment.isActive ? "Ativo" : "Inativo" }}
-            </v-chip>
-          </div>
-          <div>
-            <p class="text-caption text-grey-darken-1 mb-1">Membros</p>
-            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
-              {{ selectedChurchDepartment.membersCount || 0 }}
-            </p>
-          </div>
-          <div>
-            <p class="text-caption text-grey-darken-1 mb-1">Escalas</p>
-            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
-              {{ selectedChurchDepartment.schedulesCount || 0 }}
-            </p>
-          </div>
-        </div>
-      </v-card>
-    </UtilsResponsiveOverlay>
-
     <UtilsConfirmDialog
       v-model="isDeleteDialogOpen"
       :title="deleteDialogTitle"
@@ -2971,13 +2694,7 @@ const avatarBgPurple = computed(() => isDark.value ? "rgba(240,151,90,0.16)" : "
 
 
 const { getMembers } = useMembers();
-const {
-  getDepartments,
-  getChurchSchedules,
-  createDepartment,
-  updateDepartment,
-  deleteDepartment,
-} = useDepartments();
+const { getDepartments, getChurchSchedules } = useDepartments();
 const {
   getChurches,
   getChurchById,
@@ -3432,7 +3149,7 @@ type PlatformAdminTab = "geral" | "igrejas" | "videos";
 
 const activeAdminMode = ref<AdminMode>("master");
 const activePlatformTab = ref<PlatformAdminTab>("geral");
-const activeAdminTab = ref("ministerios");
+const activeAdminTab = ref("conteudo");
 const selectedChurch = ref<AdminChurchDetails | null>(null);
 const membersError = ref("");
 const departmentsError = ref("");
@@ -3442,18 +3159,11 @@ const isLoadingChurch = ref(false);
 const isAdminUserDetailsOpen = ref(false);
 const isAdminDepartmentDetailsOpen = ref(false);
 const isAdminScheduleDetailsOpen = ref(false);
-const isChurchDepartmentDetailsOpen = ref(false);
 const isChurchDetailsOpen = ref(false);
 const isChurchDetailsSheetOpen = ref(false);
-const isDepartmentDialogOpen = ref(false);
-const isCreatingDepartment = ref(false);
-const createDepartmentError = ref("");
 const selectedAdminUser = ref<AdminChurchUser | null>(null);
 const selectedAdminDepartment = ref<AdminChurchDepartment | null>(null);
 const selectedAdminSchedule = ref<AdminChurchSchedule | null>(null);
-const selectedChurchDepartment = ref<ChurchDepartment | null>(null);
-const editingDepartmentId = ref("");
-const pendingDeleteDepartment = ref<ChurchDepartment | null>(null);
 const pendingRemoveAdminUser = ref<AdminChurchUser | null>(null);
 const pendingDeleteChurch = ref<AdminChurch | null>(null);
 const deleteChurchError = ref("");
@@ -3474,8 +3184,6 @@ const showAllChurchDepartments = ref(false);
 const showAllChurchSchedules = ref(false);
 const platformSearch = ref("");
 const platformStatusFilter = ref<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
-const departmentSearch = ref("");
-const departmentTypeFilter = ref("ALL");
 const contentError = ref("");
 const announcementError = ref("");
 const announcementSuccess = ref("");
@@ -3514,7 +3222,6 @@ const canAccessChurchAdmin = computed(
     user.value?.hasChurch === true &&
     canManageMembersByRole.value,
 );
-const canManageDepartments = computed(() => isChurchWideManager.value);
 const isCurrentUserSuperAdmin = computed(() => user.value?.role === "SUPER_ADMIN");
 const isProtectedSuperAdmin = (member?: { role?: string } | null) =>
   member?.role === "SUPER_ADMIN" && !isCurrentUserSuperAdmin.value;
@@ -3545,12 +3252,6 @@ const selectedAdminUserRoleLockedReason = computed(() => {
   }
   return "";
 });
-const leaderOptions = computed(() =>
-  members.value.map((member) => ({
-    label: `${member.name} (${member.email})`,
-    value: member.id,
-  })),
-);
 const platformTotals = computed(() => ({
   users: adminChurches.value.reduce(
     (total, church) => total + church.membersCount,
@@ -3829,13 +3530,11 @@ const handleSaveAttendance = async () => {
 const isDeleteDialogOpen = computed({
   get: () =>
     Boolean(
-      pendingDeleteDepartment.value ||
-        pendingRemoveAdminUser.value ||
+      pendingRemoveAdminUser.value ||
         pendingDeleteChurch.value,
     ),
   set: (value: boolean) => {
     if (!value && !isConfirmingDelete.value) {
-      pendingDeleteDepartment.value = null;
       pendingRemoveAdminUser.value = null;
       pendingDeleteChurch.value = null;
     }
@@ -3843,17 +3542,12 @@ const isDeleteDialogOpen = computed({
 });
 
 const deleteDialogTitle = computed(() => {
-  if (pendingDeleteDepartment.value) return "Remover ministério";
   if (pendingRemoveAdminUser.value) return "Remover usuário da igreja";
   if (pendingDeleteChurch.value) return "Excluir igreja";
   return "Remover membro";
 });
 
 const deleteDialogMessage = computed(() => {
-  if (pendingDeleteDepartment.value) {
-    return `O ministério ${pendingDeleteDepartment.value.name} será removido com suas escalas, tarefas, recursos e músicas.`;
-  }
-
   if (pendingRemoveAdminUser.value) {
     return `${pendingRemoveAdminUser.value.name} será removido desta igreja.`;
   }
@@ -3863,12 +3557,6 @@ const deleteDialogMessage = computed(() => {
   }
 
   return "Essa ação não pode ser desfeita.";
-});
-
-const departmentForm = reactive({
-  name: "",
-  type: "OTHER",
-  leaderId: "",
 });
 
 const verseForm = reactive({
@@ -3960,10 +3648,6 @@ const departmentTypes = [
   { label: "Intercessão", value: "INTERCESSION" },
   { label: "Outro", value: "OTHER" },
 ];
-const departmentFilterOptions = computed(() => [
-  { label: "Todos", value: "ALL" },
-  ...departmentTypes,
-]);
 const departmentTypeLabel = (value: string) =>
   departmentTypes.find((type) => type.value === value)?.label || "Outro";
 
@@ -4362,100 +4046,14 @@ const closeAdminScheduleDetails = () => {
   selectedAdminSchedule.value = null;
 };
 
-const openChurchDepartmentDetails = (department: ChurchDepartment) => {
-  selectedChurchDepartment.value = department;
-  isChurchDepartmentDetailsOpen.value = true;
-};
-
-const closeChurchDepartmentDetails = () => {
-  isChurchDepartmentDetailsOpen.value = false;
-  selectedChurchDepartment.value = null;
-};
-
-const resetDepartmentForm = () => {
-  departmentForm.name = "";
-  departmentForm.type = "OTHER";
-  departmentForm.leaderId = "";
-  editingDepartmentId.value = "";
-};
-
-const closeDepartmentDialog = () => {
-  isDepartmentDialogOpen.value = false;
-  createDepartmentError.value = "";
-  resetDepartmentForm();
-};
-
-const handleCreateDepartment = async () => {
-  createDepartmentError.value = "";
-  const name = departmentForm.name.trim();
-
-  if (!name || !departmentForm.leaderId) {
-    createDepartmentError.value = "Informe o nome e o líder do ministério.";
-    return;
-  }
-
-  isCreatingDepartment.value = true;
-
-  try {
-    const { data, error } = editingDepartmentId.value
-      ? await updateDepartment(editingDepartmentId.value, {
-          name,
-          type: departmentForm.type,
-          leaderId: departmentForm.leaderId,
-        })
-      : await createDepartment({
-          name,
-          type: departmentForm.type,
-          leaderId: departmentForm.leaderId,
-        });
-
-    if (error || !data) {
-      createDepartmentError.value = error || "Não foi possível criar o ministério.";
-      return;
-    }
-
-    const nextDepartments = editingDepartmentId.value
-      ? departments.value.map((department) =>
-          department.id === data.id ? data : department,
-        )
-      : [...departments.value, data];
-
-    departments.value = nextDepartments.sort((first, second) =>
-      first.name.localeCompare(second.name),
-    );
-    closeDepartmentDialog();
-  } finally {
-    isCreatingDepartment.value = false;
-  }
-};
-
-const openDepartmentEditDialog = (department: ChurchDepartment) => {
-  editingDepartmentId.value = department.id;
-  departmentForm.name = department.name;
-  departmentForm.type = department.type;
-  departmentForm.leaderId = department.leaderId;
-  createDepartmentError.value = "";
-  isDepartmentDialogOpen.value = true;
-};
-
-const handleDeleteDepartment = (department: ChurchDepartment) => {
-  pendingDeleteDepartment.value = department;
-};
-
 const closeDeleteDialog = () => {
   if (!isConfirmingDelete.value) {
-    pendingDeleteDepartment.value = null;
     pendingRemoveAdminUser.value = null;
     pendingDeleteChurch.value = null;
   }
 };
 
 const confirmDelete = async () => {
-  if (pendingDeleteDepartment.value) {
-    await confirmDeleteDepartment();
-    return;
-  }
-
   if (pendingRemoveAdminUser.value) {
     await confirmRemoveAdminUser();
     return;
@@ -4492,31 +4090,6 @@ const confirmDeleteChurchAction = async () => {
       selectedChurch.value = null;
     }
     pendingDeleteChurch.value = null;
-  } finally {
-    isConfirmingDelete.value = false;
-  }
-};
-
-const confirmDeleteDepartment = async () => {
-  if (!pendingDeleteDepartment.value) return;
-
-  departmentsError.value = "";
-  isConfirmingDelete.value = true;
-  const departmentId = pendingDeleteDepartment.value.id;
-
-  try {
-    const { error } = await deleteDepartment(departmentId);
-
-    if (error) {
-      departmentsError.value = error;
-      return;
-    }
-
-    departments.value = departments.value.filter((item) => item.id !== departmentId);
-    churchSchedules.value = churchSchedules.value.filter(
-      (schedule) => schedule.departmentId !== departmentId,
-    );
-    pendingDeleteDepartment.value = null;
   } finally {
     isConfirmingDelete.value = false;
   }
@@ -4826,22 +4399,6 @@ const assignableRolesFor = (member?: { roles?: { id: string }[] } | null) => {
       value: role.id,
     }));
 };
-
-const filteredDepartments = computed(() => {
-  const search = normalizeFilterText(departmentSearch.value);
-
-  return departments.value.filter((department) => {
-    const matchesSearch =
-      !search ||
-      normalizeFilterText(`${department.name} ${department.leader.name}`)
-        .includes(search);
-    const matchesType =
-      departmentTypeFilter.value === "ALL" ||
-      department.type === departmentTypeFilter.value;
-
-    return matchesSearch && matchesType;
-  });
-});
 
 const loadRoles = async () => {
   const { data } = await getRoles();
@@ -5772,16 +5329,6 @@ onMounted(async () => {
   flex: 0 0 auto;
 }
 
-.admin-input :deep(.v-field) {
-  border-radius: 14px;
-}
-
-.admin-input :deep(.v-field__input) {
-  min-height: 48px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
-
 .member-card:focus-visible {
   outline: 3px solid rgba(181, 71, 42, 0.32);
   outline-offset: 2px;
@@ -5829,15 +5376,6 @@ onMounted(async () => {
 
 .member-card:active {
   transform: scale(0.99);
-}
-
-.ministry-list {
-  gap: 10px;
-}
-
-.ministry-item {
-  min-width: 0;
-  cursor: pointer;
 }
 
 
@@ -6042,17 +5580,9 @@ onMounted(async () => {
   padding: 12px;
 }
 
-.ministry-item:focus-visible,
 .clickable-row:focus-visible {
   outline: 3px solid rgba(181, 71, 42, 0.32);
   outline-offset: 2px;
-}
-
-.ministry-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin: -6px 4px 14px 0;
 }
 
 .member-info {
@@ -6079,14 +5609,6 @@ onMounted(async () => {
 
 .permission-empty {
   min-height: 320px;
-}
-
-.admin-dialog-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 .member-permission-row {
@@ -6233,20 +5755,6 @@ onMounted(async () => {
 
   .member-badges :deep(.v-chip) {
     max-width: 100%;
-  }
-
-  .ministry-actions {
-    justify-content: flex-start;
-    margin: -4px 0 16px 8px;
-  }
-
-  .admin-dialog-actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .admin-dialog-actions .v-btn {
-    width: 100%;
   }
 
   .member-permission-row {
