@@ -2084,7 +2084,7 @@ const rosterStatusColor = (status: RosterStatus) =>
 const resetRosterForm = () => {
   rosterForm.name = "";
   rosterForm.email = "";
-  rosterForm.phone = "";
+  rosterForm.phone = "55";
   rosterForm.birthDate = "";
   rosterForm.notes = "";
   rosterFormError.value = "";
