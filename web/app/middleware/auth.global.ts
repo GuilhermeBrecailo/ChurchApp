@@ -7,7 +7,7 @@ import { defineNuxtRouteMiddleware, navigateTo, useCookie, useState } from "#app
 // abaixo pra nao ser expulsa de volta pra "/" quando autenticado.
 const publicRoutes = ["/login", "/register", "/forgot-password", "/c", "/termos", "/privacidade", "/comece", "/join"];
 const onboardingRoutes = ["/onboarding/church"];
-const noChurchAllowedRoutes = ["/", "/user", "/admin", "/join", ...onboardingRoutes];
+const noChurchAllowedRoutes = ["/", "/user", "/admin", "/platform-admin", "/join", ...onboardingRoutes];
 const refreshCookieName = "refresh_token";
 
 export default defineNuxtRouteMiddleware(async (to) => {
