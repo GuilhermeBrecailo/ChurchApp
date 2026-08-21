@@ -1150,6 +1150,7 @@
           <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">{{ item.title }}</h3>
           <p class="text-caption text-grey-darken-1 mb-0">{{ item.description }}</p>
         </div>
+        <ChevronRight size="18" class="member-chevron" />
       </v-card>
     </div>
 
@@ -1218,7 +1219,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { useRouter } from "vue-router";
-import { Building, Calendar, Music, UserCheck, Users, Church, ArrowRight, BarChart3, Pencil, Trash2, Link, QrCode, RefreshCw, Globe, Palette, Save, Lock, Newspaper, MessageSquare, Settings2 } from "lucide-vue-next";
+import { Building, Calendar, Music, UserCheck, Users, Church, ArrowRight, BarChart3, Pencil, Trash2, Link, QrCode, RefreshCw, Globe, Palette, Save, Lock, Newspaper, MessageSquare, Settings2, ChevronRight } from "lucide-vue-next";
 import { useAuth } from "../../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import { useMembers, type ChurchMember } from "../../../composables/useMembers";
@@ -2624,6 +2625,11 @@ onMounted(async () => {
 .member-copy h3,
 .member-copy p {
   overflow-wrap: anywhere;
+}
+
+.member-chevron {
+  color: var(--app-color-text-muted);
+  flex-shrink: 0;
 }
 
 /* Linha de select + botão de atribuir cargo: quebra para 2 linhas em telas
