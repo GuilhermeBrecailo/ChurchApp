@@ -1,6 +1,22 @@
 const serviceUrl = process.env.WHATSAPP_SERVICE_URL || "http://localhost:3060";
 const gatewaySecret = process.env.WHATSAPP_GATEWAY_SECRET || "";
 
+// Numeros sao cadastrados no Rol/roster como o pastor digita - normalmente
+// DDD + numero, sem o codigo do pais (ex: "41999999999"). O gateway de
+// WhatsApp so resolve o contato pelo numero internacional completo
+// (ex: "5541999999999"), entao sem isso todo envio falha silenciosamente
+// como "numero nao encontrado" mesmo pra numeros validos.
+function normalizeBrazilianNumber(rawNumber: string): string {
+  const digits = rawNumber.replace(/\D/g, "");
+  if (digits.startsWith("55") && (digits.length === 12 || digits.length === 13)) {
+    return digits;
+  }
+  if (digits.length === 10 || digits.length === 11) {
+    return `55${digits}`;
+  }
+  return digits;
+}
+
 async function callWhatsAppService<T>(
   path: string,
   tenantId: string,
@@ -89,7 +105,7 @@ export const WhatsAppServiceClient = {
   async sendText(tenantId: string, number: string, text: string): Promise<void> {
     await callWhatsAppService("/api/v1/message/send-text", tenantId, {
       session_id: tenantId,
-      number,
+      number: normalizeBrazilianNumber(number),
       text,
     });
   },
@@ -103,7 +119,7 @@ export const WhatsAppServiceClient = {
       const result = await callWhatsAppService<{ exists: boolean }>(
         "/api/v1/contact/check-exists",
         tenantId,
-        { session_id: tenantId, number },
+        { session_id: tenantId, number: normalizeBrazilianNumber(number) },
       );
       return result.exists;
     } catch {
