@@ -29,9 +29,8 @@
       <v-btn
         v-for="tab in pessoasSubTabs"
         :key="tab.value"
-        :color="activeSection === tab.value ? 'purple-darken-3' : 'grey-lighten-3'"
+        :color="activeSection === tab.value ? 'purple-darken-3' : 'grey-darken-2'"
         :variant="activeSection === tab.value ? 'flat' : 'tonal'"
-        size="small"
         class="text-none"
         @click="activeSection = tab.value"
       >

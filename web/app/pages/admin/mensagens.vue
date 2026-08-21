@@ -31,9 +31,8 @@
         <v-btn
           v-for="tab in messagesSubTabs"
           :key="tab.value"
-          :color="messagesSubTab === tab.value ? 'purple-darken-3' : 'grey-lighten-3'"
+          :color="messagesSubTab === tab.value ? 'purple-darken-3' : 'grey-darken-2'"
           :variant="messagesSubTab === tab.value ? 'flat' : 'tonal'"
-          size="small"
           class="text-none"
           @click="messagesSubTab = tab.value"
         >
@@ -297,9 +296,8 @@
           <v-btn
             v-for="option in birthdayRangeOptions"
             :key="option.value"
-            :color="birthdayRange === option.value ? 'purple-darken-3' : 'grey-lighten-3'"
+            :color="birthdayRange === option.value ? 'purple-darken-3' : 'grey-darken-2'"
             :variant="birthdayRange === option.value ? 'flat' : 'tonal'"
-            size="small"
             class="text-none"
             @click="birthdayRange = option.value"
           >
