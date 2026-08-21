@@ -1131,15 +1131,26 @@
       </div>
     </div>
 
-    <div class="admin-tabs-bar mb-6">
-      <v-tabs
-        v-model="activeAdminTab"
-        density="compact"
-        color="indigo-darken-2"
-        slider-color="indigo-darken-2"
-        class="admin-tabs"
+    <div class="hub-list">
+      <v-card
+        v-for="item in adminHubItems"
+        :key="item.route"
+        class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
+        role="button"
+        tabindex="0"
+        :aria-label="`Abrir ${item.title}`"
+        @click="router.push(item.route)"
+        @keydown.enter="router.push(item.route)"
+        @keydown.space.prevent="router.push(item.route)"
       >
-      </v-tabs>
+        <v-avatar :color="item.avatarBg" size="44" class="member-avatar">
+          <component :is="item.icon" size="20" :color="item.iconColor" />
+        </v-avatar>
+        <div class="member-copy">
+          <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">{{ item.title }}</h3>
+          <p class="text-caption text-grey-darken-1 mb-0">{{ item.description }}</p>
+        </div>
+      </v-card>
     </div>
 
     <div class="stats-grid church-stats-grid mb-6">
@@ -1206,7 +1217,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive } from "vue";
-import { Building, Calendar, Music, UserCheck, Users, Church, ArrowRight, BarChart3, Pencil, Trash2, Link, QrCode, RefreshCw, Globe, Palette, Save, Lock } from "lucide-vue-next";
+import { useRouter } from "vue-router";
+import { Building, Calendar, Music, UserCheck, Users, Church, ArrowRight, BarChart3, Pencil, Trash2, Link, QrCode, RefreshCw, Globe, Palette, Save, Lock, Newspaper, MessageSquare, Settings2 } from "lucide-vue-next";
 import { useAuth } from "../../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import { useMembers, type ChurchMember } from "../../../composables/useMembers";
@@ -1228,6 +1240,8 @@ import {
 } from "../../../composables/useChurchRoles";
 import { usePermissions } from "../../../composables/usePermissions";
 import { PLAN_LABELS, type Plan } from "../../../composables/usePlan";
+
+const router = useRouter();
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
@@ -1281,7 +1295,16 @@ type PlatformAdminTab = "geral" | "igrejas" | "videos";
 
 const activeAdminMode = ref<AdminMode>("master");
 const activePlatformTab = ref<PlatformAdminTab>("geral");
-const activeAdminTab = ref("relatorios");
+
+const adminHubItems = computed(() => [
+  { route: "/admin/relatorios", title: "Relatórios", description: "Confirmações, presença de culto, liderança", icon: BarChart3, avatarBg: "orange-lighten-4", iconColor: "#B5472A" },
+  { route: "/admin/pessoas", title: "Pessoas", description: "Membros, cargos e rol de visitantes", icon: Users, avatarBg: "blue-lighten-4", iconColor: "#2563eb" },
+  { route: "/admin/ministerios", title: "Gestão de ministérios", description: "Escalas, repertório, líderes", icon: Music, avatarBg: "purple-lighten-4", iconColor: "#7c3aed" },
+  { route: "/admin/publicacoes", title: "Publicações", description: "Avisos, devocionais, versículo do dia", icon: Newspaper, avatarBg: "teal-lighten-4", iconColor: "#0f766e" },
+  { route: "/admin/mensagens", title: "Mensagens", description: "WhatsApp: modelos, envios, aniversariantes", icon: MessageSquare, avatarBg: "orange-lighten-4", iconColor: "#B5472A" },
+  { route: "/admin/configuracoes", title: "Configurações", description: "Perfil, horários, WhatsApp, plano", icon: Settings2, avatarBg: "grey-lighten-3", iconColor: "#475569" },
+]);
+
 const selectedChurch = ref<AdminChurchDetails | null>(null);
 const membersError = ref("");
 const departmentsError = ref("");
@@ -2561,6 +2584,46 @@ onMounted(async () => {
   padding: 0 14px !important;
   border-radius: 10px;
   letter-spacing: 0;
+}
+
+.hub-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.member-card:focus-visible {
+  outline: 3px solid rgba(181, 71, 42, 0.32);
+  outline-offset: 2px;
+}
+
+.member-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.member-card:active {
+  transform: scale(0.99);
+}
+
+.member-avatar {
+  align-self: start;
+}
+
+.member-copy {
+  min-width: 0;
+}
+
+.member-copy h3,
+.member-copy p {
+  overflow-wrap: anywhere;
 }
 
 /* Linha de select + botão de atribuir cargo: quebra para 2 linhas em telas
