@@ -1468,7 +1468,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, watch } from "vue";
+import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { Building, Calendar, Music, UserCheck, Users, Church, ArrowRight, BarChart3, Pencil, Trash2, Link, Plus, QrCode, RefreshCw, Globe, Palette, Save, Lock } from "lucide-vue-next";
 import { useAuth } from "../../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
@@ -3275,56 +3275,6 @@ onMounted(async () => {
   flex: 0 0 auto;
 }
 
-.member-card:focus-visible {
-  outline: 3px solid rgba(181, 71, 42, 0.32);
-  outline-offset: 2px;
-}
-
-.member-card {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.member-avatar {
-  align-self: start;
-}
-
-.member-copy {
-  min-width: 0;
-}
-
-.member-copy h3,
-.member-copy p {
-  overflow-wrap: anywhere;
-}
-
-.member-badges {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-width: 0;
-}
-
-.message-template-preview {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.member-card:active {
-  transform: scale(0.99);
-}
-
-
 /* Linha de select + botão de atribuir cargo: quebra para 2 linhas em telas
    estreitas em vez de forçar o select a ficar espremido ou vazar da tela. */
 .assign-role-row {
@@ -3577,27 +3527,6 @@ onMounted(async () => {
 
   .section-heading .v-btn {
     width: 100%;
-  }
-
-  .member-card {
-    grid-template-columns: 40px minmax(0, 1fr);
-    align-items: start;
-    padding: 14px !important;
-  }
-
-  .member-avatar {
-    width: 40px !important;
-    height: 40px !important;
-  }
-
-  .member-badges {
-    grid-column: 2;
-    justify-content: flex-start;
-    margin-top: 2px;
-  }
-
-  .member-badges :deep(.v-chip) {
-    max-width: 100%;
   }
 
   .member-permission-row {
