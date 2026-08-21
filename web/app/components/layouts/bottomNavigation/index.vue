@@ -46,8 +46,8 @@
     <v-btn
       v-if="showAdmin"
       class="flex-col custom-btn"
-      :active="route.path.startsWith('/admin')"
-      @click="router.push('/admin')"
+      :active="route.path.startsWith('/admin') || route.path.startsWith('/platform-admin')"
+      @click="router.push(adminTarget)"
     >
       <Cog class="nav-icon" />
       <span class="nav-label mt-1">{{ adminLabel }}</span>
@@ -75,6 +75,12 @@ const isPlatformAdmin = computed(
 );
 const showAdmin = computed(() => hasChurch.value || isPlatformAdmin.value);
 const adminLabel = computed(() => "Admin");
+// Admin master (sem igreja própria) não tem nada pra ver no hub de
+// administração da igreja — manda direto pro /platform-admin. Quem tem
+// igreja (com ou sem privilégio de plataforma) continua indo pro /admin.
+const adminTarget = computed(() =>
+  isPlatformAdmin.value && !hasChurch.value ? "/platform-admin" : "/admin",
+);
 </script>
 
 <style scoped>

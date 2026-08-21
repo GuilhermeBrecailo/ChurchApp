@@ -338,6 +338,7 @@ const HELP_PAGES: HelpPage[] = [
   { pageKey: "/settings", label: "Configurações" },
   { pageKey: "/notifications", label: "Notificações" },
   { pageKey: "/admin", label: "Administração" },
+  { pageKey: "/platform-admin", label: "Admin Master" },
 ];
 
 const {
