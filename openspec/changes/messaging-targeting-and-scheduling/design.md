@@ -58,7 +58,11 @@ Current state, precisely:
 
 ## Open Questions
 
-1. **Is `post-service-messaging` the right "Modified Capability" reference, given `openspec/specs/` (the synced/merged directory) only currently contains `prayer-request-moderation`?** This repo's spec-sync discipline appears inconsistent — most shipped changes (including `post-service-messaging` itself) were never synced into the top-level `openspec/specs/`. I followed the codebase's actual behavior (read the real code) rather than the possibly-stale synced-spec state, and placed this change's delta spec at `specs/post-service-messaging/spec.md` to match where `post-service-messaging`'s own spec already lives. Worth running `/opsx:sync` at some point independent of this change, but not blocking it.
-2. **Should the roster composition report distinguish `FORMER` (left) roster members, or only count `VISITOR`/`MEMBER` (the two "active" statuses everything else in this feature area already uses)?** Proposed: only the two active statuses, matching `statusesForAudience`'s own `ALL = VISITOR + MEMBER` definition — but confirm with the user, since "quantos membros e quantos visitantes temos" could reasonably be read as "of everyone ever in the roster."
-3. **Does "Finalizar culto" need any UI signal that it already ran today** (e.g. showing the recorded time, letting a pastor see/undo it), or is a bare stateless button enough for v1? Proposed: show the recorded `endedAt` time next to the button once set (cheap, avoids "did my tap register?" confusion) — but not building an edit/undo flow beyond re-tapping to overwrite.
-4. **Exact placement of the recipient multi-select in "Enviar agora."** Proposed: a third option next to the existing "Público" select (Visitantes / Membros / Todos / **Selecionar pessoas...**) that reveals a roster picker when chosen, reusing the same list `pessoas.vue`'s Rol tab already renders — confirm this matches the user's mental model before implementation starts.
+Resolved by the user on 2026-08-21 — all four proposed defaults confirmed as-is, no changes to the Decisions above:
+
+1. ~~Is `post-service-messaging` the right "Modified Capability" reference...~~ — not user-facing, doesn't need a decision; `/opsx:sync` remains a standalone follow-up, not blocking implementation.
+2. **Roster report scope: only active statuses (`VISITOR` + `MEMBER`), matching `statusesForAudience`'s own `ALL` definition.** Confirmed — `FORMER` (desligado) roster members are excluded from the count.
+3. **"Finalizar culto" needs no undo/confirmation flow.** Confirmed — re-tapping overwrites `endedAt` with the later timestamp, which is the intended behavior (last tap wins). Still showing the recorded time next to the button once set (cheap UX, not a decision point).
+4. **Recipient picker lives as a 4th "Público" option (Visitantes / Membros / Todos / Selecionados) in "Enviar agora."** Confirmed — picking "Selecionados" reveals a roster multi-select inline on the same screen, no separate page.
+
+Implementation is unblocked — proceed per `tasks.md`.
