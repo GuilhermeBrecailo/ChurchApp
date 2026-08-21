@@ -80,7 +80,7 @@ async function notifyPastors(crunchId: string, members: TodaysMember[]) {
     {
       title: members.length === 1 ? "1 aniversariante hoje" : `${members.length} aniversariantes hoje`,
       body: members.map((member) => member.name).join(", "),
-      url: "/admin?tab=mensagens",
+      url: "/admin/mensagens",
       type: "birthday_today",
     },
   );

@@ -61,7 +61,7 @@ describe("checkBirthdays", () => {
     expect(mockSendToUsers).toHaveBeenCalledWith(["pastor-1"], {
       title: "1 aniversariante hoje",
       body: "Maria",
-      url: "/admin?tab=mensagens",
+      url: "/admin/mensagens",
       type: "birthday_today",
     });
   });
