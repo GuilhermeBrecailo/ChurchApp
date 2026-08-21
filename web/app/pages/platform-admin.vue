@@ -2024,7 +2024,6 @@ onMounted(async () => {
   font-weight: 800;
 }
 
-.church-details-surface,
 .church-details-sheet {
   border-radius: 8px !important;
   overflow: hidden;
@@ -2163,12 +2162,6 @@ onMounted(async () => {
 
 .detail-tile p {
   overflow-wrap: anywhere;
-}
-
-.church-detail-columns {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
 }
 
 .detail-section {
@@ -2323,10 +2316,6 @@ onMounted(async () => {
 
   .church-directory-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .church-detail-columns {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .church-details-sheet {

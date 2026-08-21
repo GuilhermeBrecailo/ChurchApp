@@ -1079,6 +1079,10 @@ onMounted(async () => {
   border: 1px solid #f3f4f6;
 }
 
+.permission-empty {
+  min-height: 320px;
+}
+
 .church-admin-page {
   max-width: 1120px;
   margin: 0 auto;

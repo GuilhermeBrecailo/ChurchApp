@@ -31,9 +31,16 @@
       </div>
     </div>
 
+    <v-alert v-if="membersError" type="error" variant="tonal" density="compact" class="mb-4">
+      {{ membersError }}
+    </v-alert>
+    <v-alert v-if="departmentsError" type="error" variant="tonal" density="compact" class="mb-4">
+      {{ departmentsError }}
+    </v-alert>
+
     <div class="hub-list">
       <v-card
-        v-for="item in adminHubItems"
+        v-for="item in visibleAdminHubItems"
         :key="item.route"
         class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
         role="button"
@@ -126,13 +133,19 @@ const membersError = ref("");
 const departmentsError = ref("");
 
 const adminHubItems = computed(() => [
-  { route: "/admin/relatorios", title: "Relatórios", description: "Confirmações, presença de culto, liderança", icon: BarChart3, avatarBg: "orange-lighten-4", iconColor: "#B5472A" },
-  { route: "/admin/pessoas", title: "Pessoas", description: "Membros, cargos e rol de visitantes", icon: Users, avatarBg: "blue-lighten-4", iconColor: "#2563eb" },
-  { route: "/admin/ministerios", title: "Gestão de ministérios", description: "Escalas, repertório, líderes", icon: Music, avatarBg: "purple-lighten-4", iconColor: "#7c3aed" },
-  { route: "/admin/publicacoes", title: "Publicações", description: "Avisos, devocionais, versículo do dia", icon: Newspaper, avatarBg: "teal-lighten-4", iconColor: "#0f766e" },
-  { route: "/admin/mensagens", title: "Mensagens", description: "WhatsApp: modelos, envios, aniversariantes", icon: MessageSquare, avatarBg: "orange-lighten-4", iconColor: "#B5472A" },
-  { route: "/admin/configuracoes", title: "Configurações", description: "Perfil, horários, WhatsApp, plano", icon: Settings2, avatarBg: "grey-lighten-3", iconColor: "#475569" },
+  { route: "/admin/relatorios", title: "Relatórios", description: "Confirmações, presença de culto, liderança", icon: BarChart3, avatarBg: "orange-lighten-4", iconColor: "#B5472A", requiresChurchWideManager: true },
+  { route: "/admin/pessoas", title: "Pessoas", description: "Membros, cargos e rol de visitantes", icon: Users, avatarBg: "blue-lighten-4", iconColor: "#2563eb", requiresChurchWideManager: false },
+  { route: "/admin/ministerios", title: "Gestão de ministérios", description: "Escalas, repertório, líderes", icon: Music, avatarBg: "purple-lighten-4", iconColor: "#7c3aed", requiresChurchWideManager: false },
+  { route: "/admin/publicacoes", title: "Publicações", description: "Avisos, devocionais, versículo do dia", icon: Newspaper, avatarBg: "teal-lighten-4", iconColor: "#0f766e", requiresChurchWideManager: true },
+  { route: "/admin/mensagens", title: "Mensagens", description: "WhatsApp: modelos, envios, aniversariantes", icon: MessageSquare, avatarBg: "orange-lighten-4", iconColor: "#B5472A", requiresChurchWideManager: true },
+  { route: "/admin/configuracoes", title: "Configurações", description: "Perfil, horários, WhatsApp, plano", icon: Settings2, avatarBg: "grey-lighten-3", iconColor: "#475569", requiresChurchWideManager: false },
 ]);
+
+const visibleAdminHubItems = computed(() =>
+  adminHubItems.value.filter(
+    (item) => !item.requiresChurchWideManager || isChurchWideManager.value,
+  ),
+);
 
 const isPlatformAdmin = computed(
   () =>

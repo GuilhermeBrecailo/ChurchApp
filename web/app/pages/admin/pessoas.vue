@@ -15,6 +15,16 @@
       <UtilsPageHelpButton title="Pessoas" />
     </div>
 
+    <v-alert
+      v-if="departmentsError"
+      type="error"
+      variant="tonal"
+      density="compact"
+      class="mb-4"
+    >
+      {{ departmentsError }}
+    </v-alert>
+
     <div class="pessoas-subtabs d-flex ga-2 mb-5 flex-wrap">
       <v-btn
         v-for="tab in pessoasSubTabs"

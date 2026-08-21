@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="canAccessChurchAdmin"
+    v-if="canAccessChurchAdmin && isChurchWideManager"
     class="church-admin-page pa-4 bg-grey-lighten-4 min-vh-100 pb-20"
   >
     <div class="publicacoes-header mb-4">

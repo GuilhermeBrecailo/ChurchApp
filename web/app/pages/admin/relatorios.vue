@@ -15,6 +15,13 @@
       <UtilsPageHelpButton title="Relatórios" />
     </div>
 
+    <v-alert v-if="membersError" type="error" variant="tonal" density="compact" class="mb-4">
+      {{ membersError }}
+    </v-alert>
+    <v-alert v-if="departmentsError" type="error" variant="tonal" density="compact" class="mb-4">
+      {{ departmentsError }}
+    </v-alert>
+
     <PlanLock feature="REPORTS" class="mb-8">
       <AdminReports :departments="departments" />
     </PlanLock>

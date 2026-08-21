@@ -130,6 +130,15 @@
       >
         {{ departmentsError }}
       </v-alert>
+      <v-alert
+        v-if="membersError"
+        type="error"
+        variant="tonal"
+        density="compact"
+        class="mt-4"
+      >
+        {{ membersError }}
+      </v-alert>
     </section>
 
     <UtilsResponsiveOverlay v-model="isDepartmentDialogOpen" max-width="520">
