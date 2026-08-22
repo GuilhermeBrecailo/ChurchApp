@@ -320,7 +320,10 @@ const handleChurchChange = async (churchId: string) => {
   if (churchId === user.value?.activeChurchId) return;
 
   await setActiveChurch(churchId);
-  await router.push("/");
+  // Recarrega o app inteiro (nao so navega) para garantir que dashboard,
+  // escalas, ministerios, admin e perfil larguem os dados da igreja anterior
+  // em vez de mostrar estado obsoleto quando a troca acontece na mesma rota.
+  reloadNuxtApp({ path: "/" });
 };
 
 onMounted(async () => {

@@ -24,8 +24,8 @@
 
 - [x] 4.1 Migrar endpoints de membros/admin para usar igreja ativa validada
 - [x] 4.2 Migrar endpoints de ministérios e escalas para usar igreja ativa validada
-- [ ] 4.3 Migrar endpoints de conteúdo da igreja, notificações, relatórios, cargos e configurações para usar igreja ativa validada
-- [ ] 4.4 Revisar queries que usam `user.crunchId!` e substituir por `activeChurchId`
+- [x] 4.3 Migrar endpoints de conteúdo da igreja, notificações, relatórios, cargos e configurações para usar igreja ativa validada — auditado: `announcementAdapters`, `dailyVerseAdapters`, `devotionalAdapters`, `postAdapters`, `reportAdapters`, `churchRoleAdapters` e `userAdapters.updateOwnChurch` já resolvem `activeChurchId` via `resolveActiveChurchContext`/`request.churchContext`; `notificationAdapters` é escopado por `userId` (não por igreja), então não se aplica
+- [x] 4.4 Revisar queries que usam `user.crunchId!` e substituir por `activeChurchId` — os 13 arquivos com esse grep já usam `user.crunchId!` sobre o objeto retornado por `getCurrentUser()`, que sobrescreve `crunchId` com `context.activeChurchId` antes de qualquer query (o nome do campo confunde o grep, mas o valor já é o ativo). Achado à parte: `crunchAdapters.ts`/`CrunchRoutes.ts` e `departamentAdapters.ts`/`DepartamentRoutes.ts` são CRUD legado sem nenhuma checagem de tenant, mas **não estão registrados em `server.ts`** — código morto inalcançável, não uma vulnerabilidade ativa; deixado como está por estar fora do escopo desta change (ver aviso ao usuário)
 
 ## 5. Frontend — Estado e API
 
@@ -39,12 +39,12 @@
 - [x] 6.1 Adicionar seletor de igreja no AppBar ou perfil quando houver mais de um membership ativo
 - [x] 6.2 Ao trocar igreja, atualizar contexto ativo, recarregar `/api/me` e limpar estados dependentes de igreja
 - [x] 6.3 Exibir role/cargo conforme a igreja ativa
-- [ ] 6.4 Garantir que dashboard, escalas, ministérios, admin e perfil reflitam a igreja ativa
+- [x] 6.4 Garantir que dashboard, escalas, ministérios, admin e perfil reflitam a igreja ativa — `handleChurchChange` no AppBar (`web/app/components/layouts/appBar/index.vue`) trocava de igreja e só fazia `router.push("/")`, que é um no-op se o usuário já estava em `/`; qualquer tela com dados carregados em `onMounted` (dashboard, escalas, ministérios, qualquer página de admin, perfil) ficava com dado da igreja anterior até um refresh manual. Trocado para `reloadNuxtApp({ path: "/" })`, que reseta todo o estado do app e recarrega já com a igreja nova.
 
 ## 7. Testes e Validação
 
-- [ ] 7.1 Testar usuário com uma única igreja para garantir compatibilidade
-- [ ] 7.2 Testar usuário com duas igrejas alternando contexto
-- [ ] 7.3 Testar que membro de uma igreja não acessa dados de outra via `X-Church-Id`
-- [ ] 7.4 Testar roles diferentes por igreja
-- [ ] 7.5 Rodar validações backend/frontend aplicáveis
+- [~] 7.1 Testar usuário com uma única igreja para garantir compatibilidade — coberto por teste automatizado (`api/tests/churchContext.test.ts`); clique-através real com conta de igreja única ainda pendente do usuário
+- [~] 7.2 Testar usuário com duas igrejas alternando contexto — coberto por teste automatizado (`resolveActiveChurchContext` troca de contexto ao mudar `x-church-id`); clique-através real alternando pelo seletor do AppBar ainda pendente do usuário
+- [~] 7.3 Testar que membro de uma igreja não acessa dados de outra via `X-Church-Id` — coberto por teste automatizado (`x-church-id` de igreja sem membership nunca vira `activeChurchId`); teste real com duas contas/igrejas ainda pendente do usuário
+- [~] 7.4 Testar roles diferentes por igreja — coberto por teste automatizado (mesmo usuário resolve PASTOR numa igreja e MEMBRO noutra); teste real ainda pendente do usuário
+- [x] 7.5 Rodar validações backend/frontend aplicáveis — `npm run validate` verde (lint + typecheck + testes + build web)
