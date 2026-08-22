@@ -6,6 +6,7 @@ export async function RosterRoutes(app: FastifyInstance) {
   const adapters = new RosterAdapters();
 
   app.get("/api/church/roster", controllerHandler(adapters.list.bind(adapters)));
+  app.get("/api/church/roster/report", controllerHandler(adapters.getRosterReport.bind(adapters)));
   app.post("/api/church/roster", controllerHandler(adapters.create.bind(adapters)));
   app.patch("/api/church/roster/:id", controllerHandler(adapters.update.bind(adapters)));
   app.post("/api/church/roster/:id/promote", controllerHandler(adapters.promote.bind(adapters)));

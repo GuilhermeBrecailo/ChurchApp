@@ -4,23 +4,28 @@ import { pushNotificationService } from "../notifications/PushNotificationServic
 import { WhatsAppServiceClient } from "./WhatsAppServiceClient";
 
 const TICK_MS = 60_000;
-// So dispara a partir das 8h - antes disso o tick simplesmente nao faz nada,
-// mesmo que hoje tenha aniversariante.
-const NOTIFY_HOUR = 8;
 
 function isSameLocalDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+// Compara o "HH:MM" configurado por igreja (BirthdayMessageSetting.notifyTime,
+// default "08:00") contra o horario local atual - substitui o antigo gate
+// global unico (NOTIFY_HOUR) por um horario por igreja.
+function hasReachedNotifyTime(notifyTime: string, now: Date): boolean {
+  const [hours, minutes] = notifyTime.split(":").map(Number);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  return nowMinutes >= hours * 60 + minutes;
+}
+
 type TodaysMember = { id: string; name: string; phone: string | null; crunchId: string };
 
-// Roda a cada minuto, mas so faz algo depois das 8h e uma unica vez por dia
-// por igreja (lastNotifiedAt em BirthdayMessageSetting). Sempre notifica os
+// Roda a cada minuto, mas so faz algo a partir do notifyTime de cada igreja
+// (default "08:00") e uma unica vez por dia por igreja (lastNotifiedAt em
+// BirthdayMessageSetting). Sempre notifica os
 // pastores via push quando ha aniversariante hoje; so dispara WhatsApp se a
 // igreja tiver o interruptor automatico ligado e um modelo escolhido.
 export async function checkBirthdays(now: Date = new Date()) {
-  if (now.getHours() < NOTIFY_HOUR) return;
-
   const month = now.getMonth() + 1;
   const day = now.getDate();
 
@@ -47,6 +52,8 @@ export async function checkBirthdays(now: Date = new Date()) {
       create: { crunchId },
       update: {},
     });
+
+    if (!hasReachedNotifyTime(setting.notifyTime, now)) continue;
 
     if (setting.lastNotifiedAt && isSameLocalDay(setting.lastNotifiedAt, now)) continue;
 
@@ -98,7 +105,7 @@ async function sendBirthdayMessages(crunchId: string, templateId: string, member
     templateId: template.id,
     templateBody: template.body,
     audience: "BIRTHDAY",
-    recipients: members.map((member) => ({ name: member.name, phone: member.phone })),
+    recipients: members.map((member) => ({ id: member.id, name: member.name, phone: member.phone })),
   });
 }
 

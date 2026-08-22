@@ -106,6 +106,25 @@ export class RosterAdapters {
     });
   }
 
+  // Contagem por status pra Relatorios - so VISITOR/MEMBER (FORMER fica de
+  // fora, mesmo criterio de "ALL" em statusesForAudience). groupBy indexado
+  // (@@index([crunchId, status])), sem trazer o rol inteiro so pra contar.
+  async getRosterReport(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    this.assertCanManageRoster(user);
+
+    const counts = await $prismaClient.rosterMember.groupBy({
+      by: ["status"],
+      where: { crunchId: user.crunchId, status: { in: ["VISITOR", "MEMBER"] } },
+      _count: true,
+    });
+
+    const visitors = counts.find((row) => row.status === "VISITOR")?._count ?? 0;
+    const members = counts.find((row) => row.status === "MEMBER")?._count ?? 0;
+
+    return { visitors, members };
+  }
+
   async create(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
     this.assertCanManageRoster(user);

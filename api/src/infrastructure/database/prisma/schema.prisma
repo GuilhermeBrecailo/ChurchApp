@@ -245,6 +245,8 @@ model RosterMember {
     userId String? @unique
     user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+    messageLogRecipients MessageLogRecipient[]
+
     @@index([crunchId])
     @@index([crunchId, status])
 }
@@ -323,6 +325,10 @@ model ServiceAttendance {
     visitorCount Int
     memberCount  Int
     notes        String?
+    // Preenchido quando o pastor toca "Finalizar culto" - horario real de
+    // termino, usado pelo messageRuleScheduler pra disparar regras a partir
+    // do horario real em vez do horario agendado. Nulo ate a acao acontecer.
+    endedAt      DateTime?
     createdAt    DateTime @default(now())
     updatedAt    DateTime @updatedAt
 
@@ -724,7 +730,7 @@ model MessageRule {
 // nao o registro do envio em si.
 model MessageLog {
     id           String    @id @default(uuid())
-    // VISITOR | MEMBER | ALL
+    // VISITOR | MEMBER | ALL | SELECTED
     audience     String
     // PROCESSING | DONE
     status       String    @default("PROCESSING")
@@ -743,7 +749,26 @@ model MessageLog {
     templateId String?
     template   MessageTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 
+    // So preenchido quando audience === SELECTED - lista exata de
+    // RosterMember escolhidos a mao nesse envio.
+    recipients MessageLogRecipient[]
+
     @@index([crunchId, createdAt])
+}
+
+// Lista de destinatarios de um envio manual com audience SELECTED. Tabela
+// propria (nao JSON no MessageLog) pra manter integridade referencial com
+// RosterMember - ver design.md da change messaging-targeting-and-scheduling.
+model MessageLogRecipient {
+    id String @id @default(uuid())
+
+    messageLogId String
+    messageLog   MessageLog @relation(fields: [messageLogId], references: [id], onDelete: Cascade)
+
+    rosterMemberId String
+    rosterMember   RosterMember @relation(fields: [rosterMemberId], references: [id], onDelete: Cascade)
+
+    @@index([messageLogId])
 }
 
 // 1 linha por igreja, criada sob demanda pelo scheduler de aniversario na
@@ -755,6 +780,10 @@ model BirthdayMessageSetting {
     id             String    @id @default(uuid())
     isActive       Boolean   @default(false)
     lastNotifiedAt DateTime?
+    // Horario do dia (HH:MM, mesmo formato de ServiceTime.time) em que o
+    // scheduler dispara o aviso de aniversario dessa igreja. Cada igreja tem
+    // o seu; sem configuracao explicita, cai no mesmo 08:00 de sempre.
+    notifyTime     String    @default("08:00")
     createdAt      DateTime  @default(now())
     updatedAt      DateTime  @updatedAt
 

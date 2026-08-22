@@ -114,6 +114,15 @@ export const useRoster = () => {
     );
   };
 
+  const getRosterReport = async (): Promise<
+    ApiResponse<{ visitors: number; members: number }>
+  > => {
+    return await $customFetch<{ visitors: number; members: number }>(
+      `${config.public.URL_BACKEND}/api/church/roster/report`,
+      { method: "GET", headers: authHeadersNoBody() },
+    );
+  };
+
   return {
     listRosterMembers,
     createRosterMember,
@@ -123,5 +132,6 @@ export const useRoster = () => {
     restoreRosterMember,
     deleteRosterMember,
     checkRosterMemberWhatsApp,
+    getRosterReport,
   };
 };

@@ -18,13 +18,18 @@ function fakeToken(userId: string) {
 
 function makeRequest(
   role: string,
-  overrides: { query?: Record<string, string>; body?: Record<string, unknown> } = {},
+  overrides: {
+    query?: Record<string, string>;
+    body?: Record<string, unknown>;
+    params?: Record<string, string>;
+  } = {},
 ): FastifyRequest {
   return {
     headers: { authorization: `Bearer ${fakeToken("user-1")}` },
     churchContext: { activeChurchId: "church-1", role, roles: [] },
     query: overrides.query ?? {},
     body: overrides.body ?? {},
+    params: overrides.params ?? {},
   } as unknown as FastifyRequest;
 }
 
@@ -116,6 +121,73 @@ describe("AttendanceAdapters - upsert", () => {
     const call = mockPrismaClient.serviceAttendance.upsert.mock.calls[0][0];
     expect(call.create.notes).toBeNull();
     expect(call.update.notes).toBeNull();
+  });
+});
+
+// 11.4 "Finalizar culto": primeiro toque cria o registro com endedAt, segundo
+// toque no mesmo dia sobrescreve, campos de contagem intocados.
+describe("AttendanceAdapters - finalize", () => {
+  let adapters: AttendanceAdapters;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    adapters = new AttendanceAdapters();
+    jest.useFakeTimers().setSystemTime(new Date("2026-08-16T10:20:00"));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("rejects a service time from another church", async () => {
+    mockPrismaClient.serviceTime.findUnique.mockResolvedValue({ id: "st1", crunchId: "church-OTHER" });
+
+    await expect(
+      adapters.finalize(makeRequest("PASTOR", { params: { serviceTimeId: "st1" } })),
+    ).rejects.toThrow("Culto não encontrado");
+    expect(mockPrismaClient.serviceAttendance.upsert).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-privileged MEMBRO", async () => {
+    await expect(
+      adapters.finalize(makeRequest("MEMBRO", { params: { serviceTimeId: "st1" } })),
+    ).rejects.toThrow("Apenas pastores ou administradores podem registrar presença");
+    expect(mockPrismaClient.serviceAttendance.upsert).not.toHaveBeenCalled();
+  });
+
+  it("creates today's row with endedAt set on the first tap, headcount defaulted to zero", async () => {
+    mockPrismaClient.serviceTime.findUnique.mockResolvedValue({ id: "st1", crunchId: "church-1" });
+    mockPrismaClient.serviceAttendance.upsert.mockResolvedValue({ id: "a1" });
+
+    await adapters.finalize(makeRequest("PASTOR", { params: { serviceTimeId: "st1" } }));
+
+    expect(mockPrismaClient.serviceAttendance.upsert).toHaveBeenCalledWith({
+      where: { serviceTimeId_date: { serviceTimeId: "st1", date: new Date("2026-08-16") } },
+      create: {
+        crunchId: "church-1",
+        serviceTimeId: "st1",
+        date: new Date("2026-08-16"),
+        visitorCount: 0,
+        memberCount: 0,
+        endedAt: new Date("2026-08-16T10:20:00"),
+      },
+      update: { endedAt: new Date("2026-08-16T10:20:00") },
+    });
+  });
+
+  it("overwrites endedAt with the later timestamp on a second same-day tap, without touching headcount fields", async () => {
+    mockPrismaClient.serviceTime.findUnique.mockResolvedValue({ id: "st1", crunchId: "church-1" });
+    mockPrismaClient.serviceAttendance.upsert.mockResolvedValue({ id: "a1" });
+
+    await adapters.finalize(makeRequest("PASTOR", { params: { serviceTimeId: "st1" } }));
+    jest.setSystemTime(new Date("2026-08-16T10:25:00"));
+    await adapters.finalize(makeRequest("PASTOR", { params: { serviceTimeId: "st1" } }));
+
+    const secondCall = mockPrismaClient.serviceAttendance.upsert.mock.calls[1][0];
+    expect(secondCall.update).toEqual({ endedAt: new Date("2026-08-16T10:25:00") });
+    expect(Object.keys(secondCall.update)).not.toEqual(
+      expect.arrayContaining(["visitorCount", "memberCount"]),
+    );
   });
 });
 

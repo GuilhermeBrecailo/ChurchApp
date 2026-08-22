@@ -55,6 +55,14 @@
           <span>{{ churchReport.openTasks }}</span>
           <small>tarefas cadastradas</small>
         </v-card>
+        <v-card class="report-kpi-card pa-4 elevation-1 bg-white border-subtle">
+          <span>{{ rosterReport.visitors }}</span>
+          <small>visitantes no rol</small>
+        </v-card>
+        <v-card class="report-kpi-card pa-4 elevation-1 bg-white border-subtle">
+          <span>{{ rosterReport.members }}</span>
+          <small>membros no rol</small>
+        </v-card>
       </div>
 
       <div class="pastoral-report-layout">
@@ -141,6 +149,33 @@
         <v-alert v-if="attendanceError" type="error" variant="tonal" density="compact" class="mb-3">
           {{ attendanceError }}
         </v-alert>
+        <v-alert v-if="finalizeError" type="error" variant="tonal" density="compact" class="mb-3">
+          {{ finalizeError }}
+        </v-alert>
+
+        <div v-if="sortedServiceTimes.length" class="finalize-service-list mb-4">
+          <div v-for="serviceTime in sortedServiceTimes" :key="serviceTime.id" class="finalize-service-row">
+            <div class="min-w-0">
+              <strong>{{ weekdayName(serviceTime.weekday) }} {{ serviceTime.time }}</strong>
+              <small>{{ serviceTime.label }}</small>
+            </div>
+            <div class="d-flex align-center ga-2">
+              <span v-if="todaysAttendanceByServiceTime.get(serviceTime.id)?.endedAt" class="finalize-service-time">
+                Finalizado às {{ formatEndedAtTime(todaysAttendanceByServiceTime.get(serviceTime.id)!.endedAt!) }}
+              </span>
+              <v-btn
+                variant="tonal"
+                color="purple-darken-3"
+                size="small"
+                class="text-none"
+                :loading="finalizingServiceTimeId === serviceTime.id"
+                @click="handleFinalizeService(serviceTime.id)"
+              >
+                <CalendarCheck size="16" class="mr-1" /> Finalizar culto
+              </v-btn>
+            </div>
+          </div>
+        </div>
 
         <div v-if="attendanceLoading" class="d-flex justify-center pa-6">
           <v-progress-circular indeterminate size="28" color="purple-darken-3" />
@@ -299,7 +334,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { BarChart3, ChevronLeft, Plus, UserCheck, Users } from "lucide-vue-next";
+import { BarChart3, CalendarCheck, ChevronLeft, Plus, UserCheck, Users } from "lucide-vue-next";
 import { useAuth } from "../../../composables/useAuth";
 import { usePermissions } from "../../../composables/usePermissions";
 import { useMembers, type ChurchMember } from "../../../composables/useMembers";
@@ -310,6 +345,7 @@ import {
 } from "../../../composables/useDepartments";
 import { useServiceTimes, type ServiceTime } from "../../../composables/useServiceTimes";
 import { useAttendance, type ServiceAttendance } from "../../../composables/useAttendance";
+import { useRoster } from "../../../composables/useRoster";
 
 const router = useRouter();
 
@@ -470,11 +506,49 @@ const pastoralLeadership = computed(() => {
   };
 });
 
-const { listAttendance, saveAttendance } = useAttendance();
+const { listAttendance, saveAttendance, finalizeService } = useAttendance();
 
 const attendanceEntries = ref<ServiceAttendance[]>([]);
 const attendanceLoading = ref(false);
 const attendanceError = ref("");
+
+const finalizingServiceTimeId = ref("");
+const finalizeError = ref("");
+
+const handleFinalizeService = async (serviceTimeId: string) => {
+  finalizingServiceTimeId.value = serviceTimeId;
+  finalizeError.value = "";
+  const { error } = await finalizeService(serviceTimeId);
+  finalizingServiceTimeId.value = "";
+  if (error) {
+    finalizeError.value = error;
+    return;
+  }
+  await loadAttendance();
+};
+
+// Registro de hoje por culto - so pra saber se ja foi finalizado e mostrar o
+// horario junto do botao (mesma chave de dia do backend: UTC da data corrente).
+const todaysAttendanceByServiceTime = computed(() => {
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const map = new Map<string, ServiceAttendance>();
+  for (const entry of attendanceEntries.value) {
+    if (entry.date.slice(0, 10) === todayKey) map.set(entry.serviceTimeId, entry);
+  }
+  return map;
+});
+
+const formatEndedAtTime = (value: string) =>
+  new Date(value).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+const { getRosterReport } = useRoster();
+const rosterReport = ref<{ visitors: number; members: number }>({ visitors: 0, members: 0 });
+
+const loadRosterReport = async () => {
+  if (!isChurchWideManager.value) return;
+  const { data } = await getRosterReport();
+  rosterReport.value = data ?? { visitors: 0, members: 0 };
+};
 
 const attendanceTotals = computed(() => {
   const visitors = attendanceEntries.value.reduce((sum, entry) => sum + entry.visitorCount, 0);
@@ -596,6 +670,7 @@ onMounted(async () => {
   await Promise.all([
     canAccessChurchAdmin.value ? loadRelatoriosData() : Promise.resolve(),
     loadAttendance(),
+    loadRosterReport(),
   ]);
 });
 </script>
@@ -824,6 +899,43 @@ onMounted(async () => {
   color: #6b7280;
   font-size: 0.72rem;
   font-weight: 750;
+}
+
+.finalize-service-list {
+  display: grid;
+  gap: 8px;
+}
+
+.finalize-service-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px 11px;
+  border-color: var(--app-color-border);
+}
+
+.finalize-service-row strong {
+  display: block;
+  color: #111827;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.finalize-service-row small {
+  color: #6b7280;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.finalize-service-time {
+  color: #6b7280;
+  font-size: 0.74rem;
+  font-weight: 700;
 }
 
 .attendance-list {

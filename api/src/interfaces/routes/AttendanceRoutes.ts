@@ -7,4 +7,8 @@ export async function AttendanceRoutes(app: FastifyInstance) {
 
   app.get("/api/church/attendance", controllerHandler(adapters.list.bind(adapters)));
   app.post("/api/church/attendance", controllerHandler(adapters.upsert.bind(adapters)));
+  app.post(
+    "/api/church/attendance/:serviceTimeId/finalize",
+    controllerHandler(adapters.finalize.bind(adapters)),
+  );
 }

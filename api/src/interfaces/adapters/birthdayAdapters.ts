@@ -32,6 +32,8 @@ const rangeSchema = z.enum(RANGES);
 const settingUpdateSchema = z.object({
   isActive: z.boolean().optional(),
   templateId: z.string().trim().min(1).nullable().optional(),
+  // Mesmo formato/regex de ServiceTime.time.
+  notifyTime: z.string().trim().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Horário inválido").optional(),
 });
 
 // Ano da data de nascimento e ignorado pra fins de "quando e o proximo
@@ -147,6 +149,7 @@ export class BirthdayAdapters {
         isActive: false,
         templateId: null,
         lastNotifiedAt: null,
+        notifyTime: "08:00",
       }
     );
   }
@@ -171,10 +174,12 @@ export class BirthdayAdapters {
         crunchId: user.crunchId,
         isActive: body.isActive ?? false,
         templateId: body.templateId ?? null,
+        notifyTime: body.notifyTime ?? "08:00",
       },
       update: {
         ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
         ...(body.templateId !== undefined ? { templateId: body.templateId } : {}),
+        ...(body.notifyTime !== undefined ? { notifyTime: body.notifyTime } : {}),
       },
     });
   }
@@ -212,7 +217,7 @@ export class BirthdayAdapters {
       templateId: template.id,
       templateBody: template.body,
       audience: "BIRTHDAY",
-      recipients: recipients.map((member) => ({ name: member.name, phone: member.phone })),
+      recipients: recipients.map((member) => ({ id: member.id, name: member.name, phone: member.phone })),
     });
   }
 }

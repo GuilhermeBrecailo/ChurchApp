@@ -8,7 +8,22 @@ const TICK_MS = 60_000;
 const FIRE_WINDOW_MS = 60_000;
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-function computeTargetFireTime(now: Date, weekday: number, time: string, offsetMinutes: number): Date {
+// Quando o culto de hoje ja foi finalizado ("Finalizar culto"), o alvo vira
+// o horario real de termino + offset, em vez do horario agendado - ver
+// design.md da change messaging-targeting-and-scheduling.
+function computeTargetFireTime(
+  now: Date,
+  weekday: number,
+  time: string,
+  offsetMinutes: number,
+  serviceEndedAt: Date | null = null,
+): Date {
+  if (serviceEndedAt) {
+    const target = new Date(serviceEndedAt);
+    target.setMinutes(target.getMinutes() + offsetMinutes);
+    return target;
+  }
+
   const [hours, minutes] = time.split(":").map(Number);
 
   const target = new Date(now);
@@ -21,6 +36,12 @@ function computeTargetFireTime(now: Date, weekday: number, time: string, offsetM
   return target;
 }
 
+// Mesma chave de dia usada por AttendanceAdapters.todayDateKey/upsert -
+// meia-noite UTC da data corrente.
+function todayDateKey(now: Date): Date {
+  return new Date(now.toISOString().slice(0, 10));
+}
+
 export async function checkRules(now: Date = new Date()) {
   const rules = await $prismaClient.messageRule.findMany({
     where: { isActive: true },
@@ -30,11 +51,19 @@ export async function checkRules(now: Date = new Date()) {
   for (const rule of rules) {
     if (!rule.serviceTime.isActive) continue;
 
+    const todaysAttendance = await $prismaClient.serviceAttendance.findUnique({
+      where: {
+        serviceTimeId_date: { serviceTimeId: rule.serviceTimeId, date: todayDateKey(now) },
+      },
+      select: { endedAt: true },
+    });
+
     const targetFireTime = computeTargetFireTime(
       now,
       rule.serviceTime.weekday,
       rule.serviceTime.time,
       rule.offsetMinutes,
+      todaysAttendance?.endedAt ?? null,
     );
 
     const msSinceTarget = now.getTime() - targetFireTime.getTime();

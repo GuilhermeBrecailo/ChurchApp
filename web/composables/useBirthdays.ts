@@ -21,11 +21,13 @@ export interface BirthdayMessageSetting {
   isActive: boolean;
   templateId: string | null;
   lastNotifiedAt: string | null;
+  notifyTime: string;
 }
 
 export interface BirthdaySettingFormDTO {
   isActive?: boolean;
   templateId?: string | null;
+  notifyTime?: string;
 }
 
 export const useBirthdays = () => {

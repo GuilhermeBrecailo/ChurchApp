@@ -9,6 +9,8 @@ export interface ServiceAttendance {
   visitorCount: number;
   memberCount: number;
   notes: string | null;
+  // Preenchido quando o pastor toca "Finalizar culto" - horario real de termino.
+  endedAt: string | null;
   createdAt: string;
   updatedAt: string;
   serviceTimeId: string;
@@ -63,8 +65,18 @@ export const useAttendance = () => {
     });
   };
 
+  const finalizeService = async (
+    serviceTimeId: string,
+  ): Promise<ApiResponse<ServiceAttendance>> => {
+    return await $customFetch<ServiceAttendance>(`${base}/${serviceTimeId}/finalize`, {
+      method: "POST",
+      headers: authHeadersNoBody(),
+    });
+  };
+
   return {
     listAttendance,
     saveAttendance,
+    finalizeService,
   };
 };

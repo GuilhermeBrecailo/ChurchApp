@@ -34,8 +34,20 @@ const MARIA = {
   crunchId: "church-1",
   birthDate: new Date("1990-08-19T00:00:00.000Z"),
 };
-const SETTING_OFF = { crunchId: "church-1", isActive: false, templateId: null, lastNotifiedAt: null as Date | null };
-const SETTING_ON = { crunchId: "church-1", isActive: true, templateId: "t1", lastNotifiedAt: null as Date | null };
+const SETTING_OFF = {
+  crunchId: "church-1",
+  isActive: false,
+  templateId: null,
+  lastNotifiedAt: null as Date | null,
+  notifyTime: "08:00",
+};
+const SETTING_ON = {
+  crunchId: "church-1",
+  isActive: true,
+  templateId: "t1",
+  lastNotifiedAt: null as Date | null,
+  notifyTime: "08:00",
+};
 
 describe("checkBirthdays", () => {
   beforeEach(() => {
@@ -47,10 +59,43 @@ describe("checkBirthdays", () => {
     mockCreateLogAndDispatch.mockResolvedValue({ id: "log-1" });
   });
 
-  it("does nothing before 8am, not even a roster query", async () => {
+  // 11.3 Church-specific notifyTime: fires at the configured time, not before.
+  it("does not notify before the church's own notifyTime (default 08:00)", async () => {
+    mockPrismaClient.rosterMember.findMany.mockResolvedValue([MARIA]);
+
     await checkBirthdays(new Date("2026-08-19T07:59:00"));
 
-    expect(mockPrismaClient.rosterMember.findMany).not.toHaveBeenCalled();
+    expect(mockSendToUsers).not.toHaveBeenCalled();
+    expect(mockCreateLogAndDispatch).not.toHaveBeenCalled();
+  });
+
+  // 11.3 a church with no setting yet still fires at the 08:00 default.
+  it("still fires at the default 08:00 for a church that never configured notifyTime", async () => {
+    mockPrismaClient.rosterMember.findMany.mockResolvedValue([MARIA]);
+
+    await checkBirthdays(new Date("2026-08-19T08:00:00"));
+
+    expect(mockSendToUsers).toHaveBeenCalledTimes(1);
+  });
+
+  // 11.3 two churches with different notifyTime both fire correctly, on the
+  // same tick, each only once their own time is reached.
+  it("fires two churches with different notifyTime independently on the same tick", async () => {
+    const earlyChurchMember = { ...MARIA, id: "m-early", crunchId: "church-early" };
+    const lateChurchMember = { ...MARIA, id: "m-late", crunchId: "church-late" };
+    mockPrismaClient.rosterMember.findMany.mockResolvedValue([earlyChurchMember, lateChurchMember]);
+    mockPrismaClient.birthdayMessageSetting.upsert.mockImplementation(({ where }: { where: { crunchId: string } }) =>
+      Promise.resolve(
+        where.crunchId === "church-early"
+          ? { ...SETTING_OFF, crunchId: "church-early", notifyTime: "07:00" }
+          : { ...SETTING_OFF, crunchId: "church-late", notifyTime: "20:00" },
+      ),
+    );
+
+    await checkBirthdays(new Date("2026-08-19T08:00:00"));
+
+    expect(mockSendToUsers).toHaveBeenCalledTimes(1);
+    expect(mockSendToUsers).toHaveBeenCalledWith(["pastor-1"], expect.objectContaining({ body: "Maria" }));
   });
 
   it("notifies pastors when someone's birthday matches today (month/day only)", async () => {
@@ -124,7 +169,7 @@ describe("checkBirthdays", () => {
       templateId: "t1",
       templateBody: "Feliz aniversário, {nome}!",
       audience: "BIRTHDAY",
-      recipients: [{ name: "Maria", phone: "11999998888" }],
+      recipients: [{ id: "m1", name: "Maria", phone: "11999998888" }],
     });
   });
 

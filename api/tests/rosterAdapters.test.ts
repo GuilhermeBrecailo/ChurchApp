@@ -1,6 +1,6 @@
 const mockPrismaClient = {
   churchMembership: { findMany: jest.fn() },
-  rosterMember: { findUnique: jest.fn(), upsert: jest.fn() },
+  rosterMember: { findUnique: jest.fn(), upsert: jest.fn(), groupBy: jest.fn() },
 };
 
 jest.mock("../config/database", () => ({
@@ -116,5 +116,46 @@ describe("RosterAdapters - checkWhatsAppNumber", () => {
     const result = await adapters.checkWhatsAppNumber(makeRequest("PASTOR", { id: "m1" }));
 
     expect(result).toEqual({ exists: false });
+  });
+});
+
+// 11.2 groupBy da contagem do rol - contagem correta, FORMER excluido, escopado por igreja.
+describe("RosterAdapters - getRosterReport", () => {
+  let adapters: RosterAdapters;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    adapters = new RosterAdapters();
+  });
+
+  it("rejects a non-privileged MEMBRO", async () => {
+    await expect(adapters.getRosterReport(makeRequest("MEMBRO"))).rejects.toThrow(
+      "Apenas pastores ou administradores podem gerenciar o rol de membros",
+    );
+    expect(mockPrismaClient.rosterMember.groupBy).not.toHaveBeenCalled();
+  });
+
+  it("counts visitors and members correctly, scoped to the caller's church, excluding FORMER", async () => {
+    mockPrismaClient.rosterMember.groupBy.mockResolvedValue([
+      { status: "VISITOR", _count: 5 },
+      { status: "MEMBER", _count: 12 },
+    ]);
+
+    const result = await adapters.getRosterReport(makeRequest("PASTOR"));
+
+    expect(mockPrismaClient.rosterMember.groupBy).toHaveBeenCalledWith({
+      by: ["status"],
+      where: { crunchId: "church-1", status: { in: ["VISITOR", "MEMBER"] } },
+      _count: true,
+    });
+    expect(result).toEqual({ visitors: 5, members: 12 });
+  });
+
+  it("defaults a missing status bucket to zero instead of undefined", async () => {
+    mockPrismaClient.rosterMember.groupBy.mockResolvedValue([{ status: "MEMBER", _count: 3 }]);
+
+    const result = await adapters.getRosterReport(makeRequest("PASTOR"));
+
+    expect(result).toEqual({ visitors: 0, members: 3 });
   });
 });

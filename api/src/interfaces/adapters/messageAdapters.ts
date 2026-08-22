@@ -27,6 +27,10 @@ function getAuthUserId(request: FastifyRequest) {
 const AUDIENCES = ["VISITOR", "MEMBER", "ALL"] as const;
 const audienceSchema = z.enum(AUDIENCES);
 
+// SELECTED e uma audiencia so de envio manual (nao entra em MessageRule -
+// ver design.md da change messaging-targeting-and-scheduling, "Non-Goals").
+const sendNowAudienceSchema = z.enum([...AUDIENCES, "SELECTED"]);
+
 const templateCreateSchema = z.object({
   name: z.string().trim().min(1, "Nome é obrigatório"),
   body: z.string().trim().min(1, "Mensagem é obrigatória"),
@@ -42,10 +46,16 @@ const ruleCreateSchema = z.object({
 });
 const ruleUpdateSchema = ruleCreateSchema.partial();
 
-const sendNowSchema = z.object({
-  templateId: z.string().trim().min(1, "Modelo é obrigatório"),
-  audience: audienceSchema,
-});
+const sendNowSchema = z
+  .object({
+    templateId: z.string().trim().min(1, "Modelo é obrigatório"),
+    audience: sendNowAudienceSchema,
+    recipientIds: z.array(z.string().trim().min(1)).optional(),
+  })
+  .refine(
+    (body) => body.audience !== "SELECTED" || (body.recipientIds && body.recipientIds.length > 0),
+    { message: "Selecione ao menos um destinatário", path: ["recipientIds"] },
+  );
 
 // Delay entre cada envio individual - reduz risco de a conta de WhatsApp da
 // igreja ser marcada como spam por mandar muitas mensagens de uma vez.
@@ -65,7 +75,7 @@ export async function runSendLoop(
   logId: string,
   crunchId: string,
   templateBody: string,
-  recipients: { name: string; phone: string | null }[],
+  recipients: { id: string; name: string; phone: string | null }[],
 ) {
   let success = 0;
   let failed = 0;
@@ -114,7 +124,7 @@ export async function createLogAndDispatch(params: {
   templateBody: string;
   audience: string;
   ruleId?: string | null;
-  recipients: { name: string; phone: string | null }[];
+  recipients: { id: string; name: string; phone: string | null }[];
 }) {
   const log = await $prismaClient.messageLog.create({
     data: {
@@ -124,6 +134,9 @@ export async function createLogAndDispatch(params: {
       audience: params.audience,
       status: "PROCESSING",
       totalCount: params.recipients.length,
+      ...(params.audience === "SELECTED"
+        ? { recipients: { create: params.recipients.map((r) => ({ rosterMemberId: r.id })) } }
+        : {}),
     },
   });
 
@@ -137,6 +150,7 @@ export async function dispatchMessageSend(params: {
   templateId: string;
   audience: string;
   ruleId?: string | null;
+  recipientIds?: string[];
 }) {
   const template = await $prismaClient.messageTemplate.findUnique({
     where: { id: params.templateId },
@@ -145,10 +159,25 @@ export async function dispatchMessageSend(params: {
     throw new DomainError("Modelo de mensagem não encontrado");
   }
 
-  const recipients = await $prismaClient.rosterMember.findMany({
-    where: { crunchId: params.crunchId, status: { in: statusesForAudience(params.audience) } },
-    select: { name: true, phone: true },
-  });
+  let recipients: { id: string; name: string; phone: string | null }[];
+
+  if (params.audience === "SELECTED") {
+    const recipientIds = params.recipientIds ?? [];
+    recipients = await $prismaClient.rosterMember.findMany({
+      // Filtro por crunchId (nao so id) e o que impede um recipientId de
+      // outra igreja ser "smuggled" num envio SELECTED - ver design.md.
+      where: { id: { in: recipientIds }, crunchId: params.crunchId },
+      select: { id: true, name: true, phone: true },
+    });
+    if (recipients.length !== recipientIds.length) {
+      throw new DomainError("Um ou mais destinatários selecionados não pertencem ao rol desta igreja");
+    }
+  } else {
+    recipients = await $prismaClient.rosterMember.findMany({
+      where: { crunchId: params.crunchId, status: { in: statusesForAudience(params.audience) } },
+      select: { id: true, name: true, phone: true },
+    });
+  }
 
   return createLogAndDispatch({
     crunchId: params.crunchId,
@@ -337,6 +366,7 @@ export class MessageAdapters {
       crunchId: user.crunchId,
       templateId: body.templateId,
       audience: body.audience,
+      recipientIds: body.recipientIds,
     });
   }
 

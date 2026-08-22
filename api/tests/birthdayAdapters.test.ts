@@ -182,9 +182,28 @@ describe("BirthdayAdapters - updateSetting", () => {
 
     expect(mockPrismaClient.birthdayMessageSetting.upsert).toHaveBeenCalledWith({
       where: { crunchId: "church-1" },
-      create: { crunchId: "church-1", isActive: true, templateId: "t1" },
+      create: { crunchId: "church-1", isActive: true, templateId: "t1", notifyTime: "08:00" },
       update: { isActive: true, templateId: "t1" },
     });
+  });
+
+  it("accepts a custom notifyTime and validates its HH:MM format", async () => {
+    mockPrismaClient.birthdayMessageSetting.upsert.mockResolvedValue({
+      crunchId: "church-1",
+      notifyTime: "19:30",
+    });
+
+    await adapters.updateSetting(makeRequest("PASTOR", { body: { notifyTime: "19:30" } }));
+
+    expect(mockPrismaClient.birthdayMessageSetting.upsert).toHaveBeenCalledWith({
+      where: { crunchId: "church-1" },
+      create: { crunchId: "church-1", isActive: false, templateId: null, notifyTime: "19:30" },
+      update: { notifyTime: "19:30" },
+    });
+
+    await expect(
+      adapters.updateSetting(makeRequest("PASTOR", { body: { notifyTime: "25:99" } })),
+    ).rejects.toThrow();
   });
 });
 

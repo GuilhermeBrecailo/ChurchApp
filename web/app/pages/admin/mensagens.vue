@@ -119,7 +119,7 @@
           <v-select
             v-model="sendForm.audience"
             label="Público"
-            :items="audienceOptions"
+            :items="sendAudienceOptions"
             item-title="title"
             item-value="value"
             variant="outlined"
@@ -128,6 +128,47 @@
             class="mb-4"
             hide-details="auto"
           />
+
+          <div v-if="sendForm.audience === 'SELECTED'" class="mb-4">
+            <p class="text-caption text-grey-darken-1 mb-2">
+              {{ selectedRecipientIds.length }} selecionado{{ selectedRecipientIds.length === 1 ? "" : "s" }}
+            </p>
+            <div v-if="rosterMembersLoading" class="d-flex justify-center pa-4">
+              <v-progress-circular indeterminate size="24" color="purple-darken-3" />
+            </div>
+            <p v-else-if="rosterMembersForSelection.length === 0" class="text-caption text-grey-darken-1 mb-0">
+              Nenhuma pessoa no rol ainda.
+            </p>
+            <div v-else class="recipient-picker-list">
+              <div
+                v-for="member in rosterMembersForSelection"
+                :key="member.id"
+                class="recipient-picker-row"
+                role="checkbox"
+                :aria-checked="selectedRecipientIds.includes(member.id)"
+                tabindex="0"
+                @click="toggleRecipient(member.id)"
+                @keydown.enter="toggleRecipient(member.id)"
+                @keydown.space.prevent="toggleRecipient(member.id)"
+              >
+                <v-checkbox
+                  :model-value="selectedRecipientIds.includes(member.id)"
+                  color="purple-darken-3"
+                  density="compact"
+                  hide-details
+                  class="recipient-picker-checkbox"
+                  @click.stop="toggleRecipient(member.id)"
+                />
+                <div class="member-copy">
+                  <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">{{ member.name }}</h3>
+                  <p class="text-caption text-grey-darken-1 mb-0">
+                    {{ member.status === "MEMBER" ? "Membro" : "Visitante" }}
+                    <span v-if="!member.phone"> · Sem telefone</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <v-alert v-if="sendError" type="error" variant="tonal" density="compact" class="mb-4">
             {{ sendError }}
@@ -140,7 +181,11 @@
             color="purple-darken-3"
             variant="flat"
             class="text-none font-weight-bold"
-            :disabled="!whatsappConnected || !sendForm.templateId"
+            :disabled="
+              !whatsappConnected ||
+              !sendForm.templateId ||
+              (sendForm.audience === 'SELECTED' && selectedRecipientIds.length === 0)
+            "
             :loading="isSendingNow"
             @click="handleSendNow"
           >
@@ -283,9 +328,21 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
+            class="mb-3"
             hide-details="auto"
             :disabled="birthdaySettingSaving"
             @update:model-value="handleSetBirthdayTemplate"
+          />
+          <v-text-field
+            :model-value="birthdaySetting?.notifyTime ?? '08:00'"
+            type="time"
+            label="Horário do envio automático"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            hide-details="auto"
+            :disabled="birthdaySettingSaving"
+            @update:model-value="handleSetBirthdayNotifyTime"
           />
           <v-alert v-if="birthdaySettingError" type="error" variant="tonal" density="compact" class="mt-3">
             {{ birthdaySettingError }}
@@ -556,6 +613,7 @@ import { useThemeMode } from "../../../composables/useThemeMode";
 import { usePermissions } from "../../../composables/usePermissions";
 import { useServiceTimes, type ServiceTime } from "../../../composables/useServiceTimes";
 import { useWhatsApp } from "../../../composables/useWhatsApp";
+import { useRoster, type RosterMember } from "../../../composables/useRoster";
 import { useBirthdays, type BirthdayMember, type BirthdayRange, type BirthdayMessageSetting } from "../../../composables/useBirthdays";
 import {
   useMessages,
@@ -652,13 +710,20 @@ const messagesSubTabs: { value: MessagesSubTab; label: string }[] = [
 ];
 const messagesSubTab = ref<MessagesSubTab>("modelos");
 
+// Publico das regras automaticas - so os 3 originais (SELECTED e so de envio
+// manual, ver design.md da change messaging-targeting-and-scheduling).
 const audienceOptions = [
   { title: "Visitantes", value: "VISITOR" },
   { title: "Membros", value: "MEMBER" },
   { title: "Todos (visitantes + membros)", value: "ALL" },
 ];
+// Publico do "Enviar agora" - os 3 de sempre + selecionar pessoas a mao.
+const sendAudienceOptions = [
+  ...audienceOptions,
+  { title: "Selecionar pessoas", value: "SELECTED" },
+];
 const audienceLabel = (audience: MessageAudience) =>
-  audienceOptions.find((option) => option.value === audience)?.title ?? audience;
+  sendAudienceOptions.find((option) => option.value === audience)?.title ?? audience;
 
 const ruleServiceTimeLabel = (item: ServiceTime | string) => {
   if (!item || typeof item !== "object") return "";
@@ -787,6 +852,18 @@ const handleSetBirthdayTemplate = async (templateId: string | null) => {
   birthdaySetting.value = data ?? birthdaySetting.value;
 };
 
+const handleSetBirthdayNotifyTime = async (notifyTime: string) => {
+  birthdaySettingSaving.value = true;
+  birthdaySettingError.value = "";
+  const { data, error } = await updateBirthdaySetting({ notifyTime });
+  birthdaySettingSaving.value = false;
+  if (error) {
+    birthdaySettingError.value = error;
+    return;
+  }
+  birthdaySetting.value = data ?? birthdaySetting.value;
+};
+
 const handleSendBirthdaysNow = async () => {
   isSendingBirthdaysNow.value = true;
   sendBirthdaysError.value = "";
@@ -878,13 +955,47 @@ const isSendingNow = ref(false);
 const sendError = ref("");
 const sendSuccess = ref("");
 
+const { listRosterMembers } = useRoster();
+const rosterMembersForSelection = ref<RosterMember[]>([]);
+const rosterMembersLoading = ref(false);
+const selectedRecipientIds = ref<string[]>([]);
+
+const loadRosterForSelection = async () => {
+  if (!isChurchWideManager.value) return;
+  rosterMembersLoading.value = true;
+  const { data } = await listRosterMembers();
+  rosterMembersForSelection.value = data ?? [];
+  rosterMembersLoading.value = false;
+};
+
+const toggleRecipient = (id: string) => {
+  const index = selectedRecipientIds.value.indexOf(id);
+  if (index === -1) selectedRecipientIds.value.push(id);
+  else selectedRecipientIds.value.splice(index, 1);
+};
+
+watch(
+  () => sendForm.audience,
+  (audience) => {
+    if (audience === "SELECTED" && rosterMembersForSelection.value.length === 0) {
+      loadRosterForSelection();
+    }
+  },
+);
+
 const handleSendNow = async () => {
   if (!sendForm.templateId) return;
+  if (sendForm.audience === "SELECTED" && selectedRecipientIds.value.length === 0) return;
+
   isSendingNow.value = true;
   sendError.value = "";
   sendSuccess.value = "";
 
-  const { error } = await sendMessageNow(sendForm.templateId, sendForm.audience);
+  const { error } = await sendMessageNow(
+    sendForm.templateId,
+    sendForm.audience,
+    sendForm.audience === "SELECTED" ? selectedRecipientIds.value : undefined,
+  );
   isSendingNow.value = false;
 
   if (error) {
@@ -893,6 +1004,7 @@ const handleSendNow = async () => {
   }
 
   sendSuccess.value = "Envio iniciado - acompanhe o progresso no Histórico.";
+  selectedRecipientIds.value = [];
   await loadMessageLogs();
 };
 
@@ -1087,6 +1199,39 @@ onMounted(async () => {
   flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
+}
+
+.recipient-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  padding: 6px;
+}
+
+.recipient-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.recipient-picker-row:hover {
+  background: rgba(181, 71, 42, 0.05);
+}
+
+.recipient-picker-row:focus-visible {
+  outline: 2px solid rgba(181, 71, 42, 0.32);
+  outline-offset: 2px;
+}
+
+.recipient-picker-checkbox {
+  flex: 0 0 auto;
 }
 
 .message-template-preview {

@@ -90,6 +90,46 @@ export class AttendanceAdapters {
     });
   }
 
+  // Chave do dia igual a usada pelo upsert manual (new Date("YYYY-MM-DD"),
+  // meia-noite UTC) - garante que "Finalizar culto" bate no mesmo registro
+  // que "Registrar presença" cria/edita pro mesmo dia.
+  private todayDateKey(): Date {
+    return new Date(new Date().toISOString().slice(0, 10));
+  }
+
+  // "Finalizar culto" - upsert por culto+hoje com endedAt = agora, sem tocar
+  // em visitorCount/memberCount (ficam 0 se o registro ainda nao existir, ou
+  // como estavam se "Registrar presença" ja rodou hoje). Reapertar so
+  // sobrescreve endedAt com o horario mais recente - sem confirmacao, mesmo
+  // padrao de "Registrar presença".
+  async finalize(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    this.assertCanManageAttendance(user);
+    const { serviceTimeId } = request.params as { serviceTimeId?: string };
+    if (!serviceTimeId) throw new DomainError("Culto não informado");
+    await this.assertOwnedServiceTime(serviceTimeId, user.crunchId);
+
+    const date = this.todayDateKey();
+    const endedAt = new Date();
+
+    return $prismaClient.serviceAttendance.upsert({
+      where: {
+        serviceTimeId_date: { serviceTimeId, date },
+      },
+      create: {
+        crunchId: user.crunchId,
+        serviceTimeId,
+        date,
+        visitorCount: 0,
+        memberCount: 0,
+        endedAt,
+      },
+      update: {
+        endedAt,
+      },
+    });
+  }
+
   async list(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
     this.assertCanManageAttendance(user);

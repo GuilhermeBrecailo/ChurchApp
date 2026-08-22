@@ -157,7 +157,7 @@ describe("dispatchMessageSend / runSendLoop (7.1, 7.3)", () => {
     expect(log.id).toBe("log-1");
     expect(mockPrismaClient.rosterMember.findMany).toHaveBeenCalledWith({
       where: { crunchId: "church-1", status: { in: ["MEMBER"] } },
-      select: { name: true, phone: true },
+      select: { id: true, name: true, phone: true },
     });
     expect(mockPrismaClient.messageLog.create).toHaveBeenCalledWith({
       data: {
@@ -193,8 +193,8 @@ describe("dispatchMessageSend / runSendLoop (7.1, 7.3)", () => {
     mockSendText.mockRejectedValueOnce(new Error("numero invalido"));
 
     const loopPromise = runSendLoop("log-2", "church-1", "Oi {nome}", [
-      { name: "A", phone: "111" },
-      { name: "B", phone: "222" },
+      { id: "roster-a", name: "A", phone: "111" },
+      { id: "roster-b", name: "B", phone: "222" },
     ]);
     await jest.runAllTimersAsync();
     await loopPromise;
@@ -213,8 +213,8 @@ describe("dispatchMessageSend / runSendLoop (7.1, 7.3)", () => {
     mockSendText.mockResolvedValue(undefined);
 
     const loopPromise = runSendLoop("log-4", "church-1", "Oi {nome}", [
-      { name: "A", phone: "111" },
-      { name: "B", phone: "222" },
+      { id: "roster-a", name: "A", phone: "111" },
+      { id: "roster-b", name: "B", phone: "222" },
     ]);
     await jest.runAllTimersAsync();
     await loopPromise;
@@ -242,7 +242,7 @@ describe("dispatchMessageSend / runSendLoop (7.1, 7.3)", () => {
 
     expect(mockPrismaClient.rosterMember.findMany).toHaveBeenCalledWith({
       where: { crunchId: "church-1", status: { in: ["VISITOR", "MEMBER"] } },
-      select: { name: true, phone: true },
+      select: { id: true, name: true, phone: true },
     });
   });
 
@@ -252,6 +252,85 @@ describe("dispatchMessageSend / runSendLoop (7.1, 7.3)", () => {
     await expect(
       dispatchMessageSend({ crunchId: "church-1", templateId: "t1", audience: "ALL" }),
     ).rejects.toThrow("Modelo de mensagem não encontrado");
+    expect(mockPrismaClient.messageLog.create).not.toHaveBeenCalled();
+  });
+
+  // 11.1 SELECTED resolve exatamente os IDs dados, rejeita ID de outra igreja
+  it("resolves exactly the given roster member IDs for SELECTED and creates MessageLogRecipient rows", async () => {
+    mockPrismaClient.messageTemplate.findUnique.mockResolvedValue({
+      id: "t1",
+      crunchId: "church-1",
+      body: "Oi {nome}",
+    });
+    mockPrismaClient.rosterMember.findMany.mockResolvedValue([
+      { id: "roster-1", name: "Ana", phone: "111" },
+      { id: "roster-2", name: "Beto", phone: "222" },
+    ]);
+    mockPrismaClient.messageLog.create.mockResolvedValue({ id: "log-selected", status: "PROCESSING" });
+
+    await dispatchMessageSend({
+      crunchId: "church-1",
+      templateId: "t1",
+      audience: "SELECTED",
+      recipientIds: ["roster-1", "roster-2"],
+    });
+
+    expect(mockPrismaClient.rosterMember.findMany).toHaveBeenCalledWith({
+      where: { id: { in: ["roster-1", "roster-2"] }, crunchId: "church-1" },
+      select: { id: true, name: true, phone: true },
+    });
+    expect(mockPrismaClient.messageLog.create).toHaveBeenCalledWith({
+      data: {
+        crunchId: "church-1",
+        templateId: "t1",
+        ruleId: null,
+        audience: "SELECTED",
+        status: "PROCESSING",
+        totalCount: 2,
+        recipients: { create: [{ rosterMemberId: "roster-1" }, { rosterMemberId: "roster-2" }] },
+      },
+    });
+  });
+
+  it("rejects a SELECTED send when a recipient ID doesn't resolve to a roster member of the caller's church", async () => {
+    mockPrismaClient.messageTemplate.findUnique.mockResolvedValue({ id: "t1", crunchId: "church-1", body: "Oi" });
+    // So um dos dois IDs resolve - o outro e de outra igreja (ou nao existe).
+    mockPrismaClient.rosterMember.findMany.mockResolvedValue([{ id: "roster-1", name: "Ana", phone: "111" }]);
+
+    await expect(
+      dispatchMessageSend({
+        crunchId: "church-1",
+        templateId: "t1",
+        audience: "SELECTED",
+        recipientIds: ["roster-1", "roster-from-other-church"],
+      }),
+    ).rejects.toThrow("Um ou mais destinatários selecionados não pertencem ao rol desta igreja");
+    expect(mockPrismaClient.messageLog.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("MessageAdapters - sendNow SELECTED validation", () => {
+  let adapters: MessageAdapters;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    adapters = new MessageAdapters();
+    mockIsConnected.mockResolvedValue(true);
+  });
+
+  it("rejects SELECTED with an empty recipientIds list before touching the database", async () => {
+    await expect(
+      adapters.sendNow(
+        makeRequest("PASTOR", { body: { templateId: "t1", audience: "SELECTED", recipientIds: [] } }),
+      ),
+    ).rejects.toThrow();
+    expect(mockPrismaClient.messageLog.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects SELECTED with no recipientIds field at all", async () => {
+    await expect(
+      adapters.sendNow(makeRequest("PASTOR", { body: { templateId: "t1", audience: "SELECTED" } })),
+    ).rejects.toThrow();
     expect(mockPrismaClient.messageLog.create).not.toHaveBeenCalled();
   });
 });

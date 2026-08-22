@@ -3,7 +3,10 @@ import type { ApiResponse } from "./useTypes";
 import { useNuxtApp, useRuntimeConfig } from "#app";
 import { useAuth } from "./useAuth";
 
-export type MessageAudience = "VISITOR" | "MEMBER" | "ALL";
+// SELECTED so vale pra envio manual (sendNow) - MessageRule continua com
+// so as 3 audiencias originais (o backend valida isso separadamente em
+// ruleCreateSchema vs sendNowSchema).
+export type MessageAudience = "VISITOR" | "MEMBER" | "ALL" | "SELECTED";
 
 export interface MessageTemplate {
   id: string;
@@ -159,11 +162,12 @@ export const useMessages = () => {
   const sendNow = async (
     templateId: string,
     audience: MessageAudience,
+    recipientIds?: string[],
   ): Promise<ApiResponse<MessageLog>> => {
     return await $customFetch<MessageLog>(`${base}/send`, {
       method: "POST",
       headers: authHeaders(),
-      body: { templateId, audience },
+      body: { templateId, audience, ...(recipientIds ? { recipientIds } : {}) },
     });
   };
 

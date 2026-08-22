@@ -1,6 +1,7 @@
 const mockPrismaClient = {
   messageRule: { findMany: jest.fn(), update: jest.fn() },
   messageLog: { create: jest.fn() },
+  serviceAttendance: { findUnique: jest.fn() },
 };
 
 jest.mock("../config/database", () => ({
@@ -25,6 +26,7 @@ const SERVICE_TIME = { id: "s1", crunchId: "church-1", weekday: 0, time: "10:00"
 const RULE = {
   id: "rule-1",
   crunchId: "church-1",
+  serviceTimeId: "s1",
   templateId: "t1",
   audience: "ALL",
   offsetMinutes: 15,
@@ -39,6 +41,9 @@ describe("checkRules", () => {
     mockIsConnected.mockResolvedValue(true);
     mockPrismaClient.messageRule.update.mockResolvedValue({});
     mockDispatch.mockResolvedValue({ id: "log-1" });
+    // Sem "Finalizar culto" hoje por padrao - comportamento identico ao de
+    // antes do endedAt existir, a menos que um teste sobrescreva.
+    mockPrismaClient.serviceAttendance.findUnique.mockResolvedValue(null);
   });
 
   it("fires once when now crosses the target fire time (culto + offset)", async () => {
@@ -114,6 +119,43 @@ describe("checkRules", () => {
         finishedAt: now,
       },
     });
+  });
+
+  // 11.5 fires off a recorded endedAt instead of the scheduled time when present.
+  it("fires off the recorded endedAt instead of the scheduled time when present", async () => {
+    mockPrismaClient.messageRule.findMany.mockResolvedValue([RULE]);
+    mockPrismaClient.serviceAttendance.findUnique.mockResolvedValue({
+      endedAt: new Date("2026-08-16T09:40:00"),
+    });
+    // Culto acabou cedo (09:40) - alvo = 09:40 + 15min = 09:55, bem antes do
+    // horario agendado (10:00 + 15min offset = 10:15).
+    const now = new Date("2026-08-16T09:55:30");
+
+    await checkRules(now);
+
+    expect(mockPrismaClient.serviceAttendance.findUnique).toHaveBeenCalledWith({
+      where: { serviceTimeId_date: { serviceTimeId: "s1", date: new Date("2026-08-16") } },
+      select: { endedAt: true },
+    });
+    expect(mockDispatch).toHaveBeenCalledWith({
+      crunchId: "church-1",
+      templateId: "t1",
+      audience: "ALL",
+      ruleId: "rule-1",
+    });
+  });
+
+  // 11.5 falls back to scheduled-time behavior when endedAt is absent.
+  it("falls back to the scheduled fire time when no endedAt is recorded for today", async () => {
+    mockPrismaClient.messageRule.findMany.mockResolvedValue([RULE]);
+    mockPrismaClient.serviceAttendance.findUnique.mockResolvedValue(null);
+    // Sem "Finalizar culto" registrado - as 09:55 ainda nao chegou no horario
+    // agendado (10:15), entao nao dispara ainda.
+    const now = new Date("2026-08-16T09:55:30");
+
+    await checkRules(now);
+
+    expect(mockDispatch).not.toHaveBeenCalled();
   });
 
   it("skips a rule whose ServiceTime was deactivated", async () => {
