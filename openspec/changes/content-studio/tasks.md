@@ -14,10 +14,10 @@
 
 ## 2. Frontend
 
-- [ ] 2.1 Nova tela/aba de Conteúdo com seletor "O que você quer publicar?" (aviso, versículo, devocional, publicação, horário) — **ainda não feito**: os cards continuam lado a lado na aba Conteúdo existente, não numa tela com seletor de tipo dedicada
+- [x] 2.1 Nova tela/aba de Conteúdo com seletor "O que você quer publicar?" (aviso, versículo, devocional, publicação) — `web/app/pages/admin/publicacoes.vue` agora abre um card de seletor de tipo no topo e mostra só o formulário do tipo escolhido; horário de culto segue no card dedicado em Configurações (ver 2.4), fora do seletor
 - [x] 2.3 Switch "Aparecer na página pública" em Versículo e Devocional (antes só existia em Aviso); todos os tipos publicáveis enviam `isPublic` corretamente
 - [x] 2.4 Card de horários de culto já estava na seção Página Pública (feito em sessão anterior)
-- [ ] 2.5 Lista unificada com filtro por tipo e status público/interno — **ainda não feito**: cada tipo continua com sua própria lista separada
+- [x] 2.5 Lista unificada com filtro por tipo e status público/interno — uma única lista no fim da tela, combinando aviso/versículo/devocional/publicação, com toggle de tipo e de público/interno
 - [x] 2.6 Excluir com confirmação simples (sem modal) para todos os tipos, incluindo o versículo (era o gap principal)
 - [x] 2.7 Estilo editorial já aplicado (sessão anterior)
 - [x] 2.8 **Layout mobile corrigido**: grids de Conteúdo/rodapé trocados de breakpoint fixo (520px) para `auto-fit`/`minmax` (se adaptam a qualquer largura); linhas de "adicionar cargo" (select + botão) e do upload de foto ganharam `flex-wrap`; o seletor de alcance do cargo (`v-btn-toggle`) ganhou `display:flex; width:100%` para não desalinhar

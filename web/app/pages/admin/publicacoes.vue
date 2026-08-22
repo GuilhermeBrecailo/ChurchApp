@@ -31,300 +31,251 @@
         {{ contentError }}
       </v-alert>
 
-      <div class="content-admin-grid mb-4">
-        <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
-          <div class="d-flex align-center mb-4">
-            <BookMarked size="18" :color="churchAccent" class="mr-2" />
-            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
-              Versículo
-            </h3>
-          </div>
-
-          <v-alert
-            v-if="verseSuccess"
-            type="success"
-            variant="tonal"
-            density="compact"
-            class="content-feedback-alert mb-3"
+      <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle mb-4">
+        <p class="content-field-label mb-2">O que você quer publicar?</p>
+        <div class="content-type-selector">
+          <v-btn
+            v-for="option in contentTypeOptions"
+            :key="option.value"
+            :variant="activeContentType === option.value ? 'flat' : 'outlined'"
+            :color="activeContentType === option.value ? 'purple-darken-3' : 'grey-darken-1'"
+            class="text-none content-type-btn"
+            size="small"
+            @click="activeContentType = option.value"
           >
-            {{ verseSuccess }}
-          </v-alert>
-          <v-alert
-            v-if="verseError"
-            type="error"
-            variant="tonal"
-            density="compact"
-            class="content-feedback-alert mb-3"
-          >
-            {{ verseError }}
-          </v-alert>
+            <component :is="option.icon" size="16" class="mr-1" />
+            {{ option.label }}
+          </v-btn>
+        </div>
+      </v-card>
 
-          <div class="content-form-stack">
-            <div class="content-field">
-              <div class="content-field-header">
-                <label class="content-field-label">Texto <span class="content-required">*</span></label>
-                <span class="content-field-hint">Obrigatório</span>
-              </div>
-              <v-textarea
-                v-model="verseForm.text"
-                label="Texto"
-                variant="outlined"
-                color="purple-darken-3"
-                auto-grow
-                rows="2"
-                hide-details="auto"
-              />
-            </div>
-            <div class="content-field">
-              <div class="content-field-header">
-                <label class="content-field-label">Referência <span class="content-required">*</span></label>
-                <span class="content-field-hint">Obrigatório</span>
-              </div>
-              <v-text-field
-                v-model="verseForm.reference"
-                label="Referência"
-                variant="outlined"
-                color="purple-darken-3"
-                hide-details="auto"
-              />
-            </div>
-            <div class="content-field">
-              <div class="content-field-header">
-                <label class="content-field-label">Comentário</label>
-                <span class="content-field-hint">Opcional</span>
-              </div>
-              <v-textarea
-                v-model="verseForm.commentary"
-                label="Comentário"
-                variant="outlined"
-                color="purple-darken-3"
-                auto-grow
-                rows="2"
-                hide-details="auto"
-              />
-            </div>
-          </div>
-          <AdminMediaAttachmentFields
-            v-model:image-url="verseForm.imageUrl"
-            v-model:image-key="verseForm.imageKey"
-            v-model:video-url="verseForm.videoUrl"
-          />
-          <v-switch
-            v-model="verseForm.isPublic"
-            label="Publicar também na página pública da igreja"
-            color="purple-darken-3"
-            density="comfortable"
-            hide-details
-            class="mb-4"
-          />
-          <div class="d-flex flex-wrap ga-2 mb-4">
-            <v-btn
-              color="purple-darken-3"
-              class="text-none font-weight-bold"
-              :loading="isPublishingVerse"
-              @click="saveDailyVerse"
-            >
-              {{ editingVerseId ? "Salvar versículo" : "Publicar versículo" }}
-            </v-btn>
-            <v-btn
-              v-if="editingVerseId"
-              variant="text"
-              color="grey-darken-1"
-              class="text-none"
-              @click="resetVerseForm"
-            >
-              Cancelar
-            </v-btn>
-          </div>
+      <v-card v-if="activeContentType === 'AVISO'" class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
+        <div class="d-flex align-center mb-4">
+          <Megaphone size="18" :color="churchAccent" class="mr-2" />
+          <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+            Avisos
+          </h3>
+        </div>
 
-          <MotionStaggerGroup class="content-admin-list">
-            <MotionStaggerItem
-              v-for="verse in dailyVerses"
-              :key="verse.id"
-              tag="div"
-              class="content-admin-row"
-            >
-              <div class="min-w-0">
-                <div class="d-flex align-center ga-2 mb-1">
-                  <v-chip
-                    size="x-small"
-                    variant="tonal"
-                    :color="verse.isPublic ? 'teal-darken-2' : 'grey-darken-1'"
-                  >
-                    {{ verse.isPublic ? "Público" : "Interno" }}
-                  </v-chip>
-                </div>
-                <span>{{ verse.reference }}</span>
-              </div>
-              <div class="d-flex ga-1">
-                <v-btn icon variant="text" color="grey-darken-1" size="small" @click="editVerse(verse)">
-                  <Pencil size="16" />
-                </v-btn>
-                <v-btn icon variant="text" color="red-darken-2" size="small" @click="removeVerse(verse.id)">
-                  <Trash2 size="16" />
-                </v-btn>
-              </div>
-            </MotionStaggerItem>
-          </MotionStaggerGroup>
-          <p v-if="!dailyVerses.length" class="text-caption text-grey-darken-1 mb-0">
-            Nenhum versículo publicado ainda.
-          </p>
-        </v-card>
+        <v-alert
+          v-if="announcementSuccess"
+          type="success"
+          variant="tonal"
+          density="compact"
+          class="content-feedback-alert mb-3"
+        >
+          {{ announcementSuccess }}
+        </v-alert>
+        <v-alert
+          v-if="announcementError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="content-feedback-alert mb-3"
+        >
+          {{ announcementError }}
+        </v-alert>
 
-        <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
-          <div class="d-flex align-center mb-4">
-            <Megaphone size="18" :color="churchAccent" class="mr-2" />
-            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
-              Avisos
-            </h3>
-          </div>
-
-          <v-alert
-            v-if="announcementSuccess"
-            type="success"
-            variant="tonal"
-            density="compact"
-            class="content-feedback-alert mb-3"
-          >
-            {{ announcementSuccess }}
-          </v-alert>
-          <v-alert
-            v-if="announcementError"
-            type="error"
-            variant="tonal"
-            density="compact"
-            class="content-feedback-alert mb-3"
-          >
-            {{ announcementError }}
-          </v-alert>
-
-          <div class="content-form-stack">
-            <div class="content-field">
-              <div class="content-field-header">
-                <label class="content-field-label">Título <span class="content-required">*</span></label>
-                <span class="content-field-hint">Obrigatório</span>
-              </div>
-              <v-text-field
-                v-model="announcementForm.title"
-                label="Título"
-                variant="outlined"
-                color="purple-darken-3"
-                hide-details="auto"
-              />
+        <div class="content-form-stack">
+          <div class="content-field">
+            <div class="content-field-header">
+              <label class="content-field-label">Título <span class="content-required">*</span></label>
+              <span class="content-field-hint">Obrigatório</span>
             </div>
-            <div class="content-field">
-              <div class="content-field-header">
-                <label class="content-field-label">Texto <span class="content-required">*</span></label>
-                <span class="content-char-count">{{ announcementForm.body.length }} caracteres</span>
-              </div>
-              <v-textarea
-                v-model="announcementForm.body"
-                label="Texto"
-                variant="outlined"
-                color="purple-darken-3"
-                auto-grow
-                rows="2"
-                hide-details="auto"
-              />
-            </div>
-          </div>
-          <p class="content-field-label mt-4 mb-2">Tipo <span class="content-required">*</span></p>
-          <v-btn-toggle
-            v-model="announcementForm.kind"
-            color="purple-darken-3"
-            variant="outlined"
-            density="comfortable"
-            mandatory
-            class="mb-4 announcement-kind-toggle"
-          >
-            <v-btn value="ANNOUNCEMENT" class="text-none" size="small">Aviso</v-btn>
-            <v-btn value="PASTOR_MESSAGE" class="text-none" size="small">Palavra</v-btn>
-            <v-btn value="PRAYER" class="text-none" size="small">Oração</v-btn>
-          </v-btn-toggle>
-          <div class="content-inline-fields mb-2">
-            <v-checkbox
-              v-model="announcementForm.pinned"
-              label="Fixar"
-              color="purple-darken-3"
-              hide-details
-            />
             <v-text-field
-              v-model="announcementForm.expiresAt"
-              label="Expira em"
-              type="date"
+              v-model="announcementForm.title"
+              label="Título"
               variant="outlined"
               color="purple-darken-3"
               hide-details="auto"
             />
           </div>
-          <AdminMediaAttachmentFields
-            v-model:image-url="announcementForm.imageUrl"
-            v-model:image-key="announcementForm.imageKey"
-            v-model:video-url="announcementForm.videoUrl"
-          />
-          <v-switch
-            v-model="announcementForm.isPublic"
-            label="Publicar também na página pública da igreja"
-            color="purple-darken-3"
-            density="comfortable"
-            hide-details
-            class="mb-4"
-          />
-          <div class="d-flex flex-wrap ga-2 mb-4">
-            <v-btn
+          <div class="content-field">
+            <div class="content-field-header">
+              <label class="content-field-label">Texto <span class="content-required">*</span></label>
+              <span class="content-char-count">{{ announcementForm.body.length }} caracteres</span>
+            </div>
+            <v-textarea
+              v-model="announcementForm.body"
+              label="Texto"
+              variant="outlined"
               color="purple-darken-3"
-              class="text-none font-weight-bold"
-              :loading="isSavingAnnouncement"
-              @click="saveAnnouncement"
-            >
-              {{ editingAnnouncementId ? "Salvar aviso" : "Publicar aviso" }}
-            </v-btn>
-            <v-btn
-              v-if="editingAnnouncementId"
-              variant="text"
-              color="grey-darken-1"
-              class="text-none"
-              @click="resetAnnouncementForm"
-            >
-              Cancelar
-            </v-btn>
+              auto-grow
+              rows="2"
+              hide-details="auto"
+            />
           </div>
-          <MotionStaggerGroup class="content-admin-list">
-            <MotionStaggerItem
-              v-for="announcement in announcements"
-              :key="announcement.id"
-              tag="div"
-              class="content-admin-row"
-            >
-              <div class="min-w-0">
-                <div class="d-flex align-center ga-2 mb-1">
-                  <v-chip size="x-small" variant="tonal" color="purple-darken-3">
-                    {{ announcementKindLabel(announcement.kind) }}
-                  </v-chip>
-                  <v-chip
-                    size="x-small"
-                    variant="tonal"
-                    :color="announcement.isPublic ? 'teal-darken-2' : 'grey-darken-1'"
-                  >
-                    {{ announcement.isPublic ? "Público" : "Interno" }}
-                  </v-chip>
-                </div>
-                <span>{{ announcement.title }}</span>
-              </div>
-              <div class="d-flex ga-1">
-                <v-btn icon variant="text" color="grey-darken-1" size="small" @click="editAnnouncement(announcement)">
-                  <Pencil size="16" />
-                </v-btn>
-                <v-btn icon variant="text" color="red-darken-2" size="small" @click="removeAnnouncement(announcement.id)">
-                  <Trash2 size="16" />
-                </v-btn>
-              </div>
-            </MotionStaggerItem>
-          </MotionStaggerGroup>
-        </v-card>
-      </div>
+        </div>
+        <p class="content-field-label mt-4 mb-2">Tipo <span class="content-required">*</span></p>
+        <v-btn-toggle
+          v-model="announcementForm.kind"
+          color="purple-darken-3"
+          variant="outlined"
+          density="comfortable"
+          mandatory
+          class="mb-4 announcement-kind-toggle"
+        >
+          <v-btn value="ANNOUNCEMENT" class="text-none" size="small">Aviso</v-btn>
+          <v-btn value="PASTOR_MESSAGE" class="text-none" size="small">Palavra</v-btn>
+          <v-btn value="PRAYER" class="text-none" size="small">Oração</v-btn>
+        </v-btn-toggle>
+        <div class="content-inline-fields mb-2">
+          <v-checkbox
+            v-model="announcementForm.pinned"
+            label="Fixar"
+            color="purple-darken-3"
+            hide-details
+          />
+          <v-text-field
+            v-model="announcementForm.expiresAt"
+            label="Expira em"
+            type="date"
+            variant="outlined"
+            color="purple-darken-3"
+            hide-details="auto"
+          />
+        </div>
+        <AdminMediaAttachmentFields
+          v-model:image-url="announcementForm.imageUrl"
+          v-model:image-key="announcementForm.imageKey"
+          v-model:video-url="announcementForm.videoUrl"
+        />
+        <v-switch
+          v-model="announcementForm.isPublic"
+          label="Publicar também na página pública da igreja"
+          color="purple-darken-3"
+          density="comfortable"
+          hide-details
+          class="mb-4"
+        />
+        <div class="d-flex flex-wrap ga-2">
+          <v-btn
+            color="purple-darken-3"
+            class="text-none font-weight-bold"
+            :loading="isSavingAnnouncement"
+            @click="saveAnnouncement"
+          >
+            {{ editingAnnouncementId ? "Salvar aviso" : "Publicar aviso" }}
+          </v-btn>
+          <v-btn
+            v-if="editingAnnouncementId"
+            variant="text"
+            color="grey-darken-1"
+            class="text-none"
+            @click="resetAnnouncementForm"
+          >
+            Cancelar
+          </v-btn>
+        </div>
+      </v-card>
 
-      <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
+      <v-card v-else-if="activeContentType === 'VERSICULO'" class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
+        <div class="d-flex align-center mb-4">
+          <BookMarked size="18" :color="churchAccent" class="mr-2" />
+          <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+            Versículo
+          </h3>
+        </div>
+
+        <v-alert
+          v-if="verseSuccess"
+          type="success"
+          variant="tonal"
+          density="compact"
+          class="content-feedback-alert mb-3"
+        >
+          {{ verseSuccess }}
+        </v-alert>
+        <v-alert
+          v-if="verseError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="content-feedback-alert mb-3"
+        >
+          {{ verseError }}
+        </v-alert>
+
+        <div class="content-form-stack">
+          <div class="content-field">
+            <div class="content-field-header">
+              <label class="content-field-label">Texto <span class="content-required">*</span></label>
+              <span class="content-field-hint">Obrigatório</span>
+            </div>
+            <v-textarea
+              v-model="verseForm.text"
+              label="Texto"
+              variant="outlined"
+              color="purple-darken-3"
+              auto-grow
+              rows="2"
+              hide-details="auto"
+            />
+          </div>
+          <div class="content-field">
+            <div class="content-field-header">
+              <label class="content-field-label">Referência <span class="content-required">*</span></label>
+              <span class="content-field-hint">Obrigatório</span>
+            </div>
+            <v-text-field
+              v-model="verseForm.reference"
+              label="Referência"
+              variant="outlined"
+              color="purple-darken-3"
+              hide-details="auto"
+            />
+          </div>
+          <div class="content-field">
+            <div class="content-field-header">
+              <label class="content-field-label">Comentário</label>
+              <span class="content-field-hint">Opcional</span>
+            </div>
+            <v-textarea
+              v-model="verseForm.commentary"
+              label="Comentário"
+              variant="outlined"
+              color="purple-darken-3"
+              auto-grow
+              rows="2"
+              hide-details="auto"
+            />
+          </div>
+        </div>
+        <AdminMediaAttachmentFields
+          v-model:image-url="verseForm.imageUrl"
+          v-model:image-key="verseForm.imageKey"
+          v-model:video-url="verseForm.videoUrl"
+        />
+        <v-switch
+          v-model="verseForm.isPublic"
+          label="Publicar também na página pública da igreja"
+          color="purple-darken-3"
+          density="comfortable"
+          hide-details
+          class="mb-4"
+        />
+        <div class="d-flex flex-wrap ga-2">
+          <v-btn
+            color="purple-darken-3"
+            class="text-none font-weight-bold"
+            :loading="isPublishingVerse"
+            @click="saveDailyVerse"
+          >
+            {{ editingVerseId ? "Salvar versículo" : "Publicar versículo" }}
+          </v-btn>
+          <v-btn
+            v-if="editingVerseId"
+            variant="text"
+            color="grey-darken-1"
+            class="text-none"
+            @click="resetVerseForm"
+          >
+            Cancelar
+          </v-btn>
+        </div>
+      </v-card>
+
+      <v-card v-else-if="activeContentType === 'DEVOCIONAL'" class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
         <div class="d-flex align-center justify-space-between mb-4">
           <div class="d-flex align-center">
             <Heart size="18" :color="churchAccent" class="mr-2" />
@@ -356,152 +307,120 @@
           {{ devotionalError }}
         </v-alert>
 
-        <div class="content-admin-grid">
-          <div>
-            <div class="content-form-stack">
-              <div class="content-field">
-                <div class="content-field-header">
-                  <label class="content-field-label">Título <span class="content-required">*</span></label>
-                  <span class="content-field-hint">Obrigatório</span>
-                </div>
-                <v-text-field
-                  v-model="devotionalForm.title"
-                  label="Título"
-                  variant="outlined"
-                  color="purple-darken-3"
-                  hide-details="auto"
-                />
-              </div>
-              <div class="content-field">
-                <div class="content-field-header">
-                  <label class="content-field-label">Descrição</label>
-                  <span class="content-field-hint">Opcional</span>
-                </div>
-                <v-textarea
-                  v-model="devotionalForm.description"
-                  label="Descrição"
-                  variant="outlined"
-                  color="purple-darken-3"
-                  auto-grow
-                  rows="2"
-                  hide-details="auto"
-                />
-              </div>
-              <div
-                v-for="(chapter, index) in devotionalForm.chapters"
-                :key="index"
-                class="chapter-admin-box mb-3"
-              >
-                <div class="content-field">
-                  <div class="content-field-header">
-                    <label class="content-field-label">Capítulo {{ index + 1 }} <span class="content-required">*</span></label>
-                    <span class="content-field-hint">Obrigatório</span>
-                  </div>
-                  <v-text-field
-                    v-model="chapter.title"
-                    :label="`Capítulo ${index + 1}`"
-                    variant="outlined"
-                    color="purple-darken-3"
-                    class="mb-2"
-                    hide-details="auto"
-                  />
-                </div>
-                <div class="content-field">
-                  <div class="content-field-header">
-                    <label class="content-field-label">Referência bíblica</label>
-                    <span class="content-field-hint">Opcional</span>
-                  </div>
-                  <v-text-field
-                    v-model="chapter.bibleRef"
-                    label="Referência bíblica"
-                    variant="outlined"
-                    color="purple-darken-3"
-                    class="mb-2"
-                    hide-details="auto"
-                  />
-                </div>
-                <div class="content-field">
-                  <div class="content-field-header">
-                    <label class="content-field-label">Texto <span class="content-required">*</span></label>
-                    <span class="content-field-hint">Obrigatório</span>
-                  </div>
-                  <v-textarea
-                    v-model="chapter.content"
-                    label="Texto"
-                    variant="outlined"
-                    color="purple-darken-3"
-                    auto-grow
-                    rows="3"
-                    hide-details="auto"
-                  />
-                </div>
-              </div>
+        <div class="content-form-stack">
+          <div class="content-field">
+            <div class="content-field-header">
+              <label class="content-field-label">Título <span class="content-required">*</span></label>
+              <span class="content-field-hint">Obrigatório</span>
             </div>
-            <AdminMediaAttachmentFields
-              v-model:image-url="devotionalForm.imageUrl"
-              v-model:image-key="devotionalForm.imageKey"
-              v-model:video-url="devotionalForm.videoUrl"
-            />
-            <v-switch
-              v-model="devotionalForm.isPublic"
-              label="Publicar também na página pública da igreja"
+            <v-text-field
+              v-model="devotionalForm.title"
+              label="Título"
+              variant="outlined"
               color="purple-darken-3"
-              density="comfortable"
-              hide-details
-              class="mb-3"
+              hide-details="auto"
             />
-            <div class="d-flex flex-wrap ga-2">
-              <v-btn
-                color="purple-darken-3"
-                class="text-none font-weight-bold"
-                :loading="isSavingDevotional"
-                @click="saveDevotional"
-              >
-                {{ editingDevotionalId ? "Salvar devocional" : "Criar devocional" }}
-              </v-btn>
-              <v-btn
-                v-if="editingDevotionalId"
-                variant="text"
-                color="grey-darken-1"
-                class="text-none"
-                @click="resetDevotionalForm"
-              >
-                Cancelar
-              </v-btn>
-            </div>
           </div>
-          <div class="content-admin-list">
-            <div
-              v-for="devotional in devotionals"
-              :key="devotional.id"
-              class="content-admin-row"
-            >
-              <div class="min-w-0">
-                <div class="d-flex align-center ga-2 mb-1">
-                  <v-chip
-                    size="x-small"
-                    variant="tonal"
-                    :color="devotional.isPublic ? 'teal-darken-2' : 'grey-darken-1'"
-                  >
-                    {{ devotional.isPublic ? "Público" : "Interno" }}
-                  </v-chip>
-                </div>
-                <span>{{ devotional.title }}</span>
+          <div class="content-field">
+            <div class="content-field-header">
+              <label class="content-field-label">Descrição</label>
+              <span class="content-field-hint">Opcional</span>
+            </div>
+            <v-textarea
+              v-model="devotionalForm.description"
+              label="Descrição"
+              variant="outlined"
+              color="purple-darken-3"
+              auto-grow
+              rows="2"
+              hide-details="auto"
+            />
+          </div>
+          <div
+            v-for="(chapter, index) in devotionalForm.chapters"
+            :key="index"
+            class="chapter-admin-box mb-3"
+          >
+            <div class="content-field">
+              <div class="content-field-header">
+                <label class="content-field-label">Capítulo {{ index + 1 }} <span class="content-required">*</span></label>
+                <span class="content-field-hint">Obrigatório</span>
               </div>
-              <div class="d-flex ga-1">
-                <v-btn icon variant="text" color="grey-darken-1" size="small" @click="editDevotional(devotional)">
-                  <Pencil size="16" />
-                </v-btn>
-                <v-btn icon variant="text" color="red-darken-2" size="small" @click="removeDevotional(devotional.id)">
-                  <Trash2 size="16" />
-                </v-btn>
+              <v-text-field
+                v-model="chapter.title"
+                :label="`Capítulo ${index + 1}`"
+                variant="outlined"
+                color="purple-darken-3"
+                class="mb-2"
+                hide-details="auto"
+              />
+            </div>
+            <div class="content-field">
+              <div class="content-field-header">
+                <label class="content-field-label">Referência bíblica</label>
+                <span class="content-field-hint">Opcional</span>
               </div>
+              <v-text-field
+                v-model="chapter.bibleRef"
+                label="Referência bíblica"
+                variant="outlined"
+                color="purple-darken-3"
+                class="mb-2"
+                hide-details="auto"
+              />
+            </div>
+            <div class="content-field">
+              <div class="content-field-header">
+                <label class="content-field-label">Texto <span class="content-required">*</span></label>
+                <span class="content-field-hint">Obrigatório</span>
+              </div>
+              <v-textarea
+                v-model="chapter.content"
+                label="Texto"
+                variant="outlined"
+                color="purple-darken-3"
+                auto-grow
+                rows="3"
+                hide-details="auto"
+              />
             </div>
           </div>
         </div>
+        <AdminMediaAttachmentFields
+          v-model:image-url="devotionalForm.imageUrl"
+          v-model:image-key="devotionalForm.imageKey"
+          v-model:video-url="devotionalForm.videoUrl"
+        />
+        <v-switch
+          v-model="devotionalForm.isPublic"
+          label="Publicar também na página pública da igreja"
+          color="purple-darken-3"
+          density="comfortable"
+          hide-details
+          class="mb-3"
+        />
+        <div class="d-flex flex-wrap ga-2">
+          <v-btn
+            color="purple-darken-3"
+            class="text-none font-weight-bold"
+            :loading="isSavingDevotional"
+            @click="saveDevotional"
+          >
+            {{ editingDevotionalId ? "Salvar devocional" : "Criar devocional" }}
+          </v-btn>
+          <v-btn
+            v-if="editingDevotionalId"
+            variant="text"
+            color="grey-darken-1"
+            class="text-none"
+            @click="resetDevotionalForm"
+          >
+            Cancelar
+          </v-btn>
+        </div>
       </v-card>
 
-      <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle mt-4">
+      <v-card v-else class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
         <div class="d-flex align-center mb-1">
           <ImageIcon size="18" :color="churchAccent" class="mr-2" />
           <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
@@ -522,146 +441,180 @@
           {{ postError }}
         </v-alert>
 
-        <div class="content-admin-grid">
-          <div>
-            <v-text-field
-              v-model="postForm.title"
-              label="Título"
-              variant="outlined"
-              color="purple-darken-3"
-              class="mb-3"
-              hide-details="auto"
-            />
-            <v-textarea
-              v-model="postForm.body"
-              label="Texto"
-              variant="outlined"
-              color="purple-darken-3"
-              auto-grow
-              rows="3"
-              class="mb-3"
-              hide-details="auto"
-            />
+        <v-text-field
+          v-model="postForm.title"
+          label="Título"
+          variant="outlined"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-textarea
+          v-model="postForm.body"
+          label="Texto"
+          variant="outlined"
+          color="purple-darken-3"
+          auto-grow
+          rows="3"
+          class="mb-3"
+          hide-details="auto"
+        />
 
-            <div class="post-image-field mb-3">
-              <img
-                v-if="postForm.imageUrl"
-                :src="postForm.imageUrl"
-                alt="Pré-visualização da foto"
-                class="post-image-preview"
-              />
-              <div class="d-flex align-center flex-wrap ga-2">
-                <v-btn
-                  variant="tonal"
-                  color="purple-darken-3"
-                  size="small"
-                  class="text-none"
-                  :loading="isUploadingPostImage"
-                  @click="postImageInput?.click()"
-                >
-                  <ImageIcon size="16" class="mr-1" />
-                  {{ postForm.imageUrl ? "Trocar foto" : "Adicionar foto" }}
-                </v-btn>
-                <v-btn
-                  v-if="postForm.imageUrl"
-                  variant="text"
-                  color="red-darken-2"
-                  size="small"
-                  class="text-none"
-                  @click="clearPostImage"
-                >
-                  Remover
-                </v-btn>
-              </div>
-              <input
-                ref="postImageInput"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                class="d-none"
-                @change="onPostImageChange"
-              />
-            </div>
-
-            <v-text-field
-              v-model="postForm.videoUrl"
-              label="Link de vídeo (YouTube/Instagram)"
-              variant="outlined"
+        <div class="post-image-field mb-3">
+          <img
+            v-if="postForm.imageUrl"
+            :src="postForm.imageUrl"
+            alt="Pré-visualização da foto"
+            class="post-image-preview"
+          />
+          <div class="d-flex align-center flex-wrap ga-2">
+            <v-btn
+              variant="tonal"
               color="purple-darken-3"
-              class="mb-3"
-              hide-details="auto"
-            />
-            <v-switch
-              v-model="postForm.isPublic"
-              label="Aparecer na página pública da igreja"
-              color="purple-darken-3"
-              density="comfortable"
-              hide-details
-              class="mb-2"
-            />
-            <v-switch
-              v-model="postForm.pinned"
-              label="Fixar no topo"
-              color="purple-darken-3"
-              density="comfortable"
-              hide-details
-              class="mb-4"
-            />
-            <div class="d-flex ga-2">
-              <v-btn
-                color="purple-darken-3"
-                class="text-none font-weight-bold"
-                :loading="isSavingPost"
-                @click="savePost"
-              >
-                {{ editingPostId ? "Salvar publicação" : "Publicar" }}
-              </v-btn>
-              <v-btn
-                v-if="editingPostId"
-                variant="text"
-                color="grey-darken-1"
-                class="text-none"
-                @click="resetPostForm"
-              >
-                Cancelar
-              </v-btn>
-            </div>
-          </div>
-
-          <div class="content-admin-list">
-            <div
-              v-for="post in posts"
-              :key="post.id"
-              class="content-admin-row"
+              size="small"
+              class="text-none"
+              :loading="isUploadingPostImage"
+              @click="postImageInput?.click()"
             >
-              <div class="min-w-0">
-                <div class="d-flex align-center ga-2 mb-1">
-                  <v-chip
-                    size="x-small"
-                    variant="tonal"
-                    :color="post.isPublic ? 'teal-darken-2' : 'grey-darken-1'"
-                  >
-                    {{ post.isPublic ? "Público" : "Interno" }}
-                  </v-chip>
-                  <v-chip v-if="post.pinned" size="x-small" variant="tonal" color="amber-darken-2">
-                    Fixado
-                  </v-chip>
-                </div>
-                <span>{{ post.title }}</span>
-              </div>
-              <div class="d-flex ga-1">
-                <v-btn icon variant="text" color="grey-darken-1" size="small" @click="editPost(post)">
-                  <Pencil size="16" />
-                </v-btn>
-                <v-btn icon variant="text" color="red-darken-2" size="small" @click="removePost(post.id)">
-                  <Trash2 size="16" />
-                </v-btn>
-              </div>
-            </div>
-            <p v-if="!posts.length" class="text-caption text-grey-darken-1 mb-0">
-              Nenhuma publicação ainda.
-            </p>
+              <ImageIcon size="16" class="mr-1" />
+              {{ postForm.imageUrl ? "Trocar foto" : "Adicionar foto" }}
+            </v-btn>
+            <v-btn
+              v-if="postForm.imageUrl"
+              variant="text"
+              color="red-darken-2"
+              size="small"
+              class="text-none"
+              @click="clearPostImage"
+            >
+              Remover
+            </v-btn>
           </div>
+          <input
+            ref="postImageInput"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            class="d-none"
+            @change="onPostImageChange"
+          />
         </div>
+
+        <v-text-field
+          v-model="postForm.videoUrl"
+          label="Link de vídeo (YouTube/Instagram)"
+          variant="outlined"
+          color="purple-darken-3"
+          class="mb-3"
+          hide-details="auto"
+        />
+        <v-switch
+          v-model="postForm.isPublic"
+          label="Aparecer na página pública da igreja"
+          color="purple-darken-3"
+          density="comfortable"
+          hide-details
+          class="mb-2"
+        />
+        <v-switch
+          v-model="postForm.pinned"
+          label="Fixar no topo"
+          color="purple-darken-3"
+          density="comfortable"
+          hide-details
+          class="mb-4"
+        />
+        <div class="d-flex ga-2">
+          <v-btn
+            color="purple-darken-3"
+            class="text-none font-weight-bold"
+            :loading="isSavingPost"
+            @click="savePost"
+          >
+            {{ editingPostId ? "Salvar publicação" : "Publicar" }}
+          </v-btn>
+          <v-btn
+            v-if="editingPostId"
+            variant="text"
+            color="grey-darken-1"
+            class="text-none"
+            @click="resetPostForm"
+          >
+            Cancelar
+          </v-btn>
+        </div>
+      </v-card>
+
+      <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle mt-4">
+        <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">
+          Publicado
+        </h3>
+
+        <div class="unified-filters mb-3">
+          <v-btn-toggle
+            v-model="unifiedTypeFilter"
+            color="purple-darken-3"
+            variant="outlined"
+            density="comfortable"
+            mandatory
+            divided
+            class="unified-filter-toggle"
+          >
+            <v-btn value="ALL" class="text-none" size="small">Todos</v-btn>
+            <v-btn value="AVISO" class="text-none" size="small">Avisos</v-btn>
+            <v-btn value="VERSICULO" class="text-none" size="small">Versículos</v-btn>
+            <v-btn value="DEVOCIONAL" class="text-none" size="small">Devocionais</v-btn>
+            <v-btn value="PUBLICACAO" class="text-none" size="small">Publicações</v-btn>
+          </v-btn-toggle>
+          <v-btn-toggle
+            v-model="unifiedStatusFilter"
+            color="teal-darken-2"
+            variant="outlined"
+            density="comfortable"
+            mandatory
+            divided
+            class="unified-filter-toggle"
+          >
+            <v-btn value="ALL" class="text-none" size="small">Todos</v-btn>
+            <v-btn value="PUBLIC" class="text-none" size="small">Público</v-btn>
+            <v-btn value="INTERNAL" class="text-none" size="small">Interno</v-btn>
+          </v-btn-toggle>
+        </div>
+
+        <MotionStaggerGroup class="content-admin-list">
+          <MotionStaggerItem
+            v-for="item in filteredUnifiedItems"
+            :key="item.key"
+            tag="div"
+            class="content-admin-row"
+          >
+            <div class="min-w-0">
+              <div class="d-flex align-center ga-2 mb-1">
+                <v-chip size="x-small" variant="tonal" color="purple-darken-3">
+                  {{ item.typeLabel }}
+                </v-chip>
+                <v-chip
+                  size="x-small"
+                  variant="tonal"
+                  :color="item.isPublic ? 'teal-darken-2' : 'grey-darken-1'"
+                >
+                  {{ item.isPublic ? "Público" : "Interno" }}
+                </v-chip>
+              </div>
+              <span>{{ item.title }}</span>
+            </div>
+            <div class="d-flex ga-1">
+              <v-btn icon variant="text" color="grey-darken-1" size="small" @click="item.onEdit()">
+                <Pencil size="16" />
+              </v-btn>
+              <v-btn icon variant="text" color="red-darken-2" size="small" @click="item.onDelete()">
+                <Trash2 size="16" />
+              </v-btn>
+            </div>
+          </MotionStaggerItem>
+        </MotionStaggerGroup>
+        <p v-if="!filteredUnifiedItems.length" class="text-caption text-grey-darken-1 mb-0">
+          Nada encontrado com esse filtro.
+        </p>
       </v-card>
     </section>
   </div>
@@ -741,6 +694,17 @@ const currentChurch = computed(() => user.value?.activeChurch ?? user.value?.chu
 // Cor da igreja (mesma da pagina publica) para o tratamento editorial das telas
 // de cadastro. Cai no terracota padrao quando a igreja nao escolheu uma cor.
 const churchAccent = computed(() => currentChurch.value?.accentColor || "#B5472A");
+
+type ContentType = "AVISO" | "VERSICULO" | "DEVOCIONAL" | "PUBLICACAO";
+
+const contentTypeOptions: { value: ContentType; label: string; icon: typeof Megaphone }[] = [
+  { value: "AVISO", label: "Aviso", icon: Megaphone },
+  { value: "VERSICULO", label: "Versículo", icon: BookMarked },
+  { value: "DEVOCIONAL", label: "Devocional", icon: Heart },
+  { value: "PUBLICACAO", label: "Publicação", icon: ImageIcon },
+];
+
+const activeContentType = ref<ContentType>("AVISO");
 
 const { listVerses, publishVerse, updateVerse, deleteVerse } = useDailyVerse();
 const {
@@ -866,6 +830,7 @@ const resetVerseForm = () => {
 };
 
 const editVerse = (verse: DailyVerse) => {
+  activeContentType.value = "VERSICULO";
   verseError.value = "";
   verseSuccess.value = "";
   editingVerseId.value = verse.id;
@@ -951,6 +916,7 @@ const resetAnnouncementForm = () => {
 };
 
 const editAnnouncement = (announcement: Announcement) => {
+  activeContentType.value = "AVISO";
   announcementError.value = "";
   announcementSuccess.value = "";
   editingAnnouncementId.value = announcement.id;
@@ -1048,6 +1014,7 @@ const resetDevotionalForm = () => {
 };
 
 const editDevotional = async (devotional: Devotional) => {
+  activeContentType.value = "DEVOCIONAL";
   devotionalError.value = "";
   devotionalSuccess.value = "";
   const fullDevotional = devotional.chapters?.length
@@ -1180,6 +1147,7 @@ const clearPostImage = () => {
 };
 
 const editPost = (post: ChurchPost) => {
+  activeContentType.value = "PUBLICACAO";
   editingPostId.value = post.id;
   postForm.title = post.title;
   postForm.body = post.body ?? "";
@@ -1229,6 +1197,87 @@ const removePost = async (id: string) => {
   posts.value = posts.value.filter((item) => item.id !== id);
   if (editingPostId.value === id) resetPostForm();
 };
+
+interface UnifiedContentItem {
+  key: string;
+  type: ContentType;
+  typeLabel: string;
+  title: string;
+  isPublic: boolean;
+  publishedAt: string;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+const unifiedContentItems = computed<UnifiedContentItem[]>(() => {
+  const items: UnifiedContentItem[] = [];
+
+  for (const verse of dailyVerses.value) {
+    items.push({
+      key: `verse-${verse.id}`,
+      type: "VERSICULO",
+      typeLabel: "Versículo",
+      title: verse.reference,
+      isPublic: verse.isPublic === true,
+      publishedAt: verse.publishedAt,
+      onEdit: () => editVerse(verse),
+      onDelete: () => removeVerse(verse.id),
+    });
+  }
+
+  for (const announcement of announcements.value) {
+    items.push({
+      key: `announcement-${announcement.id}`,
+      type: "AVISO",
+      typeLabel: announcementKindLabel(announcement.kind),
+      title: announcement.title,
+      isPublic: announcement.isPublic === true,
+      publishedAt: announcement.publishedAt,
+      onEdit: () => editAnnouncement(announcement),
+      onDelete: () => removeAnnouncement(announcement.id),
+    });
+  }
+
+  for (const devotional of devotionals.value) {
+    items.push({
+      key: `devotional-${devotional.id}`,
+      type: "DEVOCIONAL",
+      typeLabel: "Devocional",
+      title: devotional.title,
+      isPublic: devotional.isPublic === true,
+      publishedAt: devotional.publishedAt,
+      onEdit: () => editDevotional(devotional),
+      onDelete: () => removeDevotional(devotional.id),
+    });
+  }
+
+  for (const post of posts.value) {
+    items.push({
+      key: `post-${post.id}`,
+      type: "PUBLICACAO",
+      typeLabel: post.pinned ? "Publicação · Fixado" : "Publicação",
+      title: post.title,
+      isPublic: post.isPublic === true,
+      publishedAt: post.publishedAt,
+      onEdit: () => editPost(post),
+      onDelete: () => removePost(post.id),
+    });
+  }
+
+  return items.sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
+});
+
+const unifiedTypeFilter = ref<"ALL" | ContentType>("ALL");
+const unifiedStatusFilter = ref<"ALL" | "PUBLIC" | "INTERNAL">("ALL");
+
+const filteredUnifiedItems = computed(() =>
+  unifiedContentItems.value.filter((item) => {
+    if (unifiedTypeFilter.value !== "ALL" && item.type !== unifiedTypeFilter.value) return false;
+    if (unifiedStatusFilter.value === "PUBLIC" && !item.isPublic) return false;
+    if (unifiedStatusFilter.value === "INTERNAL" && item.isPublic) return false;
+    return true;
+  }),
+);
 
 onMounted(async () => {
   await Promise.all([
@@ -1285,6 +1334,27 @@ onMounted(async () => {
 
 .permission-empty {
   min-height: 320px;
+}
+
+.content-type-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.content-type-btn {
+  flex: 0 0 auto;
+}
+
+.unified-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.unified-filter-toggle {
+  flex-wrap: wrap;
+  height: auto !important;
 }
 
 .content-admin-grid {
