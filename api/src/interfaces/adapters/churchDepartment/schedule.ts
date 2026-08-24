@@ -15,6 +15,10 @@ const scheduleSelect = {
   rehearsalNotes: true,
   createdAt: true,
   departmentId: true,
+  serviceOccurrenceId: true,
+  serviceOccurrence: {
+    select: { id: true, serviceTimeId: true },
+  },
   department: {
     select: {
       id: true,
@@ -51,6 +55,13 @@ const scheduleSelect = {
       id: true,
       mediaItemId: true,
       order: true,
+      startedByUserId: true,
+      startedBy: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       mediaItem: {
         select: {
           id: true,
@@ -249,6 +260,7 @@ export class ScheduleAdapters {
       rehearsalDate?: string | null;
       rehearsalTime?: string | null;
       rehearsalNotes?: string | null;
+      serviceOccurrenceId?: string;
     };
 
     if (!body.title?.trim()) {
@@ -274,6 +286,18 @@ export class ScheduleAdapters {
       throw new DomainError("Data da escala inválida");
     }
 
+    if (!body.serviceOccurrenceId) {
+      throw new DomainError("Escolha o culto antes de criar a escala");
+    }
+
+    const occurrence = await $prismaClient.serviceOccurrence.findFirst({
+      where: { id: body.serviceOccurrenceId, crunchId: user.crunchId! },
+      select: { id: true },
+    });
+    if (!occurrence) {
+      throw new DomainError("Culto não encontrado");
+    }
+
     const { songIds, resourceIds, mediaItemIds } = this.getScheduleMediaItemIds(body);
 
     await this.assertMediaItemsFromDepartment(songIds, departmentId, "MUSIC");
@@ -285,6 +309,7 @@ export class ScheduleAdapters {
         date: scheduleDate,
         description: body.title.trim(),
         departmentId,
+        serviceOccurrenceId: body.serviceOccurrenceId,
         rehearsalAt: this.getOptionalDateTime(body.rehearsalDate, body.rehearsalTime),
         rehearsalNotes: body.rehearsalNotes?.trim() || null,
         mediaItems: {
@@ -315,6 +340,7 @@ export class ScheduleAdapters {
       rehearsalDate?: string | null;
       rehearsalTime?: string | null;
       rehearsalNotes?: string | null;
+      serviceOccurrenceId?: string;
     };
 
     if (!id) {
@@ -382,6 +408,12 @@ export class ScheduleAdapters {
 
     if (body.rehearsalNotes !== undefined) {
       data.rehearsalNotes = body.rehearsalNotes?.trim() || null;
+    }
+
+    if (body.serviceOccurrenceId !== undefined) {
+      data.serviceOccurrence = body.serviceOccurrenceId
+        ? { connect: { id: body.serviceOccurrenceId } }
+        : { disconnect: true };
     }
 
     const shouldUpdateMediaItems =
@@ -922,6 +954,46 @@ export class ScheduleAdapters {
         }),
       ),
     );
+
+    return { ok: true };
+  }
+
+  async setScheduleMediaItemLeader(request: FastifyRequest) {
+    const user = await this.context.getCurrentUser(request);
+    const { id, itemId } = request.params as { id?: string; itemId?: string };
+    const body = request.body as { startedByUserId?: string | null };
+
+    if (!id || !itemId) throw new DomainError("Escala ou musica nao informada");
+
+    const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    await this.context.assertDepartmentPermission(
+      user,
+      schedule.departmentId,
+      "SCHEDULE_EDIT",
+      "Apenas pastores, admins ou cargos com permissao podem editar escalas deste ministerio",
+    );
+
+    const startedByUserId = body.startedByUserId || null;
+
+    // "Quem comeca" so pode ser alguem escalado pro mesmo culto - evita
+    // apontar pra alguem de fora da escala.
+    if (startedByUserId) {
+      const isAssigned = await $prismaClient.scheduleAssignment.findFirst({
+        where: { scheduleId: id, userId: startedByUserId },
+        select: { id: true },
+      });
+
+      if (!isAssigned) {
+        throw new DomainError("Essa pessoa nao esta escalada pra esse culto");
+      }
+    }
+
+    const { count } = await $prismaClient.scheduleMediaItem.updateMany({
+      where: { id: itemId, scheduleId: id },
+      data: { startedByUserId },
+    });
+
+    if (count === 0) throw new DomainError("Musica nao encontrada nessa escala");
 
     return { ok: true };
   }

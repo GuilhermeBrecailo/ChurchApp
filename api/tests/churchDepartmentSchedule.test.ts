@@ -13,6 +13,7 @@ const mockPrismaClient = {
   scheduleMediaItem: { updateMany: jest.fn(), deleteMany: jest.fn() },
   mediaItem: { findMany: jest.fn() },
   appNotification: { updateMany: jest.fn() },
+  serviceOccurrence: { findFirst: jest.fn() },
   $transaction: jest.fn(),
 };
 
@@ -127,25 +128,49 @@ describe("ChurchDepartmentAdapters - escalas", () => {
 
     it("rejeita quando uma musica nao pertence ao ministerio", async () => {
       mockPrismaClient.mediaItem.findMany.mockResolvedValue([]);
+      mockPrismaClient.serviceOccurrence.findFirst.mockResolvedValue({ id: "occ-1" });
 
       await expect(
         adapters.createChurchDepartmentSchedule(
           makeRequest({
             params: { id: "dept-1" },
-            body: { title: "Culto", date: "2026-08-20", songIds: ["song-x"] },
+            body: {
+              title: "Culto",
+              date: "2026-08-20",
+              songIds: ["song-x"],
+              serviceOccurrenceId: "occ-1",
+            },
           }),
         ),
       ).rejects.toThrow("Uma ou mais musicas nao pertencem a este ministerio");
     });
 
+    it("rejeita escala sem culto vinculado", async () => {
+      await expect(
+        adapters.createChurchDepartmentSchedule(
+          makeRequest({
+            params: { id: "dept-1" },
+            body: { title: "Culto de Domingo", date: "2026-08-20" },
+          }),
+        ),
+      ).rejects.toThrow("Escolha o culto antes de criar a escala");
+    });
+
     it("cria escala com musicas validadas", async () => {
       mockPrismaClient.mediaItem.findMany.mockResolvedValue([{ id: "song-1" }]);
+      mockPrismaClient.serviceOccurrence.findFirst.mockResolvedValue({ id: "occ-1" });
       mockPrismaClient.schedule.create.mockResolvedValue(scheduleRow());
 
       const result = await adapters.createChurchDepartmentSchedule(
         makeRequest({
           params: { id: "dept-1" },
-          body: { title: "Culto de domingo", date: "2026-08-20", time: "19:00", songIds: ["song-1"] },
+          body: {
+            title: "Culto de domingo",
+            date: "2026-08-20",
+            time: "19:00",
+            songIds: ["song-1"],
+            serviceOccurrenceId: "occ-1",
+          },
         }),
       );
 
