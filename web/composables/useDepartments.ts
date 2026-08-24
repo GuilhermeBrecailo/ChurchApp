@@ -107,6 +107,8 @@ export interface DepartmentSchedule {
     startedBy?: { id: string; name: string } | null;
     mediaItem: DepartmentResource | DepartmentSong;
   }[];
+  serviceOccurrenceId?: string | null;
+  serviceOccurrence?: { id: string; serviceTimeId: string } | null;
 }
 
 export interface DepartmentResource {
@@ -230,6 +232,7 @@ interface CreateDepartmentScheduleDTO {
   rehearsalDate?: string | null;
   rehearsalTime?: string | null;
   rehearsalNotes?: string | null;
+  serviceOccurrenceId?: string;
 }
 
 interface UpdateDepartmentScheduleDTO {
@@ -243,6 +246,7 @@ interface UpdateDepartmentScheduleDTO {
   rehearsalDate?: string | null;
   rehearsalTime?: string | null;
   rehearsalNotes?: string | null;
+  serviceOccurrenceId?: string;
 }
 
 interface CreateDepartmentResourceDTO {

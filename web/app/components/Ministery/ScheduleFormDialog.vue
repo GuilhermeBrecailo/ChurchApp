@@ -34,6 +34,22 @@
           :disabled="isCreatingSchedule"
         />
 
+        <v-select
+          v-model="scheduleForm.serviceTimeId"
+          label="Culto"
+          :items="serviceTimeOptions"
+          item-title="label"
+          item-value="value"
+          prepend-inner-icon="mdi-church"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
+          class="ministery-input mb-4"
+          hide-details="auto"
+          :disabled="isCreatingSchedule"
+        />
+
         <div class="ministery-field-grid mb-4">
           <v-text-field
             v-model="scheduleForm.date"
@@ -208,6 +224,7 @@ const props = defineProps<{
     title: string;
     date: string;
     time: string;
+    serviceTimeId: string;
     rehearsalDate: string;
     rehearsalTime: string;
     rehearsalNotes: string;
@@ -216,6 +233,7 @@ const props = defineProps<{
   };
   songOptions: { label: string; value: string }[];
   resourceOptions: { label: string; value: string }[];
+  serviceTimeOptions: { label: string; value: string }[];
   createScheduleError: string;
   isCreatingSchedule: boolean;
 }>();

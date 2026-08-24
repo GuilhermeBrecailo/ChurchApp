@@ -175,6 +175,7 @@
       :schedule-form="scheduleForm"
       :song-options="songOptions"
       :resource-options="resourceOptions"
+      :service-time-options="serviceTimeOptions"
       :create-schedule-error="createScheduleError"
       :is-creating-schedule="isCreatingSchedule"
       @close="closeScheduleDialog"
@@ -342,6 +343,8 @@ import { useAuth } from "../../../composables/useAuth";
 import { useMembers, type ChurchMember } from "../../../composables/useMembers";
 import { useChurchRoles, type ChurchRole, type MemberRole } from "../../../composables/useChurchRoles";
 import { usePermissions } from "../../../composables/usePermissions";
+import { useServiceTimes } from "../../../composables/useServiceTimes";
+import { useServiceOccurrences } from "../../../composables/useServiceOccurrences";
 
 const route = useRoute();
 const router = useRouter();
@@ -381,6 +384,21 @@ const {
 } = useDepartments();
 const { getMembers } = useMembers();
 const { getRoles, addMemberRole, removeMemberRole } = useChurchRoles();
+const { serviceTimes, loadServiceTimes } = useServiceTimes();
+const { resolveOccurrence } = useServiceOccurrences();
+
+onMounted(() => {
+  if (!serviceTimes.value.length) loadServiceTimes();
+});
+
+const serviceTimeOptions = computed(() =>
+  serviceTimes.value
+    .filter((serviceTime) => serviceTime.isActive)
+    .map((serviceTime) => ({
+      label: `${serviceTime.label} · ${serviceTime.time}`,
+      value: serviceTime.id,
+    })),
+);
 
 // Cargos de ministerio deste departamento, para o lider delegar aos membros.
 const churchRolesList = ref<ChurchRole[]>([]);
@@ -580,6 +598,7 @@ const scheduleForm = reactive({
   title: "",
   date: "",
   time: "",
+  serviceTimeId: "",
   rehearsalDate: "",
   rehearsalTime: "",
   rehearsalNotes: "",
@@ -1239,6 +1258,7 @@ const resetScheduleForm = () => {
   scheduleForm.title = "";
   scheduleForm.date = "";
   scheduleForm.time = "";
+  scheduleForm.serviceTimeId = "";
   scheduleForm.rehearsalDate = "";
   scheduleForm.rehearsalTime = "";
   scheduleForm.rehearsalNotes = "";
@@ -1531,6 +1551,7 @@ const openScheduleEditDialog = (schedule: DepartmentSchedule) => {
   scheduleForm.title = schedule.description;
   scheduleForm.date = toDateInputValue(schedule.date);
   scheduleForm.time = toTimeInputValue(schedule.date);
+  scheduleForm.serviceTimeId = schedule.serviceOccurrence?.serviceTimeId ?? "";
   scheduleForm.rehearsalDate = schedule.rehearsalAt
     ? toDateInputValue(schedule.rehearsalAt)
     : "";
@@ -1564,14 +1585,31 @@ const handleSaveSchedule = async () => {
     return;
   }
 
+  if (!scheduleForm.serviceTimeId) {
+    createScheduleError.value = "Escolha o culto da escala.";
+    return;
+  }
+
   isCreatingSchedule.value = true;
 
   try {
+    const { data: occurrence, error: occurrenceError } = await resolveOccurrence(
+      scheduleForm.serviceTimeId,
+      scheduleForm.date,
+    );
+
+    if (occurrenceError || !occurrence) {
+      createScheduleError.value = occurrenceError || "Não foi possível vincular o culto.";
+      isCreatingSchedule.value = false;
+      return;
+    }
+
     const { data, error } = editingScheduleId.value
       ? await updateChurchSchedule(editingScheduleId.value, {
           title,
           date: scheduleForm.date,
           time: scheduleForm.time || undefined,
+          serviceOccurrenceId: occurrence.id,
           rehearsalDate: scheduleForm.rehearsalDate || null,
           rehearsalTime: scheduleForm.rehearsalTime || null,
           rehearsalNotes: scheduleForm.rehearsalNotes || null,
@@ -1582,6 +1620,7 @@ const handleSaveSchedule = async () => {
           title,
           date: scheduleForm.date,
           time: scheduleForm.time || undefined,
+          serviceOccurrenceId: occurrence.id,
           rehearsalDate: scheduleForm.rehearsalDate || null,
           rehearsalTime: scheduleForm.rehearsalTime || null,
           rehearsalNotes: scheduleForm.rehearsalNotes || null,

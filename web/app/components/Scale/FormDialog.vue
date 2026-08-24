@@ -41,6 +41,22 @@
           :disabled="isSaving"
         />
 
+        <v-select
+          v-model="scheduleForm.serviceTimeId"
+          label="Culto"
+          :items="serviceTimeOptions"
+          item-title="label"
+          item-value="value"
+          prepend-inner-icon="mdi-church"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          :bg-color="isDark ? 'transparent' : 'white'"
+          class="scale-input mb-4"
+          hide-details="auto"
+          :disabled="isSaving"
+        />
+
         <div class="scale-field-grid mb-4">
           <v-text-field
             v-model="scheduleForm.date"
@@ -345,9 +361,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { Calendar, ChevronDown, ChevronUp, Plus } from "lucide-vue-next";
 import { useThemeMode } from "../../../composables/useThemeMode";
+import { useServiceOccurrences } from "../../../composables/useServiceOccurrences";
+import { useServiceTimes } from "../../../composables/useServiceTimes";
 import {
   useDepartments,
   type ChurchDepartment,
@@ -376,6 +394,21 @@ const {
   getDepartmentResources,
   getDepartmentSongs,
 } = useDepartments();
+const { resolveOccurrence } = useServiceOccurrences();
+const { serviceTimes, loadServiceTimes } = useServiceTimes();
+
+onMounted(() => {
+  if (!serviceTimes.value.length) loadServiceTimes();
+});
+
+const serviceTimeOptions = computed(() =>
+  serviceTimes.value
+    .filter((serviceTime) => serviceTime.isActive)
+    .map((serviceTime) => ({
+      label: `${serviceTime.label} · ${serviceTime.time}`,
+      value: serviceTime.id,
+    })),
+);
 
 const { isDark } = useThemeMode();
 const accentColor = computed(() => (isDark.value ? "#f0975a" : "#B5472A"));
@@ -396,6 +429,7 @@ const scheduleForm = reactive({
   title: "",
   date: "",
   time: "",
+  serviceTimeId: "",
   departmentId: "",
   rehearsalDate: "",
   rehearsalTime: "",
@@ -536,6 +570,7 @@ const resetForm = () => {
   scheduleForm.title = "";
   scheduleForm.date = "";
   scheduleForm.time = "";
+  scheduleForm.serviceTimeId = "";
   scheduleForm.departmentId = "";
   scheduleForm.rehearsalDate = "";
   scheduleForm.rehearsalTime = "";
@@ -553,6 +588,7 @@ const prefillForm = async (schedule: DepartmentSchedule) => {
   scheduleForm.title = schedule.description;
   scheduleForm.date = toDateInputValue(schedule.date);
   scheduleForm.time = toTimeInputValue(schedule.date);
+  scheduleForm.serviceTimeId = schedule.serviceOccurrence?.serviceTimeId ?? "";
   scheduleForm.departmentId = schedule.departmentId;
   scheduleForm.rehearsalDate = schedule.rehearsalAt ? toDateInputValue(schedule.rehearsalAt) : "";
   scheduleForm.rehearsalTime = schedule.rehearsalAt ? toTimeInputValue(schedule.rehearsalAt) : "";
@@ -624,14 +660,31 @@ const handleSaveSchedule = async () => {
     return;
   }
 
+  if (!scheduleForm.serviceTimeId) {
+    saveError.value = "Escolha o culto da escala.";
+    return;
+  }
+
   isSaving.value = true;
 
   try {
+    const { data: occurrence, error: occurrenceError } = await resolveOccurrence(
+      scheduleForm.serviceTimeId,
+      scheduleForm.date,
+    );
+
+    if (occurrenceError || !occurrence) {
+      saveError.value = occurrenceError || "Não foi possível vincular o culto.";
+      isSaving.value = false;
+      return;
+    }
+
     const payload = {
       title,
       date: scheduleForm.date,
       time: scheduleForm.time || undefined,
       departmentId: scheduleForm.departmentId,
+      serviceOccurrenceId: occurrence.id,
       rehearsalDate: scheduleForm.rehearsalDate || null,
       rehearsalTime: scheduleForm.rehearsalTime || null,
       rehearsalNotes: scheduleForm.rehearsalNotes || null,
