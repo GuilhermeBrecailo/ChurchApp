@@ -223,6 +223,91 @@ export class SongAdapters {
     });
   }
 
+  async mixChurchDepartmentSongs(request: FastifyRequest) {
+    const user = await this.context.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+    const body = request.body as {
+      title?: string;
+      primaryMediaItemId?: string;
+      secondaryMediaItemId?: string;
+    };
+
+    if (!id) {
+      throw new DomainError("Ministerio nao informado");
+    }
+
+    if (!body.title?.trim()) {
+      throw new DomainError("Titulo do mix e obrigatorio");
+    }
+
+    if (!body.primaryMediaItemId || !body.secondaryMediaItemId) {
+      throw new DomainError("Escolha as duas musicas do mix");
+    }
+
+    if (body.primaryMediaItemId === body.secondaryMediaItemId) {
+      throw new DomainError("Escolha duas musicas diferentes pro mix");
+    }
+
+    await this.context.assertDepartmentPermission(
+      user,
+      id,
+      "SONG_CREATE",
+      "Apenas pastores, admins ou cargos com permissao podem adicionar musicas deste ministerio",
+    );
+
+    const [primary, secondary] = await Promise.all([
+      $prismaClient.mediaItem.findFirst({
+        where: { id: body.primaryMediaItemId, departmentId: id, category: "MUSIC" },
+      }),
+      $prismaClient.mediaItem.findFirst({
+        where: { id: body.secondaryMediaItemId, departmentId: id, category: "MUSIC" },
+      }),
+    ]);
+
+    if (!primary || !secondary) {
+      throw new DomainError("Uma das musicas escolhidas nao foi encontrada neste ministerio");
+    }
+
+    await this.assertUniqueSongTitle(id, body.title.trim());
+
+    const primaryMetadata = (primary.metadata ?? {}) as Record<string, unknown>;
+    const secondaryMetadata = (secondary.metadata ?? {}) as Record<string, unknown>;
+
+    const joinField = (a: unknown, b: unknown) => {
+      const first = typeof a === "string" ? a.trim() : "";
+      const second = typeof b === "string" ? b.trim() : "";
+
+      if (!first && !second) return "";
+
+      return `${first}\n\n[Segunda música: ${secondary.title}]\n\n${second}`;
+    };
+
+    const metadata = {
+      artist: "",
+      key: typeof primaryMetadata.key === "string" ? primaryMetadata.key : "",
+      bpm: "",
+      songCategory: "Louvor",
+      notes: "",
+      lyrics: joinField(primaryMetadata.lyrics, secondaryMetadata.lyrics),
+      chords: joinField(primaryMetadata.chords, secondaryMetadata.chords),
+      keyboardChords: joinField(primaryMetadata.keyboardChords, secondaryMetadata.keyboardChords),
+      mediaLink: "",
+      mixSources: [primary.title, secondary.title],
+    };
+
+    return await $prismaClient.mediaItem.create({
+      data: {
+        id: crypto.randomUUID(),
+        title: body.title.trim(),
+        url: "",
+        category: "MUSIC",
+        metadata,
+        departmentId: id,
+      },
+      select: songSelect,
+    });
+  }
+
   // Sobe um PDF de repertorio e devolve as musicas detectadas (titulo +
   // letra) SEM criar nada ainda - o usuario revisa/edita antes de confirmar
   // em importSongsFromPdf. Mesma permissao de SONG_CREATE do cadastro manual.

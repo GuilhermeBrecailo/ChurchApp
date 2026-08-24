@@ -114,6 +114,10 @@ export class ChurchDepartmentAdapters {
     return this.schedule.reorderScheduleMediaItems(request);
   }
 
+  async setScheduleMediaItemLeader(request: FastifyRequest) {
+    return this.schedule.setScheduleMediaItemLeader(request);
+  }
+
   // Musica / preferencia / import
   async importCifraClubSong(request: FastifyRequest) {
     return this.song.importCifraClubSong(request);
@@ -125,6 +129,10 @@ export class ChurchDepartmentAdapters {
 
   async createChurchDepartmentSong(request: FastifyRequest) {
     return this.song.createChurchDepartmentSong(request);
+  }
+
+  async mixChurchDepartmentSongs(request: FastifyRequest) {
+    return this.song.mixChurchDepartmentSongs(request);
   }
 
   async previewSongsFromPdf(request: FastifyRequest) {

@@ -156,6 +156,113 @@ describe("ChurchDepartmentAdapters - musicas", () => {
     });
   });
 
+  describe("mixChurchDepartmentSongs", () => {
+    const primarySong = {
+      id: "song-1",
+      title: "Grande e o Senhor",
+      metadata: { key: "G", lyrics: "Letra A", chords: "Cifra A" },
+    };
+    const secondarySong = {
+      id: "song-2",
+      title: "Ao Deus Que Habita em Mim",
+      metadata: { key: "A", lyrics: "Letra B", chords: "" },
+    };
+
+    it("rejeita titulo vazio", async () => {
+      await expect(
+        adapters.mixChurchDepartmentSongs(
+          makeRequest({
+            params: { id: "dept-1" },
+            body: { title: "  ", primaryMediaItemId: "song-1", secondaryMediaItemId: "song-2" },
+          }),
+        ),
+      ).rejects.toThrow("Titulo do mix e obrigatorio");
+    });
+
+    it("rejeita escolher a mesma musica duas vezes", async () => {
+      await expect(
+        adapters.mixChurchDepartmentSongs(
+          makeRequest({
+            params: { id: "dept-1" },
+            body: { title: "Mix", primaryMediaItemId: "song-1", secondaryMediaItemId: "song-1" },
+          }),
+        ),
+      ).rejects.toThrow("Escolha duas musicas diferentes pro mix");
+    });
+
+    it("rejeita quando uma das musicas nao existe no ministerio", async () => {
+      mockPrismaClient.mediaItem.findFirst
+        .mockResolvedValueOnce(primarySong)
+        .mockResolvedValueOnce(null);
+
+      await expect(
+        adapters.mixChurchDepartmentSongs(
+          makeRequest({
+            params: { id: "dept-1" },
+            body: { title: "Mix", primaryMediaItemId: "song-1", secondaryMediaItemId: "song-2" },
+          }),
+        ),
+      ).rejects.toThrow("Uma das musicas escolhidas nao foi encontrada neste ministerio");
+    });
+
+    it("rejeita titulo de mix duplicado", async () => {
+      mockPrismaClient.mediaItem.findFirst
+        .mockResolvedValueOnce(primarySong)
+        .mockResolvedValueOnce(secondarySong)
+        .mockResolvedValueOnce({ id: "outro-song" });
+
+      await expect(
+        adapters.mixChurchDepartmentSongs(
+          makeRequest({
+            params: { id: "dept-1" },
+            body: {
+              title: "Grande e o Senhor",
+              primaryMediaItemId: "song-1",
+              secondaryMediaItemId: "song-2",
+            },
+          }),
+        ),
+      ).rejects.toThrow("Ja existe uma musica com esse nome neste ministerio");
+    });
+
+    it("cria o mix juntando letra/cifra, ignorando campo ausente nos dois lados", async () => {
+      mockPrismaClient.mediaItem.findFirst
+        .mockResolvedValueOnce(primarySong)
+        .mockResolvedValueOnce(secondarySong)
+        .mockResolvedValueOnce(null);
+      mockPrismaClient.mediaItem.create.mockResolvedValue({ ...songRow, id: "mix-1" });
+
+      const result = await adapters.mixChurchDepartmentSongs(
+        makeRequest({
+          params: { id: "dept-1" },
+          body: {
+            title: "Grande e o Senhor + Ao Deus Que Habita em Mim",
+            primaryMediaItemId: "song-1",
+            secondaryMediaItemId: "song-2",
+          },
+        }),
+      );
+
+      expect(result.id).toBe("mix-1");
+      expect(mockPrismaClient.mediaItem.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            category: "MUSIC",
+            title: "Grande e o Senhor + Ao Deus Que Habita em Mim",
+            departmentId: "dept-1",
+            metadata: expect.objectContaining({
+              key: "G",
+              lyrics: "Letra A\n\n[Segunda música: Ao Deus Que Habita em Mim]\n\nLetra B",
+              chords: "Cifra A\n\n[Segunda música: Ao Deus Que Habita em Mim]\n\n",
+              keyboardChords: "",
+              mixSources: ["Grande e o Senhor", "Ao Deus Que Habita em Mim"],
+            }),
+          }),
+        }),
+      );
+    });
+  });
+
   describe("updateChurchDepartmentSong", () => {
     it("rejeita quando o recurso encontrado nao e categoria MUSIC", async () => {
       mockPrismaClient.mediaItem.findFirst.mockResolvedValue({ ...songRow, category: "ACTIVITY" });

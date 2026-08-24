@@ -122,6 +122,11 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
     controllerHandler(adapters.reorderScheduleMediaItems.bind(adapters)),
   );
 
+  app.patch(
+    "/api/church/schedules/:id/media-items/:itemId/leader",
+    controllerHandler(adapters.setScheduleMediaItemLeader.bind(adapters)),
+  );
+
   app.get(
     "/api/church/departments/:id/resources",
     controllerHandler(adapters.getChurchDepartmentResources.bind(adapters)),
@@ -140,6 +145,11 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
   app.post(
     "/api/church/departments/:id/songs",
     controllerHandler(adapters.createChurchDepartmentSong.bind(adapters)),
+  );
+
+  app.post(
+    "/api/church/departments/:id/songs/mix",
+    controllerHandler(adapters.mixChurchDepartmentSongs.bind(adapters)),
   );
 
   app.post(
