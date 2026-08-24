@@ -9,6 +9,15 @@
       >
         <Plus size="18" class="mr-1" /> Nova música
       </v-btn>
+      <v-btn
+        v-if="canManageSongs && songs.length >= 2"
+        variant="tonal"
+        color="purple-darken-3"
+        class="rounded-lg text-none"
+        @click="$emit('create-mix')"
+      >
+        <Combine size="18" class="mr-1" /> Criar mix
+      </v-btn>
     </div>
 
     <v-card
@@ -82,6 +91,14 @@
                 variant="tonal"
               >
                 PDF
+              </v-chip>
+              <v-chip
+                v-if="song.metadata?.mixSources?.length"
+                size="x-small"
+                color="orange-darken-3"
+                variant="tonal"
+              >
+                Mix
               </v-chip>
             </div>
           </div>
@@ -201,7 +218,7 @@
 </template>
 
 <script setup lang="ts">
-import { BookOpen, ExternalLink, FileText, Maximize2, Music, Pencil, Plus, Trash2 } from "lucide-vue-next";
+import { BookOpen, Combine, ExternalLink, FileText, Maximize2, Music, Pencil, Plus, Trash2 } from "lucide-vue-next";
 import type { DepartmentSong } from "../../../composables/useDepartments";
 
 defineProps<{
@@ -212,6 +229,7 @@ defineProps<{
 
 defineEmits<{
   (event: "create"): void;
+  (event: "create-mix"): void;
   (event: "open-viewer", song: DepartmentSong): void;
   (event: "edit", song: DepartmentSong): void;
   (event: "delete", song: DepartmentSong): void;

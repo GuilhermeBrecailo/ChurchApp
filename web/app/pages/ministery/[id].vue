@@ -152,6 +152,7 @@
         :songs-error="songsError"
         :can-manage-songs="canManageSongs"
         @create="isSongDialogOpen = true"
+        @create-mix="isMixDialogOpen = true"
         @open-viewer="openSongViewer"
         @edit="openSongEditDialog"
         @delete="handleDeleteSong"
@@ -244,6 +245,15 @@
       @personal-key-change="handlePersonalKeyChange"
       @use-official-chords="useOfficialChords"
       @save-preference="saveSongPreference"
+    />
+
+    <MinisteryMixSongDialog
+      v-model="isMixDialogOpen"
+      :songs="songs"
+      :is-creating-mix="isCreatingMix"
+      :create-mix-error="createMixError"
+      @close="isMixDialogOpen = false"
+      @submit="handleSaveMix"
     />
 
     <MinisteryActivityFormDialog
@@ -354,6 +364,7 @@ const {
   deleteDepartmentResource,
   getDepartmentSongs,
   createDepartmentSong,
+  createSongMix,
   updateDepartmentSong,
   deleteDepartmentSong,
   importCifraClubSong,
@@ -492,6 +503,9 @@ const isCreatingTask = ref(false);
 const isCreatingSchedule = ref(false);
 const isCreatingResource = ref(false);
 const isCreatingSong = ref(false);
+const isMixDialogOpen = ref(false);
+const isCreatingMix = ref(false);
+const createMixError = ref("");
 const isImportingCifraClubSong = ref(false);
 const isCreatingActivity = ref(false);
 const isLoadingSongPreference = ref(false);
@@ -1891,6 +1905,33 @@ const handleSaveSong = async () => {
     createSongError.value = error?.message || "Não foi possível salvar a música.";
   } finally {
     isCreatingSong.value = false;
+  }
+};
+
+const handleSaveMix = async (payload: {
+  title: string;
+  primaryMediaItemId: string;
+  secondaryMediaItemId: string;
+}) => {
+  createMixError.value = "";
+  isCreatingMix.value = true;
+
+  try {
+    const { data, error } = await createSongMix(departmentId, payload);
+
+    if (error || !data) {
+      createMixError.value = error || "Não foi possível criar o mix.";
+      return;
+    }
+
+    songs.value = [...songs.value, data].sort((current, next) =>
+      current.title.localeCompare(next.title),
+    );
+    isMixDialogOpen.value = false;
+  } catch (error: any) {
+    createMixError.value = error?.message || "Não foi possível criar o mix.";
+  } finally {
+    isCreatingMix.value = false;
   }
 };
 
