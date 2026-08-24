@@ -35,6 +35,7 @@ const props = withDefaults(
     fitWidth?: boolean;
     minFontSize?: number;
     maxFontSize?: number;
+    bold?: boolean;
     /** Sem caixa/scroll proprios - flui como parte da pagina que o envolve
      * (usado na leitura em sequencia, onde varias musicas ficam empilhadas
      * num unico scroll continuo). */
@@ -50,6 +51,7 @@ const props = withDefaults(
     fitWidth: true,
     minFontSize: 9,
     maxFontSize: 0,
+    bold: false,
     flow: false,
   },
 );
@@ -71,6 +73,7 @@ const rendererClasses = computed(() => ({
   "song-text-renderer--auto": props.autoScroll && props.scrollSpeed > 0,
   "song-text-renderer--fit": isFitting.value,
   "song-text-renderer--flow": props.flow,
+  "song-text-renderer--bold": props.bold,
 }));
 
 const fittedFontSize = ref(0);
@@ -114,15 +117,24 @@ const tokenizeChordLine = (line: string): SongSegment[] => {
   });
 };
 
+// Uma linha que e so "[algo]" e um cabecalho de secao (ex: o divisor do
+// mix de musicas) - vale nos dois modos, nao so cifra, senao o divisor fica
+// sem destaque na letra (o caso mais comum, ja que nem toda musica tem cifra).
+const isSectionHeaderLine = (line: string) => /^\[[^\]]+\]$/.test(line.trim());
+
 const renderedLines = computed(() => {
   const value = props.text?.length ? props.text : props.emptyText;
   const lines = (value || "").split("\n");
 
-  return lines.map((line) =>
-    props.mode === "chords"
+  return lines.map((line) => {
+    if (isSectionHeaderLine(line)) {
+      return [{ text: line, type: "section" as const }];
+    }
+
+    return props.mode === "chords"
       ? tokenizeChordLine(line)
-      : [{ text: line || "\u00a0", type: "lyric" }],
-  );
+      : [{ text: line || "\u00a0", type: "lyric" as const }];
+  });
 });
 
 const longestLineLength = computed(() =>
@@ -362,6 +374,10 @@ onBeforeUnmount(() => {
 .song-lyric {
   color: inherit;
   font-weight: 500;
+}
+
+.song-text-renderer--bold .song-lyric {
+  font-weight: 800;
 }
 
 .song-section {
