@@ -103,6 +103,8 @@ export interface DepartmentSchedule {
   mediaItems?: {
     id: string;
     mediaItemId: string;
+    startedByUserId?: string | null;
+    startedBy?: { id: string; name: string } | null;
     mediaItem: DepartmentResource | DepartmentSong;
   }[];
 }
@@ -135,6 +137,7 @@ export interface DepartmentSong {
     keyboardChords?: string;
     pdf?: DepartmentPdfMetadata | null;
     mediaLink?: string;
+    mixSources?: string[];
   } | null;
   departmentId: string;
 }
@@ -284,6 +287,12 @@ interface CreateDepartmentSongDTO {
   pdfFileName?: string;
   pdfMimeType?: string;
   pdfSize?: number;
+}
+
+interface CreateSongMixDTO {
+  title: string;
+  primaryMediaItemId: string;
+  secondaryMediaItemId: string;
 }
 
 interface UpdateDepartmentSongDTO {
@@ -740,6 +749,20 @@ export const useDepartments = () => {
     );
   };
 
+  const createSongMix = async (
+    id: string,
+    payload: CreateSongMixDTO,
+  ): Promise<ApiResponse<DepartmentSong>> => {
+    return await $customFetch<DepartmentSong>(
+      `${config.public.URL_BACKEND}/api/church/departments/${id}/songs/mix`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+        body: payload,
+      },
+    );
+  };
+
   const updateDepartmentSong = async (
     departmentId: string,
     songId: string,
@@ -880,6 +903,21 @@ export const useDepartments = () => {
     );
   };
 
+  const setScheduleMediaItemLeader = async (
+    scheduleId: string,
+    itemId: string,
+    startedByUserId: string | null,
+  ): Promise<ApiResponse<{ ok: boolean }>> => {
+    return await $customFetch<{ ok: boolean }>(
+      `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}/media-items/${itemId}/leader`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: { startedByUserId },
+      },
+    );
+  };
+
   return {
     getDepartments,
     createDepartment,
@@ -910,6 +948,7 @@ export const useDepartments = () => {
     deleteDepartmentResource,
     getDepartmentSongs,
     createDepartmentSong,
+    createSongMix,
     updateDepartmentSong,
     deleteDepartmentSong,
     importCifraClubSong,
@@ -918,5 +957,6 @@ export const useDepartments = () => {
     getSongPreference,
     updateSongPreference,
     reorderScheduleMediaItems,
+    setScheduleMediaItemLeader,
   };
 };
