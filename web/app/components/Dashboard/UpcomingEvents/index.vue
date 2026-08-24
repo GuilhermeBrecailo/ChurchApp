@@ -30,9 +30,9 @@
         role="button"
         tabindex="0"
         :aria-label="`Ver escala: ${event.title}`"
-        @click="goToSchedule(event.id)"
-        @keydown.enter="goToSchedule(event.id)"
-        @keydown.space.prevent="goToSchedule(event.id)"
+        @click="goToSchedule(event.id, event.occurrenceId)"
+        @keydown.enter="goToSchedule(event.id, event.occurrenceId)"
+        @keydown.space.prevent="goToSchedule(event.id, event.occurrenceId)"
       >
         <div
           class="date-badge rounded-lg d-flex flex-column align-center justify-center mr-4"
@@ -74,6 +74,7 @@ const eventsList = computed(() =>
 
     return {
       id: schedule.id,
+      occurrenceId: schedule.serviceOccurrence?.id ?? null,
       day: new Intl.DateTimeFormat("pt-BR", { day: "2-digit" }).format(date),
       month: new Intl.DateTimeFormat("pt-BR", { month: "short" })
         .format(date)
@@ -88,7 +89,14 @@ const eventsList = computed(() =>
   }),
 );
 
-const goToSchedule = (id: string) => {
+// Escalas novas sempre tem culto vinculado - manda pro hub. Escalas antigas
+// (de antes dessa mudanca) nao tem, entao caem no destino de sempre.
+const goToSchedule = (id: string, occurrenceId: string | null) => {
+  if (occurrenceId) {
+    router.push(`/cultos/${occurrenceId}`);
+    return;
+  }
+
   router.push({
     path: "/scale",
     query: {
