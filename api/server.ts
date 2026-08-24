@@ -29,6 +29,7 @@ import { RosterRoutes } from "./src/interfaces/routes/RosterRoutes.ts";
 import { MessageRoutes } from "./src/interfaces/routes/MessageRoutes.ts";
 import { BirthdayRoutes } from "./src/interfaces/routes/BirthdayRoutes.ts";
 import { AttendanceRoutes } from "./src/interfaces/routes/AttendanceRoutes.ts";
+import { ServiceOccurrenceRoutes } from "./src/interfaces/routes/ServiceOccurrenceRoutes.ts";
 import TenantHandler from "./src/interfaces/plugins/TenantHandler.ts";
 import { startMessageRuleScheduler } from "./src/infrastructure/whatsapp/messageRuleScheduler.ts";
 import { startBirthdayScheduler } from "./src/infrastructure/whatsapp/birthdayScheduler.ts";
@@ -94,6 +95,7 @@ await server.register(RosterRoutes, { prefix: "/" });
 await server.register(MessageRoutes, { prefix: "/" });
 await server.register(BirthdayRoutes, { prefix: "/" });
 await server.register(AttendanceRoutes, { prefix: "/" });
+await server.register(ServiceOccurrenceRoutes, { prefix: "/" });
 
 await server.listen({ port, host: "0.0.0.0" });
 
