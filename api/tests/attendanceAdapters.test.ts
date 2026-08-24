@@ -155,8 +155,25 @@ describe("AttendanceAdapters - finalize", () => {
     expect(mockPrismaClient.serviceAttendance.upsert).not.toHaveBeenCalled();
   });
 
+  it("rejeita finalizar antes do horario do culto", async () => {
+    mockPrismaClient.serviceTime.findUnique.mockResolvedValue({
+      id: "st1",
+      crunchId: "church-1",
+      time: "18:00",
+    });
+
+    await expect(
+      adapters.finalize(makeRequest("PASTOR", { params: { serviceTimeId: "st1" } })),
+    ).rejects.toThrow("Esse culto ainda não começou");
+    expect(mockPrismaClient.serviceAttendance.upsert).not.toHaveBeenCalled();
+  });
+
   it("creates today's row with endedAt set on the first tap, headcount defaulted to zero", async () => {
-    mockPrismaClient.serviceTime.findUnique.mockResolvedValue({ id: "st1", crunchId: "church-1" });
+    mockPrismaClient.serviceTime.findUnique.mockResolvedValue({
+      id: "st1",
+      crunchId: "church-1",
+      time: "09:00",
+    });
     mockPrismaClient.serviceAttendance.upsert.mockResolvedValue({ id: "a1" });
 
     await adapters.finalize(makeRequest("PASTOR", { params: { serviceTimeId: "st1" } }));
@@ -176,7 +193,11 @@ describe("AttendanceAdapters - finalize", () => {
   });
 
   it("overwrites endedAt with the later timestamp on a second same-day tap, without touching headcount fields", async () => {
-    mockPrismaClient.serviceTime.findUnique.mockResolvedValue({ id: "st1", crunchId: "church-1" });
+    mockPrismaClient.serviceTime.findUnique.mockResolvedValue({
+      id: "st1",
+      crunchId: "church-1",
+      time: "09:00",
+    });
     mockPrismaClient.serviceAttendance.upsert.mockResolvedValue({ id: "a1" });
 
     await adapters.finalize(makeRequest("PASTOR", { params: { serviceTimeId: "st1" } }));

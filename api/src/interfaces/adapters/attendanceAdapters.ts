@@ -58,6 +58,7 @@ export class AttendanceAdapters {
     if (!serviceTime || serviceTime.crunchId !== crunchId) {
       throw new DomainError("Culto não encontrado");
     }
+    return serviceTime;
   }
 
   // Upsert por culto+data (unique juntos no schema) - lancar de novo no mesmo
@@ -107,7 +108,14 @@ export class AttendanceAdapters {
     this.assertCanManageAttendance(user);
     const { serviceTimeId } = request.params as { serviceTimeId?: string };
     if (!serviceTimeId) throw new DomainError("Culto não informado");
-    await this.assertOwnedServiceTime(serviceTimeId, user.crunchId);
+    const serviceTime = await this.assertOwnedServiceTime(serviceTimeId, user.crunchId);
+
+    const [hour, minute] = serviceTime.time.split(":").map(Number);
+    const scheduledAt = new Date();
+    scheduledAt.setHours(hour, minute, 0, 0);
+    if (new Date() < scheduledAt) {
+      throw new DomainError("Esse culto ainda não começou");
+    }
 
     const date = this.todayDateKey();
     const endedAt = new Date();
