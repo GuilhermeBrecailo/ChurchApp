@@ -82,6 +82,7 @@ model Crunch {
     messageLogs      MessageLog[]
     birthdayMessageSetting BirthdayMessageSetting?
     serviceAttendances ServiceAttendance[]
+    serviceOccurrences ServiceOccurrence[]
 }
 
 model MercadoPagoWebhookNotification {
@@ -177,6 +178,7 @@ model User {
     userAuth       UserAuth?
     pushSubscriptions PushSubscription[]
     songPreferences UserSongPreference[]
+    startedSongs    ScheduleMediaItem[]
     bibleNotes      UserBibleNote[]
     notifications AppNotification[]
     dailyVerses DailyVerse[]
@@ -246,6 +248,7 @@ model RosterMember {
     user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
     messageLogRecipients MessageLogRecipient[]
+    serviceAttendances   ServiceOccurrenceAttendee[]
 
     @@index([crunchId])
     @@index([crunchId, status])
@@ -311,8 +314,44 @@ model ServiceTime {
 
     messageRules MessageRule[]
     attendances ServiceAttendance[]
+    occurrences  ServiceOccurrence[]
 
     @@index([crunchId, isActive])
+}
+
+model ServiceOccurrence {
+    id        String   @id @default(uuid())
+    date      DateTime
+    createdAt DateTime @default(now())
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    serviceTimeId String
+    serviceTime   ServiceTime @relation(fields: [serviceTimeId], references: [id], onDelete: Cascade)
+
+    schedules Schedule[]
+    attendees ServiceOccurrenceAttendee[]
+    attendanceRecords ServiceAttendance[]
+
+    @@unique([serviceTimeId, date])
+    @@index([crunchId, date])
+}
+
+// Presenca nominal (pessoa por pessoa) - convive com ServiceAttendance
+// (contagem agregada) sem depender uma da outra. Existir a linha = presente;
+// sem linha = nao marcado (nao rastreamos ausencia explicita).
+model ServiceOccurrenceAttendee {
+    id       String   @id @default(uuid())
+    markedAt DateTime @default(now())
+
+    serviceOccurrenceId String
+    serviceOccurrence   ServiceOccurrence @relation(fields: [serviceOccurrenceId], references: [id], onDelete: Cascade)
+
+    rosterMemberId String
+    rosterMember   RosterMember @relation(fields: [rosterMemberId], references: [id], onDelete: Cascade)
+
+    @@unique([serviceOccurrenceId, rosterMemberId])
 }
 
 // Contagem manual de quem veio no culto - 1 registro por culto+data (unico
@@ -337,6 +376,9 @@ model ServiceAttendance {
 
     serviceTimeId String
     serviceTime   ServiceTime @relation(fields: [serviceTimeId], references: [id], onDelete: Cascade)
+
+    serviceOccurrenceId String?
+    serviceOccurrence   ServiceOccurrence? @relation(fields: [serviceOccurrenceId], references: [id], onDelete: SetNull)
 
     @@unique([serviceTimeId, date])
     @@index([crunchId, date])
@@ -589,6 +631,9 @@ model Schedule {
 
     assignments ScheduleAssignment[]
     mediaItems  ScheduleMediaItem[]
+
+    serviceOccurrenceId String?
+    serviceOccurrence   ServiceOccurrence? @relation(fields: [serviceOccurrenceId], references: [id], onDelete: SetNull)
 }
 
 model ScheduleMediaItem {
@@ -601,6 +646,12 @@ model ScheduleMediaItem {
 
     mediaItemId String
     mediaItem   MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+
+    // Quem vai puxar/comecar essa musica no culto - precisa ser alguem
+    // escalado (ScheduleAssignment) pro mesmo culto, mas isso e validado na
+    // aplicacao, nao no schema. Nulo ate alguem definir.
+    startedByUserId String?
+    startedBy       User?   @relation(fields: [startedByUserId], references: [id], onDelete: SetNull)
 
     @@unique([scheduleId, mediaItemId])
 }
