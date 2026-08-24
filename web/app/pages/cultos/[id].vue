@@ -202,8 +202,11 @@ const tab = ref("escalas");
 
 const weekdayNames = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 const weekdayName = (weekday: number) => weekdayNames[weekday] ?? "";
+// timeZone: "UTC" e obrigatorio aqui - occurrence.date e "so o dia" (meia-noite
+// UTC, mesma convencao do ServiceAttendance), sem isso o fuso do navegador
+// desloca pro dia anterior pra quem esta a oeste de Greenwich.
 const formatDate = (value: string) =>
-  new Intl.DateTimeFormat("pt-BR", { dateStyle: "full" }).format(new Date(value));
+  new Intl.DateTimeFormat("pt-BR", { dateStyle: "full", timeZone: "UTC" }).format(new Date(value));
 const formatTime = (value: string) =>
   new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
 
@@ -213,11 +216,17 @@ const isSavingAttendance = ref(false);
 const isFinalizing = ref(false);
 const finalizedAt = ref<string | null>(null);
 
+// occurrence.date e meia-noite UTC (so representa o dia, sem hora local) -
+// new Date(...).setHours() mutaria a hora LOCAL desse instante UTC, o que
+// desloca pro dia local errado pra quem esta a oeste de Greenwich. Em vez
+// disso, monta a data/hora do culto a partir das partes (dia + hora do
+// ServiceTime) como horario local de verdade, igual o backend ja faz.
 const canFinalize = computed(() => {
   if (!occurrence.value) return false;
   const [hour, minute] = occurrence.value.serviceTime.time.split(":").map(Number);
-  const scheduledAt = new Date(occurrence.value.date);
-  scheduledAt.setHours(hour, minute, 0, 0);
+  const datePart = occurrence.value.date.slice(0, 10);
+  const timePart = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  const scheduledAt = new Date(`${datePart}T${timePart}:00`);
   return new Date() >= scheduledAt;
 });
 

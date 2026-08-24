@@ -90,8 +90,11 @@ const resolvingKey = ref("");
 const weekdayNames = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 const weekdayName = (weekday: number) => weekdayNames[weekday] ?? "";
 
+// timeZone: "UTC" e obrigatorio aqui - a data e "so o dia" (meia-noite UTC,
+// mesma convencao do ServiceAttendance), sem isso o fuso do navegador
+// desloca pro dia anterior pra quem esta a oeste de Greenwich.
 const formatDate = (value: string) =>
-  new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" }).format(new Date(value));
+  new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(value));
 
 const load = async () => {
   loading.value = true;
