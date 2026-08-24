@@ -50,6 +50,46 @@
                 hide-details
                 class="mt-1"
               />
+
+              <v-divider class="my-3" />
+
+              <p class="playlist-reader-control-label mb-1">Tamanho da letra</p>
+              <div class="d-flex align-center ga-2 mb-3">
+                <v-btn
+                  icon
+                  variant="tonal"
+                  color="grey-darken-1"
+                  size="small"
+                  aria-label="Diminuir letra"
+                  :disabled="fontScaleIndex <= 0"
+                  @click="fontScaleIndex--"
+                >
+                  <v-icon size="18">mdi-minus</v-icon>
+                </v-btn>
+                <span class="text-caption text-grey-darken-1 flex-grow-1 text-center">
+                  {{ Math.round(fontScale * 100) }}%
+                </span>
+                <v-btn
+                  icon
+                  variant="tonal"
+                  color="grey-darken-1"
+                  size="small"
+                  aria-label="Aumentar letra"
+                  :disabled="fontScaleIndex >= FONT_SCALE_STEPS.length - 1"
+                  @click="fontScaleIndex++"
+                >
+                  <v-icon size="18">mdi-plus</v-icon>
+                </v-btn>
+              </div>
+
+              <v-switch
+                v-model="isBold"
+                label="Negrito"
+                color="purple-darken-3"
+                density="compact"
+                hide-details
+                inset
+              />
             </v-card-text>
           </v-card>
         </v-menu>
@@ -70,6 +110,7 @@
     <div
       ref="scrollContainer"
       class="playlist-reader-body"
+      :style="{ '--reader-font-scale': fontScale }"
       @pointerdown="pauseAutoScroll"
       @pointerup="resumeAutoScroll"
       @pointercancel="resumeAutoScroll"
@@ -103,6 +144,7 @@
           :mode="tab === 'chords' ? 'chords' : 'lyrics'"
           :text="tab === 'chords' ? songChords(song) : song.metadata?.lyrics || ''"
           :empty-text="tab === 'chords' ? 'Cifra não cadastrada.' : 'Letra não cadastrada.'"
+          :bold="isBold"
           flow
         />
 
@@ -157,6 +199,31 @@ const isControlsOpen = ref(false);
 const scrollContainer = ref<HTMLElement | null>(null);
 const songRefs = new Map<string, HTMLElement>();
 
+// Tamanho da letra e negrito ficam salvos no aparelho - ajusta uma vez,
+// vale pra todo culto seguinte.
+const FONT_SCALE_STEPS = [0.85, 1, 1.15, 1.3, 1.45, 1.6];
+const FONT_SCALE_STORAGE_KEY = "playlist_reader_font_scale_v1";
+const BOLD_STORAGE_KEY = "playlist_reader_bold_v1";
+
+const readStoredFontScaleIndex = () => {
+  if (!import.meta.client) return FONT_SCALE_STEPS.indexOf(1);
+  const stored = Number(localStorage.getItem(FONT_SCALE_STORAGE_KEY));
+  const index = FONT_SCALE_STEPS.indexOf(stored);
+  return index >= 0 ? index : FONT_SCALE_STEPS.indexOf(1);
+};
+
+const fontScaleIndex = ref(readStoredFontScaleIndex());
+const fontScale = computed(() => FONT_SCALE_STEPS[fontScaleIndex.value]);
+const isBold = ref(import.meta.client ? localStorage.getItem(BOLD_STORAGE_KEY) === "1" : false);
+
+watch(fontScaleIndex, (index) => {
+  if (import.meta.client) localStorage.setItem(FONT_SCALE_STORAGE_KEY, String(FONT_SCALE_STEPS[index]));
+});
+
+watch(isBold, (value) => {
+  if (import.meta.client) localStorage.setItem(BOLD_STORAGE_KEY, value ? "1" : "0");
+});
+
 const setSongRef = (id: string, el: Element | ComponentPublicInstance | null) => {
   if (el instanceof HTMLElement) {
     songRefs.set(id, el);
@@ -192,6 +259,55 @@ const scrollSpeedLabel = computed(() =>
     : "Rolagem pausada",
 );
 
+// A altura da linha muda com o tamanho da fonte (auto-encolhe pra caber a
+// cifra na largura da tela, ou o usuario mexeu no +/- tamanho da letra) -
+// sem medir a altura real, a mesma velocidade de slider anda um numero de
+// linhas por segundo diferente em cada aparelho. Medindo, o slider vira
+// "linhas por segundo" de verdade, igual em qualquer tela.
+const MIN_REFERENCE_LINE_HEIGHT_PX = 16;
+const referenceLineHeightPx = ref(28);
+
+const measureReferenceLineHeight = () => {
+  if (!import.meta.client) return;
+
+  const sampleLine = scrollContainer.value?.querySelector(".song-line");
+  if (!sampleLine) return;
+
+  const lineHeight = Number.parseFloat(window.getComputedStyle(sampleLine).lineHeight);
+  if (Number.isFinite(lineHeight) && lineHeight > 0) {
+    referenceLineHeightPx.value = Math.max(MIN_REFERENCE_LINE_HEIGHT_PX, lineHeight);
+  }
+};
+
+const scheduleLineHeightMeasurement = async () => {
+  await nextTick();
+  measureReferenceLineHeight();
+};
+
+watch([tab, fontScale, isBold], scheduleLineHeightMeasurement);
+
+let lineHeightResizeObserver: ResizeObserver | null = null;
+
+// Curva quadratica igual a do leitor de musica unica: passos baixos do
+// slider ficam bem devagar (da pra ler junto), passos altos aceleram de
+// verdade. O resultado em linhas/seg e convertido pra px/seg usando a
+// altura de linha medida - e o que faz o mesmo slider "sentir" igual em
+// qualquer aparelho.
+const SCROLL_SPEED_SLIDER_MAX = 80;
+const MIN_LINES_PER_SECOND = 0.12;
+const MAX_LINES_PER_SECOND = 2.6;
+
+const effectiveScrollSpeed = computed(() => {
+  if (scrollSpeed.value <= 0) return 0;
+
+  const normalized = Math.min(1, scrollSpeed.value / SCROLL_SPEED_SLIDER_MAX);
+  const curved = normalized * normalized;
+  const linesPerSecond =
+    MIN_LINES_PER_SECOND + curved * (MAX_LINES_PER_SECOND - MIN_LINES_PER_SECOND);
+
+  return linesPerSecond * referenceLineHeightPx.value;
+});
+
 const scrollToIndex = async (index: number) => {
   await nextTick();
   const song = props.songs[index];
@@ -203,6 +319,12 @@ const scrollToIndex = async (index: number) => {
 
 onMounted(() => {
   void scrollToIndex(props.initialIndex);
+  measureReferenceLineHeight();
+
+  if (import.meta.client && typeof ResizeObserver !== "undefined" && scrollContainer.value) {
+    lineHeightResizeObserver = new ResizeObserver(() => measureReferenceLineHeight());
+    lineHeightResizeObserver.observe(scrollContainer.value);
+  }
 });
 
 // Rolagem automatica continua pelo scroll da pagina inteira, atravessando
@@ -211,6 +333,16 @@ onMounted(() => {
 const isAutoScrollPaused = ref(false);
 const animationFrameId = ref<number | null>(null);
 const lastFrameAt = ref(0);
+/** Posicao de scroll em ponto flutuante - container.scrollTop arredonda pra
+ * inteiro a cada leitura, entao em velocidades baixas (< 1px por frame) o
+ * incremento nunca soma 1px e a rolagem trava sem esse acumulador. */
+const scrollPosition = ref(0);
+
+// Se a aba fica em segundo plano (tela apaga, troca de app), o navegador
+// para de chamar requestAnimationFrame - as vezes por minutos. Sem esse
+// teto, o primeiro frame depois de voltar calcula um elapsedSeconds gigante
+// e a letra pula direto pro fim da sequencia.
+const MAX_FRAME_GAP_SECONDS = 0.25;
 
 const stopAutoScroll = () => {
   if (animationFrameId.value !== null) {
@@ -229,16 +361,19 @@ const runAutoScroll = (timestamp: number) => {
   }
 
   if (!isAutoScrollPaused.value) {
-    if (lastFrameAt.value) {
+    if (lastFrameAt.value && (timestamp - lastFrameAt.value) / 1000 <= MAX_FRAME_GAP_SECONDS) {
       const elapsedSeconds = (timestamp - lastFrameAt.value) / 1000;
       const maxScrollTop = container.scrollHeight - container.clientHeight;
 
-      if (container.scrollTop < maxScrollTop) {
-        container.scrollTop = Math.min(
-          maxScrollTop,
-          container.scrollTop + scrollSpeed.value * elapsedSeconds,
-        );
-      }
+      scrollPosition.value = Math.min(
+        maxScrollTop,
+        scrollPosition.value + effectiveScrollSpeed.value * elapsedSeconds,
+      );
+      container.scrollTop = scrollPosition.value;
+    } else {
+      // Primeiro frame apos iniciar/retomar: sincroniza com a posicao atual
+      // do DOM (pode ter mudado por scroll manual durante a pausa).
+      scrollPosition.value = container.scrollTop;
     }
 
     lastFrameAt.value = timestamp;
@@ -275,6 +410,8 @@ watch(scrollSpeed, () => {
 
 onBeforeUnmount(() => {
   stopAutoScroll();
+  lineHeightResizeObserver?.disconnect();
+  lineHeightResizeObserver = null;
 });
 </script>
 
@@ -380,7 +517,7 @@ onBeforeUnmount(() => {
 }
 
 .playlist-song-text {
-  font-size: 1.1rem;
+  font-size: calc(1.1rem * var(--reader-font-scale, 1));
   line-height: 1.85;
 }
 
@@ -402,7 +539,7 @@ onBeforeUnmount(() => {
   }
 
   .playlist-song-text {
-    font-size: 1rem;
+    font-size: calc(1rem * var(--reader-font-scale, 1));
   }
 
   .playlist-reader-body {
