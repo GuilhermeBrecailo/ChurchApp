@@ -214,10 +214,12 @@ that endpoint (the upsert, the `endedAt` write) is unchanged.
     church's `RosterMember` list, backed by the mark/unmark endpoints
     above).
 - **New nav entry** "Cultos" alongside Início/Conteúdo/Ministérios/Usuário.
-- **`admin/relatorios.vue`**: the "Público do culto" card (aggregate
-  presença + finalize list) is removed from this page now that it lives in
-  the culto hub — `useAttendance.ts` is unchanged, only its one call site
-  moves.
+- **`admin/relatorios.vue`** stays exactly as it is — its "Público do culto"
+  card is a cross-occurrence history/report (every recurring service +
+  30-day aggregate), a different purpose from the hub's Visitantes tab
+  (one specific occurrence's action panel). Not a duplication; both stay.
+  `useAttendance.ts`'s `saveAttendance`/`finalizeService` are reused as-is
+  by the new Visitantes tab — no changes to that composable.
 
 ## Testing
 
