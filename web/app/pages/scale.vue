@@ -292,10 +292,13 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
         category: item.mediaItem.category,
         url: item.mediaItem.url,
         metadata: item.mediaItem.metadata,
+        startedByUserId: item.startedByUserId,
+        startedByName: item.startedBy?.name,
       })) || [],
     canManage: canManageSchedule(schedule),
     volunteers:
       schedule.assignments?.map((assignment) => ({
+        userId: assignment.userId,
         name: assignment.user.name,
         role: assignment.role,
         confirmationStatus: assignment.confirmationStatus,

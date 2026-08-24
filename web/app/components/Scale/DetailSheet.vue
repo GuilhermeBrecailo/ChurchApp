@@ -262,6 +262,53 @@
                       Cifra
                     </v-chip>
                   </div>
+
+                  <v-menu v-if="localEvent.canManage">
+                    <template #activator="{ props: leaderMenuProps }">
+                      <v-chip
+                        v-bind="leaderMenuProps"
+                        size="small"
+                        variant="tonal"
+                        color="purple-darken-3"
+                        class="scale-song-leader-chip"
+                        prepend-icon="mdi-account-voice"
+                        @click.stop
+                      >
+                        {{ song.startedByName ? `Começa: ${song.startedByName}` : "Definir quem começa" }}
+                      </v-chip>
+                    </template>
+
+                    <v-list density="compact">
+                      <v-list-item
+                        v-if="song.startedByUserId"
+                        @click="setSongLeader(song, null)"
+                      >
+                        <v-list-item-title class="text-grey-darken-1">Ninguém definido</v-list-item-title>
+                      </v-list-item>
+                      <v-list-item
+                        v-for="volunteer in localEvent.volunteers"
+                        :key="volunteer.userId"
+                        :active="volunteer.userId === song.startedByUserId"
+                        @click="setSongLeader(song, volunteer.userId)"
+                      >
+                        <v-list-item-title>{{ volunteer.name }}</v-list-item-title>
+                        <v-list-item-subtitle>{{ volunteer.role }}</v-list-item-subtitle>
+                      </v-list-item>
+                      <v-list-item v-if="!localEvent.volunteers.length" disabled>
+                        <v-list-item-title>Ninguém escalado ainda</v-list-item-title>
+                      </v-list-item>
+                    </v-list>
+                  </v-menu>
+                  <v-chip
+                    v-else-if="song.startedByName"
+                    size="small"
+                    variant="tonal"
+                    color="purple-darken-3"
+                    class="scale-song-leader-chip"
+                    prepend-icon="mdi-account-voice"
+                  >
+                    Começa: {{ song.startedByName }}
+                  </v-chip>
                 </div>
 
                 <div v-if="localEvent.canManage" class="scale-song-order-btns">
@@ -377,7 +424,7 @@ const emit = defineEmits<{
   (event: "reload-needed"): void;
 }>();
 
-const { reorderScheduleMediaItems } = useDepartments();
+const { reorderScheduleMediaItems, setScheduleMediaItemLeader } = useDepartments();
 
 const localEvent = ref<ScheduleEvent | null>(null);
 
@@ -453,6 +500,30 @@ const persistSongOrder = async (eventId: string, orderedSongs: ScheduleEvent["me
   } finally {
     isSavingSongOrder.value = false;
   }
+};
+
+const setSongLeader = async (
+  song: ScheduleEvent["mediaItems"][number],
+  startedByUserId: string | null,
+) => {
+  if (!localEvent.value) return;
+
+  const eventId = localEvent.value.id;
+  const volunteerName = localEvent.value.volunteers.find(
+    (volunteer) => volunteer.userId === startedByUserId,
+  )?.name;
+
+  localEvent.value = {
+    ...localEvent.value,
+    mediaItems: localEvent.value.mediaItems.map((item) =>
+      item.scheduleMediaItemId === song.scheduleMediaItemId
+        ? { ...item, startedByUserId, startedByName: volunteerName || null }
+        : item,
+    ),
+  };
+
+  const { error } = await setScheduleMediaItemLeader(eventId, song.scheduleMediaItemId, startedByUserId);
+  if (error) emit("reload-needed");
 };
 
 const reorderSongsLocally = (fromId: string, toId: string) => {
@@ -821,6 +892,10 @@ onUnmounted(() => {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.scale-song-leader-chip {
+  margin-top: 8px;
 }
 
 .scale-song-index {

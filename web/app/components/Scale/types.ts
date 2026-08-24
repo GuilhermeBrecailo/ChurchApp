@@ -11,6 +11,7 @@ export type ScheduleEvent = {
   viewedCount: number;
   confirmedCount: number;
   volunteers: {
+    userId: string;
     initials: string;
     name: string;
     role: string;
@@ -34,6 +35,8 @@ export type ScheduleEvent = {
     category: string;
     url?: string;
     metadata?: DepartmentSong["metadata"] | DepartmentResource["metadata"];
+    startedByUserId?: string | null;
+    startedByName?: string | null;
   }[];
   canManage: boolean;
 };
