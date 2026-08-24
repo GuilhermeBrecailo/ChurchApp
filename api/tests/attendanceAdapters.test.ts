@@ -1,6 +1,7 @@
 const mockPrismaClient = {
   serviceTime: { findUnique: jest.fn() },
   serviceAttendance: { upsert: jest.fn(), findMany: jest.fn() },
+  serviceOccurrence: { findFirst: jest.fn() },
 };
 
 jest.mock("../config/database", () => ({

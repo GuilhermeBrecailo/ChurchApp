@@ -61,6 +61,19 @@ export class AttendanceAdapters {
     return serviceTime;
   }
 
+  // So busca, nunca cria - criar uma ocorrencia e responsabilidade do hub
+  // (POST /service-occurrences). Aqui e so um vinculo aditivo: se o culto
+  // hub ja foi aberto pra esse dia, a presenca linkada aparece nele; se
+  // ninguem abriu o hub ainda, o registro de presenca funciona normalmente
+  // sem o vinculo (o hub sempre le por serviceTimeId+data, nao depende disso).
+  private async findOccurrenceId(serviceTimeId: string, date: Date, crunchId: string) {
+    const occurrence = await $prismaClient.serviceOccurrence.findFirst({
+      where: { serviceTimeId, date, crunchId },
+      select: { id: true },
+    });
+    return occurrence?.id;
+  }
+
   // Upsert por culto+data (unique juntos no schema) - lancar de novo no mesmo
   // culto/dia edita o registro em vez de duplicar.
   async upsert(request: FastifyRequest) {
@@ -70,6 +83,7 @@ export class AttendanceAdapters {
     await this.assertOwnedServiceTime(body.serviceTimeId, user.crunchId);
 
     const date = new Date(body.date);
+    const serviceOccurrenceId = await this.findOccurrenceId(body.serviceTimeId, date, user.crunchId);
 
     return $prismaClient.serviceAttendance.upsert({
       where: {
@@ -82,11 +96,13 @@ export class AttendanceAdapters {
         visitorCount: body.visitorCount,
         memberCount: body.memberCount,
         notes: body.notes || null,
+        serviceOccurrenceId,
       },
       update: {
         visitorCount: body.visitorCount,
         memberCount: body.memberCount,
         notes: body.notes || null,
+        serviceOccurrenceId,
       },
     });
   }
@@ -119,6 +135,7 @@ export class AttendanceAdapters {
 
     const date = this.todayDateKey();
     const endedAt = new Date();
+    const serviceOccurrenceId = await this.findOccurrenceId(serviceTimeId, date, user.crunchId);
 
     return $prismaClient.serviceAttendance.upsert({
       where: {
@@ -131,9 +148,11 @@ export class AttendanceAdapters {
         visitorCount: 0,
         memberCount: 0,
         endedAt,
+        serviceOccurrenceId,
       },
       update: {
         endedAt,
+        serviceOccurrenceId,
       },
     });
   }
