@@ -7,124 +7,41 @@
       :personal-key="personalSongForm.personalKey"
       @close="$emit('close')"
       @update:tab="$emit('update:songViewerTab', $event)"
+      @edit-personal-chords="isPersonalChordsSheetOpen = true"
     >
-      <template #extra>
-        <p
-          v-if="song?.metadata?.notes"
-          class="text-caption text-grey-darken-1 mb-3"
-        >
+      <template v-if="song?.metadata?.notes" #extra>
+        <p class="text-caption text-grey-darken-1">
           {{ song.metadata.notes }}
         </p>
-
-        <details class="personal-chords-editor">
-          <summary>Editar minha cifra</summary>
-
-          <div class="d-flex align-center ga-3 mt-3 mb-3">
-            <v-select
-              v-model="personalSongForm.personalKey"
-              :items="songKeyOptions"
-              label="Meu tom"
-              variant="outlined"
-              density="comfortable"
-              color="purple-darken-3"
-              bg-color="white"
-              class="ministery-input"
-              hide-details="auto"
-              clearable
-              :disabled="isLoadingSongPreference || isSavingSongPreference"
-              @update:model-value="$emit('personal-key-change', $event)"
-            />
-          </div>
-
-          <v-textarea
-            v-model="personalSongForm.chords"
-            label="Minha cifra"
-            variant="outlined"
-            density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
-            class="ministery-input chords-input mb-3"
-            hide-details="auto"
-            rows="9"
-            auto-grow
-            :disabled="isLoadingSongPreference || isSavingSongPreference"
-          />
-
-          <div class="personal-chords-actions">
-            <v-btn
-              variant="text"
-              color="grey-darken-1"
-              class="text-none"
-              :disabled="isLoadingSongPreference || isSavingSongPreference"
-              @click="$emit('use-official-chords')"
-            >
-              Usar cifra da escala
-            </v-btn>
-            <v-btn
-              color="purple-darken-3"
-              class="text-none"
-              :loading="isSavingSongPreference"
-              :disabled="isLoadingSongPreference"
-              @click="$emit('save-preference')"
-            >
-              Salvar minha cifra
-            </v-btn>
-          </div>
-
-          <v-alert
-            v-if="songPreferenceError"
-            type="error"
-            variant="tonal"
-            density="compact"
-            class="mt-3"
-          >
-            {{ songPreferenceError }}
-          </v-alert>
-        </details>
-
-        <details class="personal-chords-editor mt-3">
-          <summary>Meu comentário particular</summary>
-          <p class="text-caption text-grey-darken-1 mt-2 mb-3">
-            Só você vê esse comentário - não aparece pra mais ninguém da igreja.
-          </p>
-
-          <v-textarea
-            v-model="personalSongForm.notes"
-            label="Comentário"
-            placeholder="Ex: acelerar no refrão, atenção na ponte..."
-            variant="outlined"
-            density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
-            class="ministery-input mb-3"
-            hide-details="auto"
-            rows="3"
-            auto-grow
-            :disabled="isLoadingSongPreference || isSavingSongPreference"
-          />
-
-          <div class="personal-chords-actions">
-            <v-spacer />
-            <v-btn
-              color="purple-darken-3"
-              class="text-none"
-              :loading="isSavingSongPreference"
-              :disabled="isLoadingSongPreference"
-              @click="$emit('save-preference')"
-            >
-              Salvar comentário
-            </v-btn>
-          </div>
-        </details>
       </template>
     </MusicSongReader>
+
+    <MusicPersonalChordsSheet
+      v-model="isPersonalChordsSheetOpen"
+      :personal-song-form="personalSongForm"
+      :song-key-options="songKeyOptions"
+      :is-loading-song-preference="isLoadingSongPreference"
+      :is-saving-song-preference="isSavingSongPreference"
+      :song-preference-error="songPreferenceError"
+      @personal-key-change="$emit('personal-key-change', $event)"
+      @use-official-chords="$emit('use-official-chords')"
+      @save-preference="$emit('save-preference')"
+    />
   </UtilsResponsiveOverlay>
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from "vue";
 import type { DepartmentSong } from "../../../composables/useDepartments";
 
 const isOpen = defineModel<boolean>({ required: true });
+const isPersonalChordsSheetOpen = ref(false);
+
+// Evita que a sheet reapareça já aberta ao reabrir outra música - o
+// componente fica montado entre aberturas do dialog principal.
+watch(isOpen, (value) => {
+  if (!value) isPersonalChordsSheetOpen.value = false;
+});
 
 defineProps<{
   song: DepartmentSong | null;
@@ -144,34 +61,3 @@ defineEmits<{
   (event: "save-preference"): void;
 }>();
 </script>
-
-<style scoped>
-.ministery-input :deep(.v-field) {
-  border-radius: 14px;
-}
-.ministery-input :deep(.v-field__input) {
-  min-height: 48px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
-.chords-input :deep(textarea) {
-  font-family: "Courier New", monospace;
-}
-.personal-chords-editor {
-  border-top: 1px solid #f3f4f6;
-  padding-top: 12px;
-}
-.personal-chords-editor summary {
-  color: var(--app-color-accent);
-  cursor: pointer;
-  font-size: 0.86rem;
-  font-weight: 800;
-}
-.personal-chords-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-</style>

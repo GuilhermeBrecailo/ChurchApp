@@ -10,6 +10,17 @@
       </div>
 
       <div class="song-reader-header-actions">
+        <v-btn
+          icon
+          variant="tonal"
+          color="purple-darken-3"
+          size="small"
+          aria-label="Editar minha cifra"
+          @click="emit('edit-personal-chords')"
+        >
+          <v-icon size="18">mdi-pencil-outline</v-icon>
+        </v-btn>
+
         <v-menu
           v-model="isControlsOpen"
           :close-on-content-click="false"
@@ -220,6 +231,7 @@ const emit = defineEmits<{
   prev: [];
   next: [];
   "update:tab": [value: "lyrics" | "chords"];
+  "edit-personal-chords": [];
 }>();
 
 const tab = ref<"lyrics" | "chords">(props.tab);
@@ -447,8 +459,6 @@ defineExpose({ tab });
 .song-reader-extra {
   border-top: 1px solid var(--app-color-border);
   padding: 12px 18px;
-  max-height: 42vh;
-  overflow-y: auto;
 }
 
 .song-reader-nav {
