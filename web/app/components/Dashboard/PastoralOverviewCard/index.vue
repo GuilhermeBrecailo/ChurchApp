@@ -7,8 +7,8 @@
           Semana da igreja
         </h2>
       </div>
-      <v-btn to="/pastoral/visitas" size="small" color="purple-darken-3" class="text-none">
-        <HandHeart size="15" class="mr-1" /> Visitas
+      <v-btn to="/pastoral" size="small" color="purple-darken-3" class="text-none">
+        <HandHeart size="15" class="mr-1" /> Painel
       </v-btn>
     </div>
 
@@ -119,7 +119,7 @@ import {
   HandHeart,
   HeartPulse,
 } from "lucide-vue-next";
-import { usePastoral, type PastoralDashboard } from "../../../../../composables/usePastoral";
+import { usePastoral, type PastoralDashboard } from "../../../../composables/usePastoral";
 
 const { getDashboard } = usePastoral();
 

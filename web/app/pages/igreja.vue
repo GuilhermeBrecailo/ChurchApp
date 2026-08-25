@@ -23,7 +23,7 @@
       >
         <div class="d-flex align-center justify-space-between mb-4">
           <v-avatar size="44" :color="item.bg">
-            <component :is="item.icon" size="22" :color="item.color" />
+            <component :is="iconComponents[item.icon]" size="22" :color="item.color" />
           </v-avatar>
           <ArrowRight size="18" color="#9CA3AF" />
         </div>
@@ -41,76 +41,52 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { ArrowRight, BookOpen, CalendarCheck, Cross, Newspaper, Users } from "lucide-vue-next";
+import {
+  ArrowRight,
+  BarChart3,
+  BookOpen,
+  CalendarCheck,
+  CalendarDays,
+  Church,
+  ClipboardList,
+  Cog,
+  HandHeart,
+  Heart,
+  House,
+  User,
+  Users,
+} from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
-import { usePermissions } from "../../composables/usePermissions";
+import {
+  getChurchHubItems,
+  type RoleNavigationIcon,
+} from "../utils/roleNavigation";
 
 const router = useRouter();
 const { user } = useAuth();
-const { can, isPrivileged } = usePermissions();
 
-const canManagePeople = computed(
-  () =>
-    isPrivileged.value ||
-    user.value?.canManageMembers === true ||
-    can("MEMBER_CREATE") ||
-    can("MEMBER_EDIT") ||
-    can("MEMBER_DELETE"),
+const visibleItems = computed(() =>
+  getChurchHubItems(user.value).map((item) => ({
+    ...item,
+    bg: item.bgColor,
+    color: item.iconColor,
+  })),
 );
-
-const canPublish = computed(
-  () => isPrivileged.value || can("CONTENT_PUBLISH") || can("ANNOUNCEMENT_PUBLISH"),
-);
-
-const items = computed(() => [
-  {
-    title: "Cultos",
-    description: "Crie cultos, acompanhe escalas e gerencie presença.",
-    route: "/cultos",
-    icon: CalendarCheck,
-    color: "#B5472A",
-    bg: "#F7E2D3",
-    visible: true,
-  },
-  {
-    title: "Ministérios",
-    description: "Veja ministérios, repertórios, escalas e tarefas.",
-    route: "/ministery",
-    icon: Cross,
-    color: "#7C3AED",
-    bg: "#F3E8FF",
-    visible: true,
-  },
-  {
-    title: "Pessoas",
-    description: "Membros, cargos e rol da igreja.",
-    route: "/admin/pessoas",
-    icon: Users,
-    color: "#0F766E",
-    bg: "#CCFBF1",
-    visible: canManagePeople.value,
-  },
-  {
-    title: "Conteúdo",
-    description: "Avisos, versículos, devocionais e publicações.",
-    route: "/admin/publicacoes",
-    icon: Newspaper,
-    color: "#B45309",
-    bg: "#FEF3C7",
-    visible: canPublish.value,
-  },
-  {
-    title: "Bíblia e leitura",
-    description: "Conteúdos de leitura para a igreja.",
-    route: "/content",
-    icon: BookOpen,
-    color: "#2563EB",
-    bg: "#DBEAFE",
-    visible: true,
-  },
-]);
-
-const visibleItems = computed(() => items.value.filter((item) => item.visible));
+const iconComponents: Record<RoleNavigationIcon, unknown> = {
+  book: BookOpen,
+  calendar: CalendarCheck,
+  church: Church,
+  clipboard: ClipboardList,
+  cog: Cog,
+  heart: Heart,
+  home: House,
+  pastoral: HandHeart,
+  reports: BarChart3,
+  scale: CalendarDays,
+  team: Church,
+  user: User,
+  users: Users,
+};
 </script>
 
 <style scoped>

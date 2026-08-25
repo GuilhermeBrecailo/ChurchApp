@@ -28,6 +28,7 @@
           <v-btn value="OPEN" class="text-none">Abertas</v-btn>
           <v-btn value="SCHEDULED" class="text-none">Agendadas</v-btn>
           <v-btn value="DONE" class="text-none">Concluídas</v-btn>
+          <v-btn value="CANCELED" class="text-none">Canceladas</v-btn>
         </v-btn-toggle>
       </div>
 
@@ -211,6 +212,7 @@ import { useRoster, type RosterMember } from "../../../composables/useRoster";
 const { canRef } = usePermissions();
 const { listVisits, createVisit, updateVisit, deleteVisit } = usePastoral();
 const { listRosterMembers } = useRoster();
+const route = useRoute();
 
 const canManagePastoralCare = canRef("PASTORAL_CARE_MANAGE");
 const visits = ref<PastoralVisit[]>([]);
@@ -224,6 +226,7 @@ const dialogOpen = ref(false);
 const editingId = ref<string | null>(null);
 const confirmDeleteId = ref<string | null>(null);
 const statusFilter = ref<PastoralVisitStatus | "ALL">("ALL");
+const queryPrefillHandled = ref(false);
 
 const form = reactive({
   rosterMemberId: "",
@@ -252,6 +255,9 @@ const filteredVisits = computed(() => {
   if (statusFilter.value === "ALL") return visits.value;
   return visits.value.filter((visit) => visit.status === statusFilter.value);
 });
+const preselectedRosterMemberId = computed(() =>
+  typeof route.query.memberId === "string" ? route.query.memberId : "",
+);
 
 function resetForm() {
   editingId.value = null;
@@ -264,8 +270,9 @@ function resetForm() {
   dialogError.value = "";
 }
 
-function openCreateDialog() {
+function openCreateDialog(rosterMemberId?: unknown) {
   resetForm();
+  form.rosterMemberId = typeof rosterMemberId === "string" ? rosterMemberId : "";
   dialogOpen.value = true;
 }
 
@@ -340,6 +347,11 @@ async function loadData() {
 
   visits.value = visitsResult.data ?? [];
   rosterMembers.value = rosterResult.data ?? [];
+
+  if (!queryPrefillHandled.value && preselectedRosterMemberId.value) {
+    queryPrefillHandled.value = true;
+    openCreateDialog(preselectedRosterMemberId.value);
+  }
 }
 
 async function saveVisit() {
@@ -458,8 +470,10 @@ onMounted(loadData);
 }
 
 .visit-notes {
-  border-left: 3px solid var(--app-color-accent);
-  padding-left: 10px;
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: 8px;
+  background: var(--app-color-surface-soft);
+  padding: 10px;
   color: var(--app-color-text-muted);
   font-size: 0.9rem;
 }

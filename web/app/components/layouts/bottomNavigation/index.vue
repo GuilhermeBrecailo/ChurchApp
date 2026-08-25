@@ -6,81 +6,63 @@
     app
   >
     <v-btn
+      v-for="item in navigationItems"
+      :key="item.key"
       class="flex-col custom-btn"
-      :active="route.path === '/'"
-      @click="router.push('/')"
+      :active="isNavigationItemActive(item, route.path)"
+      @click="router.push(item.route)"
     >
-      <House class="nav-icon" />
-      <span class="nav-label">Início</span>
-    </v-btn>
-
-    <v-btn
-      v-if="hasChurch"
-      class="flex-col custom-btn"
-      :active="route.path.startsWith('/content')"
-      @click="router.push('/content')"
-    >
-      <BookOpen class="nav-icon" />
-      <span class="nav-label">Conteúdo</span>
-    </v-btn>
-
-    <v-btn
-      v-if="hasChurch"
-      class="flex-col custom-btn"
-      :active="route.path.startsWith('/igreja') || route.path.startsWith('/ministery') || route.path.startsWith('/cultos') || route.path.startsWith('/pastoral')"
-      @click="router.push('/igreja')"
-    >
-      <Cross class="nav-icon" />
-      <span class="nav-label">Igreja</span>
-    </v-btn>
-
-    <v-btn
-      class="flex-col custom-btn"
-      :active="route.path.startsWith('/user')"
-      @click="router.push('/user')"
-    >
-      <User class="nav-icon" />
-      <span class="nav-label">Usuário</span>
-    </v-btn>
-
-    <v-btn
-      v-if="showAdmin"
-      class="flex-col custom-btn"
-      :active="route.path.startsWith('/admin') || route.path.startsWith('/platform-admin')"
-      @click="router.push(adminTarget)"
-    >
-      <Cog class="nav-icon" />
-      <span class="nav-label mt-1">{{ adminLabel }}</span>
+      <component :is="iconComponents[item.icon]" class="nav-icon" />
+      <span class="nav-label">{{ item.label }}</span>
     </v-btn>
   </v-bottom-navigation>
 </template>
 
 <script setup lang="ts">
-import { House, BookOpen, User, Cross, Cog } from "lucide-vue-next";
+import {
+  BarChart3,
+  BookOpen,
+  CalendarCheck,
+  CalendarDays,
+  Church,
+  ClipboardList,
+  Cog,
+  HandHeart,
+  Heart,
+  House,
+  User,
+  Users,
+} from "lucide-vue-next";
 import { computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "../../../../composables/useAuth";
+import {
+  getBottomNavigationItems,
+  isNavigationItemActive,
+  type RoleNavigationIcon,
+} from "../../../utils/roleNavigation";
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
 const router = useRouter();
 const route = useRoute();
 
-const hasChurch = computed(() => user.value?.hasChurch === true);
-const isPlatformAdmin = computed(
-  () =>
-    user.value?.role === "ADMIN" ||
-    user.value?.role === "SUPER_ADMIN" ||
-    user.value?.is_admin === true,
-);
-const showAdmin = computed(() => hasChurch.value || isPlatformAdmin.value);
-const adminLabel = computed(() => "Admin");
-// Admin master (sem igreja própria) não tem nada pra ver no hub de
-// administração da igreja — manda direto pro /platform-admin. Quem tem
-// igreja (com ou sem privilégio de plataforma) continua indo pro /admin.
-const adminTarget = computed(() =>
-  isPlatformAdmin.value && !hasChurch.value ? "/platform-admin" : "/admin",
-);
+const navigationItems = computed(() => getBottomNavigationItems(user.value));
+const iconComponents: Record<RoleNavigationIcon, unknown> = {
+  book: BookOpen,
+  calendar: CalendarCheck,
+  church: Church,
+  clipboard: ClipboardList,
+  cog: Cog,
+  heart: Heart,
+  home: House,
+  pastoral: HandHeart,
+  reports: BarChart3,
+  scale: CalendarDays,
+  team: Church,
+  user: User,
+  users: Users,
+};
 </script>
 
 <style scoped>
