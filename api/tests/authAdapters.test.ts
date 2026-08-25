@@ -139,7 +139,7 @@ describe("AuthAdapters", () => {
       expect(extractSetCookieValue(reply, "refresh_token")).toBe("kc-refresh-2");
     });
 
-    it("propagates the failure when Keycloak rejects the credentials", async () => {
+    it("throws DomainError when Keycloak rejects the credentials", async () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: false,
         status: 401,
@@ -148,9 +148,7 @@ describe("AuthAdapters", () => {
 
       const request = makeLoginRequest({ email: "pastor@igreja.com", password: "wrong" });
 
-      await expect(adapters.login(request, makeReply())).rejects.toThrow(
-        "Keycloak token request failed",
-      );
+      await expect(adapters.login(request, makeReply())).rejects.toThrow(DomainError);
     });
   });
 

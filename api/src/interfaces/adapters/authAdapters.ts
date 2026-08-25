@@ -285,7 +285,19 @@ export class AuthAdapters {
     params.append("username", email.trim().toLowerCase());
     params.append("password", password);
 
-    const token = await requestKeycloakToken(params);
+    const token = await requestKeycloakToken(params).catch((error) => {
+      request.log?.warn?.(
+        {
+          event: "auth.login.failure",
+          provider: "keycloak",
+          keycloakStatus: getKeycloakErrorStatus(error),
+          keycloakBody: getKeycloakErrorBody(error),
+        },
+        "Login token request failed",
+      );
+
+      throw new DomainError("Verifique os dados e tente novamente");
+    });
 
     reply.header(
       "Set-Cookie",
