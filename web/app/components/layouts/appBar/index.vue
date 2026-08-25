@@ -1,6 +1,6 @@
 <template>
   <v-app-bar app class="appbar" elevation="1">
-    <div class="d-flex align-center">
+    <div class="d-flex align-center header-identity-wrap">
       <v-btn icon variant="text" aria-label="Abrir meu perfil" @click="router.push('/user')">
         <v-avatar class="user-avatar" size="40">
           <v-img v-if="user?.avatarUrl" :src="user.avatarUrl" alt="Foto de perfil" cover />
@@ -8,10 +8,10 @@
         </v-avatar>
       </v-btn>
 
-      <div class="ml-3 d-flex flex-column justify-center">
+      <div class="ml-3 d-flex flex-column justify-center header-identity">
         <span class="greeting-text">Olá, {{ firstName }}</span>
-        <div v-if="!hasMultipleChurches" class="d-flex align-center mt-n1">
-          <Church size="16" class="church-icon mr-1" />
+        <div v-if="!hasMultipleChurches" class="d-flex align-center mt-n1 header-church-row">
+          <Church size="16" class="church-icon mr-1 flex-shrink-0" />
           <span class="church-text">{{ churchName }}</span>
         </div>
         <v-menu v-else location="bottom start">
@@ -342,6 +342,19 @@ onMounted(async () => {
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04) !important;
 }
 
+.header-identity-wrap {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.header-identity {
+  min-width: 0;
+}
+
+.header-church-row {
+  min-width: 0;
+}
+
 .church-switcher {
   display: inline-flex;
   align-items: center;
@@ -380,6 +393,10 @@ onMounted(async () => {
   font-weight: 700;
   color: var(--app-color-text);
   line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .notification-card {

@@ -107,6 +107,11 @@ html,
 body {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Sem isso, qualquer elemento na arvore que exceda a largura do viewport
+     (nome de igreja longo, texto sem quebra, etc.) faz a pagina inteira
+     rolar de lado no mobile em vez de so aquele elemento estourar. */
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* ============================================================
