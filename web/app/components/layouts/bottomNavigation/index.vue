@@ -9,13 +9,67 @@
       v-for="item in navigationItems"
       :key="item.key"
       class="flex-col custom-btn"
-      :active="isNavigationItemActive(item, route.path)"
-      @click="router.push(item.route)"
+      :active="isItemActive(item)"
+      @click="handleNavClick(item)"
     >
       <component :is="iconComponents[item.icon]" class="nav-icon" />
       <span class="nav-label">{{ item.label }}</span>
     </v-btn>
   </v-bottom-navigation>
+
+  <UtilsResponsiveOverlay v-model="showMore" max-width="430" scrollable>
+    <v-card class="bottom-more-card" elevation="0">
+      <div class="bottom-more-header">
+        <div>
+          <h2>Mais opções</h2>
+          <p>{{ moreSubtitle }}</p>
+        </div>
+        <v-btn icon variant="text" size="small" aria-label="Fechar" @click="showMore = false">
+          <X size="18" />
+        </v-btn>
+      </div>
+
+      <v-text-field
+        v-model="search"
+        placeholder="Buscar"
+        variant="outlined"
+        density="comfortable"
+        hide-details
+        clearable
+        class="bottom-more-search"
+      >
+        <template #prepend-inner>
+          <Search size="18" />
+        </template>
+      </v-text-field>
+
+      <div v-if="filteredMoreItems.length === 0" class="bottom-more-empty">
+        Nenhum atalho encontrado.
+      </div>
+
+      <div v-else class="bottom-more-list">
+        <button
+          v-for="entry in filteredMoreItems"
+          :key="entry.key"
+          type="button"
+          class="bottom-more-row"
+          @click="handleMoreSelect(entry.route)"
+        >
+          <v-avatar size="38" :color="isDark ? entry.bgColorDark : entry.bgColor">
+            <component
+              :is="iconComponents[entry.icon]"
+              size="18"
+              :color="isDark ? entry.iconColorDark : entry.iconColor"
+            />
+          </v-avatar>
+          <span class="bottom-more-copy">
+            <strong>{{ entry.title }}</strong>
+            <small>{{ entry.description }}</small>
+          </span>
+        </button>
+      </div>
+    </v-card>
+  </UtilsResponsiveOverlay>
 </template>
 
 <script setup lang="ts">
@@ -31,15 +85,20 @@ import {
   Heart,
   House,
   MessageCircle,
+  MoreHorizontal,
+  Search,
   User,
   Users,
+  X,
 } from "lucide-vue-next";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "../../../../composables/useAuth";
 import {
   getBottomNavigationItems,
+  getMoreNavigationItems,
   isNavigationItemActive,
+  type RoleNavigationItem,
   type RoleNavigationIcon,
 } from "../../../utils/roleNavigation";
 
@@ -49,6 +108,22 @@ const router = useRouter();
 const route = useRoute();
 
 const navigationItems = computed(() => getBottomNavigationItems(user.value));
+const moreItems = computed(() => getMoreNavigationItems(user.value));
+const showMore = ref(false);
+const search = ref("");
+const filteredMoreItems = computed(() => {
+  const query = search.value.trim().toLowerCase();
+  if (!query) return moreItems.value;
+
+  return moreItems.value.filter((entry) =>
+    `${entry.title} ${entry.description}`.toLowerCase().includes(query),
+  );
+});
+const moreSubtitle = computed(() =>
+  user.value?.is_admin === true || user.value?.role === "PASTOR"
+    ? "Administração, pessoas e configurações ficam aqui."
+    : "Atalhos disponíveis para o seu perfil.",
+);
 const iconComponents: Record<RoleNavigationIcon, unknown> = {
   book: BookOpen,
   calendar: CalendarCheck,
@@ -58,12 +133,38 @@ const iconComponents: Record<RoleNavigationIcon, unknown> = {
   heart: Heart,
   home: House,
   messages: MessageCircle,
+  more: MoreHorizontal,
   pastoral: HandHeart,
   reports: BarChart3,
   scale: CalendarDays,
   team: Church,
   user: User,
   users: Users,
+};
+
+const isItemActive = (item: RoleNavigationItem) => {
+  if (item.key === "more") {
+    return moreItems.value.some((entry) => isNavigationItemActive(entry, route.path));
+  }
+
+  return isNavigationItemActive(item, route.path);
+};
+
+const handleNavClick = (item: RoleNavigationItem) => {
+  if (item.key === "more") {
+    showMore.value = true;
+    return;
+  }
+
+  router.push(item.route);
+};
+
+const handleMoreSelect = (route: string) => {
+  if (!route) return;
+
+  showMore.value = false;
+  search.value = "";
+  router.push(route);
 };
 </script>
 
@@ -145,6 +246,99 @@ const iconComponents: Record<RoleNavigationIcon, unknown> = {
 
 .custom-btn:hover > .v-btn__overlay {
   opacity: 0 !important;
+}
+
+.bottom-more-card {
+  background: var(--app-color-surface) !important;
+  border-radius: 12px !important;
+  padding: 16px;
+}
+
+.bottom-more-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.bottom-more-header h2 {
+  color: var(--app-color-text);
+  font-size: 1.05rem;
+  font-weight: 850;
+  line-height: 1.2;
+  margin: 0 0 2px;
+}
+
+.bottom-more-header p {
+  color: var(--app-color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.bottom-more-search {
+  margin-bottom: 12px;
+}
+
+.bottom-more-empty {
+  color: var(--app-color-text-muted);
+  font-size: 0.86rem;
+  padding: 22px 4px;
+  text-align: center;
+}
+
+.bottom-more-list {
+  display: grid;
+  gap: 8px;
+}
+
+.bottom-more-row {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 62px;
+  padding: 10px;
+  border: 1px solid var(--app-color-border);
+  border-radius: 8px;
+  background: var(--app-color-surface);
+  color: var(--app-color-text);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.bottom-more-row:hover,
+.bottom-more-row:focus-visible {
+  border-color: var(--app-color-accent);
+  background: var(--app-color-surface-soft);
+  outline: none;
+}
+
+.bottom-more-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bottom-more-copy strong {
+  color: var(--app-color-text);
+  font-size: 0.9rem;
+  font-weight: 820;
+  line-height: 1.2;
+}
+
+.bottom-more-copy small {
+  color: var(--app-color-text-muted);
+  font-size: 0.76rem;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 390px) {

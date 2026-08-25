@@ -9,6 +9,7 @@ export type RoleNavigationIcon =
   | "heart"
   | "home"
   | "messages"
+  | "more"
   | "pastoral"
   | "reports"
   | "scale"
@@ -116,6 +117,19 @@ const navCatalog: Record<string, RoleNavigationItem> = {
     bgColor: "#CFFAFE",
     iconColorDark: "#22d3ee",
     bgColorDark: "rgba(34,211,238,0.14)",
+  },
+  churchAdmin: {
+    key: "churchAdmin",
+    label: "Administração",
+    title: "Administração da igreja",
+    description: "Membros, ministérios, cargos e dados operacionais.",
+    route: "/admin",
+    icon: "cog",
+    matchPrefixes: ["/admin"],
+    iconColor: "#475569",
+    bgColor: "#E2E8F0",
+    iconColorDark: "#cbd5e1",
+    bgColorDark: "rgba(203,213,225,0.12)",
   },
   cults: {
     key: "cults",
@@ -247,6 +261,19 @@ const navCatalog: Record<string, RoleNavigationItem> = {
     iconColorDark: "#cbd5e1",
     bgColorDark: "rgba(203,213,225,0.12)",
   },
+  more: {
+    key: "more",
+    label: "Mais",
+    title: "Mais opções",
+    description: "Veja todos os atalhos disponíveis para o seu perfil.",
+    route: "",
+    icon: "more",
+    matchPrefixes: [],
+    iconColor: "#64748B",
+    bgColor: "#E2E8F0",
+    iconColorDark: "#cbd5e1",
+    bgColorDark: "rgba(203,213,225,0.12)",
+  },
 };
 
 function hasPermission(user: RoleNavigationUser | null | undefined, permission: AppPermission) {
@@ -311,17 +338,17 @@ function item(key: keyof typeof navCatalog) {
 
 export function getBottomNavigationItems(user: RoleNavigationUser | null | undefined) {
   if (user?.is_admin === true && user.hasChurch !== true) {
-    return [item("home"), item("platformAdmin"), item("profile")];
+    return [item("home"), item("platformAdmin"), item("more")];
   }
 
   if (user?.hasChurch !== true) {
-    return [item("home"), item("profile")];
+    return [item("home"), item("more")];
   }
 
   const tier = resolveNavTier(user);
 
   if (tier === "privileged") {
-    return [item("home"), item("pastoral"), item("people"), item("cults"), item("reports")];
+    return [item("home"), item("pastoral"), item("cults"), item("reports"), item("more")];
   }
 
   if (tier === "leader") {
@@ -330,11 +357,11 @@ export function getBottomNavigationItems(user: RoleNavigationUser | null | undef
       item("team"),
       canSeePastoralCareInPreview(user, tier) ? item("visits") : item("scale"),
       item("cults"),
-      item("profile"),
+      item("more"),
     ];
   }
 
-  return [item("home"), item("cults"), item("scale"), item("ministries"), item("profile")];
+  return [item("home"), item("cults"), item("scale"), item("ministries"), item("more")];
 }
 
 export function getQuickAccessItems(user: RoleNavigationUser | null | undefined) {
@@ -413,20 +440,33 @@ export function getAllNavigationItems(user: RoleNavigationUser | null | undefine
     ...getBottomNavigationItems(user),
     ...getQuickAccessItems(user),
     ...getChurchHubItems(user),
+    ...(user?.hasChurch === true && isPrivilegedChurchUser(user) ? [item("churchAdmin")] : []),
     item("profile"),
     ...(user?.is_admin === true ? [item("platformAdmin")] : []),
   ];
 
   const seen = new Set<string>();
   return merged.filter((entry) => {
+    if (entry.key === "more") return false;
     if (seen.has(entry.key)) return false;
     seen.add(entry.key);
     return true;
   });
 }
 
+export function getMoreNavigationItems(user: RoleNavigationUser | null | undefined) {
+  const bottomKeys = new Set(
+    getBottomNavigationItems(user)
+      .filter((entry) => entry.key !== "more")
+      .map((entry) => entry.key),
+  );
+
+  return getAllNavigationItems(user).filter((entry) => !bottomKeys.has(entry.key));
+}
+
 export function isNavigationItemActive(item: RoleNavigationItem, path: string) {
   if (item.route === "/") return path === "/";
+  if (item.key === "churchAdmin") return path === "/admin";
 
   return item.matchPrefixes.some((prefix) => path.startsWith(prefix));
 }

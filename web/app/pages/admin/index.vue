@@ -20,7 +20,7 @@
               class="text-none dual-role-switch"
               @click="router.push('/platform-admin')"
             >
-              Ir para admin master
+              Admin master
             </v-btn>
             <UtilsPageHelpButton title="Administração da igreja" />
           </div>

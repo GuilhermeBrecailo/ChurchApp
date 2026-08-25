@@ -4,7 +4,9 @@ import {
   getAllNavigationItems,
   getBottomNavigationItems,
   getChurchHubItems,
+  getMoreNavigationItems,
   getQuickAccessItems,
+  isNavigationItemActive,
   type RoleNavigationUser,
 } from "../app/utils/roleNavigation";
 
@@ -20,22 +22,22 @@ const labels = (items: { label: string }[]) => items.map((item) => item.label);
 const routes = (items: { route: string }[]) => items.map((item) => item.route);
 
 describe("role navigation", () => {
-  it("prioriza cuidado, pessoas, cultos e relatorios para pastor", () => {
+  it("prioriza cuidado, cultos, relatorios e mais para pastor", () => {
     const items = getBottomNavigationItems(churchUser({ role: "PASTOR" }));
 
     assert.deepEqual(labels(items), [
       "Início",
       "Pastoral",
-      "Pessoas",
       "Cultos",
       "Relatórios",
+      "Mais",
     ]);
     assert.deepEqual(routes(items), [
       "/",
       "/pastoral",
-      "/admin/pessoas",
       "/cultos",
       "/admin/relatorios",
+      "",
     ]);
   });
 
@@ -57,14 +59,14 @@ describe("role navigation", () => {
       "Equipe",
       "Visitas",
       "Cultos",
-      "Perfil",
+      "Mais",
     ]);
     assert.deepEqual(routes(items), [
       "/",
       "/ministery",
       "/pastoral/visitas",
       "/cultos",
-      "/user",
+      "",
     ]);
   });
 
@@ -76,7 +78,7 @@ describe("role navigation", () => {
       "Cultos",
       "Agenda",
       "Ministérios",
-      "Perfil",
+      "Mais",
     ]);
   });
 
@@ -114,7 +116,7 @@ describe("role navigation", () => {
       "Cultos",
       "Agenda",
       "Ministérios",
-      "Perfil",
+      "Mais",
     ]);
   });
 
@@ -128,7 +130,7 @@ describe("role navigation", () => {
       "Equipe",
       "Visitas",
       "Cultos",
-      "Perfil",
+      "Mais",
     ]);
   });
 
@@ -142,8 +144,38 @@ describe("role navigation", () => {
       "Cultos",
       "Agenda",
       "Ministérios",
-      "Perfil",
+      "Mais",
     ]);
+  });
+
+  it("coloca pessoas e administracao no menu mais do pastor", () => {
+    const items = getMoreNavigationItems(churchUser({ role: "PASTOR" }));
+    const keys = items.map((entry) => entry.key);
+
+    assert.ok(keys.includes("people"));
+    assert.ok(keys.includes("churchAdmin"));
+    assert.ok(keys.includes("settings"));
+    assert.ok(keys.includes("profile"));
+  });
+
+  it("nao marca administracao geral como ativa em subrotas especificas do admin", () => {
+    const items = getMoreNavigationItems(churchUser({ role: "PASTOR" }));
+    const churchAdmin = items.find((entry) => entry.key === "churchAdmin");
+
+    assert.ok(churchAdmin);
+    assert.equal(isNavigationItemActive(churchAdmin, "/admin"), true);
+    assert.equal(isNavigationItemActive(churchAdmin, "/admin/relatorios"), false);
+  });
+
+  it("nao mostra administracao no menu mais do membro", () => {
+    const items = getMoreNavigationItems(churchUser({}));
+    const keys = items.map((entry) => entry.key);
+
+    assert.ok(keys.includes("profile"));
+    assert.ok(!keys.includes("people"));
+    assert.ok(!keys.includes("churchAdmin"));
+    assert.ok(!keys.includes("settings"));
+    assert.ok(!keys.includes("platformAdmin"));
   });
 
   it("lista completa do pastor nao tem duplicatas e cobre tudo", () => {
