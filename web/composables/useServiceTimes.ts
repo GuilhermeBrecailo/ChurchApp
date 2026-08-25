@@ -36,6 +36,12 @@ export const useServiceTimes = () => {
       : {}),
   });
 
+  const authOnlyHeaders = () => ({
+    ...(access_token.value
+      ? { Authorization: `Bearer ${access_token.value}` }
+      : {}),
+  });
+
   const listServiceTimes = async (): Promise<ApiResponse<ServiceTime[]>> => {
     return await $customFetch<ServiceTime[]>(
       `${config.public.URL_BACKEND}/api/church/service-times`,
@@ -103,7 +109,7 @@ export const useServiceTimes = () => {
       `${config.public.URL_BACKEND}/api/church/service-times/${id}`,
       {
         method: "DELETE",
-        headers: authHeaders(),
+        headers: authOnlyHeaders(),
       },
     );
   };
