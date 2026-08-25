@@ -2,6 +2,11 @@ FROM node:20-slim AS build
 
 WORKDIR /usr/src/app
 
+# node:20-slim bundles npm 10.8.2, which fails "npm ci" against a
+# lockfileVersion 3 file written by npm 11 (optional-deps resolution
+# differs). Pin npm to match what generates package-lock.json locally.
+RUN npm install -g npm@11
+
 COPY package*.json ./
 RUN npm ci
 

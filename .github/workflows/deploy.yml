@@ -7,17 +7,12 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, churchapp]
 
     steps:
       - name: Atualizar servidor
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: root
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            set -e
-            cd /root/CrunchApp
-            git pull origin main
-            docker compose up -d --build web api
+        run: |
+          set -e
+          cd /root/CrunchApp
+          git pull origin main
+          docker compose up -d --build web api
