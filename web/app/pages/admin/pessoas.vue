@@ -33,7 +33,7 @@
         :variant="activeSection === tab.value ? 'flat' : 'text'"
         class="text-none pessoas-subtab"
         size="small"
-        @click="activeSection = tab.value"
+        @click="selectPessoasSection(tab.value)"
       >
         {{ tab.label }}
       </v-btn>
@@ -1223,7 +1223,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import {
   UserPlus,
   UserCheck,
@@ -1241,6 +1241,8 @@ import {
   Bell,
   Settings2,
   BookMarked,
+  Church,
+  HandHeart,
   Megaphone,
 } from "lucide-vue-next";
 import { useAuth } from "../../../composables/useAuth";
@@ -1265,6 +1267,7 @@ import {
 import { useRoster, type RosterMember, type RosterStatus } from "../../../composables/useRoster";
 
 const router = useRouter();
+const route = useRoute();
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
@@ -1307,6 +1310,32 @@ const pessoasSubTabs = computed(() => {
   return tabs;
 });
 const activeSection = ref<PessoasSection>("membros");
+
+const normalizePessoasSection = (section: unknown): PessoasSection => {
+  const value = Array.isArray(section) ? section[0] : section;
+  if (value === "cargos" || value === "rol" || value === "membros") return value;
+  return "membros";
+};
+
+const selectPessoasSection = (section: PessoasSection) => {
+  activeSection.value = section;
+  router.replace({
+    query: {
+      ...route.query,
+      secao: section === "membros" ? undefined : section,
+    },
+  });
+};
+
+watch(
+  [() => route.query.secao, pessoasSubTabs],
+  ([section]) => {
+    const nextSection = normalizePessoasSection(section);
+    const allowedSections = new Set(pessoasSubTabs.value.map((tab) => tab.value));
+    activeSection.value = allowedSections.has(nextSection) ? nextSection : "membros";
+  },
+  { immediate: true },
+);
 
 const normalizeFilterText = (value?: string | null) =>
   (value || "")
@@ -1789,6 +1818,8 @@ const moduleIconMap = {
   ministryNotify: Bell,
   ministry: Settings2,
   members: UserCheck,
+  cults: Church,
+  pastoralCare: HandHeart,
   content: BookMarked,
   announcements: Megaphone,
 } as const;

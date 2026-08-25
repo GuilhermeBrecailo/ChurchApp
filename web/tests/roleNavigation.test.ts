@@ -56,7 +56,7 @@ describe("role navigation", () => {
 
     assert.deepEqual(labels(items), [
       "Início",
-      "Equipe",
+      "Ministérios",
       "Visitas",
       "Cultos",
       "Mais",
@@ -76,10 +76,83 @@ describe("role navigation", () => {
     assert.deepEqual(labels(items), [
       "Início",
       "Cultos",
-      "Agenda",
+      "Escalas",
       "Ministérios",
       "Mais",
     ]);
+  });
+
+  it("prioriza ministerios e escalas para lider de ministerio", () => {
+    const items = getBottomNavigationItems(
+      churchUser({
+        roles: [
+          {
+            scope: "MINISTRY",
+            departmentId: "music",
+            permissions: ["SCHEDULE_CREATE", "SONG_EDIT"],
+          },
+        ],
+      }),
+    );
+
+    assert.deepEqual(labels(items), [
+      "Início",
+      "Ministérios",
+      "Escalas",
+      "Cultos",
+      "Mais",
+    ]);
+  });
+
+  it("leva gestor de membros direto para pessoas sem expor cargos globais", () => {
+    const user = churchUser({
+      roles: [
+        {
+          scope: "CHURCH",
+          departmentId: null,
+          permissions: ["MEMBER_CREATE", "MEMBER_EDIT"],
+        },
+      ],
+    });
+
+    assert.deepEqual(labels(getBottomNavigationItems(user)), [
+      "Início",
+      "Pessoas",
+      "Cultos",
+      "Escalas",
+      "Mais",
+    ]);
+
+    const moreKeys = getMoreNavigationItems(user).map((entry) => entry.key);
+    assert.ok(moreKeys.includes("churchAdmin"));
+    assert.ok(moreKeys.includes("settings"));
+    assert.ok(!moreKeys.includes("rolesManagement"));
+    assert.ok(!moreKeys.includes("messages"));
+  });
+
+  it("prioriza conteudo para comunicacao sem liberar admin pastoral", () => {
+    const user = churchUser({
+      roles: [
+        {
+          scope: "CHURCH",
+          departmentId: null,
+          permissions: ["CONTENT_PUBLISH", "ANNOUNCEMENT_PUBLISH"],
+        },
+      ],
+    });
+
+    assert.deepEqual(labels(getBottomNavigationItems(user)), [
+      "Início",
+      "Conteúdo",
+      "Cultos",
+      "Escalas",
+      "Mais",
+    ]);
+
+    const moreKeys = getMoreNavigationItems(user).map((entry) => entry.key);
+    assert.ok(!moreKeys.includes("churchAdmin"));
+    assert.ok(!moreKeys.includes("messages"));
+    assert.ok(!moreKeys.includes("rolesManagement"));
   });
 
   it("personaliza acesso rapido do pastor com atalhos pastorais", () => {
@@ -114,7 +187,7 @@ describe("role navigation", () => {
     assert.deepEqual(labels(items), [
       "Início",
       "Cultos",
-      "Agenda",
+      "Escalas",
       "Ministérios",
       "Mais",
     ]);
@@ -127,7 +200,7 @@ describe("role navigation", () => {
 
     assert.deepEqual(labels(items), [
       "Início",
-      "Equipe",
+      "Ministérios",
       "Visitas",
       "Cultos",
       "Mais",
@@ -142,7 +215,7 @@ describe("role navigation", () => {
     assert.deepEqual(labels(items), [
       "Início",
       "Cultos",
-      "Agenda",
+      "Escalas",
       "Ministérios",
       "Mais",
     ]);
@@ -154,8 +227,29 @@ describe("role navigation", () => {
 
     assert.ok(keys.includes("people"));
     assert.ok(keys.includes("churchAdmin"));
+    assert.ok(keys.includes("rolesManagement"));
     assert.ok(keys.includes("settings"));
     assert.ok(keys.includes("profile"));
+  });
+
+  it("ordena o menu mais do pastor em ordem alfabetica pelo titulo", () => {
+    const items = getMoreNavigationItems(churchUser({ role: "PASTOR" }));
+
+    assert.deepEqual(
+      items.map((entry) => entry.title),
+      [
+        "Administração da igreja",
+        "Cargos e permissões",
+        "Configurações",
+        "Conteúdo",
+        "Mensagens",
+        "Meu perfil",
+        "Ministérios",
+        "Pessoas",
+        "Publicações",
+        "Visitas",
+      ],
+    );
   });
 
   it("nao marca administracao geral como ativa em subrotas especificas do admin", () => {
@@ -178,12 +272,34 @@ describe("role navigation", () => {
     assert.ok(!keys.includes("platformAdmin"));
   });
 
+  it("nao mostra atalhos de igreja para admin da plataforma sem igreja", () => {
+    const items = getMoreNavigationItems({
+      hasChurch: false,
+      role: "ADMIN",
+      is_admin: true,
+      roles: [],
+    });
+    const keys = items.map((entry) => entry.key);
+
+    assert.deepEqual(keys, ["profile"]);
+  });
+
+  it("ordena o menu mais do membro em ordem alfabetica pelo titulo", () => {
+    const items = getMoreNavigationItems(churchUser({}));
+
+    assert.deepEqual(
+      items.map((entry) => entry.title),
+      ["Conteúdo", "Meu perfil", "Oração"],
+    );
+  });
+
   it("lista completa do pastor nao tem duplicatas e cobre tudo", () => {
     const items = getAllNavigationItems(churchUser({ role: "PASTOR" }));
     const keys = items.map((entry) => entry.key);
 
     assert.equal(new Set(keys).size, keys.length, "nao deve ter chaves repetidas");
     assert.ok(keys.includes("messages"));
+    assert.ok(keys.includes("rolesManagement"));
     assert.ok(keys.includes("settings"));
     assert.ok(keys.includes("people"));
     assert.ok(keys.includes("profile"));
@@ -194,7 +310,7 @@ describe("role navigation", () => {
 
     assert.deepEqual(labels(items), [
       "Cultos",
-      "Agenda",
+      "Escalas",
       "Ministérios",
       "Conteúdo",
       "Oração",

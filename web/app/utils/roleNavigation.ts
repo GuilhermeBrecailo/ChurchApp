@@ -118,6 +118,19 @@ const navCatalog: Record<string, RoleNavigationItem> = {
     iconColorDark: "#22d3ee",
     bgColorDark: "rgba(34,211,238,0.14)",
   },
+  rolesManagement: {
+    key: "rolesManagement",
+    label: "Cargos",
+    title: "Cargos e permissões",
+    description: "Crie cargos, defina permissões e delegue acessos com segurança.",
+    route: "/admin/pessoas?secao=cargos",
+    icon: "clipboard",
+    matchPrefixes: ["/admin/pessoas"],
+    iconColor: "#6D28D9",
+    bgColor: "#EDE9FE",
+    iconColorDark: "#c4b5fd",
+    bgColorDark: "rgba(196,181,253,0.14)",
+  },
   churchAdmin: {
     key: "churchAdmin",
     label: "Administração",
@@ -159,8 +172,8 @@ const navCatalog: Record<string, RoleNavigationItem> = {
   },
   team: {
     key: "team",
-    label: "Equipe",
-    title: "Minha equipe",
+    label: "Ministérios",
+    title: "Meus ministérios",
     description: "Ministérios, escalas, tarefas e pessoas sob responsabilidade.",
     route: "/ministery",
     icon: "team",
@@ -172,8 +185,8 @@ const navCatalog: Record<string, RoleNavigationItem> = {
   },
   scale: {
     key: "scale",
-    label: "Agenda",
-    title: "Agenda",
+    label: "Escalas",
+    title: "Escalas",
     description: "Suas próximas escalas e compromissos da igreja.",
     route: "/scale",
     icon: "scale",
@@ -261,6 +274,19 @@ const navCatalog: Record<string, RoleNavigationItem> = {
     iconColorDark: "#cbd5e1",
     bgColorDark: "rgba(203,213,225,0.12)",
   },
+  publications: {
+    key: "publications",
+    label: "Publicações",
+    title: "Publicações",
+    description: "Avisos, devocionais, posts e conteúdo da igreja.",
+    route: "/admin/publicacoes",
+    icon: "book",
+    matchPrefixes: ["/admin/publicacoes"],
+    iconColor: "#0F766E",
+    bgColor: "#CCFBF1",
+    iconColorDark: "#5eead4",
+    bgColorDark: "rgba(94,234,212,0.12)",
+  },
   more: {
     key: "more",
     label: "Mais",
@@ -284,6 +310,10 @@ function hasPermission(user: RoleNavigationUser | null | undefined, permission: 
   return (user.roles ?? []).some((role) => role.permissions.includes(permission));
 }
 
+function hasAnyPermission(user: RoleNavigationUser | null | undefined, permissions: AppPermission[]) {
+  return permissions.some((permission) => hasPermission(user, permission));
+}
+
 function isPrivilegedChurchUser(user: RoleNavigationUser | null | undefined) {
   if (!user) return false;
   return (
@@ -293,6 +323,25 @@ function isPrivilegedChurchUser(user: RoleNavigationUser | null | undefined) {
     user.role === "ADMIN" ||
     user.role === "SUPER_ADMIN"
   );
+}
+
+function hasMinistryAccess(user: RoleNavigationUser | null | undefined) {
+  if (!user) return false;
+  if (isPrivilegedChurchUser(user)) return true;
+  return (user.roles ?? []).some(
+    (role) => role.scope === "MINISTRY" && role.permissions.length > 0,
+  );
+}
+
+function hasMemberManagementAccess(user: RoleNavigationUser | null | undefined) {
+  return (
+    user?.canManageMembers === true ||
+    hasAnyPermission(user, ["MEMBER_CREATE", "MEMBER_EDIT", "MEMBER_DELETE"])
+  );
+}
+
+function hasContentPublishingAccess(user: RoleNavigationUser | null | undefined) {
+  return hasAnyPermission(user, ["CONTENT_PUBLISH", "ANNOUNCEMENT_PUBLISH"]);
 }
 
 function isLeaderUser(user: RoleNavigationUser | null | undefined) {
@@ -332,8 +381,16 @@ function canSeePastoralCareInPreview(user: RoleNavigationUser | null | undefined
   return hasPermission(user, "PASTORAL_CARE_MANAGE");
 }
 
+function canSeeChurchAdminHub(user: RoleNavigationUser | null | undefined) {
+  return user?.hasChurch === true && (isPrivilegedChurchUser(user) || hasMemberManagementAccess(user));
+}
+
 function item(key: keyof typeof navCatalog) {
   return navCatalog[key];
+}
+
+function compareNavigationTitle(a: RoleNavigationItem, b: RoleNavigationItem) {
+  return a.title.localeCompare(b.title, "pt-BR", { sensitivity: "base" });
 }
 
 export function getBottomNavigationItems(user: RoleNavigationUser | null | undefined) {
@@ -352,6 +409,18 @@ export function getBottomNavigationItems(user: RoleNavigationUser | null | undef
   }
 
   if (tier === "leader") {
+    if (isPrivilegedChurchUser(user) && user?.navPreviewRole === "LIDER") {
+      return [item("home"), item("team"), item("visits"), item("cults"), item("more")];
+    }
+
+    if (hasMemberManagementAccess(user)) {
+      return [item("home"), item("people"), item("cults"), item("scale"), item("more")];
+    }
+
+    if (hasContentPublishingAccess(user) && !hasMinistryAccess(user) && !canSeePastoralCareInPreview(user, tier)) {
+      return [item("home"), item("content"), item("cults"), item("scale"), item("more")];
+    }
+
     return [
       item("home"),
       item("team"),
@@ -435,12 +504,17 @@ export function getChurchHubItems(user: RoleNavigationUser | null | undefined) {
 // "Mais" do acesso rapido - une bottom nav + quick access + hub em vez de
 // manter uma quarta lista manual que fica desatualizada.
 export function getAllNavigationItems(user: RoleNavigationUser | null | undefined) {
+  const hasChurch = user?.hasChurch === true;
+  const isPrivileged = isPrivilegedChurchUser(user);
   const merged = [
     homeItem,
     ...getBottomNavigationItems(user),
     ...getQuickAccessItems(user),
     ...getChurchHubItems(user),
-    ...(user?.hasChurch === true && isPrivilegedChurchUser(user) ? [item("churchAdmin")] : []),
+    ...(canSeeChurchAdminHub(user) ? [item("churchAdmin"), item("settings")] : []),
+    ...(hasChurch && isPrivileged ? [item("rolesManagement"), item("publications")] : []),
+    ...(hasChurch && hasAnyPermission(user, ["PASTORAL_CARE_MANAGE"]) ? [item("pastoral"), item("visits")] : []),
+    ...(hasChurch && hasContentPublishingAccess(user) ? [item("content")] : []),
     item("profile"),
     ...(user?.is_admin === true ? [item("platformAdmin")] : []),
   ];
@@ -461,7 +535,9 @@ export function getMoreNavigationItems(user: RoleNavigationUser | null | undefin
       .map((entry) => entry.key),
   );
 
-  return getAllNavigationItems(user).filter((entry) => !bottomKeys.has(entry.key));
+  return getAllNavigationItems(user)
+    .filter((entry) => !bottomKeys.has(entry.key))
+    .sort(compareNavigationTitle);
 }
 
 export function isNavigationItemActive(item: RoleNavigationItem, path: string) {
