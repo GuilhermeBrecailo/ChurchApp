@@ -27,6 +27,11 @@ export async function UserRoutes(app: FastifyInstance) {
     controllerHandler(adapters.updateMyPassword.bind(adapters)),
   );
 
+  app.patch(
+    "/api/me/nav-preview-role",
+    controllerHandler(adapters.updateNavPreviewRole.bind(adapters)),
+  );
+
   app.post(
     "/api/church/create-own",
     controllerHandler(adapters.createOwnChurch.bind(adapters)),

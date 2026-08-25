@@ -287,7 +287,35 @@ export class UserAdapters {
       permissions,
       isDemoUser: user.isDemoUser,
       pendingChurches,
+      navPreviewRole: user.navPreviewRole,
     };
+  }
+
+  async updateNavPreviewRole(request: FastifyRequest) {
+    const userId = getAuthUserId(request);
+    const body = request.body as { navPreviewRole?: string | null };
+    const allowed = ["MEMBRO", "LIDER", "PASTOR"];
+
+    if (body.navPreviewRole !== null && body.navPreviewRole !== undefined && !allowed.includes(body.navPreviewRole)) {
+      throw new DomainError("Papel de pré-visualização inválido");
+    }
+
+    const context = request.churchContext ?? (await resolveActiveChurchContext(request, userId));
+    const isPrivileged =
+      context.role === "PASTOR" || context.role === "ADMIN" || context.role === "SUPER_ADMIN";
+
+    if (!isPrivileged) {
+      throw new DomainError("Apenas pastor ou admin pode usar a pré-visualização de navegação");
+    }
+
+    const navPreviewRole = body.navPreviewRole ?? null;
+
+    await $prismaClient.user.update({
+      where: { id: userId },
+      data: { navPreviewRole },
+    });
+
+    return { navPreviewRole };
   }
 
   async getMyProfile(request: FastifyRequest) {

@@ -53,6 +53,7 @@ import {
   HandHeart,
   Heart,
   House,
+  MessageCircle,
   User,
   Users,
 } from "lucide-vue-next";
@@ -80,6 +81,7 @@ const iconComponents: Record<RoleNavigationIcon, unknown> = {
   cog: Cog,
   heart: Heart,
   home: House,
+  messages: MessageCircle,
   pastoral: HandHeart,
   reports: BarChart3,
   scale: CalendarDays,

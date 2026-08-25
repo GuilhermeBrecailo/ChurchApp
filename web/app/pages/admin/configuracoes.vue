@@ -187,6 +187,32 @@
         </v-card>
       </UtilsResponsiveOverlay>
 
+      <div v-if="isChurchWideManager" class="mt-6">
+        <div class="section-heading mb-4">
+          <div>
+            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Pré-visualizar navegação</h2>
+            <p class="text-caption text-grey-darken-1 mb-0">
+              Veja o menu como um membro ou líder veria, sem perder seus acessos de pastor/admin
+            </p>
+          </div>
+        </div>
+
+        <v-card class="invite-code-card rounded-xl pa-5 elevation-1 border-subtle">
+          <v-select
+            v-model="navPreviewSelection"
+            :items="navPreviewOptions"
+            item-title="label"
+            item-value="value"
+            label="Ver navegação como"
+            variant="outlined"
+            density="comfortable"
+            hide-details
+            :loading="navPreviewSaving"
+            @update:model-value="handleNavPreviewChange"
+          />
+        </v-card>
+      </div>
+
       <div class="mt-6">
       <div class="section-heading mb-4">
         <div>
@@ -655,7 +681,7 @@ import { useChurchPlan, PLAN_LABELS, PLAN_FEATURE_LABELS, type PlanFeature } fro
 
 const router = useRouter();
 
-const { user } = useAuth();
+const { user, updateNavPreviewRole } = useAuth();
 const { isDark } = useThemeMode();
 const { can } = usePermissions();
 
@@ -690,6 +716,20 @@ const canAccessChurchAdmin = computed(
     user.value?.hasChurch === true &&
     canManageMembersByRole.value,
 );
+
+const navPreviewOptions = [
+  { label: "Pastor (padrão)", value: "PASTOR" },
+  { label: "Líder", value: "LIDER" },
+  { label: "Membro", value: "MEMBRO" },
+];
+const navPreviewSaving = ref(false);
+const navPreviewSelection = computed(() => user.value?.navPreviewRole ?? "PASTOR");
+
+const handleNavPreviewChange = async (value: "MEMBRO" | "LIDER" | "PASTOR") => {
+  navPreviewSaving.value = true;
+  await updateNavPreviewRole(value);
+  navPreviewSaving.value = false;
+};
 
 const { getInviteCode, regenerateInviteCode } = useChurchInvite();
 const { updateOwnChurch, uploadChurchPhoto } = useChurch();

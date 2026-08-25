@@ -1,4 +1,4 @@
-self.__APP_QUADRANGULAR_SW_VERSION__ = "2026-06-07-01";
+self.__APP_QUADRANGULAR_SW_VERSION__ = "2026-08-25-01";
 
 const CACHE_NAME = `app-quadrangular-${self.__APP_QUADRANGULAR_SW_VERSION__}`;
 const APP_SHELL = ["/", "/login", "/manifest.webmanifest", "/pwa-icon.svg"];
@@ -39,29 +39,40 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-          return response;
-        })
-        .catch(async () => {
-          const cachedPage = await caches.match(request);
-          const cachedLogin = await caches.match("/login");
-          const cachedHome = await caches.match("/");
+      (async () => {
+        const cache = await caches.open(CACHE_NAME);
+        const cachedResponse = await cache.match(request);
 
-          return (
-            cachedPage ||
-            cachedLogin ||
-            cachedHome ||
-            new Response("ChurchApp offline", {
-              status: 503,
-              headers: {
-                "Content-Type": "text/plain; charset=utf-8",
-              },
-            })
-          );
-        }),
+        // Always kick off a network fetch to refresh the cache, whether or
+        // not we already have something to serve from it.
+        const networkFetch = fetch(request)
+          .then((response) => {
+            cache.put(request, response.clone());
+            return response;
+          })
+          .catch(() => undefined);
+
+        // Stale-while-revalidate: serve the cached shell immediately so the
+        // app opens instantly, refresh happens in the background for next time.
+        if (cachedResponse) return cachedResponse;
+
+        const networkResponse = await networkFetch;
+        if (networkResponse) return networkResponse;
+
+        const cachedLogin = await caches.match("/login");
+        const cachedHome = await caches.match("/");
+
+        return (
+          cachedLogin ||
+          cachedHome ||
+          new Response("ChurchApp offline", {
+            status: 503,
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+            },
+          })
+        );
+      })(),
     );
     return;
   }

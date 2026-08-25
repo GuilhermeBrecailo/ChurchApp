@@ -74,6 +74,7 @@ interface AuthUser {
   phone?: string;
   church?: AuthChurch | null;
   avatarUrl?: string | null;
+  navPreviewRole?: "MEMBRO" | "LIDER" | "PASTOR" | null;
 }
 
 export interface UploadedAvatar {
@@ -292,6 +293,34 @@ export const useAuth = () => {
     return response;
   };
 
+  const updateNavPreviewRole = async (
+    navPreviewRole: "MEMBRO" | "LIDER" | "PASTOR" | null,
+  ) => {
+    if (!access_token.value) {
+      return {
+        error: "Sessão expirada. Faça login novamente.",
+        status: 401,
+      };
+    }
+
+    const response = await $customFetch<{ navPreviewRole: string | null }>(
+      `${apiBase()}/api/me/nav-preview-role`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${access_token.value}`,
+        },
+        body: { navPreviewRole },
+      },
+    );
+
+    if (!response.error && user.value) {
+      user.value = { ...user.value, navPreviewRole };
+    }
+
+    return response;
+  };
+
   const should_refresh = () => {
     if (!access_token.value) return false;
 
@@ -318,5 +347,6 @@ export const useAuth = () => {
     setActiveChurch,
     activeChurchId,
     uploadMyAvatar,
+    updateNavPreviewRole,
   };
 };

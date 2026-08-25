@@ -8,6 +8,7 @@ export type RoleNavigationIcon =
   | "cog"
   | "heart"
   | "home"
+  | "messages"
   | "pastoral"
   | "reports"
   | "scale"
@@ -29,6 +30,8 @@ export type RoleNavigationItem = {
   bgColorDark: string;
 };
 
+export type NavPreviewRole = "MEMBRO" | "LIDER" | "PASTOR";
+
 export type RoleNavigationUser = {
   hasChurch?: boolean;
   role?: string;
@@ -41,6 +44,9 @@ export type RoleNavigationUser = {
     permissions: string[];
   }>;
   permissions?: string[];
+  // Preview-only: deixa pastor/admin ver a navegacao como outro papel veria,
+  // sem alterar permissoes reais - checagens de API continuam no papel real.
+  navPreviewRole?: NavPreviewRole | null;
 };
 
 const homeItem: RoleNavigationItem = {
@@ -97,6 +103,19 @@ const navCatalog: Record<string, RoleNavigationItem> = {
     bgColor: "#CCFBF1",
     iconColorDark: "#2dd4bf",
     bgColorDark: "rgba(45,212,191,0.12)",
+  },
+  messages: {
+    key: "messages",
+    label: "Mensagens",
+    title: "Mensagens",
+    description: "Mensagens pós-culto, aniversariantes e avisos por WhatsApp.",
+    route: "/admin/mensagens",
+    icon: "messages",
+    matchPrefixes: ["/admin/mensagens"],
+    iconColor: "#0891B2",
+    bgColor: "#CFFAFE",
+    iconColorDark: "#22d3ee",
+    bgColorDark: "rgba(34,211,238,0.14)",
   },
   cults: {
     key: "cults",
@@ -259,6 +278,33 @@ function isLeaderUser(user: RoleNavigationUser | null | undefined) {
   );
 }
 
+type NavTier = "privileged" | "leader" | "member";
+
+// So um pastor/admin de verdade pode se colocar num tier menor pra
+// pre-visualizar a navegacao - a API continua checando o papel real, isso
+// nunca afeta permissao de verdade, so o que aparece no menu.
+function resolveNavTier(user: RoleNavigationUser | null | undefined): NavTier {
+  const isReallyPrivileged = isPrivilegedChurchUser(user);
+
+  if (isReallyPrivileged && user?.navPreviewRole) {
+    if (user.navPreviewRole === "MEMBRO") return "member";
+    if (user.navPreviewRole === "LIDER") return "leader";
+    return "privileged";
+  }
+
+  if (isReallyPrivileged) return "privileged";
+  if (isLeaderUser(user)) return "leader";
+  return "member";
+}
+
+function canSeePastoralCareInPreview(user: RoleNavigationUser | null | undefined, tier: NavTier) {
+  if (tier !== "leader") return false;
+  // Previewing as lider (sem ser lider de verdade): mostra a variante mais
+  // completa (Visitas) em vez de tentar simular uma permissao especifica.
+  if (isPrivilegedChurchUser(user) && user?.navPreviewRole === "LIDER") return true;
+  return hasPermission(user, "PASTORAL_CARE_MANAGE");
+}
+
 function item(key: keyof typeof navCatalog) {
   return navCatalog[key];
 }
@@ -272,15 +318,17 @@ export function getBottomNavigationItems(user: RoleNavigationUser | null | undef
     return [item("home"), item("profile")];
   }
 
-  if (isPrivilegedChurchUser(user)) {
+  const tier = resolveNavTier(user);
+
+  if (tier === "privileged") {
     return [item("home"), item("pastoral"), item("people"), item("cults"), item("reports")];
   }
 
-  if (isLeaderUser(user)) {
+  if (tier === "leader") {
     return [
       item("home"),
       item("team"),
-      hasPermission(user, "PASTORAL_CARE_MANAGE") ? item("visits") : item("scale"),
+      canSeePastoralCareInPreview(user, tier) ? item("visits") : item("scale"),
       item("cults"),
       item("profile"),
     ];
@@ -294,21 +342,24 @@ export function getQuickAccessItems(user: RoleNavigationUser | null | undefined)
     return [item("profile")];
   }
 
-  if (isPrivilegedChurchUser(user)) {
+  const tier = resolveNavTier(user);
+
+  if (tier === "privileged") {
     return [
       { ...item("pastoral"), label: "Painel" },
       item("visits"),
       item("people"),
+      item("messages"),
       item("reports"),
       item("cults"),
       item("settings"),
     ];
   }
 
-  if (isLeaderUser(user)) {
+  if (tier === "leader") {
     return [
       item("team"),
-      ...(hasPermission(user, "PASTORAL_CARE_MANAGE") ? [item("visits")] : []),
+      ...(canSeePastoralCareInPreview(user, tier) ? [item("visits")] : []),
       item("scale"),
       item("cults"),
       item("prayer"),
@@ -324,10 +375,13 @@ export function getChurchHubItems(user: RoleNavigationUser | null | undefined) {
     return [];
   }
 
-  if (isPrivilegedChurchUser(user)) {
+  const tier = resolveNavTier(user);
+
+  if (tier === "privileged") {
     return [
       { ...item("pastoral"), label: "Painel" },
       item("people"),
+      item("messages"),
       item("cults"),
       item("reports"),
       item("ministries"),
@@ -336,10 +390,10 @@ export function getChurchHubItems(user: RoleNavigationUser | null | undefined) {
     ];
   }
 
-  if (isLeaderUser(user)) {
+  if (tier === "leader") {
     return [
       item("team"),
-      ...(hasPermission(user, "PASTORAL_CARE_MANAGE") ? [item("visits")] : []),
+      ...(canSeePastoralCareInPreview(user, tier) ? [item("visits")] : []),
       item("scale"),
       item("cults"),
       item("content"),

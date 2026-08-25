@@ -82,10 +82,11 @@ describe("role navigation", () => {
   it("personaliza acesso rapido do pastor com atalhos pastorais", () => {
     const items = getQuickAccessItems(churchUser({ role: "PASTOR" }));
 
-    assert.deepEqual(labels(items).slice(0, 4), [
+    assert.deepEqual(labels(items).slice(0, 5), [
       "Painel",
       "Visitas",
       "Pessoas",
+      "Mensagens",
       "Relatórios",
     ]);
   });
@@ -93,11 +94,54 @@ describe("role navigation", () => {
   it("monta hub da igreja com prioridade pastoral para pastor", () => {
     const items = getChurchHubItems(churchUser({ role: "PASTOR" }));
 
-    assert.deepEqual(labels(items).slice(0, 4), [
+    assert.deepEqual(labels(items).slice(0, 5), [
       "Painel",
       "Pessoas",
+      "Mensagens",
       "Cultos",
       "Relatórios",
+    ]);
+  });
+
+  it("pastor com preview de membro ve a navegacao de membro sem perder o preview", () => {
+    const items = getBottomNavigationItems(
+      churchUser({ role: "PASTOR", navPreviewRole: "MEMBRO" }),
+    );
+
+    assert.deepEqual(labels(items), [
+      "Início",
+      "Cultos",
+      "Agenda",
+      "Ministérios",
+      "Perfil",
+    ]);
+  });
+
+  it("pastor com preview de lider ve a navegacao de lider com visitas", () => {
+    const items = getBottomNavigationItems(
+      churchUser({ role: "PASTOR", navPreviewRole: "LIDER" }),
+    );
+
+    assert.deepEqual(labels(items), [
+      "Início",
+      "Equipe",
+      "Visitas",
+      "Cultos",
+      "Perfil",
+    ]);
+  });
+
+  it("membro sem privilegio real ignora navPreviewRole", () => {
+    const items = getBottomNavigationItems(
+      churchUser({ navPreviewRole: "PASTOR" }),
+    );
+
+    assert.deepEqual(labels(items), [
+      "Início",
+      "Cultos",
+      "Agenda",
+      "Ministérios",
+      "Perfil",
     ]);
   });
 
