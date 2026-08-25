@@ -391,6 +391,11 @@ onMounted(() => {
   display: grid;
   align-content: start;
   gap: 14px;
+  /* Grid items default to min-width: auto, so they refuse to shrink below
+     their content's natural size - a flex row further down (pastoral-header,
+     pastoral-row) with nowrap text then blows this column past the viewport
+     on mobile instead of wrapping/truncating. */
+  min-width: 0;
 }
 
 .dashboard-primary :deep(.mb-8),
