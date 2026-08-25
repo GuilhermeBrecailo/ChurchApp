@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  getAllNavigationItems,
   getBottomNavigationItems,
   getChurchHubItems,
   getQuickAccessItems,
@@ -143,6 +144,17 @@ describe("role navigation", () => {
       "Ministérios",
       "Perfil",
     ]);
+  });
+
+  it("lista completa do pastor nao tem duplicatas e cobre tudo", () => {
+    const items = getAllNavigationItems(churchUser({ role: "PASTOR" }));
+    const keys = items.map((entry) => entry.key);
+
+    assert.equal(new Set(keys).size, keys.length, "nao deve ter chaves repetidas");
+    assert.ok(keys.includes("messages"));
+    assert.ok(keys.includes("settings"));
+    assert.ok(keys.includes("people"));
+    assert.ok(keys.includes("profile"));
   });
 
   it("monta hub da igreja sem administracao para membro", () => {

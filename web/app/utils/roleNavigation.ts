@@ -404,6 +404,27 @@ export function getChurchHubItems(user: RoleNavigationUser | null | undefined) {
   return [item("cults"), item("scale"), item("ministries"), item("content"), item("prayer")];
 }
 
+// Lista completa (deduplicada) de tudo que o usuario tem acesso, pro card
+// "Mais" do acesso rapido - une bottom nav + quick access + hub em vez de
+// manter uma quarta lista manual que fica desatualizada.
+export function getAllNavigationItems(user: RoleNavigationUser | null | undefined) {
+  const merged = [
+    homeItem,
+    ...getBottomNavigationItems(user),
+    ...getQuickAccessItems(user),
+    ...getChurchHubItems(user),
+    item("profile"),
+    ...(user?.is_admin === true ? [item("platformAdmin")] : []),
+  ];
+
+  const seen = new Set<string>();
+  return merged.filter((entry) => {
+    if (seen.has(entry.key)) return false;
+    seen.add(entry.key);
+    return true;
+  });
+}
+
 export function isNavigationItemActive(item: RoleNavigationItem, path: string) {
   if (item.route === "/") return path === "/";
 

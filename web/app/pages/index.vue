@@ -406,6 +406,11 @@ onMounted(() => {
 .dashboard-secondary :deep(.mb-4),
 .dashboard-secondary :deep(.mb-3) {
   margin-bottom: 0 !important;
+  /* Same grid min-width:auto blowout as .dashboard-primary/.dashboard-secondary
+     above, one level deeper: each card's own root wrapper is a grid item too,
+     so a horizontally-scrolling row inside it (Acesso Rapido) never actually
+     gets an overflow to scroll - the wrapper just grows to fit it instead. */
+  min-width: 0;
 }
 
 .responsive-grid {
