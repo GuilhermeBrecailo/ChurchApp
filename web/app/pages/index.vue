@@ -1,8 +1,8 @@
 <template>
-  <div class="pa-4 pb-8 page-wrapper">
+  <div class="pa-4 pb-8 app-operational-page dashboard-page">
     <template v-if="hasChurch">
-      <div class="app-help-header mb-5">
-        <div class="min-w-0">
+      <div class="app-page-header">
+        <div class="app-page-header-copy">
           <div class="app-help-title-row">
             <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">Início</h1>
             <UtilsPageHelpButton title="Início" />
@@ -16,7 +16,7 @@
       <v-skeleton-loader
         v-if="!setupStateLoaded"
         type="card"
-        class="rounded-xl mb-6"
+        class="app-surface mb-4"
       />
 
       <DashboardGettingStartedCard
@@ -26,54 +26,38 @@
       />
 
       <template v-else>
-        <MotionStaggerGroup>
-        <MotionStaggerItem>
-        <DashboardTodayCard />
-        </MotionStaggerItem>
+        <div class="dashboard-grid">
+          <main class="dashboard-primary">
+            <DashboardPastoralOverviewCard v-if="canSeePastoralDashboard" />
+            <DashboardTodayCard />
+            <DashboardMyNextAssignmentCard />
+            <DashboardNextScheduleCard :schedule="nextSchedule" />
 
-        <MotionStaggerItem>
-        <DashboardMyNextAssignmentCard />
-        </MotionStaggerItem>
+            <v-alert
+              v-if="schedulesError"
+              type="error"
+              variant="tonal"
+              density="compact"
+              class="mb-4"
+            >
+              {{ schedulesError }}
+            </v-alert>
 
-        <MotionStaggerItem>
-        <DashboardNextScheduleCard :schedule="nextSchedule" />
-        </MotionStaggerItem>
+            <DashboardUpcomingEvents :schedules="upcomingSchedules" />
+          </main>
 
-        <MotionStaggerItem>
-        <DashboardDailyVerseCard />
-        </MotionStaggerItem>
-
-        <MotionStaggerItem>
-        <DashboardAnnouncementsSection />
-        </MotionStaggerItem>
-
-        <MotionStaggerItem>
-        <DashboardQuickAccess />
-        </MotionStaggerItem>
-
-        <MotionStaggerItem>
-        <DashboardPrayerPreviewCard />
-        </MotionStaggerItem>
-
-        <v-alert
-          v-if="schedulesError"
-          type="error"
-          variant="tonal"
-          density="compact"
-          class="mb-4"
-        >
-          {{ schedulesError }}
-        </v-alert>
-
-        <MotionStaggerItem>
-        <DashboardUpcomingEvents :schedules="upcomingSchedules" />
-        </MotionStaggerItem>
-        </MotionStaggerGroup>
+          <aside class="dashboard-secondary">
+            <DashboardDailyVerseCard />
+            <DashboardAnnouncementsSection />
+            <DashboardQuickAccess />
+            <DashboardPrayerPreviewCard />
+          </aside>
+        </div>
       </template>
     </template>
 
     <template v-else-if="isPastorWithoutChurch">
-      <v-card class="rounded-xl pa-6 elevation-1 border-subtle">
+      <v-card class="app-surface pa-5">
         <div class="d-flex align-center mb-4">
           <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="48" class="mr-3">
             <Church size="24" :color="isDark ? '#f0975a' : '#B5472A'" />
@@ -170,7 +154,7 @@
     </template>
 
     <template v-else-if="isMemberWithPendingChurch">
-      <v-card class="rounded-xl pa-6 elevation-1 border-subtle">
+      <v-card class="app-surface pa-5">
         <div class="d-flex align-center mb-4">
           <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="48" class="mr-3">
             <Clock size="24" :color="isDark ? '#f0975a' : '#B5472A'" />
@@ -200,7 +184,7 @@
     </template>
 
     <template v-else-if="isMemberWithoutChurch">
-      <v-card class="rounded-xl pa-6 elevation-1 border-subtle">
+      <v-card class="app-surface pa-5">
         <div class="d-flex align-center mb-4">
           <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="48" class="mr-3">
             <Church size="24" :color="isDark ? '#f0975a' : '#B5472A'" />
@@ -240,6 +224,7 @@ import {
   type DepartmentSchedule,
 } from "../../composables/useDepartments";
 import { useMembers } from "../../composables/useMembers";
+import { usePermissions } from "../../composables/usePermissions";
 
 const router = useRouter();
 const { user, fetchMe } = useAuth();
@@ -247,9 +232,11 @@ const { isDark } = useThemeMode();
 const { createOwnChurch } = useChurch();
 const { getChurchSchedules, getDepartments } = useDepartments();
 const { getMembers } = useMembers();
+const { canRef } = usePermissions();
 
 
 const hasChurch = computed(() => user.value?.hasChurch === true);
+const canSeePastoralDashboard = canRef("PASTORAL_CARE_MANAGE");
 const isPastorWithoutChurch = computed(
   () => !hasChurch.value && user.value?.role === "PASTOR",
 );
@@ -385,13 +372,35 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-wrapper {
-  background: var(--app-color-background);
-  min-height: 100%;
+.border-subtle {
+  border: 1px solid var(--app-color-border-subtle);
 }
 
-.border-subtle {
-  border: 1px solid #f3f4f6;
+.dashboard-page {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.dashboard-primary,
+.dashboard-secondary {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.dashboard-primary :deep(.mb-8),
+.dashboard-secondary :deep(.mb-8),
+.dashboard-primary :deep(.mb-6),
+.dashboard-secondary :deep(.mb-6),
+.dashboard-primary :deep(.mb-4),
+.dashboard-secondary :deep(.mb-4),
+.dashboard-secondary :deep(.mb-3) {
+  margin-bottom: 0 !important;
 }
 
 .responsive-grid {
@@ -403,6 +412,13 @@ onMounted(() => {
 @media (min-width: 640px) {
   .responsive-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 960px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
+    align-items: start;
   }
 }
 </style>

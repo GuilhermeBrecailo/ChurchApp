@@ -27,11 +27,11 @@
     <v-btn
       v-if="hasChurch"
       class="flex-col custom-btn"
-      :active="route.path.startsWith('/ministery')"
-      @click="router.push('/ministery')"
+      :active="route.path.startsWith('/igreja') || route.path.startsWith('/ministery') || route.path.startsWith('/cultos') || route.path.startsWith('/pastoral')"
+      @click="router.push('/igreja')"
     >
-      <Users class="nav-icon" />
-      <span class="nav-label">Ministérios</span>
+      <Cross class="nav-icon" />
+      <span class="nav-label">Igreja</span>
     </v-btn>
 
     <v-btn
@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { House, BookOpen, User, Users, Cog } from "lucide-vue-next";
+import { House, BookOpen, User, Cross, Cog } from "lucide-vue-next";
 import { computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "../../../../composables/useAuth";
@@ -147,7 +147,7 @@ const adminTarget = computed(() =>
 }
 
 .custom-btn .nav-icon {
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  transition: transform var(--app-motion-duration-base) var(--app-motion-ease-standard) !important;
 }
 
 .custom-btn.v-btn--active {

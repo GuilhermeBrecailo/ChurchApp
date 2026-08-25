@@ -1,12 +1,12 @@
 <template>
   <v-card
     v-if="myAssignment"
-    class="my-assignment-card rounded-xl pa-5 mb-6 elevation-2"
+    class="my-assignment-card app-surface pa-4 mb-4"
   >
     <div class="d-flex align-center justify-space-between mb-3">
       <div class="d-flex align-center gap-2">
         <v-avatar size="34" class="assignment-avatar">
-          <CalendarCheck size="18" color="#fff" />
+          <CalendarCheck size="18" />
         </v-avatar>
         <div>
           <p class="assignment-kicker mb-0">Minha Escala</p>
@@ -38,8 +38,8 @@
 
     <div v-if="mySlot.confirmationStatus === 'PENDING'" class="d-flex gap-2 flex-wrap">
       <v-btn
-        color="white"
-        variant="flat"
+        color="purple-darken-3"
+        variant="tonal"
         size="small"
         class="text-none font-weight-bold confirm-btn"
         :loading="loading === 'CONFIRMED'"
@@ -49,7 +49,7 @@
         <CheckCircle size="15" class="mr-1" /> Confirmar
       </v-btn>
       <v-btn
-        color="white"
+        color="purple-darken-3"
         variant="outlined"
         size="small"
         class="text-none confirm-btn-outline"
@@ -60,7 +60,7 @@
         Talvez
       </v-btn>
       <v-btn
-        color="white"
+        color="grey"
         variant="text"
         size="small"
         class="text-none confirm-btn-text"
@@ -197,18 +197,18 @@ onMounted(async () => {
 
 <style scoped>
 .my-assignment-card {
-  background: linear-gradient(135deg, var(--app-color-accent) 0%, var(--app-color-accent-muted) 100%) !important;
-  color: #fff;
+  color: var(--app-color-text);
 }
 
 .assignment-avatar {
-  background: rgba(255, 255, 255, 0.2) !important;
+  background: var(--app-color-accent-tint) !important;
+  color: var(--app-color-accent) !important;
 }
 
 .assignment-kicker {
   font-size: 0.8rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  font-weight: 800;
+  color: var(--app-color-accent);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   line-height: 1.2;
@@ -217,55 +217,55 @@ onMounted(async () => {
 .assignment-dept {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--app-color-text-soft);
   line-height: 1.2;
 }
 
 .assignment-title {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--app-color-text);
   margin: 0;
 }
 
 .assignment-meta-icon {
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--app-color-text-muted);
 }
 
 .assignment-meta {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--app-color-text-soft);
 }
 
 .confirm-btn {
   color: var(--app-color-accent) !important;
-  background: #fff !important;
   border-radius: 8px;
 }
 
 .confirm-btn-outline {
-  color: #fff !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
+  color: var(--app-color-accent) !important;
+  border-color: color-mix(in srgb, var(--app-color-accent) 38%, var(--app-color-border)) !important;
   border-radius: 8px;
 }
 
 .confirm-btn-text {
-  color: rgba(255, 255, 255, 0.75) !important;
+  color: var(--app-color-text-muted) !important;
 }
 
 .decline-box {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 12px;
+  background: var(--app-color-surface-soft);
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: var(--app-radius-lg);
   padding: 12px;
 }
 
 .decline-input :deep(.v-field) {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #fff !important;
+  background: var(--app-color-surface) !important;
+  color: var(--app-color-text) !important;
 }
 
 .decline-input :deep(.v-label),
 .decline-input :deep(.v-field__input) {
-  color: rgba(255, 255, 255, 0.8) !important;
+  color: var(--app-color-text-soft) !important;
 }
 </style>

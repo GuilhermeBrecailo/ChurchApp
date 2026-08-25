@@ -1,9 +1,29 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+
+const hasNuxtModule = (moduleName: string) => {
+  try {
+    require.resolve(`${moduleName}/package.json`);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const modules = [
+  "@nuxtjs/tailwindcss",
+  "vuetify-nuxt-module",
+  "motion-v/nuxt",
+  ...(hasNuxtModule("@nuxtjs/sitemap") ? ["@nuxtjs/sitemap"] : []),
+];
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   buildDir: process.env.NUXT_BUILD_DIR || ".nuxt",
   devtools: { enabled: process.env.NUXT_DEVTOOLS === "true" },
-  modules: ["@nuxtjs/tailwindcss", "vuetify-nuxt-module", "motion-v/nuxt", "@nuxtjs/sitemap"],
+  modules,
   // site.url ancora as URLs absolutas do sitemap e do og:url - sem isso o
   // modulo gera loc relativo e o Google rejeita as entradas.
   site: {

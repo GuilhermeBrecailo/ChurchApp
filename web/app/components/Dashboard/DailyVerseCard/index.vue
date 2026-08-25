@@ -3,7 +3,7 @@
        nada aqui" so ocupa espaco na home. Tambem nao renderiza durante o
        carregamento pra nao aparecer e sumir quando a igreja nao tem versiculo. -->
   <NuxtLink v-if="!loading && verse" to="/content/verse" class="daily-verse-wrapper">
-    <v-card class="daily-verse-card rounded-xl pa-5 mb-8 elevation-1 border-subtle">
+    <v-card class="daily-verse-card app-surface app-interactive-surface pa-4 mb-4">
       <div class="d-flex align-center mb-3">
         <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="42" class="mr-3">
           <BookMarked size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
@@ -50,17 +50,6 @@ onMounted(loadVerse);
   text-decoration: none;
 }
 
-.daily-verse-card {
-  background: var(--app-color-surface);
-  transition:
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.2s ease;
-}
-
-.daily-verse-card:active {
-  transform: scale(0.99);
-}
-
 .daily-verse-text {
   font-size: 1rem;
   line-height: 1.7;
@@ -74,7 +63,4 @@ onMounted(loadVerse);
   color: var(--app-color-accent);
 }
 
-.border-subtle {
-  border: 1px solid var(--app-color-border);
-}
 </style>

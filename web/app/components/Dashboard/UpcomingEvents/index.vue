@@ -1,7 +1,7 @@
 <template>
   <!-- Sem culto futuro a secao inteira some: um card "nenhuma escala cadastrada"
        so ocupa espaco na home. -->
-  <div v-if="eventsList.length > 0">
+  <section v-if="eventsList.length > 0" class="upcoming-section">
     <div class="d-flex align-center mb-3">
       <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
         Próximos Cultos
@@ -15,18 +15,17 @@
       color="purple-darken-3"
       size="small"
       block
-      class="text-none rounded-xl mb-3"
+      class="text-none rounded-lg mb-3"
       to="/cultos"
     >
       Ver próximos cultos
     </v-btn>
 
-    <div class="d-flex flex-column gap-3 pb-4">
+    <div class="d-flex flex-column gap-3">
       <v-card
         v-for="(event, index) in eventsList"
         :key="event.id || index"
-        color="white"
-        class="rounded-xl pa-4 d-flex align-center elevation-1 flex-shrink-0 event-card"
+        class="event-card app-surface app-interactive-surface pa-3 d-flex align-center flex-shrink-0"
         role="button"
         tabindex="0"
         :aria-label="`Ver escala: ${event.title}`"
@@ -53,7 +52,7 @@
         <ChevronRight size="20" :color="isDark ? '#8b949e' : '#9CA3AF'" />
       </v-card>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -112,11 +111,11 @@ const goToSchedule = (id: string, occurrenceId: string | null) => {
 }
 
 .date-badge {
-  width: 52px;
-  height: 52px;
-  background: rgba(240, 151, 90, 0.18);
+  width: 46px;
+  height: 46px;
+  background: var(--app-color-accent-tint);
   color: var(--app-color-accent);
-  border-radius: 12px !important;
+  border-radius: var(--app-radius-sm) !important;
   flex: 0 0 auto;
 }
 
@@ -136,19 +135,8 @@ const goToSchedule = (id: string, occurrenceId: string | null) => {
 }
 
 .event-card {
-  cursor: pointer;
-  border: 1px solid var(--app-color-border) !important;
-  transition:
-    transform 0.16s cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 0.16s ease,
-    border-color 0.16s ease;
-  border-color: var(--app-color-border) !important;
-}
-
-.event-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3) !important;
-  border-color: var(--app-color-accent) !important;
+  border-color: transparent !important;
+  background: var(--app-color-surface-soft) !important;
 }
 
 .event-card:active {

@@ -59,6 +59,18 @@ export class PostAdapters {
     }
   }
 
+  private assertCanUploadImage(user: { role: string; roles: RoleContext[] }) {
+    if (
+      !hasPermission(user, "CONTENT_PUBLISH") &&
+      !hasPermission(user, "CULT_CREATE") &&
+      !hasPermission(user, "CULT_EDIT")
+    ) {
+      throw new DomainError(
+        "Voce nao tem permissao para enviar imagens da igreja",
+      );
+    }
+  }
+
   async listPosts(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
     this.assertCanPublish(user);
@@ -165,7 +177,7 @@ export class PostAdapters {
 
   async uploadImage(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    this.assertCanPublish(user);
+    this.assertCanUploadImage(user);
 
     const multipartRequest = request as FastifyRequest & {
       file: (options?: unknown) => Promise<{

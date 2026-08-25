@@ -1,7 +1,7 @@
 <template>
   <!-- So aparece quando ha pedido dos ultimos 7 dias: pedido antigo parado na
        home vira ruido, o historico completo fica em /prayer. -->
-  <div v-if="hasChurch && !loading && recentItems.length > 0" class="mb-6">
+  <section v-if="hasChurch && !loading && recentItems.length > 0" class="mb-4">
     <div class="d-flex align-center gap-2 mb-3">
       <Heart size="16" :color="isDark ? '#f0975a' : '#B5472A'" />
       <span class="preview-title">Pedidos de Oração</span>
@@ -10,7 +10,7 @@
     <v-card
       v-for="item in recentItems"
       :key="item.id"
-      class="prayer-preview-card rounded-xl pa-3 mb-2 elevation-0 cursor-pointer"
+      class="prayer-preview-card app-surface app-interactive-surface pa-3 mb-2"
       to="/prayer"
     >
       <div class="d-flex align-center gap-3">
@@ -38,12 +38,12 @@
       color="purple-darken-3"
       size="small"
       block
-      class="text-none mt-1 rounded-xl"
+      class="text-none mt-1 rounded-lg"
       to="/prayer"
     >
       <Heart size="14" class="mr-1" /> Ir para orações
     </v-btn>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">

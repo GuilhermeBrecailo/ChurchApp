@@ -16,6 +16,11 @@ export type AppPermission =
   | "MEMBER_CREATE"
   | "MEMBER_EDIT"
   | "MEMBER_DELETE"
+  | "CULT_CREATE"
+  | "CULT_EDIT"
+  | "CULT_DELETE"
+  | "CULT_ATTENDANCE_MANAGE"
+  | "PASTORAL_CARE_MANAGE"
   | "CONTENT_PUBLISH"
   | "ANNOUNCEMENT_PUBLISH";
 
@@ -26,6 +31,8 @@ export type PermissionModuleKey =
   | "ministryNotify"
   | "ministry"
   | "members"
+  | "cults"
+  | "pastoralCare"
   | "content"
   | "announcements";
 
@@ -118,6 +125,37 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "MEMBER_CREATE", label: "Cadastrar membros", description: "Adicionar e convidar membros", module: "members" },
       { key: "MEMBER_EDIT", label: "Editar membros", description: "Alterar dados dos membros", module: "members" },
       { key: "MEMBER_DELETE", label: "Remover membros", description: "Remover membros da igreja", module: "members" },
+    ],
+  },
+  {
+    key: "cults",
+    label: "Cultos",
+    description: "Criacao, edicao e presenca de cultos",
+    scope: "CHURCH",
+    permissions: [
+      { key: "CULT_CREATE", label: "Criar cultos", description: "Cadastrar novos cultos com data, horario e foto", module: "cults" },
+      { key: "CULT_EDIT", label: "Editar cultos", description: "Alterar dados e foto dos cultos", module: "cults" },
+      { key: "CULT_DELETE", label: "Apagar cultos", description: "Remover cultos sem escalas vinculadas", module: "cults" },
+      {
+        key: "CULT_ATTENDANCE_MANAGE",
+        label: "Gerenciar presença",
+        description: "Marcar membros e registrar presença do culto",
+        module: "cults",
+      },
+    ],
+  },
+  {
+    key: "pastoralCare",
+    label: "Cuidado pastoral",
+    description: "Painel pastoral, ausências e visitas",
+    scope: "CHURCH",
+    permissions: [
+      {
+        key: "PASTORAL_CARE_MANAGE",
+        label: "Gerenciar cuidado pastoral",
+        description: "Ver alertas pastorais e organizar visitas",
+        module: "pastoralCare",
+      },
     ],
   },
   {
@@ -214,6 +252,18 @@ export const ROLE_PRESETS: RolePreset[] = [
     label: "Comunicação",
     scope: "CHURCH",
     permissions: ["CONTENT_PUBLISH", "ANNOUNCEMENT_PUBLISH"],
+  },
+  {
+    key: "CULT_MANAGER",
+    label: "Gestor de cultos",
+    scope: "CHURCH",
+    permissions: ["CULT_CREATE", "CULT_EDIT", "CULT_DELETE", "CULT_ATTENDANCE_MANAGE"],
+  },
+  {
+    key: "PASTORAL_CARE",
+    label: "Cuidado pastoral",
+    scope: "CHURCH",
+    permissions: ["PASTORAL_CARE_MANAGE"],
   },
 ];
 

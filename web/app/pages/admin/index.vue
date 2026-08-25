@@ -2,10 +2,10 @@
   <div
     v-if="canAccessChurchAdmin"
     id="pastoral-admin"
-    class="church-admin-page pa-4 bg-grey-lighten-4 min-vh-100 pb-20"
+    class="church-admin-page app-operational-page pa-4 min-vh-100 pb-20"
   >
-    <div class="church-admin-hero mb-6">
-      <div class="min-w-0">
+    <div class="church-admin-hero app-page-header">
+      <div class="app-page-header-copy">
         <p v-if="isPlatformAdmin" class="platform-kicker mb-2">Admin pastoral</p>
         <div class="app-help-title-row">
           <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">
@@ -42,7 +42,7 @@
       <v-card
         v-for="item in visibleAdminHubItems"
         :key="item.route"
-        class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
+        class="member-card app-surface app-interactive-surface pa-3"
         role="button"
         tabindex="0"
         :aria-label="`Abrir ${item.title}`"
@@ -93,9 +93,9 @@
     </div>
   </div>
 
-  <div v-else class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
+  <div v-else class="pa-4 app-operational-page min-vh-100 pb-20">
     <v-card
-      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle permission-empty"
+      class="app-surface pa-6 d-flex flex-column align-center justify-center permission-empty"
     >
       <UserCheck size="34" color="#9CA3AF" class="mb-3" />
       <h1 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
@@ -237,7 +237,7 @@ onMounted(async () => {
   padding-bottom: 90px !important; /* Espaço para o Bottom Navigation */
 }
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
 }
 
 .stats-grid {
@@ -280,7 +280,7 @@ onMounted(async () => {
 .hub-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   margin-bottom: 24px;
 }
 
@@ -294,14 +294,6 @@ onMounted(async () => {
   grid-template-columns: 44px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  cursor: pointer;
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.member-card:active {
-  transform: scale(0.99);
 }
 
 .member-avatar {

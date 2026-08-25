@@ -236,5 +236,22 @@ describe("PostAdapters", () => {
       expect(mockWriteFile).toHaveBeenCalled();
       expect(result.url).toContain("/uploads/church/church-1/posts/");
     });
+
+    it("permite upload para cargo com permissao de criar culto", async () => {
+      const result = await adapters.uploadImage(
+        makeRequest({
+          role: "MEMBRO",
+          roles: [{ scope: "CHURCH", departmentId: null, permissions: ["CULT_CREATE"] }],
+          file: async () => ({
+            filename: "culto.png",
+            mimetype: "image/png",
+            toBuffer: async () => Buffer.from("imagem"),
+          }),
+        }),
+      );
+
+      expect(mockWriteFile).toHaveBeenCalled();
+      expect(result.key).toContain("/posts/");
+    });
   });
 });

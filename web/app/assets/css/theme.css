@@ -26,10 +26,21 @@
   --app-color-text: #111827;
   --app-color-text-soft: #4b5563;
   --app-color-text-muted: #6b7280;
+  --app-color-border-subtle: #eef2f7;
   --app-shadow-sm: 0 1px 3px rgba(17,24,39,0.06), 0 1px 2px rgba(17,24,39,0.04);
   --app-shadow-md: 0 4px 16px rgba(17,24,39,0.08), 0 2px 6px rgba(17,24,39,0.04);
   --app-shadow-lg: 0 12px 32px rgba(17,24,39,0.1), 0 4px 12px rgba(17,24,39,0.06);
+  --app-shadow-hover: 0 8px 20px rgba(17,24,39,0.09), 0 2px 6px rgba(17,24,39,0.05);
   --app-shadow-accent: 0 8px 24px rgba(181,71,42,0.22);
+  --app-radius-sm: 8px;
+  --app-radius-md: 10px;
+  --app-radius-lg: 12px;
+  --app-radius-card: 12px;
+  --app-motion-duration-fast: 160ms;
+  --app-motion-duration-base: 200ms;
+  --app-motion-duration-slow: 400ms;
+  --app-motion-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --app-motion-ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Paleta semântica "success" (presença, status positivo) — separada do accent terracota */
   --app-color-success: #0f766e;
@@ -124,6 +135,7 @@ body {
   --app-color-text: #e6edf3;
   --app-color-text-soft: #b1bac4;
   --app-color-text-muted: #8b949e;
+  --app-color-border-subtle: #303946;
   /*
    * Sombra preta sobre fundo quase preto (#0d1117) não cria profundidade
    * perceptível — por isso a elevação aqui depende principalmente do
@@ -134,6 +146,7 @@ body {
   --app-shadow-sm: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.26);
   --app-shadow-md: 0 4px 16px rgba(0,0,0,0.52), 0 2px 6px rgba(0,0,0,0.32);
   --app-shadow-lg: 0 12px 32px rgba(0,0,0,0.62), 0 4px 12px rgba(0,0,0,0.4);
+  --app-shadow-hover: 0 8px 22px rgba(0,0,0,0.46), 0 2px 8px rgba(0,0,0,0.32);
   --app-shadow-accent: 0 8px 24px rgba(240,151,90,0.3);
 
   /* Paleta semântica "success" no dark — mesmo valor já usado em text-teal-darken-2 */
@@ -161,6 +174,92 @@ body {
 .app-theme-light,
 .app-theme-dark {
   min-height: 100%;
+}
+
+/* ============================================================
+   PRODUCT UI HELPERS
+   ============================================================ */
+.app-operational-page {
+  min-height: 100%;
+  background: var(--app-color-background);
+  color: var(--app-color-text);
+}
+
+.app-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.app-page-header-copy {
+  min-width: 0;
+}
+
+.app-operational-page .app-page-title {
+  font-family: inherit;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.app-surface {
+  background: var(--app-color-surface) !important;
+  border: 1px solid var(--app-color-border-subtle) !important;
+  border-radius: var(--app-radius-card) !important;
+  box-shadow: none !important;
+}
+
+.app-surface-muted {
+  background: var(--app-color-surface-soft) !important;
+  border: 1px solid var(--app-color-border-subtle) !important;
+  border-radius: var(--app-radius-card) !important;
+}
+
+.app-interactive-surface {
+  cursor: pointer;
+  transition:
+    background-color var(--app-motion-duration-fast) ease,
+    border-color var(--app-motion-duration-fast) ease,
+    transform var(--app-motion-duration-fast) var(--app-motion-ease-standard);
+}
+
+.app-interactive-surface:hover {
+  border-color: color-mix(in srgb, var(--app-color-accent) 28%, var(--app-color-border)) !important;
+  transform: translateY(-1px);
+}
+
+.app-interactive-surface:active {
+  transform: scale(0.995);
+}
+
+.app-interactive-surface:focus-visible {
+  outline: 3px solid rgba(181, 71, 42, 0.32);
+  outline-offset: 2px;
+}
+
+.app-section-title {
+  color: var(--app-color-text);
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.app-section-copy {
+  color: var(--app-color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-interactive-surface {
+    transition: none;
+  }
+
+  .app-interactive-surface:hover,
+  .app-interactive-surface:active {
+    transform: none;
+  }
 }
 
 /* ============================================================

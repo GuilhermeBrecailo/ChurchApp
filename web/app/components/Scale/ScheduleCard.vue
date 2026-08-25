@@ -228,17 +228,17 @@ const userAssignmentStatusLabel = computed(() => {
 
 <style scoped>
 .schedule-card {
-  border: 1px solid #eef2f7;
+  border: 1px solid var(--app-color-border-subtle);
   cursor: pointer;
   overflow: hidden;
   transition:
-    border-color 0.16s ease,
-    box-shadow 0.16s ease,
-    transform 0.16s ease;
+    border-color var(--app-motion-duration-fast) ease,
+    box-shadow var(--app-motion-duration-fast) ease,
+    transform var(--app-motion-duration-fast) var(--app-motion-ease-standard);
 }
 
 .schedule-card:hover {
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45) !important;
+  box-shadow: var(--app-shadow-hover) !important;
   transform: translateY(-1px);
 }
 
@@ -300,9 +300,9 @@ const userAssignmentStatusLabel = computed(() => {
 
 .schedule-summary-item {
   min-height: 30px;
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
   border-radius: 999px;
-  background: #fafafa;
+  background: var(--app-color-surface-soft);
   padding: 6px 9px;
 }
 
@@ -311,9 +311,9 @@ const userAssignmentStatusLabel = computed(() => {
   align-items: center;
   gap: 14px;
   min-height: 42px;
-  border: 1px solid #f3f4f6;
-  border-radius: 8px;
-  background: #ffffff;
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: var(--app-radius-sm);
+  background: var(--app-color-surface);
   padding: 10px 12px;
 }
 
@@ -321,10 +321,10 @@ const userAssignmentStatusLabel = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid #fef3c7;
-  border-radius: 12px;
-  background: #fffbeb;
-  color: #92400e;
+  border: 1px solid color-mix(in srgb, var(--app-color-warning) 24%, var(--app-color-border));
+  border-radius: var(--app-radius-lg);
+  background: var(--app-color-warning-tint);
+  color: var(--app-color-warning);
   font-size: 0.78rem;
   font-weight: 700;
   padding: 9px 11px;
@@ -339,8 +339,8 @@ const userAssignmentStatusLabel = computed(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border: 1px solid #f2d3bd;
-  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--app-color-accent) 28%, var(--app-color-border));
+  border-radius: var(--app-radius-sm);
   background: var(--app-color-accent-tint, #F7E2D3);
   padding: 9px 10px;
 }
@@ -360,8 +360,8 @@ const userAssignmentStatusLabel = computed(() => {
 }
 
 .schedule-avatar {
-  border: 2px solid white;
-  box-shadow: 0 4px 10px rgba(17, 24, 39, 0.08);
+  border: 2px solid var(--app-color-surface);
+  box-shadow: var(--app-shadow-sm);
   font-size: 0.74rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -383,8 +383,8 @@ const userAssignmentStatusLabel = computed(() => {
   place-items: center;
   flex: 0 0 auto;
   color: #9ca3af;
-  background: #ffffff;
-  border: 1px dashed #d1d5db;
+  background: var(--app-color-surface);
+  border: 1px dashed var(--app-color-border-strong);
 }
 
 .volunteer-count {
@@ -411,7 +411,7 @@ const userAssignmentStatusLabel = computed(() => {
 
 .schedule-card-selected {
   border-color: var(--app-color-accent, #B5472A);
-  box-shadow: 0 10px 24px rgba(181, 71, 42, 0.14) !important;
+  box-shadow: var(--app-shadow-accent) !important;
 }
 
 .schedule-time-chip {

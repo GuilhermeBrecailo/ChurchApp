@@ -4,9 +4,8 @@
       <v-card
         v-for="(item, index) in menuItems"
         :key="index"
-        color="white"
         min-width="104"
-        class="quick-access-card rounded-xl pa-4 d-flex flex-column align-center justify-center flex-grow-1 elevation-1 cursor-pointer"
+        class="quick-access-card app-surface app-interactive-surface pa-3 d-flex flex-column align-center justify-center flex-grow-1"
         role="button"
         tabindex="0"
         :aria-label="item.title"
@@ -25,12 +24,16 @@
 
 <script setup lang="ts">
 import { useRouter } from "vue-router";
-import { CalendarCheck, CalendarDays, Church, Heart, Settings, Users } from "lucide-vue-next";
+import { computed } from "vue";
+import { CalendarCheck, CalendarDays, Church, HandHeart, Heart, Settings, Users } from "lucide-vue-next";
+import { usePermissions } from "../../../../../composables/usePermissions";
 
 const router = useRouter();
 const { isDark } = useThemeMode();
+const { canRef } = usePermissions();
+const canManagePastoralCare = canRef("PASTORAL_CARE_MANAGE");
 
-const menuItems = [
+const baseMenuItems = [
   {
     title: "Escalas",
     icon: CalendarDays,
@@ -87,6 +90,23 @@ const menuItems = [
   },
 ];
 
+const menuItems = computed(() => [
+  ...(canManagePastoralCare.value
+    ? [
+        {
+          title: "Pastoral",
+          icon: HandHeart,
+          iconColor: "#7C3AED",
+          bgColor: "#F3E8FF",
+          iconColorDark: "#c4b5fd",
+          bgColorDark: "rgba(196,181,253,0.14)",
+          route: "/pastoral/visitas",
+        },
+      ]
+    : []),
+  ...baseMenuItems,
+]);
+
 const goToRoute = (route: string) => {
   if (route) {
     router.push(route);
@@ -117,29 +137,5 @@ const goToRoute = (route: string) => {
   font-size: 0.8rem;
   font-weight: 700;
   color: var(--app-color-text);
-}
-
-.cursor-pointer {
-  cursor: pointer;
-  border: 1px solid var(--app-color-border) !important;
-  transition:
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.2s ease,
-    border-color 0.2s ease !important;
-}
-
-.cursor-pointer:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(17, 24, 39, 0.09) !important;
-  border-color: var(--app-color-accent-tint) !important;
-}
-
-.cursor-pointer:active {
-  transform: scale(0.95);
-}
-
-.cursor-pointer:focus-visible {
-  outline: 3px solid rgba(181, 71, 42, 0.32);
-  outline-offset: 2px;
 }
 </style>

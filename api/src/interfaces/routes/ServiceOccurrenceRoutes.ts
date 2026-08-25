@@ -14,6 +14,14 @@ export async function ServiceOccurrenceRoutes(app: FastifyInstance) {
     "/api/church/service-occurrences/:id",
     controllerHandler(adapters.getById.bind(adapters)),
   );
+  app.patch(
+    "/api/church/service-occurrences/:id",
+    controllerHandler(adapters.update.bind(adapters)),
+  );
+  app.delete(
+    "/api/church/service-occurrences/:id",
+    controllerHandler(adapters.remove.bind(adapters)),
+  );
   app.post(
     "/api/church/service-occurrences/:id/attendees",
     controllerHandler(adapters.addAttendee.bind(adapters)),

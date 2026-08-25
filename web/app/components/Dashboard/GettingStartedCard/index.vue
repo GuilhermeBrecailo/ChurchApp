@@ -1,5 +1,5 @@
 <template>
-  <v-card class="rounded-xl pa-5 mb-6 elevation-1 setup-card">
+  <v-card class="app-surface pa-4 mb-4 setup-card">
     <div class="d-flex align-center mb-1">
       <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="40" class="mr-3">
         <Sparkles size="20" :color="isDark ? '#f0975a' : '#B5472A'" />

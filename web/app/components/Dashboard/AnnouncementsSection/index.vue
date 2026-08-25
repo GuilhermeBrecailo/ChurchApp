@@ -1,5 +1,5 @@
 <template>
-  <section v-if="announcements.length" class="mb-8">
+  <section v-if="announcements.length" class="dashboard-section mb-4">
     <div class="d-flex justify-space-between align-center mb-3">
       <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
         Avisos
@@ -10,7 +10,7 @@
       <v-card
         v-for="announcement in visibleAnnouncements"
         :key="announcement.id"
-        class="rounded-xl pa-4 elevation-1 bg-white border-subtle"
+        class="announcement-card app-surface pa-3"
       >
         <div class="d-flex align-center justify-space-between gap-3 mb-2">
           <div class="d-flex align-center min-w-0">
@@ -62,7 +62,11 @@ onMounted(loadAnnouncements);
 <style scoped>
 .announcement-list {
   display: grid;
-  gap: 12px;
+  gap: 8px;
+}
+
+.announcement-card {
+  box-shadow: none !important;
 }
 
 .announcement-body {

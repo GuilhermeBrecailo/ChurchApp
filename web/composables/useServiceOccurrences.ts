@@ -26,29 +26,36 @@ export interface OccurrenceAttendee {
 export interface ServiceOccurrenceDetail {
   id: string;
   date: string;
-  serviceTimeId: string;
-  serviceTime: { id: string; label: string; weekday: number; time: string };
+  title?: string | null;
+  time?: string | null;
+  description?: string | null;
+  imageUrl?: string | null;
+  imageKey?: string | null;
+  serviceTimeId: string | null;
+  serviceTime?: { id: string; label: string; weekday: number; time: string } | null;
   schedules: OccurrenceSchedule[];
   attendees: OccurrenceAttendee[];
 }
 
 export interface UpcomingOccurrence {
-  serviceTimeId: string;
+  serviceTimeId: string | null;
   label: string;
   weekday: number;
   time: string;
   date: string;
   occurrenceId: string | null;
+  imageUrl?: string | null;
   scheduleCount: number;
 }
 
 export interface RecentOccurrence {
   id: string;
-  serviceTimeId: string;
+  serviceTimeId: string | null;
   label: string;
   weekday: number;
   time: string;
   date: string;
+  imageUrl?: string | null;
   scheduleCount: number;
   attendeeCount: number;
 }
@@ -56,6 +63,15 @@ export interface RecentOccurrence {
 export interface OccurrenceListResponse {
   upcoming: UpcomingOccurrence[];
   recent: RecentOccurrence[];
+}
+
+export interface ManualCultPayload {
+  title: string;
+  date: string;
+  time: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  imageKey?: string | null;
 }
 
 export const useServiceOccurrences = () => {
@@ -87,6 +103,16 @@ export const useServiceOccurrences = () => {
     });
   };
 
+  const createOccurrence = async (
+    body: ManualCultPayload,
+  ): Promise<ApiResponse<ServiceOccurrenceDetail>> => {
+    return await $customFetch<ServiceOccurrenceDetail>(base, {
+      method: "POST",
+      headers: authHeaders(),
+      body,
+    });
+  };
+
   const listOccurrences = async (
     daysAhead = 30,
   ): Promise<ApiResponse<OccurrenceListResponse>> => {
@@ -101,6 +127,26 @@ export const useServiceOccurrences = () => {
   ): Promise<ApiResponse<ServiceOccurrenceDetail>> => {
     return await $customFetch<ServiceOccurrenceDetail>(`${base}/${id}`, {
       method: "GET",
+      headers: authHeadersNoBody(),
+    });
+  };
+
+  const updateOccurrence = async (
+    id: string,
+    body: Partial<ManualCultPayload>,
+  ): Promise<ApiResponse<ServiceOccurrenceDetail>> => {
+    return await $customFetch<ServiceOccurrenceDetail>(`${base}/${id}`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body,
+    });
+  };
+
+  const deleteOccurrence = async (
+    id: string,
+  ): Promise<ApiResponse<{ success: boolean }>> => {
+    return await $customFetch<{ success: boolean }>(`${base}/${id}`, {
+      method: "DELETE",
       headers: authHeadersNoBody(),
     });
   };
@@ -128,8 +174,11 @@ export const useServiceOccurrences = () => {
 
   return {
     resolveOccurrence,
+    createOccurrence,
     listOccurrences,
     getOccurrence,
+    updateOccurrence,
+    deleteOccurrence,
     addAttendee,
     removeAttendee,
   };

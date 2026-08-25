@@ -83,6 +83,7 @@ model Crunch {
     birthdayMessageSetting BirthdayMessageSetting?
     serviceAttendances ServiceAttendance[]
     serviceOccurrences ServiceOccurrence[]
+    pastoralVisits PastoralVisit[]
 }
 
 model MercadoPagoWebhookNotification {
@@ -189,6 +190,7 @@ model User {
     prayerRequests PrayerRequest[]
     posts Post[]
     rosterMember RosterMember?
+    assignedPastoralVisits PastoralVisit[] @relation("PastoralVisitResponsible")
 }
 
 model ChurchMembership {
@@ -249,9 +251,35 @@ model RosterMember {
 
     messageLogRecipients MessageLogRecipient[]
     serviceAttendances   ServiceOccurrenceAttendee[]
+    pastoralVisits       PastoralVisit[]
 
     @@index([crunchId])
     @@index([crunchId, status])
+}
+
+model PastoralVisit {
+    id          String   @id @default(uuid())
+    reason      String
+    priority    String   @default("MEDIUM")
+    status      String   @default("OPEN")
+    scheduledAt DateTime?
+    completedAt DateTime?
+    notes       String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    rosterMemberId String
+    rosterMember   RosterMember @relation(fields: [rosterMemberId], references: [id], onDelete: Cascade)
+
+    responsibleId String?
+    responsible   User? @relation("PastoralVisitResponsible", fields: [responsibleId], references: [id], onDelete: SetNull)
+
+    @@index([crunchId, status, scheduledAt])
+    @@index([rosterMemberId])
+    @@index([responsibleId])
 }
 
 model DailyVerse {
@@ -322,13 +350,18 @@ model ServiceTime {
 model ServiceOccurrence {
     id        String   @id @default(uuid())
     date      DateTime
+    title     String?
+    time      String?
+    description String?
+    imageUrl  String?
+    imageKey  String?
     createdAt DateTime @default(now())
 
     crunchId String
     crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
 
-    serviceTimeId String
-    serviceTime   ServiceTime @relation(fields: [serviceTimeId], references: [id], onDelete: Cascade)
+    serviceTimeId String?
+    serviceTime   ServiceTime? @relation(fields: [serviceTimeId], references: [id], onDelete: Cascade)
 
     schedules Schedule[]
     attendees ServiceOccurrenceAttendee[]
@@ -844,4 +877,3 @@ model BirthdayMessageSetting {
     templateId String?
     template   MessageTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 }
-

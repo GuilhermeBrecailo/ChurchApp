@@ -807,10 +807,10 @@ watch(slug, (nextSlug, previousSlug) => {
 }
 
 .schedule-board {
-  border-bottom: 1px solid var(--line);
-  border-left: 3px solid var(--church-accent);
-  border-top: 1px solid var(--line);
-  padding: 14px 0 14px 16px;
+  background: color-mix(in srgb, var(--card) 72%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
 }
 
 .schedule-board-list {
@@ -900,9 +900,8 @@ watch(slug, (nextSlug, previousSlug) => {
 .feed-card {
   background: var(--card);
   border: 1px solid var(--line);
-  border-left: 3px solid var(--church-accent);
   border-radius: 8px;
-  padding: 18px 18px 18px 20px;
+  padding: 18px;
   position: relative;
 }
 

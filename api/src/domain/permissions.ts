@@ -16,6 +16,11 @@ export type PermissionKey =
   | "MEMBER_CREATE"
   | "MEMBER_EDIT"
   | "MEMBER_DELETE"
+  | "CULT_CREATE"
+  | "CULT_EDIT"
+  | "CULT_DELETE"
+  | "CULT_ATTENDANCE_MANAGE"
+  | "PASTORAL_CARE_MANAGE"
   | "CONTENT_PUBLISH"
   | "ANNOUNCEMENT_PUBLISH";
 
@@ -42,6 +47,11 @@ export const PERMISSIONS: PermissionDefinition[] = [
   { key: "MEMBER_CREATE", scope: "CHURCH", resource: "members", action: "create", label: "Cadastrar membros" },
   { key: "MEMBER_EDIT", scope: "CHURCH", resource: "members", action: "edit", label: "Editar membros" },
   { key: "MEMBER_DELETE", scope: "CHURCH", resource: "members", action: "delete", label: "Remover membros" },
+  { key: "CULT_CREATE", scope: "CHURCH", resource: "cults", action: "create", label: "Criar cultos" },
+  { key: "CULT_EDIT", scope: "CHURCH", resource: "cults", action: "edit", label: "Editar cultos" },
+  { key: "CULT_DELETE", scope: "CHURCH", resource: "cults", action: "delete", label: "Apagar cultos" },
+  { key: "CULT_ATTENDANCE_MANAGE", scope: "CHURCH", resource: "cults", action: "manage", label: "Gerenciar presença de culto" },
+  { key: "PASTORAL_CARE_MANAGE", scope: "CHURCH", resource: "pastoralCare", action: "manage", label: "Gerenciar cuidado pastoral" },
   { key: "CONTENT_PUBLISH", scope: "CHURCH", resource: "content", action: "publish", label: "Publicar versículo e devocional" },
   { key: "ANNOUNCEMENT_PUBLISH", scope: "CHURCH", resource: "announcements", action: "publish", label: "Publicar avisos da igreja" },
 ];
@@ -133,5 +143,17 @@ export const ROLE_PRESETS: RolePreset[] = [
     label: "Comunicação",
     scope: "CHURCH",
     permissions: ["CONTENT_PUBLISH", "ANNOUNCEMENT_PUBLISH"],
+  },
+  {
+    key: "CULT_MANAGER",
+    label: "Gestor de cultos",
+    scope: "CHURCH",
+    permissions: ["CULT_CREATE", "CULT_EDIT", "CULT_DELETE", "CULT_ATTENDANCE_MANAGE"],
+  },
+  {
+    key: "PASTORAL_CARE",
+    label: "Cuidado pastoral",
+    scope: "CHURCH",
+    permissions: ["PASTORAL_CARE_MANAGE"],
   },
 ];

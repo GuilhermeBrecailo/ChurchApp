@@ -118,7 +118,7 @@
         :schedules-error="schedulesError"
         :can-manage-schedules="canManageSchedules"
         :format-schedule-date="formatScheduleDate"
-        @create="isScheduleDialogOpen = true"
+        @create="openScheduleCreateDialog"
         @open-media="openScheduleMediaItem"
         @open-assignments="openAssignmentsDialog"
         @edit="openScheduleEditDialog"
@@ -176,6 +176,7 @@
       :song-options="songOptions"
       :resource-options="resourceOptions"
       :service-time-options="serviceTimeOptions"
+      :locked-cult-label="linkedCultLabel"
       :create-schedule-error="createScheduleError"
       :is-creating-schedule="isCreatingSchedule"
       @close="closeScheduleDialog"
@@ -344,7 +345,10 @@ import { useMembers, type ChurchMember } from "../../../composables/useMembers";
 import { useChurchRoles, type ChurchRole, type MemberRole } from "../../../composables/useChurchRoles";
 import { usePermissions } from "../../../composables/usePermissions";
 import { useServiceTimes } from "../../../composables/useServiceTimes";
-import { useServiceOccurrences } from "../../../composables/useServiceOccurrences";
+import {
+  useServiceOccurrences,
+  type ServiceOccurrenceDetail,
+} from "../../../composables/useServiceOccurrences";
 
 const route = useRoute();
 const router = useRouter();
@@ -385,7 +389,7 @@ const {
 const { getMembers } = useMembers();
 const { getRoles, addMemberRole, removeMemberRole } = useChurchRoles();
 const { serviceTimes, loadServiceTimes } = useServiceTimes();
-const { resolveOccurrence } = useServiceOccurrences();
+const { resolveOccurrence, getOccurrence } = useServiceOccurrences();
 
 onMounted(() => {
   if (!serviceTimes.value.length) loadServiceTimes();
@@ -476,6 +480,7 @@ const { can } = usePermissions();
 const department = ref<ChurchDepartment | null>(null);
 const tasks = ref<DepartmentTask[]>([]);
 const schedules = ref<DepartmentSchedule[]>([]);
+const linkedCult = ref<ServiceOccurrenceDetail | null>(null);
 const showAllSchedules = ref(false);
 const visibleSchedules = computed(() =>
   showAllSchedules.value ? schedules.value : schedules.value.slice(0, 1),
@@ -584,7 +589,7 @@ const canSendNotifications = computed(
   () =>
     isChurchWideManager.value ||
     isDepartmentLeader.value ||
-    can("MINISTRY_NOTIFY", departmentId.value),
+    can("MINISTRY_NOTIFY", departmentId),
 );
 
 const taskForm = reactive({
@@ -604,6 +609,18 @@ const scheduleForm = reactive({
   rehearsalNotes: "",
   songIds: [] as string[],
   resourceIds: [] as string[],
+});
+
+const linkedCultLabel = computed(() => {
+  if (!linkedCult.value) return "";
+  const title = linkedCult.value.title || linkedCult.value.serviceTime?.label || "Culto";
+  const time = linkedCult.value.time || linkedCult.value.serviceTime?.time;
+  const date = new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(new Date(linkedCult.value.date));
+
+  return [title, date, time].filter(Boolean).join(" · ");
 });
 
 const resourceForm = reactive({
@@ -1114,6 +1131,33 @@ const loadSchedules = async () => {
   schedules.value = data ?? [];
 };
 
+const loadLinkedCultScheduleDraft = async () => {
+  const cultQuery = Array.isArray(route.query.culto)
+    ? route.query.culto[0]
+    : route.query.culto;
+
+  if (!cultQuery) return;
+
+  const { data, error } = await getOccurrence(String(cultQuery));
+
+  activeTab.value = "schedules";
+
+  if (error || !data) {
+    createScheduleError.value = error || "Não foi possível carregar o culto selecionado.";
+    isScheduleDialogOpen.value = true;
+    return;
+  }
+
+  linkedCult.value = data;
+  resetScheduleForm();
+  scheduleForm.title = `Escala - ${data.title || data.serviceTime?.label || "Culto"}`;
+  scheduleForm.date = data.date.slice(0, 10);
+  scheduleForm.time = data.time || data.serviceTime?.time || "";
+  scheduleForm.serviceTimeId = data.serviceTimeId ?? "";
+  createScheduleError.value = "";
+  isScheduleDialogOpen.value = true;
+};
+
 const loadResources = async () => {
   resourcesError.value = "";
 
@@ -1267,10 +1311,28 @@ const resetScheduleForm = () => {
   editingScheduleId.value = "";
 };
 
+const clearLinkedCultQuery = () => {
+  if (!route.query.culto) return;
+
+  const nextQuery = { ...route.query };
+  delete nextQuery.culto;
+  router.replace({ query: nextQuery });
+};
+
 const closeScheduleDialog = () => {
   isScheduleDialogOpen.value = false;
   createScheduleError.value = "";
   resetScheduleForm();
+  linkedCult.value = null;
+  clearLinkedCultQuery();
+};
+
+const openScheduleCreateDialog = () => {
+  linkedCult.value = null;
+  clearLinkedCultQuery();
+  resetScheduleForm();
+  createScheduleError.value = "";
+  isScheduleDialogOpen.value = true;
 };
 
 const resetResourceForm = () => {
@@ -1546,7 +1608,9 @@ const toTimeInputValue = (value: string) => {
   return Number.isNaN(date.getTime()) ? "" : date.toTimeString().slice(0, 5);
 };
 
-const openScheduleEditDialog = (schedule: DepartmentSchedule) => {
+const openScheduleEditDialog = async (schedule: DepartmentSchedule) => {
+  linkedCult.value = null;
+  createScheduleError.value = "";
   editingScheduleId.value = schedule.id;
   scheduleForm.title = schedule.description;
   scheduleForm.date = toDateInputValue(schedule.date);
@@ -1567,7 +1631,18 @@ const openScheduleEditDialog = (schedule: DepartmentSchedule) => {
     schedule.mediaItems
       ?.filter((item) => item.mediaItem.category !== "MUSIC")
       .map((item) => item.mediaItemId) || [];
-  createScheduleError.value = "";
+
+  if (schedule.serviceOccurrenceId && !schedule.serviceOccurrence?.serviceTimeId) {
+    const { data, error } = await getOccurrence(schedule.serviceOccurrenceId);
+
+    if (data) {
+      linkedCult.value = data;
+    } else {
+      createScheduleError.value =
+        error || "Não foi possível carregar o culto vinculado a esta escala.";
+    }
+  }
+
   isScheduleDialogOpen.value = true;
 };
 
@@ -1585,7 +1660,7 @@ const handleSaveSchedule = async () => {
     return;
   }
 
-  if (!scheduleForm.serviceTimeId) {
+  if (!linkedCult.value && !scheduleForm.serviceTimeId) {
     createScheduleError.value = "Escolha o culto da escala.";
     return;
   }
@@ -1593,10 +1668,11 @@ const handleSaveSchedule = async () => {
   isCreatingSchedule.value = true;
 
   try {
-    const { data: occurrence, error: occurrenceError } = await resolveOccurrence(
-      scheduleForm.serviceTimeId,
-      scheduleForm.date,
-    );
+    const occurrenceResult = linkedCult.value
+      ? { data: linkedCult.value, error: null }
+      : await resolveOccurrence(scheduleForm.serviceTimeId, scheduleForm.date);
+
+    const { data: occurrence, error: occurrenceError } = occurrenceResult;
 
     if (occurrenceError || !occurrence) {
       createScheduleError.value = occurrenceError || "Não foi possível vincular o culto.";
@@ -2328,6 +2404,7 @@ onMounted(async () => {
     loadDepartmentMembers(),
     loadMinistryRoles(),
   ]);
+  await loadLinkedCultScheduleDraft();
 });
 </script>
 

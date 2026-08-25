@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
-import qrcode from "qrcode-generator";
+import QRCode from "qrcode";
 
 const props = withDefaults(
   defineProps<{
@@ -22,34 +22,15 @@ const render = () => {
   const canvas = canvasRef.value;
   if (!canvas || !props.value) return;
 
-  // typeNumber 0 deixa a lib escolher a menor versao do QR que caiba no
-  // conteudo; correcao de erro "M" e o padrao equilibrado (tolera sujeira/
-  // dobra no papel sem deixar o QR maior que o necessario).
-  const qr = qrcode(0, "M");
-  qr.addData(props.value);
-  qr.make();
-
-  const moduleCount = qr.getModuleCount();
-  const cellSize = Math.floor(props.size / moduleCount) || 1;
-  const pixelSize = cellSize * moduleCount;
-
-  canvas.width = pixelSize;
-  canvas.height = pixelSize;
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, pixelSize, pixelSize);
-  ctx.fillStyle = "#000000";
-
-  for (let row = 0; row < moduleCount; row += 1) {
-    for (let col = 0; col < moduleCount; col += 1) {
-      if (qr.isDark(row, col)) {
-        ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
-      }
-    }
-  }
+  QRCode.toCanvas(canvas, props.value, {
+    errorCorrectionLevel: "M",
+    margin: 1,
+    width: props.size,
+    color: {
+      dark: "#000000",
+      light: "#ffffff",
+    },
+  });
 };
 
 onMounted(render);

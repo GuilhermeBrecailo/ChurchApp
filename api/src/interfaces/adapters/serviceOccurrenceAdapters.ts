@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { resolveActiveChurchContext, RoleContext } from "../utils/churchContext";
-import { isPrivilegedRole } from "../../application/Services/Auth/AuthorizationService";
+import { hasPermission } from "../../application/Services/Auth/AuthorizationService";
 import { calculateUpcomingServiceOccurrences } from "../../application/Services/ServiceTime/ServiceTimeOccurrences";
 
 type CurrentUser = {
@@ -27,6 +27,11 @@ function getAuthUserId(request: FastifyRequest) {
 const occurrenceSelect = {
   id: true,
   date: true,
+  title: true,
+  time: true,
+  description: true,
+  imageUrl: true,
+  imageKey: true,
   serviceTimeId: true,
   serviceTime: { select: { id: true, label: true, weekday: true, time: true } },
   schedules: {
@@ -67,9 +72,24 @@ export class ServiceOccurrenceAdapters {
     };
   }
 
+  private assertCanCreate(user: CurrentUser) {
+    if (hasPermission(user, "CULT_CREATE")) return;
+    throw new DomainError("Sem permissão para criar cultos");
+  }
+
+  private assertCanEdit(user: CurrentUser) {
+    if (hasPermission(user, "CULT_EDIT")) return;
+    throw new DomainError("Sem permissão para editar cultos");
+  }
+
+  private assertCanDelete(user: CurrentUser) {
+    if (hasPermission(user, "CULT_DELETE")) return;
+    throw new DomainError("Sem permissão para apagar cultos");
+  }
+
   private assertCanManageAttendance(user: CurrentUser) {
-    if (isPrivilegedRole(user)) return;
-    throw new DomainError("Apenas pastores ou administradores podem gerenciar presença");
+    if (hasPermission(user, "CULT_ATTENDANCE_MANAGE")) return;
+    throw new DomainError("Sem permissão para gerenciar presença");
   }
 
   private parseDateKey(raw: unknown) {
@@ -82,13 +102,50 @@ export class ServiceOccurrenceAdapters {
     return date;
   }
 
+  private parseTime(raw: unknown) {
+    if (typeof raw !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(raw.trim())) {
+      throw new DomainError("Horário do culto inválido");
+    }
+    return raw.trim();
+  }
+
+  private parseOptionalString(raw: unknown) {
+    return typeof raw === "string" && raw.trim() ? raw.trim() : null;
+  }
+
   // Mesma chave dia-a-dia que ServiceAttendance ja usa (new Date("YYYY-MM-DD"),
   // meia-noite UTC) - so nao referencia o modelo dela, so o padrao de data.
   async resolveOrCreate(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    const body = request.body as { serviceTimeId?: string; date?: string };
+    const body = request.body as {
+      serviceTimeId?: string;
+      date?: string;
+      title?: string;
+      time?: string;
+      description?: string | null;
+      imageUrl?: string | null;
+      imageKey?: string | null;
+    };
 
-    if (!body.serviceTimeId) throw new DomainError("Culto não informado");
+    if (!body.serviceTimeId) {
+      this.assertCanCreate(user);
+      if (!body.title?.trim()) throw new DomainError("Título do culto é obrigatório");
+
+      return $prismaClient.serviceOccurrence.create({
+        data: {
+          id: crypto.randomUUID(),
+          crunchId: user.crunchId,
+          title: body.title.trim(),
+          date: this.parseDateKey(body.date),
+          time: this.parseTime(body.time),
+          description: this.parseOptionalString(body.description),
+          imageUrl: this.parseOptionalString(body.imageUrl),
+          imageKey: this.parseOptionalString(body.imageKey),
+        },
+        select: occurrenceSelect,
+      });
+    }
+
     const date = this.parseDateKey(body.date);
 
     const serviceTime = await $prismaClient.serviceTime.findUnique({
@@ -133,6 +190,9 @@ export class ServiceOccurrenceAdapters {
       select: {
         id: true,
         date: true,
+        title: true,
+        time: true,
+        imageUrl: true,
         serviceTimeId: true,
         serviceTime: { select: { id: true, label: true, weekday: true, time: true } },
         _count: { select: { schedules: true, attendees: true } },
@@ -147,7 +207,7 @@ export class ServiceOccurrenceAdapters {
       ]),
     );
 
-    const upcoming = computed.map((occurrence) => {
+    const generatedUpcoming = computed.map((occurrence) => {
       const dateKey = occurrence.startsAt.slice(0, 10);
       const real = realByKey.get(`${occurrence.id}:${dateKey}`);
 
@@ -162,6 +222,28 @@ export class ServiceOccurrenceAdapters {
       };
     });
 
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const manualUpcoming = realOccurrences
+      .filter(
+        (occurrence) =>
+          !occurrence.serviceTimeId &&
+          occurrence.date.toISOString().slice(0, 10) >= todayKey,
+      )
+      .map((occurrence) => ({
+        serviceTimeId: null,
+        label: occurrence.title ?? "Culto",
+        weekday: occurrence.date.getUTCDay(),
+        time: occurrence.time ?? "00:00",
+        date: occurrence.date.toISOString().slice(0, 10),
+        imageUrl: occurrence.imageUrl,
+        occurrenceId: occurrence.id,
+        scheduleCount: occurrence._count.schedules,
+      }));
+
+    const upcoming = [...manualUpcoming, ...generatedUpcoming].sort(
+      (a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`),
+    );
+
     const past = realOccurrences.filter((occurrence) => occurrence.date < new Date());
 
     return {
@@ -169,10 +251,11 @@ export class ServiceOccurrenceAdapters {
       recent: past.map((occurrence) => ({
         id: occurrence.id,
         serviceTimeId: occurrence.serviceTimeId,
-        label: occurrence.serviceTime.label,
-        weekday: occurrence.serviceTime.weekday,
-        time: occurrence.serviceTime.time,
+        label: occurrence.title ?? occurrence.serviceTime?.label ?? "Culto",
+        weekday: occurrence.serviceTime?.weekday ?? occurrence.date.getUTCDay(),
+        time: occurrence.time ?? occurrence.serviceTime?.time ?? "00:00",
         date: occurrence.date.toISOString().slice(0, 10),
+        imageUrl: occurrence.imageUrl,
         scheduleCount: occurrence._count.schedules,
         attendeeCount: occurrence._count.attendees,
       })),
@@ -191,6 +274,76 @@ export class ServiceOccurrenceAdapters {
 
     if (!occurrence) throw new DomainError("Culto não encontrado");
     return occurrence;
+  }
+
+  async update(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    this.assertCanEdit(user);
+
+    const { id } = request.params as { id?: string };
+    if (!id) throw new DomainError("Culto não informado");
+
+    const existing = await $prismaClient.serviceOccurrence.findFirst({
+      where: { id, crunchId: user.crunchId },
+      select: { id: true },
+    });
+    if (!existing) throw new DomainError("Culto não encontrado");
+
+    const body = request.body as {
+      title?: unknown;
+      date?: unknown;
+      time?: unknown;
+      description?: unknown;
+      imageUrl?: unknown;
+      imageKey?: unknown;
+    };
+
+    const data: {
+      title?: string;
+      date?: Date;
+      time?: string;
+      description?: string | null;
+      imageUrl?: string | null;
+      imageKey?: string | null;
+    } = {};
+
+    if (body.title !== undefined) {
+      if (typeof body.title !== "string" || !body.title.trim()) {
+        throw new DomainError("Título do culto é obrigatório");
+      }
+      data.title = body.title.trim();
+    }
+    if (body.date !== undefined) data.date = this.parseDateKey(body.date);
+    if (body.time !== undefined) data.time = this.parseTime(body.time);
+    if (body.description !== undefined) data.description = this.parseOptionalString(body.description);
+    if (body.imageUrl !== undefined) data.imageUrl = this.parseOptionalString(body.imageUrl);
+    if (body.imageKey !== undefined) data.imageKey = this.parseOptionalString(body.imageKey);
+
+    return $prismaClient.serviceOccurrence.update({
+      where: { id },
+      data,
+      select: occurrenceSelect,
+    });
+  }
+
+  async remove(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    this.assertCanDelete(user);
+
+    const { id } = request.params as { id?: string };
+    if (!id) throw new DomainError("Culto não informado");
+
+    const occurrence = await $prismaClient.serviceOccurrence.findFirst({
+      where: { id, crunchId: user.crunchId },
+      select: { id: true, schedules: { select: { id: true } } },
+    });
+    if (!occurrence) throw new DomainError("Culto não encontrado");
+    if (occurrence.schedules.length > 0) {
+      throw new DomainError("Nao e possivel excluir culto com escalas vinculadas");
+    }
+
+    await $prismaClient.serviceOccurrence.delete({ where: { id } });
+    return { success: true };
   }
 
   async addAttendee(request: FastifyRequest) {

@@ -34,7 +34,17 @@
           :disabled="isCreatingSchedule"
         />
 
+        <div v-if="lockedCultLabel" class="locked-cult mb-4">
+          <v-icon size="20" color="purple-darken-3">mdi-church</v-icon>
+          <div class="min-w-0">
+            <p class="text-caption text-grey-darken-1 mb-0">Culto selecionado</p>
+            <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+              {{ lockedCultLabel }}
+            </p>
+          </div>
+        </div>
         <v-select
+          v-else
           v-model="scheduleForm.serviceTimeId"
           label="Culto"
           :items="serviceTimeOptions"
@@ -234,6 +244,7 @@ const props = defineProps<{
   songOptions: { label: string; value: string }[];
   resourceOptions: { label: string; value: string }[];
   serviceTimeOptions: { label: string; value: string }[];
+  lockedCultLabel?: string;
   createScheduleError: string;
   isCreatingSchedule: boolean;
 }>();
@@ -272,6 +283,15 @@ function toggleSong(songId: string) {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
+}
+.locked-cult {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(74, 20, 140, 0.18);
+  border-radius: 14px;
+  background: rgba(74, 20, 140, 0.04);
+  padding: 12px 14px;
 }
 .song-picker-trigger {
   display: flex;

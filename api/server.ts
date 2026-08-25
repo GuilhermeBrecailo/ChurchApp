@@ -30,6 +30,7 @@ import { MessageRoutes } from "./src/interfaces/routes/MessageRoutes.ts";
 import { BirthdayRoutes } from "./src/interfaces/routes/BirthdayRoutes.ts";
 import { AttendanceRoutes } from "./src/interfaces/routes/AttendanceRoutes.ts";
 import { ServiceOccurrenceRoutes } from "./src/interfaces/routes/ServiceOccurrenceRoutes.ts";
+import { PastoralRoutes } from "./src/interfaces/routes/PastoralRoutes.ts";
 import TenantHandler from "./src/interfaces/plugins/TenantHandler.ts";
 import { startMessageRuleScheduler } from "./src/infrastructure/whatsapp/messageRuleScheduler.ts";
 import { startBirthdayScheduler } from "./src/infrastructure/whatsapp/birthdayScheduler.ts";
@@ -96,6 +97,7 @@ await server.register(MessageRoutes, { prefix: "/" });
 await server.register(BirthdayRoutes, { prefix: "/" });
 await server.register(AttendanceRoutes, { prefix: "/" });
 await server.register(ServiceOccurrenceRoutes, { prefix: "/" });
+await server.register(PastoralRoutes, { prefix: "/" });
 
 await server.listen({ port, host: "0.0.0.0" });
 
@@ -103,4 +105,3 @@ startMessageRuleScheduler();
 startBirthdayScheduler();
 
 console.log(`Server running on http://localhost:${port}`);
-

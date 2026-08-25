@@ -108,7 +108,7 @@ export interface DepartmentSchedule {
     mediaItem: DepartmentResource | DepartmentSong;
   }[];
   serviceOccurrenceId?: string | null;
-  serviceOccurrence?: { id: string; serviceTimeId: string } | null;
+  serviceOccurrence?: { id: string; serviceTimeId: string | null } | null;
 }
 
 export interface DepartmentResource {

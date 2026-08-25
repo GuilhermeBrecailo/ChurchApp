@@ -1,9 +1,7 @@
-import pdfParseImport from "pdf-parse/lib/pdf-parse.js";
-
 // pdf-parse tipa a opcao pagerender de forma generica (any); redeclaramos a
 // assinatura real do pageData do pdf.js que ele repassa, para tipar o
 // pagerender proprio abaixo sem perder seguranca de tipos no resto do modulo.
-const pdfParse = pdfParseImport as unknown as (
+type PdfParse = (
   data: Buffer,
   options?: {
     pagerender?: (pageData: PdfPageData) => Promise<string>;
@@ -78,6 +76,8 @@ function renderPageText(pageData: PdfPageData): Promise<string> {
 // que existe - muito mais que tentar adivinhar titulo por heuristica de
 // texto corrido.
 export async function extractPdfPages(buffer: Buffer): Promise<string[]> {
+  const pdfParseImport = await import("pdf-parse/lib/pdf-parse.js");
+  const pdfParse = pdfParseImport.default as PdfParse;
   const pages: string[] = [];
   await pdfParse(buffer, {
     pagerender: async (pageData) => {

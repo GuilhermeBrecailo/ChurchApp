@@ -110,19 +110,19 @@ const contentItems = [
 }
 
 .content-card {
-  background: #ffffff;
-  border: 1px solid #f3f4f6;
+  background: var(--app-color-surface);
+  border: 1px solid var(--app-color-border-subtle);
   transition:
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+    transform var(--app-motion-duration-base) var(--app-motion-ease-standard),
+    box-shadow var(--app-motion-duration-base) ease,
+    border-color var(--app-motion-duration-base) ease;
   cursor: pointer;
 }
 
 .content-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(17, 24, 39, 0.09) !important;
-  border-color: #f2d3bd;
+  box-shadow: var(--app-shadow-hover) !important;
+  border-color: color-mix(in srgb, var(--app-color-accent) 28%, var(--app-color-border));
 }
 
 .content-card:active {

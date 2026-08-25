@@ -1,7 +1,7 @@
 <template>
   <v-card
     v-if="schedule"
-    class="scale-card rounded-xl pa-5 mb-8 elevation-4"
+    class="scale-card app-surface app-interactive-surface pa-4 mb-4"
     role="button"
     tabindex="0"
     aria-label="Ver detalhes da próxima escala"
@@ -9,43 +9,40 @@
     @keydown.enter="goToSchedule"
     @keydown.space.prevent="goToSchedule"
   >
-    <div class="circle-decoration top-right"></div>
-    <div class="circle-decoration bottom-left"></div>
-
-    <div class="position-relative" style="z-index: 1">
-      <p class="text-subtitle-2 text-white opacity-80 mb-1">
-        Próxima Escala
+    <div class="schedule-card-content">
+      <p class="schedule-kicker mb-1">
+        Próxima escala
       </p>
-      <h2 class="text-h6 font-weight-bold text-white mb-5">
+      <h2 class="schedule-heading mb-4">
         {{ schedule.description }}
       </h2>
 
-      <div class="d-flex align-center mb-3 text-white">
+      <div class="d-flex align-center mb-2">
         <div class="icon-wrapper mr-3">
           <Calendar size="16" />
         </div>
-        <span class="text-body-2 font-weight-medium">{{ formattedDate }}</span>
+        <span class="schedule-meta">{{ formattedDate }}</span>
       </div>
 
-      <div class="d-flex align-center mb-3 text-white">
+      <div class="d-flex align-center mb-2">
         <div class="icon-wrapper mr-3">
           <Clock size="16" />
         </div>
-        <span class="text-body-2 font-weight-medium">{{ formattedTime }}</span>
+        <span class="schedule-meta">{{ formattedTime }}</span>
       </div>
 
-      <div class="d-flex align-center text-white">
+      <div class="d-flex align-center">
         <div class="icon-wrapper mr-3">
           <Users size="16" />
         </div>
-        <span class="text-body-2 font-weight-medium">
+        <span class="schedule-meta">
           {{ schedule.department?.name || "Sem ministério" }}
         </span>
       </div>
     </div>
   </v-card>
 
-  <v-card v-else class="rounded-xl pa-5 mb-8 elevation-1 border-subtle">
+  <v-card v-else class="app-surface pa-4 mb-4">
     <div class="d-flex align-center flex-wrap gap-3">
       <div class="d-flex align-center flex-grow-1" style="min-width: 0">
         <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3 flex-shrink-0">
@@ -123,49 +120,49 @@ const goToSchedule = () => {
 
 <style scoped>
 .scale-card {
-  background: linear-gradient(135deg, var(--app-color-accent-soft) 0%, var(--app-color-accent) 100%) !important;
-  position: relative;
   overflow: hidden;
-  cursor: pointer;
 }
 
 .scale-card:focus-visible {
-  outline: 3px solid rgba(255, 255, 255, 0.65);
+  outline: 3px solid rgba(181, 71, 42, 0.32);
   outline-offset: 3px;
 }
 
+.schedule-card-content {
+  position: relative;
+}
+
+.schedule-kicker {
+  color: var(--app-color-accent);
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.schedule-heading {
+  color: var(--app-color-text);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.schedule-meta {
+  color: var(--app-color-text-soft);
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
 .icon-wrapper {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.15);
+  width: 30px;
+  height: 30px;
+  border-radius: var(--app-radius-sm);
+  background-color: var(--app-color-accent-tint);
+  color: var(--app-color-accent);
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.opacity-80 {
-  opacity: 0.8;
-}
-
-.circle-decoration {
-  position: absolute;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-.circle-decoration.top-right {
-  width: 150px;
-  height: 150px;
-  top: -40px;
-  right: -30px;
-}
-
-.circle-decoration.bottom-left {
-  width: 100px;
-  height: 100px;
-  bottom: -30px;
-  left: -20px;
 }
 
 .border-subtle {

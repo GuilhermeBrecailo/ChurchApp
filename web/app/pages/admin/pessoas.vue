@@ -1,9 +1,9 @@
 <template>
   <div
     v-if="canAccessChurchAdmin"
-    class="church-admin-page pa-4 bg-grey-lighten-4 min-vh-100 pb-20"
+    class="church-admin-page app-operational-page pa-4 min-vh-100 pb-20"
   >
-    <div class="pessoas-header mb-4">
+    <div class="pessoas-header app-page-header">
       <div class="content-detail-title-group min-w-0">
         <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
           <ChevronLeft size="20" />
@@ -25,13 +25,14 @@
       {{ departmentsError }}
     </v-alert>
 
-    <div class="pessoas-subtabs d-flex ga-2 mb-5 flex-wrap">
+    <div class="pessoas-subtabs app-surface-muted pa-1 mb-5">
       <v-btn
         v-for="tab in pessoasSubTabs"
         :key="tab.value"
         :color="activeSection === tab.value ? 'purple-darken-3' : 'grey-darken-2'"
-        :variant="activeSection === tab.value ? 'flat' : 'tonal'"
-        class="text-none"
+        :variant="activeSection === tab.value ? 'flat' : 'text'"
+        class="text-none pessoas-subtab"
+        size="small"
         @click="activeSection = tab.value"
       >
         {{ tab.label }}
@@ -67,7 +68,7 @@
 
       <v-card
         v-if="canManageMembersByRole && pendingMembers.length"
-        class="pending-members-card rounded-xl mb-5 elevation-1 bg-white border-subtle"
+        class="pending-members-card app-surface mb-5"
       >
         <div class="pending-members-heading">
           <Clock size="16" color="#B45309" />
@@ -126,7 +127,6 @@
           variant="outlined"
           density="compact"
           color="purple-darken-3"
-          bg-color="white"
           hide-details
         />
         <v-select
@@ -139,7 +139,6 @@
           variant="outlined"
           density="compact"
           color="purple-darken-3"
-          bg-color="white"
           hide-details
         />
         <v-select
@@ -152,14 +151,13 @@
           variant="outlined"
           density="compact"
           color="purple-darken-3"
-          bg-color="white"
           hide-details
         />
       </div>
 
       <v-card
         v-if="members.length === 0"
-        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+        class="app-surface pa-6 d-flex flex-column align-center justify-center"
       >
         <UserCheck size="32" color="#9CA3AF" class="mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -169,7 +167,7 @@
 
       <v-card
         v-else-if="filteredMembers.length === 0"
-        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+        class="app-surface pa-6 d-flex flex-column align-center justify-center"
       >
         <UserCheck size="32" color="#9CA3AF" class="mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -177,11 +175,11 @@
         </p>
       </v-card>
 
-      <div v-else class="church-list d-flex flex-column ga-3">
+      <div v-else class="church-list pessoas-list">
         <v-card
           v-for="member in filteredMembers"
           :key="member.id"
-          class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
+          class="member-card app-surface app-interactive-surface pa-3"
           role="button"
           tabindex="0"
           :aria-label="`Ver detalhes de ${member.name}`"
@@ -269,7 +267,6 @@
           variant="outlined"
           density="compact"
           color="purple-darken-3"
-          bg-color="white"
           hide-details
         />
         <v-select
@@ -282,12 +279,11 @@
           variant="outlined"
           density="compact"
           color="purple-darken-3"
-          bg-color="white"
           hide-details
         />
       </div>
 
-      <div v-if="filteredChurchRoles.length" class="d-flex flex-column ministry-list">
+      <div v-if="filteredChurchRoles.length" class="role-list app-surface pa-2">
         <div
           v-for="role in filteredChurchRoles"
           :key="role.id"
@@ -357,7 +353,7 @@
 
       <v-card
         v-else-if="churchRoles.length === 0"
-        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+        class="app-surface pa-6 d-flex flex-column align-center justify-center"
       >
         <Shield size="32" color="#9CA3AF" class="mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -367,7 +363,7 @@
 
       <v-card
         v-else
-        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+        class="app-surface pa-6 d-flex flex-column align-center justify-center"
       >
         <Shield size="32" color="#9CA3AF" class="mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -405,7 +401,6 @@
           variant="outlined"
           density="compact"
           color="purple-darken-3"
-          bg-color="white"
           hide-details
         />
         <v-select
@@ -418,7 +413,6 @@
           variant="outlined"
           density="compact"
           color="purple-darken-3"
-          bg-color="white"
           hide-details
         />
       </div>
@@ -439,7 +433,7 @@
 
       <v-card
         v-else-if="filteredRosterMembers.length === 0"
-        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+        class="app-surface pa-6 d-flex flex-column align-center justify-center"
       >
         <Users size="32" color="#9CA3AF" class="mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -447,11 +441,11 @@
         </p>
       </v-card>
 
-      <div v-else class="church-list d-flex flex-column ga-3">
+      <div v-else class="church-list pessoas-list">
         <v-card
           v-for="member in filteredRosterMembers"
           :key="member.id"
-          class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
+          class="member-card app-surface app-interactive-surface pa-3"
           role="button"
           tabindex="0"
           :aria-label="`Ver detalhes de ${member.name}`"
@@ -493,7 +487,7 @@
     </section>
 
     <UtilsResponsiveOverlay v-model="isRosterDialogOpen" max-width="480">
-      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+      <v-card class="app-surface pa-5" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
             {{ editingRosterId ? "Editar pessoa" : "Adicionar ao rol" }}
@@ -656,7 +650,7 @@
     </UtilsResponsiveOverlay>
 
     <UtilsResponsiveOverlay v-model="isMemberDialogOpen" max-width="520">
-      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+      <v-card class="app-surface pa-5" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
             <v-avatar :color="avatarBgIndigo" size="44" class="mr-3">
@@ -684,7 +678,6 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
-            bg-color="white"
             class="admin-input mb-4"
             hide-details="auto"
             autocomplete="off"
@@ -699,7 +692,6 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
-            bg-color="white"
             class="admin-input mb-4"
             hide-details="auto"
             autocomplete="off"
@@ -714,7 +706,6 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
-            bg-color="white"
             class="admin-input mb-4"
             hide-details="auto"
             autocomplete="off"
@@ -732,7 +723,6 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
-            bg-color="white"
             class="admin-input mb-4"
             hide-details="auto"
             autocomplete="off"
@@ -775,7 +765,7 @@
     </UtilsResponsiveOverlay>
 
     <UtilsResponsiveOverlay v-model="isMemberDetailsOpen" max-width="520">
-      <v-card v-if="selectedMember" class="rounded-xl pa-6 bg-white" elevation="0">
+      <v-card v-if="selectedMember" class="app-surface pa-5" elevation="0">
         <div class="responsive-dialog-header mb-4">
           <div class="d-flex align-center min-w-0">
             <v-avatar
@@ -833,7 +823,6 @@
               variant="outlined"
               density="compact"
               color="purple-darken-3"
-              bg-color="white"
               hide-details="auto"
               class="admin-input"
               :disabled="isUpdatingMember"
@@ -847,7 +836,6 @@
           variant="outlined"
           density="comfortable"
           color="purple-darken-3"
-          bg-color="white"
           class="admin-input mb-3"
           hide-details="auto"
           :readonly="!canManageMembersByRole || !canEditSelectedMember"
@@ -861,7 +849,6 @@
           variant="outlined"
           density="comfortable"
           color="purple-darken-3"
-          bg-color="white"
           class="admin-input mb-3"
           hide-details="auto"
           :readonly="!canManageMembersByRole || !canEditSelectedMember"
@@ -874,7 +861,6 @@
           variant="outlined"
           density="comfortable"
           color="purple-darken-3"
-          bg-color="white"
           class="admin-input mb-4"
           hide-details="auto"
           :readonly="!canManageMembersByRole || !canEditSelectedMember"
@@ -916,7 +902,6 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
-            bg-color="white"
             class="admin-input"
             hide-details="auto"
             :disabled="!canAssignSelectedMemberRole || isAssigningRole"
@@ -1000,7 +985,7 @@
     </UtilsResponsiveOverlay>
 
     <UtilsResponsiveOverlay v-model="isRoleDialogOpen" max-width="480">
-      <v-card class="rounded-xl pa-6" elevation="0">
+      <v-card class="role-dialog-card app-surface pa-5" elevation="0">
         <div class="d-flex align-center justify-space-between mb-5">
           <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
             {{ editingRoleId ? "Editar cargo" : "Novo cargo" }}
@@ -1065,20 +1050,24 @@
           hide-details="auto"
         />
 
-        <v-select
-          v-model="selectedRolePreset"
-          :items="presetRoleOptions"
-          item-title="label"
-          item-value="value"
-          label="Modelo pronto (opcional)"
-          variant="outlined"
-          density="comfortable"
-          color="purple-darken-3"
-          class="mb-4"
-          hide-details="auto"
-          clearable
-          @update:model-value="applyRolePreset"
-        />
+        <div v-if="presetRoleOptions.length" class="role-preset-panel mb-4">
+          <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">
+            Modelos rápidos
+          </p>
+          <div class="role-preset-actions">
+            <v-btn
+              v-for="preset in presetRoleOptions"
+              :key="preset.value"
+              :variant="selectedRolePreset === preset.value ? 'flat' : 'tonal'"
+              :color="selectedRolePreset === preset.value ? 'purple-darken-3' : 'grey-darken-2'"
+              size="small"
+              class="text-none role-preset-button"
+              @click="chooseRolePreset(preset.value)"
+            >
+              {{ preset.label }}
+            </v-btn>
+          </div>
+        </div>
 
         <div class="role-permission-header mb-3">
           <div>
@@ -1217,9 +1206,9 @@
     />
   </div>
 
-  <div v-else class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
+  <div v-else class="pa-4 app-operational-page min-vh-100 pb-20">
     <v-card
-      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle permission-empty"
+      class="app-surface pa-6 d-flex flex-column align-center justify-center permission-empty"
     >
       <UserCheck size="34" color="#9CA3AF" class="mb-3" />
       <h1 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
@@ -1783,6 +1772,11 @@ const applyRolePreset = (presetKey: string | null) => {
   roleForm.permissions = [...preset.permissions];
 };
 
+const chooseRolePreset = (presetKey: string) => {
+  selectedRolePreset.value = presetKey;
+  applyRolePreset(presetKey);
+};
+
 const countModuleSelected = (module: PermissionModule) =>
   module.permissions.filter((perm) => roleForm.permissions.includes(perm.key)).length;
 
@@ -2222,7 +2216,7 @@ onMounted(async () => {
   padding-bottom: 90px !important; /* Espaço para o Bottom Navigation */
 }
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
 }
 
 .church-admin-page {
@@ -2231,10 +2225,7 @@ onMounted(async () => {
 }
 
 .pessoas-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .content-detail-title-group {
@@ -2244,6 +2235,18 @@ onMounted(async () => {
 
 .church-admin-section {
   min-width: 0;
+}
+
+.pessoas-subtabs {
+  display: inline-flex;
+  gap: 2px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.pessoas-subtab {
+  flex: 0 0 auto;
+  min-width: 86px;
 }
 
 .section-heading {
@@ -2272,6 +2275,10 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
+  padding: 12px;
+  background: var(--app-color-surface-soft);
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: var(--app-radius-card);
 }
 
 .admin-input :deep(.v-field) {
@@ -2293,8 +2300,8 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   padding: 14px 16px;
-  background: #fffbeb;
-  border-bottom: 1px solid #f3f4f6;
+  background: var(--app-color-warning-tint);
+  border-bottom: 1px solid var(--app-color-border-subtle);
 }
 
 .pending-member-row {
@@ -2303,7 +2310,7 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--app-color-border-subtle);
 }
 
 .pending-member-row:last-child {
@@ -2323,17 +2330,20 @@ onMounted(async () => {
 
 .member-card {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  cursor: pointer;
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
+}
+
+.pessoas-list {
+  display: grid;
+  gap: 8px;
 }
 
 .member-avatar {
   align-self: start;
+  width: 36px !important;
+  height: 36px !important;
 }
 
 .member-copy {
@@ -2354,22 +2364,14 @@ onMounted(async () => {
   min-width: 0;
 }
 
-.member-card:active {
-  transform: scale(0.99);
-}
-
-.ministry-list {
-  gap: 10px;
-}
-
 .role-item {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   min-width: 0;
-  padding: 12px 0;
-  border-bottom: 1px solid #f3f4f6;
+  padding: 12px;
+  border-bottom: 1px solid var(--app-color-border-subtle);
 }
 
 .role-item:last-child {
@@ -2419,6 +2421,28 @@ onMounted(async () => {
 
 .role-scope-toggle :deep(.v-btn) {
   flex: 1 1 0;
+}
+
+.role-dialog-card {
+  max-height: min(760px, calc(100vh - 32px));
+  overflow-y: auto;
+}
+
+.role-preset-panel {
+  padding: 12px;
+  background: var(--app-color-surface-soft);
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: var(--app-radius-card);
+}
+
+.role-preset-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.role-preset-button {
+  flex: 1 1 auto;
 }
 
 .permission-module-list {
@@ -2589,7 +2613,7 @@ onMounted(async () => {
 
 .member-dialog-rule {
   height: 2px;
-  background: linear-gradient(90deg, var(--app-color-accent), transparent);
+  background: var(--app-color-border-subtle);
 }
 
 .admin-dialog-actions,
@@ -2641,14 +2665,13 @@ onMounted(async () => {
   }
 
   .member-card {
-    grid-template-columns: 40px minmax(0, 1fr);
+    grid-template-columns: 36px minmax(0, 1fr);
     align-items: start;
-    padding: 14px !important;
   }
 
   .member-avatar {
-    width: 40px !important;
-    height: 40px !important;
+    width: 36px !important;
+    height: 36px !important;
   }
 
   .member-badges {

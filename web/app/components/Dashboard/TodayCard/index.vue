@@ -9,7 +9,7 @@
       <v-card
         v-for="item in todayItems"
         :key="item.id"
-        class="today-card rounded-xl pa-4 elevation-1 mb-3 cursor-pointer"
+        class="today-card app-surface app-interactive-surface pa-3 mb-2"
         role="button"
         tabindex="0"
         :aria-label="`Ver escala: ${item.description}`"
@@ -53,7 +53,7 @@
           <div class="today-confirm-bar">
             <div
               class="today-confirm-fill"
-              :style="{ width: item.total > 0 ? `${(item.confirmed / item.total) * 100}%` : '0%' }"
+              :style="{ transform: `scaleX(${confirmationRatio(item.confirmed, item.total)})` }"
             />
           </div>
         </div>
@@ -131,6 +131,11 @@ const todayItems = computed(() => {
 const hasToday = computed(() => todayItems.value.some((i) => !i.isRehearsal));
 const hasRehearsal = computed(() => todayItems.value.some((i) => i.isRehearsal));
 
+const confirmationRatio = (confirmed = 0, total = 0) => {
+  if (total <= 0) return 0;
+  return Math.min(Math.max(confirmed / total, 0), 1);
+};
+
 onMounted(async () => {
   const { data } = await getChurchSchedules();
   schedules.value = data ?? [];
@@ -162,13 +167,7 @@ onMounted(async () => {
 }
 
 .today-card {
-  background: var(--app-color-surface) !important;
-  border: 1px solid var(--app-color-border);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.today-card:active {
-  transform: scale(0.98);
+  box-shadow: none !important;
 }
 
 .today-card:focus-visible {
@@ -225,10 +224,12 @@ onMounted(async () => {
 }
 
 .today-confirm-fill {
+  width: 100%;
   height: 100%;
   background: var(--app-color-accent);
   border-radius: 2px;
-  transition: width 0.4s ease;
+  transform-origin: left center;
+  transition: transform var(--app-motion-duration-slow) var(--app-motion-ease-standard);
 }
 
 .today-free {
