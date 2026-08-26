@@ -21,6 +21,7 @@ export type PermissionKey =
   | "CULT_DELETE"
   | "CULT_ATTENDANCE_MANAGE"
   | "PASTORAL_CARE_MANAGE"
+  | "PRAYER_MANAGE"
   | "CONTENT_PUBLISH"
   | "ANNOUNCEMENT_PUBLISH";
 
@@ -52,6 +53,7 @@ export const PERMISSIONS: PermissionDefinition[] = [
   { key: "CULT_DELETE", scope: "CHURCH", resource: "cults", action: "delete", label: "Apagar cultos" },
   { key: "CULT_ATTENDANCE_MANAGE", scope: "CHURCH", resource: "cults", action: "manage", label: "Gerenciar presença de culto" },
   { key: "PASTORAL_CARE_MANAGE", scope: "CHURCH", resource: "pastoralCare", action: "manage", label: "Gerenciar cuidado pastoral" },
+  { key: "PRAYER_MANAGE", scope: "CHURCH", resource: "prayerRequests", action: "manage", label: "Gerenciar pedidos de oração" },
   { key: "CONTENT_PUBLISH", scope: "CHURCH", resource: "content", action: "publish", label: "Publicar versículo e devocional" },
   { key: "ANNOUNCEMENT_PUBLISH", scope: "CHURCH", resource: "announcements", action: "publish", label: "Publicar avisos da igreja" },
 ];
@@ -155,5 +157,11 @@ export const ROLE_PRESETS: RolePreset[] = [
     label: "Cuidado pastoral",
     scope: "CHURCH",
     permissions: ["PASTORAL_CARE_MANAGE"],
+  },
+  {
+    key: "PRAYER_TEAM",
+    label: "Equipe de oração",
+    scope: "CHURCH",
+    permissions: ["PRAYER_MANAGE"],
   },
 ];

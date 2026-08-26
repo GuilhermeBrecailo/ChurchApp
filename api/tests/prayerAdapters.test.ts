@@ -83,6 +83,14 @@ const adminContext: ChurchContext = {
   hasFeature: () => true,
 };
 
+const memberWithPrayerRoleContext: ChurchContext = {
+  activeChurchId: "church-1",
+  role: "MEMBRO",
+  canManageMembers: false,
+  roles: [{ scope: "CHURCH", departmentId: null, permissions: ["PRAYER_MANAGE"] }],
+  hasFeature: () => true,
+};
+
 describe("PrayerAdapters", () => {
   let adapters: PrayerAdapters;
 
@@ -195,6 +203,18 @@ describe("PrayerAdapters", () => {
         expect.objectContaining({ where: { crunchId: "church-1", status: "PENDING" } }),
       );
     });
+
+    it("retorna pedidos pendentes para membro com o cargo PRAYER_MANAGE", async () => {
+      mockPrismaClient.prayerRequest.findMany.mockResolvedValue([]);
+      mockPrismaClient.prayerRequest.count.mockResolvedValue(0);
+
+      const request = makeRequest({ churchContext: memberWithPrayerRoleContext });
+      await adapters.listPendingPrayerRequests(request);
+
+      expect(mockPrismaClient.prayerRequest.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { crunchId: "church-1", status: "PENDING" } }),
+      );
+    });
   });
 
   describe("approvePrayerRequest", () => {
@@ -239,6 +259,23 @@ describe("PrayerAdapters", () => {
       await adapters.approvePrayerRequest(request);
 
       expect(mockSendPublicChurchContent).toHaveBeenCalled();
+    });
+
+    it("membro com o cargo PRAYER_MANAGE tambem pode aprovar um pedido pendente", async () => {
+      mockPrismaClient.prayerRequest.updateMany.mockResolvedValue({ count: 1 });
+      mockPrismaClient.prayerRequest.findUnique.mockResolvedValue({
+        id: "prayer-1",
+        title: "Cura",
+        body: "Por favor orem",
+        status: "APPROVED",
+      });
+
+      const request = makeRequest({ churchContext: memberWithPrayerRoleContext, params: { id: "prayer-1" } });
+      await adapters.approvePrayerRequest(request);
+
+      expect(mockPrismaClient.prayerRequest.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "prayer-1", crunchId: "church-1", status: "PENDING" } }),
+      );
     });
 
     it("rejeita reaprovar um pedido ja revisado", async () => {

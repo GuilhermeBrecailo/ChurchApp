@@ -21,6 +21,7 @@ export type AppPermission =
   | "CULT_DELETE"
   | "CULT_ATTENDANCE_MANAGE"
   | "PASTORAL_CARE_MANAGE"
+  | "PRAYER_MANAGE"
   | "CONTENT_PUBLISH"
   | "ANNOUNCEMENT_PUBLISH";
 
@@ -33,6 +34,7 @@ export type PermissionModuleKey =
   | "members"
   | "cults"
   | "pastoralCare"
+  | "prayer"
   | "content"
   | "announcements";
 
@@ -159,6 +161,20 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     ],
   },
   {
+    key: "prayer",
+    label: "Pedidos de oração",
+    description: "Aprovação, rejeição e acompanhamento dos pedidos",
+    scope: "CHURCH",
+    permissions: [
+      {
+        key: "PRAYER_MANAGE",
+        label: "Gerenciar pedidos de oração",
+        description: "Ver, aprovar, rejeitar e marcar pedidos como respondidos",
+        module: "prayer",
+      },
+    ],
+  },
+  {
     key: "content",
     label: "Conteúdo da igreja",
     description: "Versículo do dia e devocionais",
@@ -264,6 +280,12 @@ export const ROLE_PRESETS: RolePreset[] = [
     label: "Cuidado pastoral",
     scope: "CHURCH",
     permissions: ["PASTORAL_CARE_MANAGE"],
+  },
+  {
+    key: "PRAYER_TEAM",
+    label: "Equipe de oração",
+    scope: "CHURCH",
+    permissions: ["PRAYER_MANAGE"],
   },
 ];
 

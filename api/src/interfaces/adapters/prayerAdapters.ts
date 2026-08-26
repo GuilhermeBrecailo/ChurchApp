@@ -4,6 +4,7 @@ import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { resolveActiveChurchContext } from "../utils/churchContext";
 import { pushNotificationService } from "../../infrastructure/notifications/PushNotificationService";
+import { hasPermission } from "../../application/Services/Auth/AuthorizationService";
 
 function getAuthUserId(request: FastifyRequest): string {
   const authHeader = request.headers.authorization;
@@ -35,12 +36,8 @@ export class PrayerAdapters {
     };
   }
 
-  private isManager(user: { role: string }) {
-    return ["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(user.role);
-  }
-
-  private isPastor(user: { role: string }) {
-    return user.role === "PASTOR";
+  private isManager(user: { role: string; roles: { scope: string; departmentId: string | null; permissions: string[] }[] }) {
+    return hasPermission(user, "PRAYER_MANAGE");
   }
 
   private maskItems<T extends { isAnonymous: boolean; user: { id: string; name: string } }>(
@@ -109,7 +106,7 @@ export class PrayerAdapters {
 
   async listPendingPrayerRequests(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    if (!this.isManager(user)) throw new DomainError("Apenas pastor ou admin podem ver pedidos pendentes");
+    if (!this.isManager(user)) throw new DomainError("Sem permissão para ver pedidos de oração pendentes");
 
     const query = request.query as { page?: string };
     const page = Math.max(Number(query.page) || 1, 1);
@@ -160,7 +157,7 @@ export class PrayerAdapters {
 
   async approvePrayerRequest(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    if (!this.isManager(user)) throw new DomainError("Apenas pastor ou admin podem aprovar pedidos de oração");
+    if (!this.isManager(user)) throw new DomainError("Sem permissão para aprovar pedidos de oração");
 
     const { id } = request.params as { id: string };
     const { count } = await $prismaClient.prayerRequest.updateMany({
@@ -181,7 +178,7 @@ export class PrayerAdapters {
 
   async rejectPrayerRequest(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    if (!this.isManager(user)) throw new DomainError("Apenas pastor ou admin podem rejeitar pedidos de oração");
+    if (!this.isManager(user)) throw new DomainError("Sem permissão para rejeitar pedidos de oração");
 
     const { id } = request.params as { id: string };
     const { reason } = request.body as { reason?: string };
@@ -203,7 +200,7 @@ export class PrayerAdapters {
 
   async markAsAnswered(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    if (!this.isManager(user)) throw new DomainError("Apenas pastores podem marcar pedidos como respondidos");
+    if (!this.isManager(user)) throw new DomainError("Sem permissão para marcar pedidos como respondidos");
 
     const { id } = request.params as { id: string };
     const prayer = await $prismaClient.prayerRequest.findUnique({ where: { id } });
