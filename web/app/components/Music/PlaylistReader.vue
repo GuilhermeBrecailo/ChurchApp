@@ -112,10 +112,7 @@
       class="playlist-reader-body"
       :style="{ '--reader-font-scale': fontScale }"
       @pointerdown="pauseAutoScroll"
-      @pointerup="resumeAutoScroll"
-      @pointercancel="resumeAutoScroll"
       @touchstart.passive="pauseAutoScroll"
-      @touchend.passive="resumeAutoScroll"
     >
       <section
         v-for="(song, index) in songs"
@@ -391,17 +388,16 @@ const startAutoScroll = () => {
   animationFrameId.value = window.requestAnimationFrame(runAutoScroll);
 };
 
+// Toque manual pausa e fica pausado - nao retoma sozinho ao soltar o dedo.
+// So volta a rolar quando o usuario mexe no slider de velocidade de novo
+// (ver watch abaixo), pra nao brigar com quem rolou pra reler um trecho.
 const pauseAutoScroll = () => {
   isAutoScrollPaused.value = true;
 };
 
-const resumeAutoScroll = () => {
-  isAutoScrollPaused.value = false;
-  startAutoScroll();
-};
-
 watch(scrollSpeed, () => {
   if (scrollSpeed.value > 0) {
+    isAutoScrollPaused.value = false;
     startAutoScroll();
     return;
   }
