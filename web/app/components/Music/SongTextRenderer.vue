@@ -330,6 +330,16 @@ onBeforeUnmount(() => {
   resizeObserver?.disconnect();
   resizeObserver = null;
 });
+
+// Exposto pro pai (SongReader) mostrar um botao de retomar quando pausado
+// por gesto manual, sem precisar que o usuario mexa no slider de velocidade.
+defineExpose({
+  isPaused: computed(() => isAutoScrollPaused.value),
+  resume: () => {
+    isAutoScrollPaused.value = false;
+    startAutoScroll();
+  },
+});
 </script>
 
 <style scoped>

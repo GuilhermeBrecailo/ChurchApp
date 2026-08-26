@@ -147,14 +147,27 @@
       </div>
     </div>
 
-    <MusicSongTextRenderer
-      class="song-reader-text"
-      :mode="tab === 'chords' ? 'chords' : 'lyrics'"
-      :text="readerText"
-      :empty-text="tab === 'chords' ? 'Cifra não cadastrada.' : 'Letra não cadastrada.'"
-      :auto-scroll="scrollSpeed > 0"
-      :scroll-speed="effectiveScrollSpeed"
-    />
+    <div class="song-reader-text-wrap">
+      <MusicSongTextRenderer
+        ref="songTextRenderer"
+        class="song-reader-text"
+        :mode="tab === 'chords' ? 'chords' : 'lyrics'"
+        :text="readerText"
+        :empty-text="tab === 'chords' ? 'Cifra não cadastrada.' : 'Letra não cadastrada.'"
+        :auto-scroll="scrollSpeed > 0"
+        :scroll-speed="effectiveScrollSpeed"
+      />
+      <v-btn
+        v-if="showResumeScrollButton"
+        class="song-reader-resume-btn text-none"
+        color="purple-darken-3"
+        rounded="pill"
+        prepend-icon="mdi-play"
+        @click="songTextRenderer?.resume()"
+      >
+        Retomar rolagem
+      </v-btn>
+    </div>
 
     <div v-if="$slots.extra" class="song-reader-extra">
       <slot name="extra" />
@@ -238,6 +251,13 @@ const tab = ref<"lyrics" | "chords">(props.tab);
 const instrument = ref<"auto" | "default" | "keyboard">("auto");
 const scrollSpeed = ref(0);
 const isControlsOpen = ref(false);
+const songTextRenderer = ref<{ isPaused: { value: boolean }; resume: () => void } | null>(null);
+// Rolagem manual pausa e nao retoma sozinha (ver SongTextRenderer) - esse
+// botao flutuante e o atalho pra voltar a rolar sem precisar abrir o menu
+// e reencostar no slider.
+const showResumeScrollButton = computed(
+  () => scrollSpeed.value > 0 && songTextRenderer.value?.isPaused?.value === true,
+);
 // Cordas e teclado transpõem de forma independente - trocar o tom com
 // teclado selecionado não pode mexer no tom da cifra de cordas, e vice-versa.
 const transposeStepsByInstrument = reactive({ default: 0, keyboard: 0 });
@@ -442,6 +462,13 @@ defineExpose({ tab });
   width: 100%;
 }
 
+.song-reader-text-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
 .song-reader-text {
   flex: 1 1 auto;
   min-height: 0;
@@ -454,6 +481,15 @@ defineExpose({ tab });
   font-size: 1.1rem;
   line-height: 1.85;
   padding: 20px;
+}
+
+.song-reader-resume-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 2;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
 }
 
 .song-reader-extra {

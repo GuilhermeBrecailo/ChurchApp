@@ -151,6 +151,17 @@
         </p>
       </section>
     </div>
+
+    <v-btn
+      v-if="showResumeScrollButton"
+      class="playlist-resume-btn text-none"
+      color="purple-darken-3"
+      rounded="pill"
+      prepend-icon="mdi-play"
+      @click="resumeAutoScroll"
+    >
+      Retomar rolagem
+    </v-btn>
   </div>
 </template>
 
@@ -411,6 +422,15 @@ const handleScroll = () => {
   scrollPosition.value = container.scrollTop;
 };
 
+// Atalho flutuante pra voltar a rolar sem abrir o menu de velocidade -
+// rolagem manual pausa e nao retoma sozinha (ver handleScroll acima).
+const showResumeScrollButton = computed(() => scrollSpeed.value > 0 && isAutoScrollPaused.value);
+
+const resumeAutoScroll = () => {
+  isAutoScrollPaused.value = false;
+  startAutoScroll();
+};
+
 watch(scrollSpeed, () => {
   if (scrollSpeed.value > 0) {
     isAutoScrollPaused.value = false;
@@ -429,11 +449,21 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .playlist-reader {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
   background: var(--app-color-surface);
+}
+
+.playlist-resume-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 2;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
 }
 
 .playlist-reader-header {
