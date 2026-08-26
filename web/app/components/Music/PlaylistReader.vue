@@ -113,6 +113,7 @@
       :style="{ '--reader-font-scale': fontScale }"
       @pointerdown="pauseAutoScroll"
       @touchstart.passive="pauseAutoScroll"
+      @scroll="handleScroll"
     >
       <section
         v-for="(song, index) in songs"
@@ -334,6 +335,11 @@ const lastFrameAt = ref(0);
  * inteiro a cada leitura, entao em velocidades baixas (< 1px por frame) o
  * incremento nunca soma 1px e a rolagem trava sem esse acumulador. */
 const scrollPosition = ref(0);
+/** Ultimo scrollTop que o proprio auto-scroll escreveu no DOM - o listener
+ * de `scroll` compara contra isso pra distinguir gesto manual (touch, mouse,
+ * scrollbar, teclado - qualquer um) de scroll causado pela gente mesmo,
+ * sem depender de pointerdown/touchstart cobrirem todo tipo de interacao. */
+const lastProgrammaticScrollTop = ref(0);
 
 // Se a aba fica em segundo plano (tela apaga, troca de app), o navegador
 // para de chamar requestAnimationFrame - as vezes por minutos. Sem esse
@@ -367,6 +373,7 @@ const runAutoScroll = (timestamp: number) => {
         scrollPosition.value + effectiveScrollSpeed.value * elapsedSeconds,
       );
       container.scrollTop = scrollPosition.value;
+      lastProgrammaticScrollTop.value = container.scrollTop;
     } else {
       // Primeiro frame apos iniciar/retomar: sincroniza com a posicao atual
       // do DOM (pode ter mudado por scroll manual durante a pausa).
@@ -393,6 +400,15 @@ const startAutoScroll = () => {
 // (ver watch abaixo), pra nao brigar com quem rolou pra reler um trecho.
 const pauseAutoScroll = () => {
   isAutoScrollPaused.value = true;
+};
+
+const handleScroll = () => {
+  const container = scrollContainer.value;
+  if (!container) return;
+  if (Math.abs(container.scrollTop - lastProgrammaticScrollTop.value) < 2) return;
+
+  isAutoScrollPaused.value = true;
+  scrollPosition.value = container.scrollTop;
 };
 
 watch(scrollSpeed, () => {

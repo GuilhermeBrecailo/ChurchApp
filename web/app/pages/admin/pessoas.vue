@@ -2444,14 +2444,19 @@ onMounted(async () => {
 }
 
 /* v-btn-toggle nao estica os filhos por padrao; sem isto os dois botoes de
-   alcance do cargo ficam desalinhados/apertados em telas de celular. */
+   alcance do cargo ficam desalinhados/apertados em telas de celular.
+   O min-height e necessario porque, nesse layout, o grupo e os botoes
+   colapsam pra altura 0 (o --v-btn-height existe mas nao e aplicado),
+   deixando "Um ministerio"/"Igreja toda" no DOM só que invisíveis. */
 .role-scope-toggle {
   display: flex !important;
   width: 100%;
+  min-height: 40px;
 }
 
 .role-scope-toggle :deep(.v-btn) {
   flex: 1 1 0;
+  min-height: 40px;
 }
 
 .role-dialog-card {

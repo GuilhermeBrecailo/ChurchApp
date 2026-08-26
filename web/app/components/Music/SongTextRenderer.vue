@@ -6,6 +6,7 @@
     :style="rendererStyle"
     @pointerdown="pauseAutoScroll"
     @touchstart.passive="pauseAutoScroll"
+    @scroll="handleScroll"
   >
     <span
       v-for="(line, lineIndex) in renderedLines"
@@ -84,6 +85,12 @@ const scrollContainer = ref<HTMLElement | null>(null);
 const isAutoScrollPaused = ref(false);
 const animationFrameId = ref<number | null>(null);
 const lastFrameAt = ref(0);
+/** Ultimo scrollTop que o proprio auto-scroll escreveu no DOM. O listener de
+ * `scroll` compara contra isso pra distinguir "o navegador disparou o evento
+ * por causa do nosso container.scrollTop = ..." de "o usuario rolou por
+ * conta propria" (touch, mouse, scrollbar, teclado - qualquer gesto), sem
+ * depender de pointerdown/touchstart cobrirem todo tipo de interacao. */
+const lastProgrammaticScrollTop = ref(0);
 /** Posição de scroll em ponto flutuante. `container.scrollTop` é sempre
  * arredondado pra inteiro pelo navegador ao ser lido, então acumular a
  * partir dele descarta a fração a cada frame - em velocidades baixas
@@ -237,6 +244,7 @@ const runAutoScroll = (timestamp: number) => {
         scrollPosition.value + props.scrollSpeed * elapsedSeconds,
       );
       container.scrollTop = scrollPosition.value;
+      lastProgrammaticScrollTop.value = container.scrollTop;
     } else {
       // Primeiro frame após iniciar/retomar: sincroniza com a posição
       // atual do DOM (pode ter mudado por scroll manual durante a pausa).
@@ -265,6 +273,19 @@ const pauseAutoScroll = () => {
   isAutoScrollPaused.value = true;
 };
 
+// Rede de seguranca contra qualquer gesto de rolagem manual (touch, mouse,
+// scrollbar, teclado) que o pointerdown/touchstart nao cubra - em alguns
+// navegadores mobile o scroll por inercia continua sem esses eventos.
+// Se o scrollTop mudou e nao foi a gente que escreveu, e o usuario rolando.
+const handleScroll = () => {
+  const container = scrollContainer.value;
+  if (!container) return;
+  if (Math.abs(container.scrollTop - lastProgrammaticScrollTop.value) < 2) return;
+
+  isAutoScrollPaused.value = true;
+  scrollPosition.value = container.scrollTop;
+};
+
 watch(
   () => [props.autoScroll, props.scrollSpeed],
   () => {
@@ -284,6 +305,7 @@ watch(
     await nextTick();
     if (scrollContainer.value) {
       scrollContainer.value.scrollTop = 0;
+      lastProgrammaticScrollTop.value = 0;
     }
     updateFit();
     isAutoScrollPaused.value = false;
