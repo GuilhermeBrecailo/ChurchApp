@@ -218,7 +218,7 @@ const router = useRouter();
 const route = useRoute();
 const { isDark } = useThemeMode();
 const { joinByCode, getChurchByCode, registerByCode } = useChurchInvite();
-const { user, access_token, fetchMe } = useAuth();
+const { user, access_token, session, fetchMe } = useAuth();
 
 const isAuthenticated = computed(() => Boolean(access_token.value));
 
@@ -244,13 +244,14 @@ const registerForm = reactive({
 
 onMounted(async () => {
   // "/join" e rota publica no middleware (precisa funcionar pra quem ainda
-  // nao tem conta), entao o fetchMe padrao das rotas autenticadas nunca roda
-  // aqui - sem isso, um usuario logado que ja tem igreja chegava nesta pagina
-  // com user.value vazio: a AppBar mostrava "usuario"/"Sem igreja" (deveria
-  // mostrar o nome/igreja reais) e o redirect abaixo nunca disparava porque
-  // hasChurch ainda nao tinha sido carregado.
-  if (isAuthenticated.value && !user.value?.id) {
-    await fetchMe();
+  // nao tem conta), entao o middleware nunca tenta restaurar a sessao a
+  // partir do refresh token aqui - sem isso, um usuario logado que abre
+  // esta pagina direto (ex.: clicou num link de convite estando logado)
+  // chegava com access_token/user vazios: a AppBar mostrava "usuario"/"Sem
+  // igreja" em vez do nome/igreja reais, e o redirect abaixo pra quem ja
+  // tem igreja nunca disparava porque hasChurch ainda nao tinha carregado.
+  if (!user.value?.id) {
+    await session();
   }
 
   if (isAuthenticated.value && user.value?.hasChurch) {

@@ -70,6 +70,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
       to.path !== "/c" &&
       !alwaysAccessibleRoutes.includes(to.path);
 
+    if (!access_token.value && shouldRedirectAuthenticated) {
+      // Carregamento frio (refresh da pagina, link salvo, PWA reaberta) numa
+      // rota publica de entrada (login/register/comece) nunca tentava
+      // restaurar a sessao a partir do refresh token - so as rotas
+      // protegidas faziam isso. Resultado: um usuario ja autenticado que
+      // abria /login direto via o formulario de novo, em vez de cair em "/".
+      const { useAuth } = await import("../../composables/useAuth");
+      const { session } = useAuth();
+      await session();
+    }
+
     if (access_token.value && shouldRedirectAuthenticated) {
       return navigateTo("/");
     }
