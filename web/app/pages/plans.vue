@@ -124,6 +124,10 @@
       <v-card class="plans-column rounded-xl pa-5 elevation-1">
         <h2 class="plans-column-title">Free</h2>
         <p class="plans-column-subtitle mb-5">O essencial pra igreja rodar no dia a dia</p>
+        <p class="plans-price">
+          <span class="plans-price-amount">R$ 0</span>
+          <span class="plans-price-period">para sempre</span>
+        </p>
         <ul class="plans-feature-list">
           <li v-for="item in freeHighlights" :key="item">
             <span class="plans-feature-icon">
@@ -142,6 +146,10 @@
         <h2 class="plans-column-title plans-column-title--pro">Pro</h2>
         <p class="plans-column-subtitle plans-column-subtitle--pro mb-5">
           Tudo do Free, mais personalização e ferramentas avançadas
+        </p>
+        <p class="plans-price">
+          <span class="plans-price-amount plans-price-amount--pro">{{ formattedProPrice }}</span>
+          <span class="plans-price-period">/mês</span>
         </p>
         <ul class="plans-feature-list plans-feature-list--pro">
           <li v-for="feature in proFeatures" :key="feature">
@@ -171,6 +179,7 @@ import {
   PRO_FEATURES,
   PLAN_FEATURE_LABELS,
   FREE_HIGHLIGHTS,
+  PRO_MONTHLY_PRICE,
   type Plan,
 } from "../../composables/usePlan";
 import { useBilling } from "../../composables/useBilling";
@@ -184,6 +193,11 @@ const planLabel = computed(() => PLAN_LABELS[plan.value as Plan] ?? plan.value);
 const proFeatures = PRO_FEATURES;
 const planFeatureLabels = PLAN_FEATURE_LABELS;
 const freeHighlights = FREE_HIGHLIGHTS;
+const formattedProPrice = computed(() =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+    PRO_MONTHLY_PRICE,
+  ),
+);
 
 const isCreatingCheckout = ref(false);
 const checkoutError = ref("");
@@ -338,6 +352,30 @@ async function handleCancelSubscription() {
   font-size: 0.8125rem;
   color: var(--app-color-text-muted);
   margin: 0;
+}
+
+.plans-price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 20px;
+}
+
+.plans-price-amount {
+  font-family: "Fraunces", serif;
+  font-weight: 650;
+  font-size: 1.7rem;
+  color: var(--app-color-text);
+}
+
+.plans-price-amount--pro {
+  color: var(--app-color-warning);
+}
+
+.plans-price-period {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--app-color-text-muted);
 }
 
 /* Pro: cartão elevado, fundo âmbar suave e borda de destaque — a mesma

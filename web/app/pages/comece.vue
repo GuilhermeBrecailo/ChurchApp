@@ -154,6 +154,10 @@
         <div>
           <p class="app-page-kicker mb-2">Planos</p>
           <h2 class="app-page-title section-title">Comece no Free e avance quando precisar</h2>
+          <p class="section-description plans-heading-description">
+            Teste todos os recursos do Pro por 3 meses. Depois, continue no Free ou assine o Pro
+            por R$ 49,90 por mês.
+          </p>
         </div>
         <v-chip color="purple-darken-3" variant="tonal" size="small">
           Membros ilimitados em todos os planos
@@ -434,7 +438,7 @@ const activeScreen = computed(
   () => productScreens.find((screen) => screen.key === activeScreenKey.value) ?? productScreens[0],
 );
 
-const benefits = ["Comece gratuitamente", "Sem cartão de crédito", "Membros ilimitados"];
+const benefits = ["3 meses grátis", "Sem cartão de crédito", "Membros ilimitados"];
 
 // Nenhum depoimento real ainda - estrutura pronta pra quando existir prova
 // social de verdade (igreja cliente, avaliacao), sem inventar nada

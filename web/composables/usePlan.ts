@@ -15,13 +15,9 @@ export const PLAN_LABELS: Record<Plan, string> = {
   ILIMITADO: "Ilimitado",
 };
 
-// Preco oficial do Pro ainda nao foi definido em nenhum lugar do projeto -
-// MERCADOPAGO_PRO_MONTHLY_AMOUNT so existe como placeholder (49.90) em
-// .env.example, nunca configurado no .env real nem em producao. Ate essa
-// decisao de negocio ser tomada, isso fica null e a landing mostra um
-// texto neutro ("A definir") em vez de inventar um valor. Quando o preco
-// for decidido, so trocar esse numero aqui.
-export const PRO_MONTHLY_PRICE: number | null = null;
+// Preco publico oficial do plano Pro. O backend usa o mesmo valor na
+// variavel MERCADOPAGO_PRO_MONTHLY_AMOUNT para criar a assinatura.
+export const PRO_MONTHLY_PRICE = 49.90;
 
 export type PlanFeature =
   | "CUSTOM_PUBLIC_PAGE"
