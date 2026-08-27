@@ -470,6 +470,7 @@ import { useAuth } from "../../composables/useAuth";
 import { useDepartments, type ChurchDepartment } from "../../composables/useDepartments";
 import { useUser, type MyProfileDTO } from "../../composables/useUser";
 import { useThemeMode } from "../../../composables/useThemeMode";
+import { getInitials } from "../utils/initials";
 
 const router = useRouter();
 const { logout, user, fetchMe, uploadMyAvatar } = useAuth();
@@ -555,17 +556,9 @@ const mustChangePassword = computed(
     user.value?.mustChangePassword === true,
 );
 
-const initials = computed(() => {
-  const name = profile.value?.name || user.value?.name || "";
-  const letters = name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-
-  return letters || "UP";
-});
+const initials = computed(() =>
+  getInitials(profile.value?.name || user.value?.name, "UP"),
+);
 
 const roleLabel = computed(() => {
   const role = profile.value?.role || user.value?.role;

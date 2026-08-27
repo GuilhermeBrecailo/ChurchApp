@@ -10,6 +10,9 @@
         </v-btn>
         <div class="flex-1 min-w-0">
           <h1 class="text-h5 font-weight-bold">Relatórios</h1>
+          <p class="text-caption text-grey-darken-1 mb-0">
+            Confirmações, presença e participação por período.
+          </p>
         </div>
       </div>
       <UtilsPageHelpButton title="Relatórios" />

@@ -154,6 +154,7 @@ import {
 } from "../../composables/useDepartments";
 import { useMembers, type ChurchMember } from "../../composables/useMembers";
 import type { ScheduleEvent } from "../components/Scale/types";
+import { getInitials } from "../utils/initials";
 
 const {
   getDepartments,
@@ -305,12 +306,7 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
         attendanceStatus: assignment.attendanceStatus,
         viewedAt: assignment.viewedAt,
         declineReason: assignment.declineReason,
-        initials: assignment.user.name
-          .split(" ")
-          .filter(Boolean)
-          .slice(0, 2)
-          .map((part) => part[0].toUpperCase())
-          .join(""),
+        initials: getInitials(assignment.user.name),
       })) || [],
   };
 };

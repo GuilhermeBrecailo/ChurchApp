@@ -1,16 +1,5 @@
 <template>
   <section class="church-admin-section mb-8">
-    <div class="section-heading mb-4">
-      <div>
-        <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
-          Relatórios
-        </h2>
-        <p class="text-caption text-grey-darken-1 mb-0">
-          Confirmações, presença e participação por período.
-        </p>
-      </div>
-    </div>
-
     <div class="admin-filter-bar mb-4">
       <v-select
         v-model="days"
@@ -55,7 +44,11 @@
           :items="confirmationItems"
           :loading="loading"
           density="comfortable"
-        />
+        >
+          <template #item.date="{ item }">
+            {{ formatScheduleDate(item.date) }}
+          </template>
+        </v-data-table>
       </v-window-item>
 
       <v-window-item value="attendance">
@@ -129,6 +122,15 @@ const params = computed(() => ({
   days: days.value,
   departmentId: departmentId.value,
 }));
+
+const formatScheduleDate = (value: string) =>
+  new Date(value).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
 const confirmationHeaders = [
   { title: "Escala", key: "schedule" },

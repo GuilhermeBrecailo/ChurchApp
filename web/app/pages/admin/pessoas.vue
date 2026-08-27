@@ -1265,6 +1265,7 @@ import {
   type AppPermission,
 } from "../../../composables/usePermissions";
 import { useRoster, type RosterMember, type RosterStatus } from "../../../composables/useRoster";
+import { getInitials } from "../../utils/initials";
 
 const router = useRouter();
 const route = useRoute();
@@ -1388,13 +1389,7 @@ const isMemberDialogOpen = ref(false);
 const isMemberDetailsOpen = ref(false);
 const permissionError = ref("");
 const selectedMember = ref<ChurchMember | null>(null);
-const selectedMemberInitials = computed(() => {
-  const parts = selectedMember.value?.name?.trim().split(/\s+/).filter(Boolean) ?? [];
-  if (!parts.length) return "";
-  const first = parts[0][0];
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return (first + last).toUpperCase();
-});
+const selectedMemberInitials = computed(() => getInitials(selectedMember.value?.name, ""));
 const pendingDeleteMember = ref<ChurchMember | null>(null);
 const isConfirmingDelete = ref(false);
 const selectedChurchMemberRoleId = ref<string | null>(null);

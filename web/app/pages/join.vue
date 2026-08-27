@@ -243,6 +243,16 @@ const registerForm = reactive({
 });
 
 onMounted(async () => {
+  // "/join" e rota publica no middleware (precisa funcionar pra quem ainda
+  // nao tem conta), entao o fetchMe padrao das rotas autenticadas nunca roda
+  // aqui - sem isso, um usuario logado que ja tem igreja chegava nesta pagina
+  // com user.value vazio: a AppBar mostrava "usuario"/"Sem igreja" (deveria
+  // mostrar o nome/igreja reais) e o redirect abaixo nunca disparava porque
+  // hasChurch ainda nao tinha sido carregado.
+  if (isAuthenticated.value && !user.value?.id) {
+    await fetchMe();
+  }
+
   if (isAuthenticated.value && user.value?.hasChurch) {
     router.replace("/");
     return;

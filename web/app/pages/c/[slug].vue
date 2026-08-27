@@ -340,6 +340,7 @@ import {
 import { computed, onMounted, ref, watch } from "vue";
 import type { PublicAnnouncementKind, PublicServiceOccurrence } from "../../../composables/useChurchLanding";
 import { fontCssValue } from "../../../composables/useChurchAppearance";
+import { getInitials } from "../../utils/initials";
 
 definePageMeta({
   layout: "public",
@@ -372,14 +373,7 @@ const landingStyle = computed(() => ({
   ...(church.value?.textColor ? { "--ink": church.value.textColor } : {}),
 }));
 
-const churchInitials = computed(() =>
-  (church.value?.name || "Igreja")
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join(""),
-);
+const churchInitials = computed(() => getInitials(church.value?.name || "Igreja"));
 
 // Aba do navegador e "adicionar a tela inicial" mostram o nome e a logo da
 // igreja, nao o icone generico do ChurchApp - só quando a igreja tem logo;

@@ -10,23 +10,15 @@
         </v-btn>
         <div class="flex-1 min-w-0">
           <h1 class="text-h5 font-weight-bold">Mensagens</h1>
+          <p class="text-body-2 text-grey-darken-1 mb-0">
+            Modelos, envio e histórico de mensagens de WhatsApp pra visitantes e membros do rol.
+          </p>
         </div>
       </div>
       <UtilsPageHelpButton title="Mensagens" />
     </div>
 
     <section class="church-admin-section">
-      <div class="section-heading mb-4">
-        <div>
-          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
-            Mensagens
-          </h2>
-          <p class="text-body-2 text-grey-darken-1 mb-0">
-            Modelos, envio e histórico de mensagens de WhatsApp pra visitantes e membros do rol.
-          </p>
-        </div>
-      </div>
-
       <div class="messages-subtabs d-flex ga-2 mb-5 flex-wrap">
         <v-btn
           v-for="tab in messagesSubTabs"

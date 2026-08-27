@@ -102,6 +102,7 @@ import { computed, onMounted, ref } from "vue";
 import { ChevronRight, HandHeart, Users } from "lucide-vue-next";
 import { usePastoral, type PastoralDashboard, type PastoralVisit } from "../../../composables/usePastoral";
 import { usePermissions } from "../../../composables/usePermissions";
+import { getInitials } from "../../utils/initials";
 
 type PastoralPerson = {
   id: string;
@@ -176,10 +177,7 @@ function contactLabel(person: PastoralPerson) {
 }
 
 function initials(name: string) {
-  const parts = name.trim().split(" ").filter(Boolean);
-  if (parts.length === 0) return "P";
-  if (parts.length === 1) return parts[0][0].toUpperCase();
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  return getInitials(name, "P");
 }
 
 async function loadPeople() {
