@@ -969,9 +969,21 @@
             Acompanhe o relacionamento com igrejas e parceiros sem misturar dados de nenhuma igreja cliente.
           </p>
         </div>
-        <v-chip size="small" color="indigo-darken-2" variant="tonal">
-          {{ commercialLeadTotal }} leads
-        </v-chip>
+        <div class="d-flex align-center ga-2 flex-wrap">
+          <v-btn
+            size="small"
+            color="indigo-darken-2"
+            variant="tonal"
+            class="text-none"
+            @click="openCommercialLeadForm"
+          >
+            <v-icon start size="17">mdi-account-plus-outline</v-icon>
+            Adicionar lead
+          </v-btn>
+          <v-chip size="small" color="indigo-darken-2" variant="tonal">
+            {{ commercialLeadTotal }} leads
+          </v-chip>
+        </div>
       </div>
 
       <div class="admin-filter-bar mb-4 commercial-lead-filters">
@@ -1024,6 +1036,16 @@
         {{ commercialLeadsError }}
       </v-alert>
 
+      <v-alert
+        v-if="commercialLeadNotice"
+        type="success"
+        variant="tonal"
+        density="compact"
+        class="mb-4"
+      >
+        {{ commercialLeadNotice }}
+      </v-alert>
+
       <v-card
         v-if="isLoadingCommercialLeads"
         class="rounded-lg pa-4 elevation-0 bg-white border-subtle"
@@ -1040,7 +1062,7 @@
           Nenhum lead encontrado com os filtros atuais.
         </p>
         <p class="text-caption text-grey-darken-1 mb-0 text-center mt-1">
-          O cadastro de leads será conectado ao fluxo de descoberta do Instagram na próxima etapa.
+          Use “Adicionar lead” para incluir um contato público revisado no funil.
         </p>
       </v-card>
 
@@ -1076,6 +1098,175 @@
         </button>
       </div>
     </section>
+
+    <UtilsResponsiveOverlay v-model="isCommercialLeadFormOpen" max-width="620">
+      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar :color="avatarBgIndigo" size="44" class="mr-3">
+              <Users size="20" :color="accentColor" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+                Adicionar lead comercial
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0">
+                Inclua apenas contatos públicos revisados para acompanhamento.
+              </p>
+            </div>
+          </div>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeCommercialLeadForm">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <v-form autocomplete="off" @submit.prevent="saveCommercialLead">
+          <v-select
+            v-model="commercialLeadForm.funnel"
+            label="Funil"
+            :items="commercialLeadFunnelOptions.slice(1)"
+            item-title="label"
+            item-value="value"
+            prepend-inner-icon="mdi-filter-outline"
+            variant="outlined"
+            density="comfortable"
+            color="indigo-darken-2"
+            class="admin-input mb-4"
+            hide-details="auto"
+            :disabled="isCreatingCommercialLead"
+          />
+
+          <v-text-field
+            v-model="commercialLeadForm.organizationName"
+            label="Nome da igreja ou parceiro"
+            prepend-inner-icon="mdi-domain"
+            variant="outlined"
+            density="comfortable"
+            color="indigo-darken-2"
+            class="admin-input mb-4"
+            hide-details="auto"
+            autocomplete="off"
+            :disabled="isCreatingCommercialLead"
+          />
+
+          <v-text-field
+            v-model="commercialLeadForm.instagramHandle"
+            label="Usuário do Instagram"
+            hint="Opcional; pode informar com ou sem @."
+            persistent-hint
+            prepend-inner-icon="mdi-instagram"
+            variant="outlined"
+            density="comfortable"
+            color="indigo-darken-2"
+            class="admin-input mb-4"
+            hide-details="auto"
+            autocomplete="off"
+            :disabled="isCreatingCommercialLead"
+          />
+
+          <v-text-field
+            v-model="commercialLeadForm.publicProfileUrl"
+            label="Link público do perfil ou Google Maps"
+            hint="Obrigatório se o usuário do Instagram não for informado."
+            persistent-hint
+            prepend-inner-icon="mdi-link-variant"
+            variant="outlined"
+            density="comfortable"
+            color="indigo-darken-2"
+            class="admin-input mb-4"
+            hide-details="auto"
+            autocomplete="off"
+            :disabled="isCreatingCommercialLead"
+          />
+
+          <div class="d-flex ga-3">
+            <v-text-field
+              v-model="commercialLeadForm.city"
+              label="Cidade"
+              prepend-inner-icon="mdi-map-marker-outline"
+              variant="outlined"
+              density="comfortable"
+              color="indigo-darken-2"
+              class="admin-input mb-4"
+              hide-details="auto"
+              autocomplete="off"
+              :disabled="isCreatingCommercialLead"
+            />
+            <v-text-field
+              v-model="commercialLeadForm.state"
+              label="UF"
+              variant="outlined"
+              density="comfortable"
+              color="indigo-darken-2"
+              class="admin-input mb-4"
+              hide-details="auto"
+              maxlength="2"
+              autocomplete="off"
+              :disabled="isCreatingCommercialLead"
+            />
+          </div>
+
+          <v-text-field
+            v-model="commercialLeadForm.website"
+            label="Site público"
+            prepend-inner-icon="mdi-web"
+            variant="outlined"
+            density="comfortable"
+            color="indigo-darken-2"
+            class="admin-input mb-4"
+            hide-details="auto"
+            autocomplete="off"
+            :disabled="isCreatingCommercialLead"
+          />
+
+          <v-text-field
+            v-model="commercialLeadForm.source"
+            label="Fonte"
+            hint="Ex.: google_places_reviewed, indicação ou pesquisa manual."
+            persistent-hint
+            prepend-inner-icon="mdi-source-branch"
+            variant="outlined"
+            density="comfortable"
+            color="indigo-darken-2"
+            class="admin-input mb-4"
+            hide-details="auto"
+            autocomplete="off"
+            :disabled="isCreatingCommercialLead"
+          />
+
+          <v-alert
+            v-if="commercialLeadFormError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+          >
+            {{ commercialLeadFormError }}
+          </v-alert>
+
+          <div class="admin-dialog-actions">
+            <v-btn
+              variant="text"
+              color="grey-darken-1"
+              class="text-none"
+              :disabled="isCreatingCommercialLead"
+              @click="closeCommercialLeadForm"
+            >
+              Cancelar
+            </v-btn>
+            <v-btn
+              type="submit"
+              color="indigo-darken-2"
+              class="text-none font-weight-bold"
+              :loading="isCreatingCommercialLead"
+              :disabled="isCreatingCommercialLead"
+            >
+              Salvar lead
+            </v-btn>
+          </div>
+        </v-form>
+      </v-card>
+    </UtilsResponsiveOverlay>
 
     <UtilsResponsiveOverlay v-model="isCommercialLeadDetailsOpen" max-width="620">
       <v-card
@@ -1152,6 +1343,9 @@
           </a>
           <a v-if="selectedCommercialLead.website" :href="selectedCommercialLead.website" target="_blank" rel="noreferrer">
             Abrir site
+          </a>
+          <a v-if="selectedCommercialLead.signupUrl" :href="selectedCommercialLead.signupUrl" target="_blank" rel="noreferrer">
+            Abrir link de cadastro atribuído
           </a>
           <span v-if="!selectedCommercialLead.publicProfileUrl && !selectedCommercialLead.website" class="text-caption text-grey-darken-1">
             Nenhum link disponível.
@@ -1290,6 +1484,7 @@ const {
   removeChurchUserByAdmin,
   deleteChurch,
   getCommercialLeads,
+  createCommercialLead,
   getCommercialLeadById,
   updateCommercialLeadStage,
 } = useAdmin();
@@ -1361,6 +1556,20 @@ const commercialLeadFunnelFilter = ref<"ALL" | "CUSTOMER" | "AFFILIATE">("ALL");
 const commercialLeadStageFilter = ref<"ALL" | CommercialLeadStage>("ALL");
 const isLoadingCommercialLeads = ref(false);
 const commercialLeadsError = ref("");
+const commercialLeadNotice = ref("");
+const isCommercialLeadFormOpen = ref(false);
+const isCreatingCommercialLead = ref(false);
+const commercialLeadFormError = ref("");
+const commercialLeadForm = reactive({
+  funnel: "CUSTOMER" as "CUSTOMER" | "AFFILIATE",
+  organizationName: "",
+  instagramHandle: "",
+  publicProfileUrl: "",
+  city: "",
+  state: "",
+  website: "",
+  source: "manual_review",
+});
 const selectedCommercialLead = ref<CommercialLeadDetails | null>(null);
 const isCommercialLeadDetailsOpen = ref(false);
 const isLoadingCommercialLeadDetails = ref(false);
@@ -1678,6 +1887,63 @@ const loadPlatformChurches = async () => {
     adminChurches.value = data ?? [];
   } finally {
     isLoadingPlatform.value = false;
+  }
+};
+
+const resetCommercialLeadForm = () => {
+  commercialLeadForm.funnel = "CUSTOMER";
+  commercialLeadForm.organizationName = "";
+  commercialLeadForm.instagramHandle = "";
+  commercialLeadForm.publicProfileUrl = "";
+  commercialLeadForm.city = "";
+  commercialLeadForm.state = "";
+  commercialLeadForm.website = "";
+  commercialLeadForm.source = "manual_review";
+};
+
+const openCommercialLeadForm = () => {
+  commercialLeadFormError.value = "";
+  commercialLeadNotice.value = "";
+  resetCommercialLeadForm();
+  isCommercialLeadFormOpen.value = true;
+};
+
+const closeCommercialLeadForm = () => {
+  if (isCreatingCommercialLead.value) return;
+  isCommercialLeadFormOpen.value = false;
+};
+
+const saveCommercialLead = async () => {
+  commercialLeadFormError.value = "";
+  commercialLeadNotice.value = "";
+  isCreatingCommercialLead.value = true;
+
+  try {
+    const { data, error } = await createCommercialLead({
+      funnel: commercialLeadForm.funnel,
+      organizationName: commercialLeadForm.organizationName || undefined,
+      instagramHandle: commercialLeadForm.instagramHandle || undefined,
+      publicProfileUrl: commercialLeadForm.publicProfileUrl || undefined,
+      city: commercialLeadForm.city || undefined,
+      state: commercialLeadForm.state || undefined,
+      website: commercialLeadForm.website || undefined,
+      source: commercialLeadForm.source || undefined,
+    });
+
+    if (error || !data?.lead) {
+      commercialLeadFormError.value = error || "Não foi possível salvar o lead.";
+      return;
+    }
+
+    isCommercialLeadFormOpen.value = false;
+    commercialLeadNotice.value = data.created
+      ? "Lead adicionado ao funil comercial."
+      : "Esse lead já estava cadastrado; abrimos o registro existente.";
+    resetCommercialLeadForm();
+    await loadCommercialLeads();
+    await selectCommercialLead(data.lead.id);
+  } finally {
+    isCreatingCommercialLead.value = false;
   }
 };
 

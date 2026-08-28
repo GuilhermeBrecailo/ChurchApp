@@ -10,6 +10,11 @@ export async function AdminRoutes(app: FastifyInstance) {
     controllerHandler(adapters.getCommercialLeads.bind(adapters)),
   );
 
+  app.post(
+    "/api/admin/commercial-leads",
+    controllerHandler(adapters.createCommercialLead.bind(adapters)),
+  );
+
   app.get(
     "/api/admin/commercial-leads/:id",
     controllerHandler(adapters.getCommercialLeadById.bind(adapters)),

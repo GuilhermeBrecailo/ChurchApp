@@ -2,9 +2,11 @@ const mockPrismaClient = {
   user: { findUnique: jest.fn() },
   crunch: { findUnique: jest.fn(), update: jest.fn(), findMany: jest.fn() },
   commercialLead: {
+    findFirst: jest.fn(),
     findMany: jest.fn(),
     count: jest.fn(),
     findUnique: jest.fn(),
+    create: jest.fn(),
     update: jest.fn(),
   },
   commercialLeadEvent: { create: jest.fn() },
@@ -264,6 +266,73 @@ describe("AdminAdapters commercial leads", () => {
     );
 
     expect(result).toEqual(lead);
+  });
+
+  it("returns an attributed signup URL without exposing the raw token", async () => {
+    mockPrismaClient.commercialLead.findUnique.mockResolvedValue({
+      id: "lead-1",
+      funnel: "CUSTOMER",
+      stage: "QUALIFIED",
+      signupToken: "550e8400-e29b-41d4-a716-446655440000",
+      events: [],
+    });
+
+    const result = await adapters.getCommercialLeadById(
+      makeRequest({ params: { id: "lead-1" } }),
+    );
+
+    expect(result).toEqual({
+      id: "lead-1",
+      funnel: "CUSTOMER",
+      stage: "QUALIFIED",
+      events: [],
+      signupUrl:
+        "https://churchapp.site/register?lead=550e8400-e29b-41d4-a716-446655440000",
+    });
+    expect(result).not.toHaveProperty("signupToken");
+  });
+
+  it("creates a reviewed lead and records it in the commercial funnel", async () => {
+    const lead = {
+      id: "lead-1",
+      funnel: "CUSTOMER",
+      stage: "DISCOVERED",
+      organizationName: "Igreja Central",
+      publicProfileUrl: "https://maps.google.com/?cid=123",
+    };
+    mockPrismaClient.commercialLead.findFirst.mockResolvedValue(null);
+    mockPrismaClient.commercialLead.create.mockResolvedValue(lead);
+    mockPrismaClient.commercialLeadEvent.create.mockResolvedValue({ id: "event-1" });
+
+    const result = await adapters.createCommercialLead(
+      makeRequest({
+        body: {
+          funnel: "CUSTOMER",
+          organizationName: "Igreja Central",
+          publicProfileUrl: "https://maps.google.com/?cid=123",
+          source: "google_places_reviewed",
+        },
+      }),
+    );
+
+    expect(result).toEqual({ lead, created: true });
+    expect(mockPrismaClient.commercialLead.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        funnel: "CUSTOMER",
+        stage: "DISCOVERED",
+        organizationName: "Igreja Central",
+        publicProfileUrl: "https://maps.google.com/?cid=123",
+        source: "google_places_reviewed",
+      }),
+    });
+  });
+
+  it("rejects a reviewed lead without a public identity", async () => {
+    await expect(
+      adapters.createCommercialLead(
+        makeRequest({ body: { funnel: "CUSTOMER", organizationName: "Igreja Central" } }),
+      ),
+    ).rejects.toThrow(DomainError);
   });
 
   it("changes a lead stage through the validated pipeline", async () => {

@@ -145,6 +145,22 @@ export interface CommercialLeadEvent {
 
 export interface CommercialLeadDetails extends CommercialLead {
   events: CommercialLeadEvent[];
+  signupUrl?: string;
+}
+
+export interface CommercialLeadCreateInput {
+  funnel: CommercialLeadFunnel;
+  instagramHandle?: string;
+  instagramUserId?: string;
+  organizationName?: string;
+  contactName?: string;
+  publicProfileUrl?: string;
+  city?: string;
+  state?: string;
+  website?: string;
+  phone?: string;
+  source?: string;
+  score?: number;
 }
 
 export const useAdmin = () => {
@@ -301,6 +317,19 @@ export const useAdmin = () => {
     );
   };
 
+  const createCommercialLead = async (
+    input: CommercialLeadCreateInput,
+  ): Promise<ApiResponse<{ lead: CommercialLead; created: boolean }>> => {
+    return await $customFetch<{ lead: CommercialLead; created: boolean }>(
+      `${config.public.URL_BACKEND}/api/admin/commercial-leads`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+        body: input,
+      },
+    );
+  };
+
   const getCommercialLeadById = async (
     id: string,
   ): Promise<ApiResponse<CommercialLeadDetails>> => {
@@ -337,6 +366,7 @@ export const useAdmin = () => {
     setChurchPlan,
     deleteChurch,
     getCommercialLeads,
+    createCommercialLead,
     getCommercialLeadById,
     updateCommercialLeadStage,
   };

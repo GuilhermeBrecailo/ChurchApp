@@ -1,4 +1,5 @@
 import { FastifyRequest } from "fastify/types/request";
+import { z } from "zod";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { KeycloakProvider } from "../../infrastructure/identity/KeycloakProvider";
@@ -8,7 +9,10 @@ import {
   type LeadFunnel,
   type LeadStage,
 } from "../../domain/commercial/leadPipeline";
-import { CommercialLeadRepository } from "./commercialLeadRepository";
+import {
+  CommercialLeadRepository,
+  type CreateCommercialLeadInput,
+} from "./commercialLeadRepository";
 
 const COMMERCIAL_LEAD_FUNNELS = new Set<LeadFunnel>(["CUSTOMER", "AFFILIATE"]);
 const COMMERCIAL_LEAD_STAGES = new Set<LeadStage>([
@@ -28,6 +32,10 @@ const COMMERCIAL_LEAD_STAGES = new Set<LeadStage>([
   "DO_NOT_CONTACT",
   "PAUSED",
 ]);
+
+function optionalBodyString(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
 
 function generateTempPassword() {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
@@ -134,6 +142,39 @@ export class AdminAdapters {
     });
   }
 
+  async createCommercialLead(request: FastifyRequest) {
+    await assertPlatformAdmin(request);
+
+    const body = (request.body || {}) as Record<string, unknown>;
+    const score =
+      typeof body.score === "number" || typeof body.score === "string"
+        ? Number(body.score)
+        : undefined;
+    const input: CreateCommercialLeadInput = {
+      funnel: body.funnel as CreateCommercialLeadInput["funnel"],
+      instagramHandle: optionalBodyString(body.instagramHandle),
+      instagramUserId: optionalBodyString(body.instagramUserId),
+      organizationName: optionalBodyString(body.organizationName),
+      contactName: optionalBodyString(body.contactName),
+      publicProfileUrl: optionalBodyString(body.publicProfileUrl),
+      city: optionalBodyString(body.city),
+      state: optionalBodyString(body.state),
+      website: optionalBodyString(body.website),
+      phone: optionalBodyString(body.phone),
+      source: optionalBodyString(body.source),
+      ...(score === undefined ? {} : { score }),
+    };
+
+    try {
+      return await this.commercialLeadRepository.findOrCreate(input);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new DomainError(error.issues[0]?.message || "Dados do lead inválidos");
+      }
+      throw error;
+    }
+  }
+
   async getCommercialLeadById(request: FastifyRequest) {
     await assertPlatformAdmin(request);
 
@@ -147,7 +188,23 @@ export class AdminAdapters {
       throw new DomainError("Lead comercial não encontrado");
     }
 
-    return lead;
+    const { signupToken, ...safeLead } = lead as typeof lead & {
+      signupToken?: string;
+    };
+
+    if (!signupToken) {
+      return safeLead;
+    }
+
+    const frontendUrl = (process.env.URL_FRONTEND || "https://churchapp.site").replace(
+      /\/$/,
+      "",
+    );
+
+    return {
+      ...safeLead,
+      signupUrl: `${frontendUrl}/register?lead=${encodeURIComponent(signupToken)}`,
+    };
   }
 
   async updateCommercialLeadStage(request: FastifyRequest) {
