@@ -1388,6 +1388,30 @@
         </div>
 
         <div>
+          <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">Mensagens recebidas do Instagram</h3>
+          <div v-if="selectedCommercialLeadInstagramMessages.length" class="commercial-lead-message-list mb-5">
+            <div
+              v-for="message in selectedCommercialLeadInstagramMessages"
+              :key="message.id"
+              class="commercial-lead-message"
+            >
+              <div class="d-flex align-center justify-space-between ga-2 mb-2">
+                <v-chip size="x-small" color="pink-darken-2" variant="tonal">
+                  {{ message.eventType === "MESSAGE" ? "Mensagem" : "Evento do Instagram" }}
+                </v-chip>
+                <span class="text-caption text-grey-darken-1">
+                  {{ formatDate(message.occurredAt || message.createdAt) }}
+                </span>
+              </div>
+              <p class="text-body-2 text-grey-darken-4 mb-0">
+                {{ message.messageText || "Evento recebido sem texto." }}
+              </p>
+            </div>
+          </div>
+          <p v-else class="text-caption text-grey-darken-1 mb-5">
+            Nenhuma mensagem recebida pelo webhook ainda.
+          </p>
+
           <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">Histórico</h3>
           <div v-if="selectedCommercialLead.events.length" class="commercial-lead-timeline">
             <div v-for="event in [...selectedCommercialLead.events].reverse()" :key="event.id" class="commercial-lead-event">
@@ -1742,6 +1766,12 @@ const commercialLeadStageOptionsForSelected = computed(() => {
     value,
   }));
 });
+
+const selectedCommercialLeadInstagramMessages = computed(() =>
+  [...(selectedCommercialLead.value?.instagramWebhookEvents ?? [])]
+    .filter((message) => message.eventType === "MESSAGE")
+    .reverse(),
+);
 
 const topChurches = computed(() =>
   [...adminChurches.value]
@@ -3121,6 +3151,18 @@ onMounted(async () => {
   border-left: 2px solid var(--app-color-border, #e5e7eb);
   margin-left: 5px;
   padding-left: 16px;
+}
+
+.commercial-lead-message-list {
+  display: grid;
+  gap: 10px;
+}
+
+.commercial-lead-message {
+  border: 1px solid var(--app-color-border, #e5e7eb);
+  border-radius: 12px;
+  background: var(--app-color-surface-soft, #fafafa);
+  padding: 12px 14px;
 }
 
 .commercial-lead-event {

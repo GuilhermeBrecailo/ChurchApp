@@ -143,8 +143,19 @@ export interface CommercialLeadEvent {
   createdAt: string;
 }
 
+export interface CommercialLeadInstagramMessage {
+  id: string;
+  eventId: string;
+  eventType: "MESSAGE" | "COMMENT" | "OTHER";
+  senderId?: string | null;
+  messageText?: string | null;
+  occurredAt?: string | null;
+  createdAt: string;
+}
+
 export interface CommercialLeadDetails extends CommercialLead {
   events: CommercialLeadEvent[];
+  instagramWebhookEvents?: CommercialLeadInstagramMessage[];
   signupUrl?: string;
 }
 

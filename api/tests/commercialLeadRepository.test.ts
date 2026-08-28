@@ -178,6 +178,17 @@ describe("CommercialLeadRepository", () => {
     const detail = {
       ...discoveredLead,
       events: [{ id: "event-1", type: "DISCOVERED" }],
+      instagramWebhookEvents: [
+        {
+          id: "webhook-event-1",
+          eventId: "message:business-1:mid-1",
+          eventType: "MESSAGE",
+          senderId: "person-1",
+          messageText: "Oi",
+          occurredAt: new Date("2026-08-28T12:00:00.000Z"),
+          createdAt: new Date("2026-08-28T12:00:00.000Z"),
+        },
+      ],
     };
     mockPrismaClient.commercialLead.findUnique.mockResolvedValue(detail);
 
@@ -187,7 +198,21 @@ describe("CommercialLeadRepository", () => {
     expect(result).toEqual(detail);
     expect(mockPrismaClient.commercialLead.findUnique).toHaveBeenCalledWith({
       where: { id: "lead-1" },
-      include: { events: { orderBy: { createdAt: "asc" } } },
+      include: {
+        events: { orderBy: { createdAt: "asc" } },
+        instagramWebhookEvents: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            eventId: true,
+            eventType: true,
+            senderId: true,
+            messageText: true,
+            occurredAt: true,
+            createdAt: true,
+          },
+        },
+      },
     });
   });
 

@@ -106,7 +106,21 @@ export class CommercialLeadRepository {
   async findByIdWithEvents(leadId: string) {
     return this.prisma.commercialLead.findUnique({
       where: { id: leadId },
-      include: { events: { orderBy: { createdAt: "asc" } } },
+      include: {
+        events: { orderBy: { createdAt: "asc" } },
+        instagramWebhookEvents: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            eventId: true,
+            eventType: true,
+            senderId: true,
+            messageText: true,
+            occurredAt: true,
+            createdAt: true,
+          },
+        },
+      },
     });
   }
 
