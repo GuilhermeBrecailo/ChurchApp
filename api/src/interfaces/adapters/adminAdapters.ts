@@ -3,6 +3,31 @@ import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { KeycloakProvider } from "../../infrastructure/identity/KeycloakProvider";
 import { PLANS, Plan } from "../../domain/planConfig";
+import {
+  CommercialLeadPipelineError,
+  type LeadFunnel,
+  type LeadStage,
+} from "../../domain/commercial/leadPipeline";
+import { CommercialLeadRepository } from "./commercialLeadRepository";
+
+const COMMERCIAL_LEAD_FUNNELS = new Set<LeadFunnel>(["CUSTOMER", "AFFILIATE"]);
+const COMMERCIAL_LEAD_STAGES = new Set<LeadStage>([
+  "DISCOVERED",
+  "QUALIFIED",
+  "FIRST_CONTACT_PENDING",
+  "FIRST_CONTACT_SENT",
+  "AWAITING_REPLY",
+  "CONVERSATION_ACTIVE",
+  "INTERESTED",
+  "WHATSAPP_PENDING",
+  "SIGNED_UP",
+  "ACTIVATED",
+  "IN_GROUP",
+  "ACTIVE",
+  "NOT_INTERESTED",
+  "DO_NOT_CONTACT",
+  "PAUSED",
+]);
 
 function generateTempPassword() {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
@@ -72,6 +97,83 @@ async function assertPlatformAdmin(request: FastifyRequest) {
 }
 
 export class AdminAdapters {
+  private readonly commercialLeadRepository = new CommercialLeadRepository();
+
+  async getCommercialLeads(request: FastifyRequest) {
+    await assertPlatformAdmin(request);
+
+    const query = request.query as {
+      funnel?: unknown;
+      stage?: unknown;
+      includeDoNotContact?: unknown;
+      limit?: unknown;
+    };
+    const funnel = typeof query.funnel === "string" ? query.funnel : undefined;
+    const stage = typeof query.stage === "string" ? query.stage : undefined;
+
+    if (funnel && !COMMERCIAL_LEAD_FUNNELS.has(funnel as LeadFunnel)) {
+      throw new DomainError("Funil de lead comercial inválido");
+    }
+    if (stage && !COMMERCIAL_LEAD_STAGES.has(stage as LeadStage)) {
+      throw new DomainError("Etapa de lead comercial inválida");
+    }
+
+    let limit: number | undefined;
+    if (query.limit !== undefined) {
+      limit = Number(query.limit);
+      if (!Number.isInteger(limit) || limit < 1) {
+        throw new DomainError("Limite de leads inválido");
+      }
+    }
+
+    return this.commercialLeadRepository.list({
+      funnel: funnel as LeadFunnel | undefined,
+      stage: stage as LeadStage | undefined,
+      includeDoNotContact: query.includeDoNotContact === "true",
+      limit,
+    });
+  }
+
+  async getCommercialLeadById(request: FastifyRequest) {
+    await assertPlatformAdmin(request);
+
+    const { id } = request.params as { id?: string };
+    if (!id) {
+      throw new DomainError("Lead comercial não informado");
+    }
+
+    const lead = await this.commercialLeadRepository.findByIdWithEvents(id);
+    if (!lead) {
+      throw new DomainError("Lead comercial não encontrado");
+    }
+
+    return lead;
+  }
+
+  async updateCommercialLeadStage(request: FastifyRequest) {
+    await assertPlatformAdmin(request);
+
+    const { id } = request.params as { id?: string };
+    const body = request.body as { stage?: unknown };
+    const stage = typeof body.stage === "string" ? body.stage : undefined;
+
+    if (!id) {
+      throw new DomainError("Lead comercial não informado");
+    }
+    if (!stage || !COMMERCIAL_LEAD_STAGES.has(stage as LeadStage)) {
+      throw new DomainError("Etapa de lead comercial inválida");
+    }
+
+    try {
+      return await this.commercialLeadRepository.transition(id, stage as LeadStage);
+    } catch (error) {
+      if (error instanceof CommercialLeadPipelineError) {
+        throw new DomainError(error.message);
+      }
+      throw error;
+    }
+  }
+
   async getChurches(request: FastifyRequest) {
     await assertPlatformAdmin(request);
 

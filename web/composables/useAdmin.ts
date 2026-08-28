@@ -91,6 +91,62 @@ export interface AdminChurchDetails extends AdminChurch {
   }[];
 }
 
+export type CommercialLeadFunnel = "CUSTOMER" | "AFFILIATE";
+export type CommercialLeadStage =
+  | "DISCOVERED"
+  | "QUALIFIED"
+  | "FIRST_CONTACT_PENDING"
+  | "FIRST_CONTACT_SENT"
+  | "AWAITING_REPLY"
+  | "CONVERSATION_ACTIVE"
+  | "INTERESTED"
+  | "WHATSAPP_PENDING"
+  | "SIGNED_UP"
+  | "ACTIVATED"
+  | "IN_GROUP"
+  | "ACTIVE"
+  | "NOT_INTERESTED"
+  | "DO_NOT_CONTACT"
+  | "PAUSED";
+
+export interface CommercialLead {
+  id: string;
+  funnel: CommercialLeadFunnel;
+  stage: CommercialLeadStage;
+  instagramHandle?: string | null;
+  instagramUserId?: string | null;
+  organizationName?: string | null;
+  contactName?: string | null;
+  publicProfileUrl?: string | null;
+  city?: string | null;
+  state?: string | null;
+  website?: string | null;
+  phone?: string | null;
+  source?: string | null;
+  score: number;
+  doNotContact: boolean;
+  firstContactAt?: string | null;
+  lastContactAt?: string | null;
+  nextActionAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { events: number };
+}
+
+export interface CommercialLeadEvent {
+  id: string;
+  type: string;
+  fromStage?: CommercialLeadStage | null;
+  toStage?: CommercialLeadStage | null;
+  channel?: string | null;
+  metadata?: unknown;
+  createdAt: string;
+}
+
+export interface CommercialLeadDetails extends CommercialLead {
+  events: CommercialLeadEvent[];
+}
+
 export const useAdmin = () => {
   const config = useRuntimeConfig();
   const { access_token } = useAuth();
@@ -223,6 +279,54 @@ export const useAdmin = () => {
     );
   };
 
+  const getCommercialLeads = async (filters: {
+    funnel?: CommercialLeadFunnel;
+    stage?: CommercialLeadStage;
+    includeDoNotContact?: boolean;
+    limit?: number;
+  } = {}): Promise<ApiResponse<{ items: CommercialLead[]; total: number }>> => {
+    const params = new URLSearchParams();
+    if (filters.funnel) params.set("funnel", filters.funnel);
+    if (filters.stage) params.set("stage", filters.stage);
+    if (filters.includeDoNotContact) params.set("includeDoNotContact", "true");
+    if (filters.limit) params.set("limit", String(filters.limit));
+
+    const query = params.toString();
+    return await $customFetch<{ items: CommercialLead[]; total: number }>(
+      `${config.public.URL_BACKEND}/api/admin/commercial-leads${query ? `?${query}` : ""}`,
+      {
+        method: "GET",
+        headers: authHeaders(),
+      },
+    );
+  };
+
+  const getCommercialLeadById = async (
+    id: string,
+  ): Promise<ApiResponse<CommercialLeadDetails>> => {
+    return await $customFetch<CommercialLeadDetails>(
+      `${config.public.URL_BACKEND}/api/admin/commercial-leads/${id}`,
+      {
+        method: "GET",
+        headers: authHeaders(),
+      },
+    );
+  };
+
+  const updateCommercialLeadStage = async (
+    id: string,
+    stage: CommercialLeadStage,
+  ): Promise<ApiResponse<CommercialLead>> => {
+    return await $customFetch<CommercialLead>(
+      `${config.public.URL_BACKEND}/api/admin/commercial-leads/${id}/stage`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: { stage },
+      },
+    );
+  };
+
   return {
     getChurches,
     getDepartments,
@@ -232,5 +336,8 @@ export const useAdmin = () => {
     removeChurchUserByAdmin,
     setChurchPlan,
     deleteChurch,
+    getCommercialLeads,
+    getCommercialLeadById,
+    updateCommercialLeadStage,
   };
 };

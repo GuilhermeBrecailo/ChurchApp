@@ -48,6 +48,7 @@
       >
         <v-tab value="geral" class="text-none font-weight-medium admin-tab">Geral</v-tab>
         <v-tab value="igrejas" class="text-none font-weight-medium admin-tab">Igrejas Cadastradas</v-tab>
+        <v-tab value="leads" class="text-none font-weight-medium admin-tab">Leads comerciais</v-tab>
         <v-tab value="videos" class="text-none font-weight-medium admin-tab">Vídeos de Ajuda</v-tab>
       </v-tabs>
     </div>
@@ -958,6 +959,260 @@
 
     </section>
 
+    <section v-show="activePlatformTab === 'leads'" class="platform-tab-panel commercial-leads-panel">
+      <div class="directory-heading mb-4">
+        <div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
+            Leads comerciais
+          </h2>
+          <p class="text-caption text-grey-darken-1 mb-0">
+            Acompanhe o relacionamento com igrejas e parceiros sem misturar dados de nenhuma igreja cliente.
+          </p>
+        </div>
+        <v-chip size="small" color="indigo-darken-2" variant="tonal">
+          {{ commercialLeadTotal }} leads
+        </v-chip>
+      </div>
+
+      <div class="admin-filter-bar mb-4 commercial-lead-filters">
+        <v-select
+          v-model="commercialLeadFunnelFilter"
+          label="Funil"
+          :items="commercialLeadFunnelOptions"
+          item-title="label"
+          item-value="value"
+          prepend-inner-icon="mdi-filter-outline"
+          variant="outlined"
+          density="compact"
+          color="indigo-darken-2"
+          bg-color="white"
+          hide-details
+          @update:model-value="loadCommercialLeads"
+        />
+        <v-select
+          v-model="commercialLeadStageFilter"
+          label="Etapa"
+          :items="commercialLeadStageFilterOptions"
+          item-title="label"
+          item-value="value"
+          prepend-inner-icon="mdi-timeline-outline"
+          variant="outlined"
+          density="compact"
+          color="indigo-darken-2"
+          bg-color="white"
+          hide-details
+          @update:model-value="loadCommercialLeads"
+        />
+        <v-btn
+          variant="tonal"
+          color="indigo-darken-2"
+          class="text-none"
+          :loading="isLoadingCommercialLeads"
+          @click="loadCommercialLeads"
+        >
+          Atualizar
+        </v-btn>
+      </div>
+
+      <v-alert
+        v-if="commercialLeadsError"
+        type="error"
+        variant="tonal"
+        density="compact"
+        class="mb-4"
+      >
+        {{ commercialLeadsError }}
+      </v-alert>
+
+      <v-card
+        v-if="isLoadingCommercialLeads"
+        class="rounded-lg pa-4 elevation-0 bg-white border-subtle"
+      >
+        <v-skeleton-loader type="list-item-three-line@4" />
+      </v-card>
+
+      <v-card
+        v-else-if="filteredCommercialLeads.length === 0"
+        class="platform-empty rounded-lg pa-6 elevation-0 bg-white border-subtle"
+      >
+        <Users size="34" color="#9CA3AF" class="mb-3" />
+        <p class="text-body-2 text-grey-darken-1 font-weight-medium mb-0 text-center">
+          Nenhum lead encontrado com os filtros atuais.
+        </p>
+        <p class="text-caption text-grey-darken-1 mb-0 text-center mt-1">
+          O cadastro de leads será conectado ao fluxo de descoberta do Instagram na próxima etapa.
+        </p>
+      </v-card>
+
+      <div v-else class="commercial-lead-list">
+        <button
+          v-for="lead in filteredCommercialLeads"
+          :key="lead.id"
+          type="button"
+          class="commercial-lead-card"
+          @click="selectCommercialLead(lead.id)"
+        >
+          <span class="commercial-lead-card-top">
+            <span class="commercial-lead-avatar">
+              <Users size="19" :color="accentColor" />
+            </span>
+            <span class="commercial-lead-card-copy">
+              <strong>{{ commercialLeadName(lead) }}</strong>
+              <small>{{ lead.instagramHandle ? `@${lead.instagramHandle}` : "Instagram não informado" }}</small>
+            </span>
+            <v-chip size="x-small" :color="commercialLeadStageColor(lead.stage)" variant="tonal">
+              {{ commercialLeadStageLabel(lead.stage) }}
+            </v-chip>
+          </span>
+          <span class="commercial-lead-card-meta">
+            <span>{{ lead.funnel === "CUSTOMER" ? "Igreja" : "Afiliado" }}</span>
+            <span>Score {{ lead.score }}</span>
+            <span>{{ lead._count?.events || 0 }} eventos</span>
+            <span>{{ formatDate(lead.updatedAt) }}</span>
+          </span>
+          <span v-if="lead.doNotContact" class="commercial-lead-optout">
+            Não contatar
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <UtilsResponsiveOverlay v-model="isCommercialLeadDetailsOpen" max-width="620">
+      <v-card
+        v-if="isLoadingCommercialLeadDetails"
+        class="rounded-xl pa-6 bg-white"
+        elevation="0"
+      >
+        <v-skeleton-loader type="article, list-item-three-line@3" />
+      </v-card>
+      <v-card
+        v-else-if="selectedCommercialLead"
+        class="rounded-xl pa-6 bg-white commercial-lead-details"
+        elevation="0"
+      >
+        <div class="responsive-dialog-header mb-5">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar :color="avatarBgIndigo" size="48" class="mr-3">
+              <Users size="22" :color="accentColor" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                {{ commercialLeadName(selectedCommercialLead) }}
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0 text-truncate">
+                {{ selectedCommercialLead.instagramHandle ? `@${selectedCommercialLead.instagramHandle}` : "Lead comercial" }}
+              </p>
+            </div>
+          </div>
+          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="isCommercialLeadDetailsOpen = false">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <v-alert
+          v-if="selectedCommercialLead.doNotContact"
+          type="warning"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          Este lead está marcado para não receber contato. O bloqueio é permanente.
+        </v-alert>
+
+        <div class="commercial-lead-detail-grid mb-5">
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Funil</p>
+            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+              {{ selectedCommercialLead.funnel === "CUSTOMER" ? "Igrejas" : "Afiliados" }}
+            </p>
+          </div>
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Score</p>
+            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+              {{ selectedCommercialLead.score }}/100
+            </p>
+          </div>
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Localização</p>
+            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+              {{ commercialLeadLocation(selectedCommercialLead) }}
+            </p>
+          </div>
+          <div>
+            <p class="text-caption text-grey-darken-1 mb-1">Criado em</p>
+            <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+              {{ formatDate(selectedCommercialLead.createdAt) }}
+            </p>
+          </div>
+        </div>
+
+        <div class="commercial-lead-links mb-5">
+          <a v-if="selectedCommercialLead.publicProfileUrl" :href="selectedCommercialLead.publicProfileUrl" target="_blank" rel="noreferrer">
+            Abrir perfil do Instagram
+          </a>
+          <a v-if="selectedCommercialLead.website" :href="selectedCommercialLead.website" target="_blank" rel="noreferrer">
+            Abrir site
+          </a>
+          <span v-if="!selectedCommercialLead.publicProfileUrl && !selectedCommercialLead.website" class="text-caption text-grey-darken-1">
+            Nenhum link disponível.
+          </span>
+        </div>
+
+        <v-divider class="mb-4" />
+
+        <div class="mb-5">
+          <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">Etapa do relacionamento</h3>
+          <p class="text-caption text-grey-darken-1 mb-3">
+            Cada alteração é validada pelo funil e fica registrada no histórico.
+          </p>
+          <div class="d-flex align-center ga-2">
+            <v-select
+              v-model="selectedCommercialLeadStage"
+              :items="commercialLeadStageOptionsForSelected"
+              item-title="label"
+              item-value="value"
+              variant="outlined"
+              density="comfortable"
+              color="indigo-darken-2"
+              hide-details
+              :disabled="selectedCommercialLead.doNotContact || isSavingCommercialLeadStage"
+            />
+            <v-btn
+              color="indigo-darken-2"
+              variant="tonal"
+              class="text-none"
+              :loading="isSavingCommercialLeadStage"
+              :disabled="selectedCommercialLead.doNotContact || selectedCommercialLeadStage === selectedCommercialLead.stage"
+              @click="saveCommercialLeadStage"
+            >
+              Salvar
+            </v-btn>
+          </div>
+          <v-alert v-if="commercialLeadStageError" type="error" variant="tonal" density="compact" class="mt-3">
+            {{ commercialLeadStageError }}
+          </v-alert>
+        </div>
+
+        <div>
+          <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">Histórico</h3>
+          <div v-if="selectedCommercialLead.events.length" class="commercial-lead-timeline">
+            <div v-for="event in [...selectedCommercialLead.events].reverse()" :key="event.id" class="commercial-lead-event">
+              <span class="commercial-lead-event-dot" />
+              <div>
+                <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
+                  {{ commercialLeadEventLabel(event) }}
+                </p>
+                <p class="text-caption text-grey-darken-1 mb-0">
+                  {{ formatDate(event.createdAt) }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <p v-else class="text-caption text-grey-darken-1 mb-0">Nenhum evento registrado.</p>
+        </div>
+      </v-card>
+    </UtilsResponsiveOverlay>
+
     <section v-show="activePlatformTab === 'videos'" class="platform-tab-panel platform-help-panel">
       <AdminHelpVideos />
     </section>
@@ -1006,6 +1261,9 @@ import {
   type AdminChurchDetails,
   type AdminChurchSchedule,
   type AdminChurchUser,
+  type CommercialLead,
+  type CommercialLeadDetails,
+  type CommercialLeadStage,
 } from "../../composables/useAdmin";
 import {
   useChurchRoles,
@@ -1031,6 +1289,9 @@ const {
   resetChurchUserPasswordByAdmin,
   removeChurchUserByAdmin,
   deleteChurch,
+  getCommercialLeads,
+  getCommercialLeadById,
+  updateCommercialLeadStage,
 } = useAdmin();
 const { getRoles, addMemberRole, removeMemberRole } = useChurchRoles();
 
@@ -1059,7 +1320,7 @@ function churchTrialDaysLeft(church: AdminChurch): number | null {
   return Math.max(0, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
 }
 
-type PlatformAdminTab = "geral" | "igrejas" | "videos";
+type PlatformAdminTab = "geral" | "igrejas" | "leads" | "videos";
 
 const activePlatformTab = ref<PlatformAdminTab>("geral");
 
@@ -1094,6 +1355,18 @@ const showAllChurchDepartments = ref(false);
 const showAllChurchSchedules = ref(false);
 const platformSearch = ref("");
 const platformStatusFilter = ref<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
+const commercialLeads = ref<CommercialLead[]>([]);
+const commercialLeadTotal = ref(0);
+const commercialLeadFunnelFilter = ref<"ALL" | "CUSTOMER" | "AFFILIATE">("ALL");
+const commercialLeadStageFilter = ref<"ALL" | CommercialLeadStage>("ALL");
+const isLoadingCommercialLeads = ref(false);
+const commercialLeadsError = ref("");
+const selectedCommercialLead = ref<CommercialLeadDetails | null>(null);
+const isCommercialLeadDetailsOpen = ref(false);
+const isLoadingCommercialLeadDetails = ref(false);
+const selectedCommercialLeadStage = ref<CommercialLeadStage | null>(null);
+const isSavingCommercialLeadStage = ref(false);
+const commercialLeadStageError = ref("");
 
 const isPlatformAdmin = computed(
   () =>
@@ -1196,6 +1469,71 @@ const filteredAdminChurches = computed(() => {
   });
 });
 
+const commercialLeadFunnelOptions = [
+  { label: "Todos os funis", value: "ALL" },
+  { label: "Igrejas", value: "CUSTOMER" },
+  { label: "Afiliados", value: "AFFILIATE" },
+];
+
+const commercialLeadStageLabels: Record<CommercialLeadStage, string> = {
+  DISCOVERED: "Descoberto",
+  QUALIFIED: "Qualificado",
+  FIRST_CONTACT_PENDING: "Contato pendente",
+  FIRST_CONTACT_SENT: "Primeiro contato enviado",
+  AWAITING_REPLY: "Aguardando resposta",
+  CONVERSATION_ACTIVE: "Conversa ativa",
+  INTERESTED: "Interessado",
+  WHATSAPP_PENDING: "WhatsApp pendente",
+  SIGNED_UP: "Cadastrado",
+  ACTIVATED: "Ativado",
+  IN_GROUP: "No grupo",
+  ACTIVE: "Ativo",
+  NOT_INTERESTED: "Sem interesse",
+  DO_NOT_CONTACT: "Não contatar",
+  PAUSED: "Pausado",
+};
+
+const commercialLeadStageFilterOptions = [
+  { label: "Todas as etapas", value: "ALL" },
+  ...Object.entries(commercialLeadStageLabels).map(([value, label]) => ({ label, value })),
+];
+
+const commercialLeadTransitions: Record<CommercialLeadStage, CommercialLeadStage[]> = {
+  DISCOVERED: ["QUALIFIED", "PAUSED"],
+  QUALIFIED: ["FIRST_CONTACT_PENDING", "PAUSED"],
+  FIRST_CONTACT_PENDING: ["FIRST_CONTACT_SENT", "PAUSED"],
+  FIRST_CONTACT_SENT: ["AWAITING_REPLY", "PAUSED"],
+  AWAITING_REPLY: ["CONVERSATION_ACTIVE", "NOT_INTERESTED", "PAUSED"],
+  CONVERSATION_ACTIVE: ["INTERESTED", "NOT_INTERESTED", "PAUSED"],
+  INTERESTED: ["WHATSAPP_PENDING", "IN_GROUP", "NOT_INTERESTED", "PAUSED"],
+  WHATSAPP_PENDING: ["SIGNED_UP", "NOT_INTERESTED", "PAUSED"],
+  SIGNED_UP: ["ACTIVATED", "PAUSED"],
+  ACTIVATED: ["PAUSED"],
+  IN_GROUP: ["ACTIVE", "NOT_INTERESTED", "PAUSED"],
+  ACTIVE: ["PAUSED"],
+  NOT_INTERESTED: [],
+  DO_NOT_CONTACT: [],
+  PAUSED: ["DISCOVERED"],
+};
+
+const filteredCommercialLeads = computed(() => commercialLeads.value);
+
+const commercialLeadStageOptionsForSelected = computed(() => {
+  const lead = selectedCommercialLead.value;
+  if (!lead) return [];
+
+  const stages = [
+    lead.stage,
+    ...(commercialLeadTransitions[lead.stage] || []),
+    ...(lead.stage === "DO_NOT_CONTACT" ? [] : ["DO_NOT_CONTACT" as CommercialLeadStage]),
+  ];
+
+  return [...new Set(stages)].map((value) => ({
+    label: commercialLeadStageLabels[value],
+    value,
+  }));
+});
+
 const topChurches = computed(() =>
   [...adminChurches.value]
     .sort((first, second) => second.membersCount - first.membersCount)
@@ -1296,6 +1634,34 @@ const formatDate = (value?: string) => {
   }).format(date);
 };
 
+const commercialLeadStageLabel = (stage: CommercialLeadStage) =>
+  commercialLeadStageLabels[stage] || stage;
+
+const commercialLeadStageColor = (stage: CommercialLeadStage) => {
+  if (stage === "DO_NOT_CONTACT" || stage === "NOT_INTERESTED") return "red-darken-2";
+  if (stage === "ACTIVATED" || stage === "ACTIVE") return "teal-darken-2";
+  if (stage === "PAUSED") return "grey-darken-1";
+  if (stage === "INTERESTED" || stage === "WHATSAPP_PENDING") return "amber-darken-3";
+  return "indigo-darken-2";
+};
+
+const commercialLeadName = (lead: CommercialLead) =>
+  lead.organizationName || lead.contactName || lead.instagramHandle || "Lead sem nome";
+
+const commercialLeadLocation = (lead: CommercialLead) => {
+  const location = [lead.city, lead.state].filter(Boolean).join(" - ");
+  return location || "Não informada";
+};
+
+const commercialLeadEventLabel = (event: { type: string; fromStage?: CommercialLeadStage | null; toStage?: CommercialLeadStage | null }) => {
+  if (event.type === "DISCOVERED") return "Lead descoberto";
+  if (event.type === "OPTED_OUT") return "Contato bloqueado pelo lead";
+  if (event.fromStage && event.toStage) {
+    return `${commercialLeadStageLabel(event.fromStage)} → ${commercialLeadStageLabel(event.toStage)}`;
+  }
+  return event.type;
+};
+
 const loadPlatformChurches = async () => {
   platformError.value = "";
   isLoadingPlatform.value = true;
@@ -1312,6 +1678,92 @@ const loadPlatformChurches = async () => {
     adminChurches.value = data ?? [];
   } finally {
     isLoadingPlatform.value = false;
+  }
+};
+
+const loadCommercialLeads = async () => {
+  commercialLeadsError.value = "";
+  isLoadingCommercialLeads.value = true;
+
+  try {
+    const { data, error } = await getCommercialLeads({
+      funnel:
+        commercialLeadFunnelFilter.value === "ALL"
+          ? undefined
+          : commercialLeadFunnelFilter.value,
+      stage:
+        commercialLeadStageFilter.value === "ALL"
+          ? undefined
+          : commercialLeadStageFilter.value,
+      includeDoNotContact: true,
+      limit: 250,
+    });
+
+    if (error) {
+      commercialLeadsError.value = error;
+      commercialLeads.value = [];
+      commercialLeadTotal.value = 0;
+      return;
+    }
+
+    commercialLeads.value = data?.items ?? [];
+    commercialLeadTotal.value = data?.total ?? commercialLeads.value.length;
+  } finally {
+    isLoadingCommercialLeads.value = false;
+  }
+};
+
+const selectCommercialLead = async (id: string) => {
+  commercialLeadsError.value = "";
+  commercialLeadStageError.value = "";
+  selectedCommercialLead.value = null;
+  selectedCommercialLeadStage.value = null;
+  isLoadingCommercialLeadDetails.value = true;
+  isCommercialLeadDetailsOpen.value = true;
+
+  try {
+    const { data, error } = await getCommercialLeadById(id);
+    if (error || !data) {
+      commercialLeadsError.value = error || "Não foi possível carregar o lead.";
+      isCommercialLeadDetailsOpen.value = false;
+      return;
+    }
+
+    selectedCommercialLead.value = data;
+    selectedCommercialLeadStage.value = data.stage;
+  } finally {
+    isLoadingCommercialLeadDetails.value = false;
+  }
+};
+
+const saveCommercialLeadStage = async () => {
+  if (!selectedCommercialLead.value || !selectedCommercialLeadStage.value) return;
+  if (selectedCommercialLeadStage.value === selectedCommercialLead.value.stage) return;
+
+  commercialLeadStageError.value = "";
+  isSavingCommercialLeadStage.value = true;
+
+  try {
+    const { data, error } = await updateCommercialLeadStage(
+      selectedCommercialLead.value.id,
+      selectedCommercialLeadStage.value,
+    );
+
+    if (error || !data) {
+      commercialLeadStageError.value = error || "Não foi possível atualizar a etapa.";
+      selectedCommercialLeadStage.value = selectedCommercialLead.value.stage;
+      return;
+    }
+
+    selectedCommercialLead.value = {
+      ...selectedCommercialLead.value,
+      ...data,
+    };
+    commercialLeads.value = commercialLeads.value.map((lead) =>
+      lead.id === data.id ? { ...lead, ...data } : lead,
+    );
+  } finally {
+    isSavingCommercialLeadStage.value = false;
   }
 };
 
@@ -1647,7 +2099,7 @@ const removeRoleFromSelected = async (roleId: string) => {
 
 onMounted(async () => {
   if (isPlatformAdmin.value) {
-    await Promise.all([loadPlatformChurches(), loadRoles()]);
+    await Promise.all([loadPlatformChurches(), loadRoles(), loadCommercialLeads()]);
   }
 });
 </script>
@@ -2274,6 +2726,152 @@ onMounted(async () => {
   padding: 10px 12px;
 }
 
+.commercial-leads-panel {
+  min-width: 0;
+}
+
+.commercial-lead-list {
+  display: grid;
+  gap: 10px;
+}
+
+.commercial-lead-card {
+  appearance: none;
+  border: 1px solid var(--app-color-border, #e5e7eb);
+  border-radius: 12px;
+  background: var(--app-color-surface);
+  color: var(--app-color-text);
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  text-align: left;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.commercial-lead-card:hover {
+  border-color: var(--app-color-accent);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.commercial-lead-card:focus-visible {
+  outline: 3px solid rgba(181, 71, 42, 0.28);
+  outline-offset: 2px;
+}
+
+.commercial-lead-card-top,
+.commercial-lead-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.commercial-lead-card-top {
+  justify-content: space-between;
+}
+
+.commercial-lead-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: rgba(240, 151, 90, 0.16);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.commercial-lead-card-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.commercial-lead-card-copy strong,
+.commercial-lead-card-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.commercial-lead-card-copy strong {
+  color: var(--app-color-text);
+  font-size: 0.9rem;
+}
+
+.commercial-lead-card-copy small,
+.commercial-lead-card-meta,
+.commercial-lead-optout {
+  color: var(--app-color-text-muted, #6b7280);
+  font-size: 0.75rem;
+}
+
+.commercial-lead-card-meta {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  padding-left: 52px;
+}
+
+.commercial-lead-card-meta span + span::before {
+  content: "·";
+  margin-right: 10px;
+}
+
+.commercial-lead-optout {
+  color: #b91c1c;
+  font-weight: 700;
+  padding-left: 52px;
+}
+
+.commercial-lead-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.commercial-lead-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.commercial-lead-links a {
+  color: var(--app-color-accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.commercial-lead-links a:hover {
+  text-decoration: underline;
+}
+
+.commercial-lead-timeline {
+  display: grid;
+  gap: 12px;
+  border-left: 2px solid var(--app-color-border, #e5e7eb);
+  margin-left: 5px;
+  padding-left: 16px;
+}
+
+.commercial-lead-event {
+  position: relative;
+}
+
+.commercial-lead-event-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--app-color-accent);
+  left: -22px;
+  top: 5px;
+  box-shadow: 0 0 0 3px var(--app-color-surface);
+}
+
 .user-row,
 .clickable-row {
   cursor: pointer;
@@ -2297,6 +2895,10 @@ onMounted(async () => {
   }
 
   .church-directory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .commercial-lead-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

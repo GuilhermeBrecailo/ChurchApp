@@ -2,6 +2,8 @@ const mockPrismaClient = {
   commercialLead: {
     findFirst: jest.fn(),
     findUnique: jest.fn(),
+    findMany: jest.fn(),
+    count: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
   },
@@ -132,5 +134,60 @@ describe("CommercialLeadRepository", () => {
       "Transição inválida",
     );
     expect(mockPrismaClient.commercialLead.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("lists commercial leads with operational filters and event counts", async () => {
+    const leads = [
+      {
+        ...discoveredLead,
+        _count: { events: 1 },
+      },
+    ];
+    mockPrismaClient.commercialLead.findMany.mockResolvedValue(leads);
+    mockPrismaClient.commercialLead.count.mockResolvedValue(1);
+
+    const repository = new CommercialLeadRepository(mockPrismaClient as never);
+    const result = await repository.list({
+      funnel: "CUSTOMER",
+      stage: "DISCOVERED",
+      includeDoNotContact: false,
+      limit: 25,
+    });
+
+    expect(result).toEqual({ items: leads, total: 1 });
+    expect(mockPrismaClient.commercialLead.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          funnel: "CUSTOMER",
+          stage: "DISCOVERED",
+          doNotContact: false,
+        },
+        take: 25,
+      }),
+    );
+    expect(mockPrismaClient.commercialLead.count).toHaveBeenCalledWith({
+      where: {
+        funnel: "CUSTOMER",
+        stage: "DISCOVERED",
+        doNotContact: false,
+      },
+    });
+  });
+
+  it("loads a commercial lead with its chronological event history", async () => {
+    const detail = {
+      ...discoveredLead,
+      events: [{ id: "event-1", type: "DISCOVERED" }],
+    };
+    mockPrismaClient.commercialLead.findUnique.mockResolvedValue(detail);
+
+    const repository = new CommercialLeadRepository(mockPrismaClient as never);
+    const result = await repository.findByIdWithEvents("lead-1");
+
+    expect(result).toEqual(detail);
+    expect(mockPrismaClient.commercialLead.findUnique).toHaveBeenCalledWith({
+      where: { id: "lead-1" },
+      include: { events: { orderBy: { createdAt: "asc" } } },
+    });
   });
 });

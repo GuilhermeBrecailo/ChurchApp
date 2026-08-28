@@ -39,6 +39,13 @@ const createLeadSchema = z
 
 export type CreateCommercialLeadInput = z.input<typeof createLeadSchema>;
 
+export type CommercialLeadListFilters = {
+  funnel?: LeadFunnel;
+  stage?: LeadStage;
+  includeDoNotContact?: boolean;
+  limit?: number;
+};
+
 type PrismaLike = typeof $prismaClient;
 
 export class CommercialLeadNotFoundError extends Error {
@@ -50,6 +57,56 @@ export class CommercialLeadNotFoundError extends Error {
 
 export class CommercialLeadRepository {
   constructor(private readonly prisma: PrismaLike = $prismaClient) {}
+
+  async list(filters: CommercialLeadListFilters = {}) {
+    const where = {
+      ...(filters.funnel ? { funnel: filters.funnel } : {}),
+      ...(filters.stage ? { stage: filters.stage } : {}),
+      ...(filters.includeDoNotContact ? {} : { doNotContact: false }),
+    };
+    const take = Math.min(Math.max(filters.limit ?? 100, 1), 250);
+
+    const [items, total] = await Promise.all([
+      this.prisma.commercialLead.findMany({
+        where,
+        orderBy: { updatedAt: "desc" },
+        take,
+        select: {
+          id: true,
+          funnel: true,
+          stage: true,
+          instagramHandle: true,
+          instagramUserId: true,
+          organizationName: true,
+          contactName: true,
+          publicProfileUrl: true,
+          city: true,
+          state: true,
+          website: true,
+          phone: true,
+          source: true,
+          score: true,
+          doNotContact: true,
+          firstContactAt: true,
+          lastContactAt: true,
+          nextActionAt: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: { select: { events: true } },
+        },
+      }),
+      this.prisma.commercialLead.count({ where }),
+    ]);
+
+    return { items, total };
+  }
+
+  async findByIdWithEvents(leadId: string) {
+    return this.prisma.commercialLead.findUnique({
+      where: { id: leadId },
+      include: { events: { orderBy: { createdAt: "asc" } } },
+    });
+  }
 
   async findOrCreate(input: CreateCommercialLeadInput) {
     const parsed = createLeadSchema.parse(input);

@@ -1,6 +1,14 @@
 const mockPrismaClient = {
   user: { findUnique: jest.fn() },
   crunch: { findUnique: jest.fn(), update: jest.fn(), findMany: jest.fn() },
+  commercialLead: {
+    findMany: jest.fn(),
+    count: jest.fn(),
+    findUnique: jest.fn(),
+    update: jest.fn(),
+  },
+  commercialLeadEvent: { create: jest.fn() },
+  $transaction: jest.fn(),
 };
 
 jest.mock("../config/database", () => ({
@@ -27,11 +35,13 @@ function makeRequest(options: {
   token?: string;
   params?: Record<string, unknown>;
   body?: Record<string, unknown>;
+  query?: Record<string, unknown>;
 }): FastifyRequest {
   return {
     headers: { authorization: `Bearer ${options.token ?? fakeAdminToken()}` },
     params: options.params ?? {},
     body: options.body ?? {},
+    query: options.query ?? {},
   } as unknown as FastifyRequest;
 }
 
@@ -207,5 +217,72 @@ describe("AdminAdapters.getChurches plan fields", () => {
     expect(church.plan).toBe("PRO");
     expect(church.subscriptionStatus).toBe("TRIALING");
     expect(church.trialEndsAt).toEqual(new Date("2026-04-01"));
+  });
+});
+
+describe("AdminAdapters commercial leads", () => {
+  let adapters: AdminAdapters;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    adapters = new AdminAdapters();
+    mockPrismaClient.user.findUnique.mockResolvedValue({ id: "admin-1", role: "SUPER_ADMIN" });
+    mockPrismaClient.$transaction.mockImplementation(
+      async (callback: (transaction: typeof mockPrismaClient) => unknown) =>
+        callback(mockPrismaClient),
+    );
+  });
+
+  it("lists leads only for a platform administrator", async () => {
+    const items = [{ id: "lead-1", funnel: "CUSTOMER", stage: "DISCOVERED" }];
+    mockPrismaClient.commercialLead.findMany.mockResolvedValue(items);
+    mockPrismaClient.commercialLead.count.mockResolvedValue(1);
+
+    const result = await adapters.getCommercialLeads(
+      makeRequest({
+        query: {
+          funnel: "CUSTOMER",
+          stage: "DISCOVERED",
+          includeDoNotContact: "false",
+          limit: "25",
+        },
+      }),
+    );
+
+    expect(result).toEqual({ items, total: 1 });
+    expect(mockPrismaClient.commercialLead.count).toHaveBeenCalledWith({
+      where: { funnel: "CUSTOMER", stage: "DISCOVERED", doNotContact: false },
+    });
+  });
+
+  it("returns a lead with its event history", async () => {
+    const lead = { id: "lead-1", events: [{ id: "event-1", type: "DISCOVERED" }] };
+    mockPrismaClient.commercialLead.findUnique.mockResolvedValue(lead);
+
+    const result = await adapters.getCommercialLeadById(
+      makeRequest({ params: { id: "lead-1" } }),
+    );
+
+    expect(result).toEqual(lead);
+  });
+
+  it("changes a lead stage through the validated pipeline", async () => {
+    mockPrismaClient.commercialLead.findUnique.mockResolvedValue({
+      id: "lead-1",
+      funnel: "CUSTOMER",
+      stage: "DISCOVERED",
+    });
+    mockPrismaClient.commercialLead.update.mockResolvedValue({
+      id: "lead-1",
+      funnel: "CUSTOMER",
+      stage: "QUALIFIED",
+    });
+    mockPrismaClient.commercialLeadEvent.create.mockResolvedValue({ id: "event-1" });
+
+    const result = await adapters.updateCommercialLeadStage(
+      makeRequest({ params: { id: "lead-1" }, body: { stage: "QUALIFIED" } }),
+    );
+
+    expect(result.stage).toBe("QUALIFIED");
   });
 });

@@ -6,6 +6,21 @@ export async function AdminRoutes(app: FastifyInstance) {
   const adapters = new AdminAdapters();
 
   app.get(
+    "/api/admin/commercial-leads",
+    controllerHandler(adapters.getCommercialLeads.bind(adapters)),
+  );
+
+  app.get(
+    "/api/admin/commercial-leads/:id",
+    controllerHandler(adapters.getCommercialLeadById.bind(adapters)),
+  );
+
+  app.patch(
+    "/api/admin/commercial-leads/:id/stage",
+    controllerHandler(adapters.updateCommercialLeadStage.bind(adapters)),
+  );
+
+  app.get(
     "/api/admin/churches",
     controllerHandler(adapters.getChurches.bind(adapters)),
   );
