@@ -5,6 +5,7 @@ import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import fastifyStatic from "@fastify/static";
 import path from "node:path";
+import { Readable } from "node:stream";
 import { parse as parseQueryString } from "node:querystring";
 import { mkdir } from "node:fs/promises";
 import { AuthRoutes } from "./src/interfaces/routes/AuthRoutes.ts";
@@ -55,6 +56,22 @@ server.addContentTypeParser(
     }
   },
 );
+
+server.addHook("preParsing", async (request, _reply, payload) => {
+  const path = (request.raw.url || "").split("?")[0];
+  if (path !== "/api/webhooks/instagram" || request.method !== "POST") {
+    return payload;
+  }
+
+  const chunks: Buffer[] = [];
+  for await (const chunk of payload) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  const rawBody = Buffer.concat(chunks);
+  (request as typeof request & { rawBody?: Buffer }).rawBody = rawBody;
+  return Readable.from([rawBody]);
+});
 const uploadsRoot = path.join(process.cwd(), "uploads");
 
 await mkdir(uploadsRoot, { recursive: true });

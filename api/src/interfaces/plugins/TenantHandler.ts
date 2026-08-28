@@ -8,6 +8,7 @@ const jwtValidationService = new JwtValidationUseCase();
 const publicRoutes = new Set([
   "/status",
   "/api/pastor/signup",
+  "/api/webhooks/instagram",
   "/public/auth/login",
   "/public/auth/refresh-token",
   "/public/auth/logout",

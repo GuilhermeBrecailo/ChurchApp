@@ -16,6 +16,10 @@ type ManagerContext = {
   role: string;
 };
 
+type InstagramWebhookRequest = FastifyRequest & {
+  rawBody?: Buffer;
+};
+
 function getAuthUserId(request: FastifyRequest) {
   const authHeader = request.headers.authorization;
   const token = authHeader?.replace("Bearer ", "");
@@ -217,6 +221,40 @@ export class InstagramAdapters {
     }
   }
 
+  async verifyWebhook(request: FastifyRequest, reply: FastifyReply) {
+    const query = request.query as {
+      "hub.mode"?: string;
+      "hub.verify_token"?: string;
+      "hub.challenge"?: string;
+    };
+    const expectedToken = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN;
+
+    if (
+      query["hub.mode"] !== "subscribe" ||
+      !query["hub.challenge"] ||
+      !expectedToken ||
+      !safeEqual(query["hub.verify_token"] || "", expectedToken)
+    ) {
+      return reply.code(403).send({ error: "Verificação do webhook recusada" });
+    }
+
+    return reply
+      .code(200)
+      .type("text/plain")
+      .send(query["hub.challenge"]);
+  }
+
+  async receiveWebhook(request: FastifyRequest, reply: FastifyReply) {
+    const appSecret = process.env.INSTAGRAM_APP_SECRET;
+    const signature = this.getWebhookSignature(request);
+
+    if (!appSecret || !signature || !this.hasValidWebhookSignature(request, signature, appSecret)) {
+      return reply.code(403).send({ error: "Assinatura do webhook inválida" });
+    }
+
+    return reply.code(200).send({ received: true });
+  }
+
   private getManagerContext(request: FastifyRequest): ManagerContext {
     getAuthUserId(request);
     const context = request.churchContext;
@@ -244,6 +282,27 @@ export class InstagramAdapters {
     return parseInstagramSignedRequest(signedRequest).userId;
   }
 
+  private getWebhookSignature(request: FastifyRequest) {
+    const signature = request.headers["x-hub-signature-256"];
+    return Array.isArray(signature) ? signature[0] : signature;
+  }
+
+  private hasValidWebhookSignature(
+    request: FastifyRequest,
+    signature: string,
+    appSecret: string,
+  ) {
+    const [algorithm, receivedDigest] = signature.split("=", 2);
+    if (algorithm !== "sha256" || !receivedDigest || !/^[a-f0-9]{64}$/i.test(receivedDigest)) {
+      return false;
+    }
+
+    const body = (request as InstagramWebhookRequest).rawBody ||
+      Buffer.from(JSON.stringify(request.body ?? {}));
+    const expectedDigest = crypto.createHmac("sha256", appSecret).update(body).digest("hex");
+    return safeEqual(receivedDigest, expectedDigest);
+  }
+
   private dataDeletionStatusUrl(confirmationCode: string) {
     const callbackUrl = new URL(
       process.env.INSTAGRAM_REDIRECT_URI ||
@@ -260,4 +319,13 @@ export class InstagramAdapters {
     url.searchParams.set("instagram", status);
     return reply.redirect(url.toString());
   }
+}
+
+function safeEqual(left: string, right: string) {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  return (
+    leftBuffer.length === rightBuffer.length &&
+    crypto.timingSafeEqual(leftBuffer, rightBuffer)
+  );
 }

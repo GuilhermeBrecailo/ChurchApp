@@ -46,6 +46,7 @@ export const $config = {
 
   INSTAGRAM_APP_ID: process.env.INSTAGRAM_APP_ID,
   INSTAGRAM_APP_SECRET: process.env.INSTAGRAM_APP_SECRET,
+  INSTAGRAM_WEBHOOK_VERIFY_TOKEN: process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN,
   INSTAGRAM_REDIRECT_URI:
     process.env.INSTAGRAM_REDIRECT_URI ||
     "https://api.churchapp.site/public/integrations/instagram/callback",

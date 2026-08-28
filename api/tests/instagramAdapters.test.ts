@@ -34,7 +34,9 @@ function fakeToken(userId: string) {
   return `${header}.${payload}.sig`;
 }
 
-function makeRequest(overrides: Partial<FastifyRequest> = {}) {
+function makeRequest(
+  overrides: Partial<FastifyRequest> & { rawBody?: Buffer } = {},
+) {
   return {
     headers: { authorization: `Bearer ${fakeToken("pastor-1")}` },
     churchContext: {
@@ -66,6 +68,7 @@ describe("InstagramAdapters", () => {
       ...originalEnv,
       INSTAGRAM_APP_ID: "1623344485849374",
       INSTAGRAM_APP_SECRET: "app-secret",
+      INSTAGRAM_WEBHOOK_VERIFY_TOKEN: "webhook-token",
       INSTAGRAM_REDIRECT_URI:
         "https://api.churchapp.site/public/integrations/instagram/callback",
       INSTAGRAM_TOKEN_ENCRYPTION_KEY: "instagram-encryption-key",
@@ -250,5 +253,94 @@ describe("InstagramAdapters", () => {
     expect(mockPrismaClient.instagramConnection.deleteMany).not.toHaveBeenCalled();
     expect(reply.code).toHaveBeenCalledWith(400);
     expect(reply.send).toHaveBeenCalledWith({ success: false });
+  });
+
+  it("answers Meta's webhook verification challenge only with the configured token", async () => {
+    const adapters = new InstagramAdapters();
+    const reply = {
+      code: jest.fn().mockReturnThis(),
+      type: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
+    };
+
+    await adapters.verifyWebhook(
+      makeRequest({
+        query: {
+          "hub.mode": "subscribe",
+          "hub.verify_token": "webhook-token",
+          "hub.challenge": "challenge-123",
+        },
+      }),
+      reply as never,
+    );
+
+    expect(reply.code).toHaveBeenCalledWith(200);
+    expect(reply.type).toHaveBeenCalledWith("text/plain");
+    expect(reply.send).toHaveBeenCalledWith("challenge-123");
+  });
+
+  it("rejects webhook verification with an incorrect token", async () => {
+    const adapters = new InstagramAdapters();
+    const reply = {
+      code: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
+    };
+
+    await adapters.verifyWebhook(
+      makeRequest({
+        query: {
+          "hub.mode": "subscribe",
+          "hub.verify_token": "wrong-token",
+          "hub.challenge": "challenge-123",
+        },
+      }),
+      reply as never,
+    );
+
+    expect(reply.code).toHaveBeenCalledWith(403);
+    expect(reply.send).toHaveBeenCalledWith({ error: "Verificação do webhook recusada" });
+  });
+
+  it("acknowledges a webhook only after validating Meta's signature", async () => {
+    const body = JSON.stringify({ object: "instagram", entry: [] });
+    const signature = crypto
+      .createHmac("sha256", "app-secret")
+      .update(body)
+      .digest("hex");
+    const adapters = new InstagramAdapters();
+    const reply = {
+      code: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
+    };
+
+    await adapters.receiveWebhook(
+      makeRequest({
+        body: JSON.parse(body),
+        rawBody: Buffer.from(body),
+        headers: {
+          "x-hub-signature-256": `sha256=${signature}`,
+        },
+      }),
+      reply as never,
+    );
+
+    expect(reply.code).toHaveBeenCalledWith(200);
+    expect(reply.send).toHaveBeenCalledWith({ received: true });
+  });
+
+  it("rejects an unsigned Instagram webhook", async () => {
+    const adapters = new InstagramAdapters();
+    const reply = {
+      code: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
+    };
+
+    await adapters.receiveWebhook(
+      makeRequest({ body: { object: "instagram", entry: [] } }),
+      reply as never,
+    );
+
+    expect(reply.code).toHaveBeenCalledWith(403);
+    expect(reply.send).toHaveBeenCalledWith({ error: "Assinatura do webhook inválida" });
   });
 });
