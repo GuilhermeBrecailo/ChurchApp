@@ -274,6 +274,19 @@ const navCatalog: Record<string, RoleNavigationItem> = {
     iconColorDark: "#f0975a",
     bgColorDark: "rgba(240,151,90,0.16)",
   },
+  churchHub: {
+    key: "churchHub",
+    label: "Igreja",
+    title: "Igreja",
+    description: "Todos os atalhos da sua igreja num grid único.",
+    route: "/igreja",
+    icon: "church",
+    matchPrefixes: ["/igreja"],
+    iconColor: "#B5472A",
+    bgColor: "#F7E2D3",
+    iconColorDark: "#f0975a",
+    bgColorDark: "rgba(240,151,90,0.16)",
+  },
   platformAdmin: {
     key: "platformAdmin",
     label: "Admin",
@@ -534,6 +547,7 @@ export function getAllNavigationItems(user: RoleNavigationUser | null | undefine
     ...(hasChurch && isPrivileged ? [item("rolesManagement"), item("publications")] : []),
     ...(hasChurch && hasAnyPermission(user, ["PASTORAL_CARE_MANAGE"]) ? [item("pastoral"), item("visits")] : []),
     ...(hasChurch && hasContentPublishingAccess(user) ? [item("content")] : []),
+    ...(hasChurch ? [item("churchHub")] : []),
     item("profile"),
     ...(user?.is_admin === true ? [item("platformAdmin")] : []),
   ];
