@@ -160,6 +160,7 @@ model CommercialLead {
     updatedAt          DateTime @updatedAt
 
     events CommercialLeadEvent[]
+    instagramWebhookEvents InstagramWebhookEvent[]
 
     @@unique([funnel, instagramHandle])
     @@unique([funnel, instagramUserId])
@@ -181,6 +182,25 @@ model CommercialLeadEvent {
 
     lead CommercialLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
+    @@index([leadId, createdAt])
+}
+
+model InstagramWebhookEvent {
+    id               String   @id @default(uuid())
+    eventId          String   @unique
+    instagramUserId  String
+    senderId         String?
+    eventType        String
+    messageText      String?
+    occurredAt       DateTime?
+    metadata         Json?
+    createdAt        DateTime @default(now())
+
+    leadId String?
+    lead   CommercialLead? @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+    @@index([instagramUserId, createdAt])
+    @@index([senderId, createdAt])
     @@index([leadId, createdAt])
 }
 

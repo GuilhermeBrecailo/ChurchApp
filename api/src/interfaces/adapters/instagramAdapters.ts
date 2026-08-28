@@ -8,6 +8,7 @@ import {
 } from "../../infrastructure/instagram/InstagramBusinessLoginService";
 import { parseInstagramSignedRequest } from "../../infrastructure/instagram/InstagramComplianceService";
 import { encryptInstagramToken } from "../../infrastructure/instagram/InstagramTokenCipher";
+import { InstagramWebhookService } from "../../infrastructure/instagram/InstagramWebhookService";
 
 const stateTtlMs = 10 * 60 * 1000;
 
@@ -252,7 +253,8 @@ export class InstagramAdapters {
       return reply.code(403).send({ error: "Assinatura do webhook inválida" });
     }
 
-    return reply.code(200).send({ received: true });
+    const result = await new InstagramWebhookService().process(request.body);
+    return reply.code(200).send({ received: true, ...result });
   }
 
   private getManagerContext(request: FastifyRequest): ManagerContext {

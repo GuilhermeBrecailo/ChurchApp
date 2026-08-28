@@ -325,7 +325,13 @@ describe("InstagramAdapters", () => {
     );
 
     expect(reply.code).toHaveBeenCalledWith(200);
-    expect(reply.send).toHaveBeenCalledWith({ received: true });
+    expect(reply.send).toHaveBeenCalledWith({
+      received: true,
+      eventCount: 0,
+      stored: 0,
+      duplicates: 0,
+      leadsUpdated: 0,
+    });
   });
 
   it("rejects an unsigned Instagram webhook", async () => {
