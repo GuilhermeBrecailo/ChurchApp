@@ -133,6 +133,56 @@ model MercadoPagoWebhookNotification {
 
     @@index([resourceId])
 }
+
+// Leads do comercial do ChurchApp. Sao dados da operacao de vendas da
+// plataforma, por isso nao pertencem a uma igreja cliente (Crunch).
+model CommercialLead {
+    id                 String   @id @default(uuid())
+    funnel             String
+    stage              String   @default("DISCOVERED")
+    instagramHandle    String?
+    instagramUserId    String?
+    organizationName   String?
+    contactName        String?
+    publicProfileUrl   String?
+    city               String?
+    state              String?
+    website            String?
+    phone              String?
+    source             String?
+    score              Int      @default(0)
+    doNotContact       Boolean  @default(false)
+    firstContactAt     DateTime?
+    lastContactAt      DateTime?
+    nextActionAt       DateTime?
+    createdAt          DateTime @default(now())
+    updatedAt          DateTime @updatedAt
+
+    events CommercialLeadEvent[]
+
+    @@unique([funnel, instagramHandle])
+    @@unique([funnel, instagramUserId])
+    @@unique([funnel, publicProfileUrl])
+    @@index([funnel, stage])
+    @@index([doNotContact])
+    @@index([nextActionAt])
+}
+
+model CommercialLeadEvent {
+    id         String   @id @default(uuid())
+    leadId     String
+    type       String
+    fromStage  String?
+    toStage    String?
+    channel    String?
+    metadata   Json?
+    createdAt  DateTime @default(now())
+
+    lead CommercialLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+    @@index([leadId, createdAt])
+}
+
 model Post {
     id          String   @id @default(uuid())
     title       String

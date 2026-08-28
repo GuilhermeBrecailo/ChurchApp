@@ -1,0 +1,136 @@
+const mockPrismaClient = {
+  commercialLead: {
+    findFirst: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+  },
+  commercialLeadEvent: {
+    create: jest.fn(),
+  },
+  $transaction: jest.fn(),
+};
+
+jest.mock("../config/database", () => ({
+  $prismaClient: mockPrismaClient,
+}));
+
+import { CommercialLeadRepository } from "../src/interfaces/adapters/commercialLeadRepository";
+
+const discoveredLead = {
+  id: "lead-1",
+  funnel: "CUSTOMER",
+  stage: "DISCOVERED",
+  instagramHandle: "igreja.exemplo",
+  instagramUserId: null,
+  publicProfileUrl: "https://instagram.com/igreja.exemplo",
+  doNotContact: false,
+};
+
+describe("CommercialLeadRepository", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockPrismaClient.$transaction.mockImplementation(
+      async (callback: (transaction: typeof mockPrismaClient) => unknown) =>
+        callback(mockPrismaClient),
+    );
+  });
+
+  it("normalizes a discovered Instagram handle and records its discovery event", async () => {
+    mockPrismaClient.commercialLead.findFirst.mockResolvedValue(null);
+    mockPrismaClient.commercialLead.create.mockResolvedValue(discoveredLead);
+    mockPrismaClient.commercialLeadEvent.create.mockResolvedValue({ id: "event-1" });
+
+    const repository = new CommercialLeadRepository(mockPrismaClient as never);
+    const result = await repository.findOrCreate({
+      funnel: "CUSTOMER",
+      instagramHandle: "@Igreja.Exemplo",
+      publicProfileUrl: "https://instagram.com/igreja.exemplo",
+      source: "instagram_public_profile",
+      score: 72,
+    });
+
+    expect(result).toEqual({ lead: discoveredLead, created: true });
+    expect(mockPrismaClient.commercialLead.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        funnel: "CUSTOMER",
+        stage: "DISCOVERED",
+        instagramHandle: "igreja.exemplo",
+        source: "instagram_public_profile",
+        score: 72,
+      }),
+    });
+    expect(mockPrismaClient.commercialLeadEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        leadId: "lead-1",
+        type: "DISCOVERED",
+        toStage: "DISCOVERED",
+      }),
+    });
+  });
+
+  it("reuses an existing lead and never creates a duplicate", async () => {
+    mockPrismaClient.commercialLead.findFirst.mockResolvedValue(discoveredLead);
+
+    const repository = new CommercialLeadRepository(mockPrismaClient as never);
+    const result = await repository.findOrCreate({
+      funnel: "CUSTOMER",
+      instagramHandle: "igreja.exemplo",
+    });
+
+    expect(result).toEqual({ lead: discoveredLead, created: false });
+    expect(mockPrismaClient.commercialLead.create).not.toHaveBeenCalled();
+    expect(mockPrismaClient.commercialLeadEvent.create).not.toHaveBeenCalled();
+  });
+
+  it("transitions a lead and records the previous and next stages", async () => {
+    mockPrismaClient.commercialLead.findUnique.mockResolvedValue(discoveredLead);
+    mockPrismaClient.commercialLead.update.mockResolvedValue({
+      ...discoveredLead,
+      stage: "QUALIFIED",
+    });
+    mockPrismaClient.commercialLeadEvent.create.mockResolvedValue({ id: "event-2" });
+
+    const repository = new CommercialLeadRepository(mockPrismaClient as never);
+    const result = await repository.transition("lead-1", "QUALIFIED");
+
+    expect(result.stage).toBe("QUALIFIED");
+    expect(mockPrismaClient.commercialLead.update).toHaveBeenCalledWith({
+      where: { id: "lead-1" },
+      data: { stage: "QUALIFIED", doNotContact: false },
+    });
+    expect(mockPrismaClient.commercialLeadEvent.create).toHaveBeenCalledWith({
+      data: {
+        leadId: "lead-1",
+        type: "STAGE_CHANGED",
+        fromStage: "DISCOVERED",
+        toStage: "QUALIFIED",
+      },
+    });
+  });
+
+  it("makes opt-out permanent and rejects any later transition", async () => {
+    mockPrismaClient.commercialLead.findUnique
+      .mockResolvedValueOnce(discoveredLead)
+      .mockResolvedValueOnce({
+        ...discoveredLead,
+        stage: "DO_NOT_CONTACT",
+        doNotContact: true,
+      });
+    mockPrismaClient.commercialLead.update.mockResolvedValue({
+      ...discoveredLead,
+      stage: "DO_NOT_CONTACT",
+      doNotContact: true,
+    });
+    mockPrismaClient.commercialLeadEvent.create.mockResolvedValue({ id: "event-3" });
+
+    const repository = new CommercialLeadRepository(mockPrismaClient as never);
+
+    await repository.transition("lead-1", "DO_NOT_CONTACT");
+
+    await expect(repository.transition("lead-1", "PAUSED")).rejects.toThrow(
+      "Transição inválida",
+    );
+    expect(mockPrismaClient.commercialLead.update).toHaveBeenCalledTimes(1);
+  });
+});
