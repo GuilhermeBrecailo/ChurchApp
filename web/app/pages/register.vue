@@ -161,7 +161,7 @@ definePageMeta({
 });
 
 const router = useRouter();
-const { registerPastor } = useAuth();
+const { registerPastor, login, setSessionFromToken, fetchMe, session, access_token } = useAuth();
 const { isDark } = useThemeMode();
 
 const form = reactive({
@@ -208,14 +208,33 @@ const handleRegister = async () => {
     password: form.password,
   });
 
-  loading.value = false;
-
   if (error) {
+    loading.value = false;
     errorMessage.value = error;
     return;
   }
 
-  await router.push("/login");
+  // Loga automaticamente com as mesmas credenciais do cadastro, pra nao
+  // fazer o pastor digitar tudo de novo na tela seguinte - mesmo padrao de
+  // login.vue (setSessionFromToken + fetchMe, com session() de fallback).
+  const { data: loginData } = await login({
+    email: normalizedEmail,
+    password: form.password,
+  });
+
+  if (loginData?.access_token) {
+    setSessionFromToken(loginData.access_token);
+    await fetchMe();
+  } else {
+    await session();
+  }
+
+  loading.value = false;
+
+  // Cadastro deu certo mesmo se o login automatico falhar aqui (rede,
+  // token expirado na hora, etc.) - cai pra tela de login de novo em vez
+  // de mandar pra "/" sem sessao (o middleware jogaria pra /comece).
+  await router.push(access_token.value ? "/" : "/login");
 };
 </script>
 
