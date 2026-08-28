@@ -12,7 +12,10 @@ import {
   decryptInstagramToken,
   encryptInstagramToken,
 } from "../../infrastructure/instagram/InstagramTokenCipher";
-import { InstagramMessagingService } from "../../infrastructure/instagram/InstagramMessagingService";
+import {
+  InstagramMessagingService,
+  type InstagramSendTextResult,
+} from "../../infrastructure/instagram/InstagramMessagingService";
 import { InstagramWebhookService } from "../../infrastructure/instagram/InstagramWebhookService";
 
 const instagramMessageSchema = z.object({
@@ -158,12 +161,20 @@ export class InstagramAdapters {
       throw new DomainError("Conexão do Instagram inválida. Reconecte a conta.");
     }
 
-    const result = await this.messagingService.sendText({
-      accessToken,
-      instagramUserId: connection.instagramUserId,
-      recipientId: parsed.data.recipientId,
-      text: parsed.data.text,
-    });
+    let result: InstagramSendTextResult;
+    try {
+      result = await this.messagingService.sendText({
+        accessToken,
+        instagramUserId: connection.instagramUserId,
+        recipientId: parsed.data.recipientId,
+        text: parsed.data.text,
+      });
+    } catch (error) {
+      if (error instanceof InstagramIntegrationError) {
+        throw new DomainError("Não foi possível enviar a mensagem pelo Instagram");
+      }
+      throw error;
+    }
 
     await $prismaClient.commercialLeadEvent.create({
       data: {

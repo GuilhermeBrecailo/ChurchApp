@@ -420,4 +420,34 @@ describe("InstagramAdapters", () => {
       ),
     ).rejects.toThrow("só pode ser enviada depois de uma mensagem recebida");
   });
+
+  it("returns a safe error when Meta rejects an official reply", async () => {
+    mockPrismaClient.instagramConnection.findUnique.mockResolvedValue({
+      instagramUserId: "business-1",
+      accessTokenEncrypted: encryptInstagramToken("instagram-token"),
+      tokenExpiresAt: null,
+    });
+    mockPrismaClient.instagramWebhookEvent.findFirst.mockResolvedValue({
+      eventId: "message:business-1:inbound-1",
+    });
+    mockPrismaClient.commercialLead.findFirst.mockResolvedValue({
+      id: "lead-1",
+      doNotContact: false,
+    });
+    const messagingService = new InstagramMessagingService({
+      fetcher: jest.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: jest.fn().mockResolvedValue({ error: { message: "provider detail" } }),
+      } as unknown as Response),
+    });
+    const adapters = new InstagramAdapters(undefined, messagingService);
+
+    await expect(
+      adapters.sendMessage(
+        makeRequest({ body: { recipientId: "person-1", text: "Olá" } }),
+      ),
+    ).rejects.toThrow("Não foi possível enviar a mensagem pelo Instagram");
+    expect(mockPrismaClient.commercialLeadEvent.create).not.toHaveBeenCalled();
+  });
 });
