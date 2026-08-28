@@ -13,6 +13,7 @@ interface CreateOwnChurchDTO {
   complement?: string;
   document?: string;
   logo?: string;
+  commercialLeadToken?: string;
 }
 
 interface ChurchResponse {
@@ -64,6 +65,13 @@ export const useChurch = () => {
     $customFetch: CustomFetch;
   };
 
+  const commercialLeadStorageKey = "churchapp_commercial_lead_token";
+
+  const getStoredCommercialLeadToken = () => {
+    if (!import.meta.client) return null;
+    return window.localStorage.getItem(commercialLeadStorageKey);
+  };
+
   const createOwnChurch = async (
     church: CreateOwnChurchDTO,
   ): Promise<ApiResponse<ChurchResponse>> => {
@@ -74,6 +82,8 @@ export const useChurch = () => {
       };
     }
 
+    const commercialLeadToken =
+      church.commercialLeadToken || getStoredCommercialLeadToken();
     const response = await $customFetch<ChurchResponse>(
       `${config.public.URL_BACKEND}/api/church/create-own`,
       {
@@ -82,7 +92,10 @@ export const useChurch = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${access_token.value}`,
         },
-        body: church,
+        body: {
+          ...church,
+          ...(commercialLeadToken ? { commercialLeadToken } : {}),
+        },
       },
     );
 
@@ -94,6 +107,10 @@ export const useChurch = () => {
           ...response,
           error: "Igreja criada, mas não foi possível atualizar sua sessão.",
         };
+      }
+
+      if (commercialLeadToken && import.meta.client) {
+        window.localStorage.removeItem(commercialLeadStorageKey);
       }
     }
 

@@ -161,6 +161,7 @@ definePageMeta({
 });
 
 const router = useRouter();
+const route = useRoute();
 const { registerPastor, login, setSessionFromToken, fetchMe, session, access_token } = useAuth();
 const { isDark } = useThemeMode();
 
@@ -200,18 +201,29 @@ const handleRegister = async () => {
 
   loading.value = true;
 
+  const commercialLeadToken =
+    typeof route.query.lead === "string" ? route.query.lead.trim() : "";
+
   const { error } = await registerPastor({
     name: normalizedName,
     email: normalizedEmail,
     phone: normalizedPhone,
     role: "PASTOR",
     password: form.password,
+    ...(commercialLeadToken ? { commercialLeadToken } : {}),
   });
 
   if (error) {
     loading.value = false;
     errorMessage.value = error;
     return;
+  }
+
+  if (commercialLeadToken && import.meta.client) {
+    window.localStorage.setItem(
+      "churchapp_commercial_lead_token",
+      commercialLeadToken,
+    );
   }
 
   // Loga automaticamente com as mesmas credenciais do cadastro, pra nao

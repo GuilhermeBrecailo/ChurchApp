@@ -19,6 +19,7 @@ import { isValidFontKey } from "../../domain/appearance";
 import { hasPermission } from "../../application/Services/Auth/AuthorizationService";
 import { PermissionKey } from "../../domain/permissions";
 import { PLAN_FEATURES, resolveEffectivePlan, pastDueGraceDaysLeft } from "../../domain/planConfig";
+import { CommercialLeadRepository } from "./commercialLeadRepository";
 
 const TRIAL_PERIOD_DAYS = 90;
 
@@ -28,6 +29,7 @@ const deleteUserUseCase = new DeleteUserUseCase(userRepository);
 const getUserByIdUseCase = new GetUserByIdUseCase(userRepository);
 const getAllUserUseCase = new GetAllUserUseCase(userRepository);
 const updateUserUseCase = new UpdateUserUseCase(userRepository);
+const commercialLeadRepository = new CommercialLeadRepository();
 
 const updateUserService = new UpdateUserService(
   getUserByIdUseCase,
@@ -128,11 +130,12 @@ function getAuthUserId(request: FastifyRequest) {
 
 export class UserAdapters {
   async createPastor(request: FastifyRequest) {
-    const { email, name, phone, password } = request.body as {
+    const { email, name, phone, password, commercialLeadToken } = request.body as {
       email?: string;
       name?: string;
       phone?: string;
       password?: string;
+      commercialLeadToken?: string;
     };
 
     if (!name?.trim()) {
@@ -181,7 +184,18 @@ export class UserAdapters {
         role: "PASTOR",
       });
 
-      return await createUserUseCase.execute(userEntity);
+      const createdUser = await createUserUseCase.execute(userEntity);
+
+      if (commercialLeadToken?.trim()) {
+        await commercialLeadRepository
+          .markStageBySignupToken(
+            commercialLeadToken.trim(),
+            "SIGNED_UP",
+          )
+          .catch(() => undefined);
+      }
+
+      return createdUser;
     } catch (error) {
       await identityProvider.deleteUser(keycloakId).catch(() => undefined);
       throw error;
@@ -539,6 +553,7 @@ export class UserAdapters {
       logo?: string;
       slug?: string;
       accentColor?: string | null;
+      commercialLeadToken?: string;
     };
 
     if (!body.name?.trim()) {
@@ -615,6 +630,12 @@ export class UserAdapters {
 
       return createdChurch;
     });
+
+    if (body.commercialLeadToken?.trim()) {
+      await commercialLeadRepository
+        .markStageBySignupToken(body.commercialLeadToken.trim(), "ACTIVATED")
+        .catch(() => undefined);
+    }
 
     return {
       id: church.id,

@@ -199,6 +199,7 @@ export const useAuth = () => {
     password: string;
     phone: string;
     role: "PASTOR" | "MEMBER";
+    commercialLeadToken?: string;
   }) => {
     return await $customFetch<{ id: string }>(
       `${apiBase()}/api/pastor/signup`,

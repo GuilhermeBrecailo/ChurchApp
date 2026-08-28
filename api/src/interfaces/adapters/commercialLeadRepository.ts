@@ -46,6 +46,8 @@ export type CommercialLeadListFilters = {
   limit?: number;
 };
 
+const signupTokenSchema = z.string().uuid();
+
 type PrismaLike = typeof $prismaClient;
 
 export class CommercialLeadNotFoundError extends Error {
@@ -105,6 +107,48 @@ export class CommercialLeadRepository {
     return this.prisma.commercialLead.findUnique({
       where: { id: leadId },
       include: { events: { orderBy: { createdAt: "asc" } } },
+    });
+  }
+
+  async markStageBySignupToken(token: string, to: LeadStage) {
+    const signupToken = signupTokenSchema.parse(token);
+    const lead = await this.prisma.commercialLead.findUnique({
+      where: { signupToken },
+      select: { id: true, funnel: true, stage: true, doNotContact: true },
+    });
+
+    if (!lead || lead.doNotContact || lead.stage === "DO_NOT_CONTACT") {
+      return null;
+    }
+
+    if (lead.stage === to) {
+      return lead;
+    }
+
+    const canRecordSignup = lead.funnel === "CUSTOMER" && to === "SIGNED_UP";
+    const canRecordActivation =
+      lead.funnel === "CUSTOMER" && to === "ACTIVATED" && lead.stage === "SIGNED_UP";
+
+    if (!canRecordSignup && !canRecordActivation) {
+      return null;
+    }
+
+    return this.prisma.$transaction(async (transaction) => {
+      const updated = await transaction.commercialLead.update({
+        where: { id: lead.id },
+        data: { stage: to, doNotContact: false },
+      });
+
+      await transaction.commercialLeadEvent.create({
+        data: {
+          leadId: lead.id,
+          type: "STAGE_CHANGED",
+          fromStage: lead.stage,
+          toStage: to,
+        },
+      });
+
+      return updated;
     });
   }
 

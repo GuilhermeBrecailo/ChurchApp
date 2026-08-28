@@ -138,6 +138,7 @@ model MercadoPagoWebhookNotification {
 // plataforma, por isso nao pertencem a uma igreja cliente (Crunch).
 model CommercialLead {
     id                 String   @id @default(uuid())
+    signupToken        String   @unique @default(uuid())
     funnel             String
     stage              String   @default("DISCOVERED")
     instagramHandle    String?

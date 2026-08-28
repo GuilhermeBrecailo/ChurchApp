@@ -31,7 +31,7 @@ const discoveredLead = {
 
 describe("CommercialLeadRepository", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     mockPrismaClient.$transaction.mockImplementation(
       async (callback: (transaction: typeof mockPrismaClient) => unknown) =>
         callback(mockPrismaClient),
@@ -188,6 +188,84 @@ describe("CommercialLeadRepository", () => {
     expect(mockPrismaClient.commercialLead.findUnique).toHaveBeenCalledWith({
       where: { id: "lead-1" },
       include: { events: { orderBy: { createdAt: "asc" } } },
+    });
+  });
+
+  it("marks a lead as signed up through its opaque attribution token", async () => {
+    const tokenLead = {
+      id: "lead-1",
+      funnel: "CUSTOMER",
+      stage: "DISCOVERED",
+      doNotContact: false,
+    };
+    mockPrismaClient.commercialLead.findUnique
+      .mockResolvedValueOnce(tokenLead)
+      .mockResolvedValueOnce(tokenLead);
+    mockPrismaClient.commercialLead.update.mockResolvedValue({
+      ...tokenLead,
+      stage: "SIGNED_UP",
+    });
+    mockPrismaClient.commercialLeadEvent.create.mockResolvedValue({ id: "event-4" });
+
+    const repository = new CommercialLeadRepository(mockPrismaClient as never);
+    const result = await repository.markStageBySignupToken(
+      "550e8400-e29b-41d4-a716-446655440000",
+      "SIGNED_UP",
+    );
+
+    expect(result?.stage).toBe("SIGNED_UP");
+    expect(mockPrismaClient.commercialLead.findUnique).toHaveBeenNthCalledWith(1, {
+      where: { signupToken: "550e8400-e29b-41d4-a716-446655440000" },
+      select: { id: true, funnel: true, stage: true, doNotContact: true },
+    });
+  });
+
+  it("does not move an opted-out lead through attribution", async () => {
+    mockPrismaClient.commercialLead.findUnique.mockResolvedValue({
+      id: "lead-1",
+      funnel: "CUSTOMER",
+      stage: "DO_NOT_CONTACT",
+      doNotContact: true,
+    });
+
+    const repository = new CommercialLeadRepository(mockPrismaClient as never);
+    const result = await repository.markStageBySignupToken(
+      "550e8400-e29b-41d4-a716-446655440000",
+      "SIGNED_UP",
+    );
+
+    expect(result).toBeNull();
+    expect(mockPrismaClient.commercialLead.update).not.toHaveBeenCalled();
+  });
+
+  it("marks a signed-up lead as activated through its attribution token", async () => {
+    const tokenLead = {
+      id: "lead-1",
+      funnel: "CUSTOMER",
+      stage: "SIGNED_UP",
+      doNotContact: false,
+    };
+    mockPrismaClient.commercialLead.findUnique.mockResolvedValue(tokenLead);
+    mockPrismaClient.commercialLead.update.mockResolvedValue({
+      ...tokenLead,
+      stage: "ACTIVATED",
+    });
+    mockPrismaClient.commercialLeadEvent.create.mockResolvedValue({ id: "event-5" });
+
+    const repository = new CommercialLeadRepository(mockPrismaClient as never);
+    const result = await repository.markStageBySignupToken(
+      "550e8400-e29b-41d4-a716-446655440000",
+      "ACTIVATED",
+    );
+
+    expect(result?.stage).toBe("ACTIVATED");
+    expect(mockPrismaClient.commercialLeadEvent.create).toHaveBeenCalledWith({
+      data: {
+        leadId: "lead-1",
+        type: "STAGE_CHANGED",
+        fromStage: "SIGNED_UP",
+        toStage: "ACTIVATED",
+      },
     });
   });
 });
