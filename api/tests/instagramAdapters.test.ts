@@ -12,6 +12,15 @@ const mockPrismaClient = {
     delete: jest.fn(),
     deleteMany: jest.fn(),
   },
+  instagramWebhookEvent: {
+    findFirst: jest.fn(),
+  },
+  commercialLead: {
+    findFirst: jest.fn(),
+  },
+  commercialLeadEvent: {
+    create: jest.fn(),
+  },
   instagramDataDeletionRequest: {
     create: jest.fn(),
     findUnique: jest.fn(),
@@ -25,6 +34,8 @@ jest.mock("../config/database", () => ({
 import { FastifyRequest } from "fastify";
 import { InstagramAdapters } from "../src/interfaces/adapters/instagramAdapters";
 import { InstagramBusinessLoginService } from "../src/infrastructure/instagram/InstagramBusinessLoginService";
+import { InstagramMessagingService } from "../src/infrastructure/instagram/InstagramMessagingService";
+import { encryptInstagramToken } from "../src/infrastructure/instagram/InstagramTokenCipher";
 
 const originalEnv = process.env;
 
@@ -348,5 +359,65 @@ describe("InstagramAdapters", () => {
 
     expect(reply.code).toHaveBeenCalledWith(403);
     expect(reply.send).toHaveBeenCalledWith({ error: "Assinatura do webhook inválida" });
+  });
+
+  it("sends an official reply only after the recipient has started the conversation", async () => {
+    mockPrismaClient.instagramConnection.findUnique.mockResolvedValue({
+      instagramUserId: "business-1",
+      accessTokenEncrypted: encryptInstagramToken("instagram-token"),
+      tokenExpiresAt: null,
+    });
+    mockPrismaClient.instagramWebhookEvent.findFirst.mockResolvedValue({
+      eventId: "message:business-1:inbound-1",
+    });
+    mockPrismaClient.commercialLead.findFirst.mockResolvedValue({
+      id: "lead-1",
+      doNotContact: false,
+    });
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue({
+        recipient_id: "person-1",
+        message_id: "outbound-1",
+      }),
+    } as unknown as Response);
+    const messagingService = new InstagramMessagingService({
+      fetcher: fetchMock as unknown as typeof fetch,
+    });
+    const adapters = new InstagramAdapters(undefined, messagingService);
+
+    const result = await adapters.sendMessage(
+      makeRequest({ body: { recipientId: "person-1", text: "Olá, posso ajudar?" } }),
+    );
+
+    expect(result).toEqual({ recipientId: "person-1", messageId: "outbound-1" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(mockPrismaClient.commercialLeadEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        leadId: "lead-1",
+        type: "OUTBOUND_MESSAGE",
+        channel: "INSTAGRAM",
+      }),
+    });
+  });
+
+  it("blocks an official reply when no inbound conversation is recorded", async () => {
+    mockPrismaClient.instagramConnection.findUnique.mockResolvedValue({
+      instagramUserId: "business-1",
+      accessTokenEncrypted: encryptInstagramToken("instagram-token"),
+      tokenExpiresAt: null,
+    });
+    mockPrismaClient.instagramWebhookEvent.findFirst.mockResolvedValue(null);
+    const messagingService = new InstagramMessagingService({
+      fetcher: jest.fn() as typeof fetch,
+    });
+    const adapters = new InstagramAdapters(undefined, messagingService);
+
+    await expect(
+      adapters.sendMessage(
+        makeRequest({ body: { recipientId: "person-1", text: "Olá" } }),
+      ),
+    ).rejects.toThrow("só pode ser enviada depois de uma mensagem recebida");
   });
 });

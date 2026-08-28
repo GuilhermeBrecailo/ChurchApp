@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { FastifyReply, FastifyRequest } from "fastify";
+import { z } from "zod";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import {
@@ -7,8 +8,17 @@ import {
   InstagramIntegrationError,
 } from "../../infrastructure/instagram/InstagramBusinessLoginService";
 import { parseInstagramSignedRequest } from "../../infrastructure/instagram/InstagramComplianceService";
-import { encryptInstagramToken } from "../../infrastructure/instagram/InstagramTokenCipher";
+import {
+  decryptInstagramToken,
+  encryptInstagramToken,
+} from "../../infrastructure/instagram/InstagramTokenCipher";
+import { InstagramMessagingService } from "../../infrastructure/instagram/InstagramMessagingService";
 import { InstagramWebhookService } from "../../infrastructure/instagram/InstagramWebhookService";
+
+const instagramMessageSchema = z.object({
+  recipientId: z.string().trim().min(1),
+  text: z.string().trim().min(1).max(2_000),
+});
 
 const stateTtlMs = 10 * 60 * 1000;
 
@@ -45,6 +55,7 @@ function frontendUrl() {
 export class InstagramAdapters {
   constructor(
     private readonly service = new InstagramBusinessLoginService(),
+    private readonly messagingService = new InstagramMessagingService(),
   ) {}
 
   async getConnectUrl(request: FastifyRequest) {
@@ -87,6 +98,88 @@ export class InstagramAdapters {
     const { churchId } = this.getManagerContext(request);
     await $prismaClient.instagramConnection.delete({ where: { crunchId: churchId } });
     return { success: true };
+  }
+
+  async sendMessage(request: FastifyRequest) {
+    const { churchId } = this.getManagerContext(request);
+    const parsed = instagramMessageSchema.safeParse(request.body || {});
+    if (!parsed.success) {
+      throw new DomainError(parsed.error.issues[0]?.message || "Mensagem do Instagram inválida");
+    }
+
+    const connection = await $prismaClient.instagramConnection.findUnique({
+      where: { crunchId: churchId },
+      select: {
+        instagramUserId: true,
+        accessTokenEncrypted: true,
+        tokenExpiresAt: true,
+      },
+    });
+    if (!connection) {
+      throw new DomainError("Instagram não conectado");
+    }
+    if (connection.tokenExpiresAt && connection.tokenExpiresAt.getTime() <= Date.now()) {
+      throw new DomainError("Token do Instagram expirado. Reconecte a conta.");
+    }
+
+    const lead = await $prismaClient.commercialLead.findFirst({
+      where: {
+        funnel: "CUSTOMER",
+        instagramUserId: parsed.data.recipientId,
+      },
+      select: { id: true, doNotContact: true },
+    });
+    if (!lead) {
+      throw new DomainError("Destinatário ainda não possui conversa registrada");
+    }
+    if (lead.doNotContact) {
+      throw new DomainError("Este lead está bloqueado para contato");
+    }
+
+    const inbound = await $prismaClient.instagramWebhookEvent.findFirst({
+      where: {
+        instagramUserId: connection.instagramUserId,
+        senderId: parsed.data.recipientId,
+        eventType: "MESSAGE",
+      },
+      select: { eventId: true },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!inbound) {
+      throw new DomainError(
+        "A mensagem só pode ser enviada depois de uma mensagem recebida",
+      );
+    }
+
+    let accessToken: string;
+    try {
+      accessToken = decryptInstagramToken(connection.accessTokenEncrypted);
+    } catch {
+      throw new DomainError("Conexão do Instagram inválida. Reconecte a conta.");
+    }
+
+    const result = await this.messagingService.sendText({
+      accessToken,
+      instagramUserId: connection.instagramUserId,
+      recipientId: parsed.data.recipientId,
+      text: parsed.data.text,
+    });
+
+    await $prismaClient.commercialLeadEvent.create({
+      data: {
+        leadId: lead.id,
+        type: "OUTBOUND_MESSAGE",
+        channel: "INSTAGRAM",
+        metadata: {
+          inboundEventId: inbound.eventId,
+          messageId: result.messageId,
+          recipientId: result.recipientId,
+          text: parsed.data.text,
+        },
+      },
+    });
+
+    return result;
   }
 
   async deauthorize(request: FastifyRequest, reply: FastifyReply) {

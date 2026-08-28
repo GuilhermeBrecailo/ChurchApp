@@ -15,6 +15,11 @@ export async function InstagramRoutes(app: FastifyInstance) {
     controllerHandler(adapters.status.bind(adapters)),
   );
 
+  app.post(
+    "/api/church/integrations/instagram/messages",
+    controllerHandler(adapters.sendMessage.bind(adapters)),
+  );
+
   app.get(
     "/api/webhooks/instagram",
     adapters.verifyWebhook.bind(adapters),
