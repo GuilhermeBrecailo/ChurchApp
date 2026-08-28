@@ -252,14 +252,27 @@ const navCatalog: Record<string, RoleNavigationItem> = {
     key: "settings",
     label: "Config.",
     title: "Configurações",
-    description: "Igreja, horários, WhatsApp, plano e preferências.",
+    description: "Página pública, horários, WhatsApp e convite.",
     route: "/admin/configuracoes",
     icon: "cog",
-    matchPrefixes: ["/settings", "/admin/configuracoes"],
+    matchPrefixes: ["/admin/configuracoes"],
     iconColor: "#475569",
     bgColor: "#E2E8F0",
     iconColorDark: "#cbd5e1",
     bgColorDark: "rgba(203,213,225,0.12)",
+  },
+  churchProfile: {
+    key: "churchProfile",
+    label: "Dados",
+    title: "Dados da igreja",
+    description: "Nome, endereço, documento e plano da igreja.",
+    route: "/settings",
+    icon: "church",
+    matchPrefixes: ["/settings"],
+    iconColor: "#B5472A",
+    bgColor: "#F7E2D3",
+    iconColorDark: "#f0975a",
+    bgColorDark: "rgba(240,151,90,0.16)",
   },
   platformAdmin: {
     key: "platformAdmin",
@@ -513,6 +526,11 @@ export function getAllNavigationItems(user: RoleNavigationUser | null | undefine
     ...getQuickAccessItems(user),
     ...getChurchHubItems(user),
     ...(canSeeChurchAdminHub(user) ? [item("churchAdmin"), item("settings")] : []),
+    // churchProfile (dados de cadastro: nome, endereco, documento) so pode
+    // ser editado por quem e de fato pastor/admin (ver canEditChurch em
+    // settings.vue) - um lider com apenas hasMemberManagementAccess veria o
+    // atalho e cairia num formulario praticamente todo desabilitado.
+    ...(hasChurch && isPrivileged ? [item("churchProfile")] : []),
     ...(hasChurch && isPrivileged ? [item("rolesManagement"), item("publications")] : []),
     ...(hasChurch && hasAnyPermission(user, ["PASTORAL_CARE_MANAGE"]) ? [item("pastoral"), item("visits")] : []),
     ...(hasChurch && hasContentPublishingAccess(user) ? [item("content")] : []),
