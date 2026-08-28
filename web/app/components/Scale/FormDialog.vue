@@ -41,7 +41,17 @@
           :disabled="isSaving"
         />
 
+        <div v-if="linkedCultLabel" class="locked-cult mb-4">
+          <v-icon size="20" color="purple-darken-3">mdi-church</v-icon>
+          <div class="min-w-0">
+            <p class="text-caption text-grey-darken-1 mb-0">Culto selecionado</p>
+            <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+              {{ linkedCultLabel }}
+            </p>
+          </div>
+        </div>
         <v-select
+          v-else
           v-model="scheduleForm.serviceTimeId"
           label="Culto"
           :items="serviceTimeOptions"
@@ -364,7 +374,11 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { Calendar, ChevronDown, ChevronUp, Plus } from "lucide-vue-next";
 import { useThemeMode } from "../../../composables/useThemeMode";
-import { useServiceOccurrences } from "../../../composables/useServiceOccurrences";
+import {
+  useServiceOccurrences,
+  type ServiceOccurrenceDetail,
+} from "../../../composables/useServiceOccurrences";
+import { getScheduleCultSelection } from "../../utils/scaleSchedule";
 import { useServiceTimes } from "../../../composables/useServiceTimes";
 import {
   useDepartments,
@@ -394,7 +408,7 @@ const {
   getDepartmentResources,
   getDepartmentSongs,
 } = useDepartments();
-const { resolveOccurrence } = useServiceOccurrences();
+const { resolveOccurrence, getOccurrence } = useServiceOccurrences();
 const { serviceTimes, loadServiceTimes } = useServiceTimes();
 
 onMounted(() => {
@@ -413,6 +427,20 @@ const serviceTimeOptions = computed(() =>
 const { isDark } = useThemeMode();
 const accentColor = computed(() => (isDark.value ? "#f0975a" : "#B5472A"));
 const avatarBgColor = computed(() => (isDark.value ? "rgba(240,151,90,0.16)" : "#F7E2D3"));
+const linkedCult = ref<ServiceOccurrenceDetail | null>(null);
+
+const linkedCultLabel = computed(() => {
+  if (!linkedCult.value) return "";
+
+  const title = linkedCult.value.title || linkedCult.value.serviceTime?.label || "Culto";
+  const time = linkedCult.value.time || linkedCult.value.serviceTime?.time;
+  const date = new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(new Date(linkedCult.value.date));
+
+  return [title, date, time].filter(Boolean).join(" · ");
+});
 
 const isEditing = computed(() => Boolean(props.schedule));
 const isSaving = ref(false);
@@ -581,14 +609,17 @@ const resetForm = () => {
   volunteerUserId.value = "";
   volunteerRole.value = "";
   saveError.value = "";
+  linkedCult.value = null;
 };
 
 const prefillForm = async (schedule: DepartmentSchedule) => {
   isPrefilling.value = true;
+  linkedCult.value = null;
   scheduleForm.title = schedule.description;
   scheduleForm.date = toDateInputValue(schedule.date);
   scheduleForm.time = toTimeInputValue(schedule.date);
-  scheduleForm.serviceTimeId = schedule.serviceOccurrence?.serviceTimeId ?? "";
+  const cultSelection = getScheduleCultSelection(schedule);
+  scheduleForm.serviceTimeId = cultSelection.serviceTimeId;
   scheduleForm.departmentId = schedule.departmentId;
   scheduleForm.rehearsalDate = schedule.rehearsalAt ? toDateInputValue(schedule.rehearsalAt) : "";
   scheduleForm.rehearsalTime = schedule.rehearsalAt ? toTimeInputValue(schedule.rehearsalAt) : "";
@@ -603,6 +634,17 @@ const prefillForm = async (schedule: DepartmentSchedule) => {
   volunteerUserId.value = "";
   volunteerRole.value = "";
   saveError.value = "";
+
+  if (cultSelection.occurrenceId) {
+    const { data, error } = await getOccurrence(cultSelection.occurrenceId);
+
+    if (data) {
+      linkedCult.value = data;
+    } else {
+      saveError.value = error || "Não foi possível carregar o culto vinculado a esta escala.";
+    }
+  }
+
   isPrefilling.value = false;
 };
 
@@ -660,7 +702,7 @@ const handleSaveSchedule = async () => {
     return;
   }
 
-  if (!scheduleForm.serviceTimeId) {
+  if (!linkedCult.value && !scheduleForm.serviceTimeId) {
     saveError.value = "Escolha o culto da escala.";
     return;
   }
@@ -668,10 +710,9 @@ const handleSaveSchedule = async () => {
   isSaving.value = true;
 
   try {
-    const { data: occurrence, error: occurrenceError } = await resolveOccurrence(
-      scheduleForm.serviceTimeId,
-      scheduleForm.date,
-    );
+    const { data: occurrence, error: occurrenceError } = linkedCult.value
+      ? { data: linkedCult.value, error: null }
+      : await resolveOccurrence(scheduleForm.serviceTimeId, scheduleForm.date);
 
     if (occurrenceError || !occurrence) {
       saveError.value = occurrenceError || "Não foi possível vincular o culto.";
@@ -743,6 +784,16 @@ const handleSaveSchedule = async () => {
   min-height: 48px;
   padding-top: 10px;
   padding-bottom: 10px;
+}
+
+.locked-cult {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(74, 20, 140, 0.18);
+  border-radius: 14px;
+  background: rgba(74, 20, 140, 0.04);
+  padding: 12px 14px;
 }
 
 .scale-field-grid {
