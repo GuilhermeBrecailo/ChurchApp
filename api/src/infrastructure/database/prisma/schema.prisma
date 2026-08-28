@@ -84,6 +84,44 @@ model Crunch {
     serviceAttendances ServiceAttendance[]
     serviceOccurrences ServiceOccurrence[]
     pastoralVisits PastoralVisit[]
+    instagramConnection InstagramConnection?
+    instagramOAuthStates InstagramOAuthState[]
+}
+
+model InstagramConnection {
+    id                  String   @id @default(uuid())
+    crunchId            String   @unique
+    crunch              Crunch   @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+    instagramUserId     String
+    username            String?
+    accessTokenEncrypted String
+    tokenExpiresAt      DateTime?
+    permissions         String[] @default([])
+    createdAt           DateTime @default(now())
+    updatedAt           DateTime @updatedAt
+}
+
+model InstagramOAuthState {
+    id        String   @id @default(uuid())
+    state     String   @unique
+    crunchId  String
+    crunch    Crunch   @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+    expiresAt DateTime
+    usedAt    DateTime?
+    createdAt DateTime @default(now())
+
+    @@index([crunchId, expiresAt])
+}
+
+model InstagramDataDeletionRequest {
+    id               String   @id @default(uuid())
+    confirmationCode String   @unique
+    instagramUserId  String
+    status           String   @default("COMPLETED")
+    createdAt        DateTime @default(now())
+    completedAt      DateTime?
+
+    @@index([instagramUserId, createdAt])
 }
 
 model MercadoPagoWebhookNotification {

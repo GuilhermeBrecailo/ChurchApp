@@ -1,0 +1,54 @@
+{
+  "owner": {
+    "name": "Guilherme Brecailo",
+    "role": "Desenvolvedor / CEO"
+  },
+  "company": {
+    "name": "ChurchApp",
+    "website": "https://churchapp.site/comece",
+    "instagramHandle": "app_church",
+    "whatsappUrl": "https://wa.me/5543996644544",
+    "product": "Gestor de Igrejas"
+  },
+  "offer": {
+    "pitch": "O ChurchApp é uma plataforma de gestão para igrejas. O cadastro pode ser feito online, com 3 meses grátis; depois, há um plano gratuito e o plano Pro por R$49,90.",
+    "howItWorks": "A igreja se cadastra online, usa 3 meses grátis e, depois, pode permanecer no plano gratuito ou contratar o plano Pro.",
+    "freeTrialMonths": 3,
+    "freePlanAvailable": true,
+    "proPlan": {
+      "name": "Pro",
+      "price": 49.9,
+      "currency": "BRL"
+    }
+  },
+  "verifiedClaims": [
+    "ChurchApp é uma plataforma de gestão para igrejas",
+    "o cadastro pode ser feito online",
+    "novos cadastros têm 3 meses grátis",
+    "após o período grátis existe um plano gratuito e o plano Pro pago",
+    "mais de 30 usuários usando",
+    "notificações automáticas"
+  ],
+  "unverifiedClaims": [],
+  "idealCustomerProfile": {
+    "segments": [
+      "igrejas",
+      "pastores",
+      "gestores de igrejas"
+    ],
+    "keywords": [
+      "igreja",
+      "culto",
+      "ministério",
+      "pastor",
+      "congregação"
+    ],
+    "geography": [
+      "Brasil"
+    ]
+  },
+  "affiliates": {
+    "groupUrl": null,
+    "topics": []
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "owner": {
+    "name": "Nome do responsável",
+    "role": "Cargo"
+  },
+  "company": {
+    "name": "Nome da empresa",
+    "website": "https://exemplo.com",
+    "instagramHandle": "perfil_da_empresa",
+    "whatsappUrl": "https://wa.me/5500000000000",
+    "product": "Nome do produto"
+  },
+  "offer": {
+    "pitch": "Descrição objetiva baseada somente em afirmações verificadas.",
+    "howItWorks": "Explique o fluxo de contratação sem promessas não verificadas.",
+    "freeTrialMonths": 0,
+    "freePlanAvailable": false,
+    "proPlan": {
+      "name": "Plano pago",
+      "price": 0.01,
+      "currency": "BRL"
+    }
+  },
+  "verifiedClaims": [],
+  "unverifiedClaims": [],
+  "idealCustomerProfile": {
+    "segments": [],
+    "keywords": [],
+    "geography": []
+  },
+  "affiliates": {
+    "groupUrl": null,
+    "topics": []
+  }
+}
