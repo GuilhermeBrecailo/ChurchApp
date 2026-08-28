@@ -448,6 +448,7 @@ export function getQuickAccessItems(user: RoleNavigationUser | null | undefined)
       item("messages"),
       item("reports"),
       item("cults"),
+      item("prayer"),
       item("settings"),
     ];
   }
