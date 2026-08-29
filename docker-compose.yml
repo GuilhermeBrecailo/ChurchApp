@@ -26,13 +26,7 @@ services:
       - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
       - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
       - VAPID_SUBJECT=${VAPID_SUBJECT}
-      - INSTAGRAM_APP_ID=${INSTAGRAM_APP_ID}
-      - INSTAGRAM_APP_SECRET=${INSTAGRAM_APP_SECRET}
-      - INSTAGRAM_WEBHOOK_VERIFY_TOKEN=${INSTAGRAM_WEBHOOK_VERIFY_TOKEN}
-      - INSTAGRAM_REDIRECT_URI=${INSTAGRAM_REDIRECT_URI:-https://api.churchapp.site/public/integrations/instagram/callback}
-      - INSTAGRAM_SCOPES=${INSTAGRAM_SCOPES:-instagram_business_basic}
-      - INSTAGRAM_GRAPH_API_VERSION=${INSTAGRAM_GRAPH_API_VERSION:-v26.0}
-      - INSTAGRAM_TOKEN_ENCRYPTION_KEY=${INSTAGRAM_TOKEN_ENCRYPTION_KEY}
+      - MERCADOPAGO_PRO_MONTHLY_AMOUNT=${MERCADOPAGO_PRO_MONTHLY_AMOUNT:-49.90}
       # Dominio do cookie de refresh (ex: .churchapp.site). Precisa bater com
       # o dominio que o front realmente usa - senao o cookie e cross-site
       # "de verdade" pro navegador (dominios registraveis diferentes) e

@@ -43,7 +43,6 @@ const KeycloakPlugin: FastifyPluginAsync = async (fastify) => {
     const publicRoutes = [
       "/status",
       "/api/pastor/signup",
-      "/api/webhooks/instagram",
       "/public/auth/login",
       "/public/auth/refresh-token",
       "/public/auth/logout",

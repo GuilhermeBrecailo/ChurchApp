@@ -44,19 +44,5 @@ export const $config = {
   BACKEND_TOKEN_CTE: process.env.BACKEND_TOKEN_CTE!,
   URL_BACKEND: process.env.URL_BACKEND!,
 
-  INSTAGRAM_APP_ID: process.env.INSTAGRAM_APP_ID,
-  INSTAGRAM_APP_SECRET: process.env.INSTAGRAM_APP_SECRET,
-  INSTAGRAM_WEBHOOK_VERIFY_TOKEN: process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN,
-  INSTAGRAM_REDIRECT_URI:
-    process.env.INSTAGRAM_REDIRECT_URI ||
-    "https://api.churchapp.site/public/integrations/instagram/callback",
-  INSTAGRAM_SCOPES:
-    process.env.INSTAGRAM_SCOPES ||
-    "instagram_business_basic",
-  INSTAGRAM_GRAPH_API_VERSION:
-    process.env.INSTAGRAM_GRAPH_API_VERSION || "v26.0",
-  INSTAGRAM_TOKEN_ENCRYPTION_KEY:
-    process.env.INSTAGRAM_TOKEN_ENCRYPTION_KEY || process.env.ENCRYPTION_KEY,
-
   BUSINESS: getBusinessConfig(),
 };

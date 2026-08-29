@@ -1080,7 +1080,7 @@
             </span>
             <span class="commercial-lead-card-copy">
               <strong>{{ commercialLeadName(lead) }}</strong>
-              <small>{{ lead.instagramHandle ? `@${lead.instagramHandle}` : "Instagram não informado" }}</small>
+            <small>{{ lead.instagramHandle ? `@${lead.instagramHandle}` : "Perfil público não informado" }}</small>
             </span>
             <v-chip size="x-small" :color="commercialLeadStageColor(lead.stage)" variant="tonal">
               {{ commercialLeadStageLabel(lead.stage) }}
@@ -1151,10 +1151,10 @@
 
           <v-text-field
             v-model="commercialLeadForm.instagramHandle"
-            label="Usuário do Instagram"
+            label="Identificador do perfil"
             hint="Opcional; pode informar com ou sem @."
             persistent-hint
-            prepend-inner-icon="mdi-instagram"
+            prepend-inner-icon="mdi-account-circle-outline"
             variant="outlined"
             density="comfortable"
             color="indigo-darken-2"
@@ -1167,7 +1167,7 @@
           <v-text-field
             v-model="commercialLeadForm.publicProfileUrl"
             label="Link público do perfil ou Google Maps"
-            hint="Obrigatório se o usuário do Instagram não for informado."
+            hint="Obrigatório se o identificador do perfil não for informado."
             persistent-hint
             prepend-inner-icon="mdi-link-variant"
             variant="outlined"
@@ -1339,7 +1339,7 @@
 
         <div class="commercial-lead-links mb-5">
           <a v-if="selectedCommercialLead.publicProfileUrl" :href="selectedCommercialLead.publicProfileUrl" target="_blank" rel="noreferrer">
-            Abrir perfil do Instagram
+            Abrir perfil público
           </a>
           <a v-if="selectedCommercialLead.website" :href="selectedCommercialLead.website" target="_blank" rel="noreferrer">
             Abrir site
@@ -1388,30 +1388,6 @@
         </div>
 
         <div>
-          <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">Mensagens recebidas do Instagram</h3>
-          <div v-if="selectedCommercialLeadInstagramMessages.length" class="commercial-lead-message-list mb-5">
-            <div
-              v-for="message in selectedCommercialLeadInstagramMessages"
-              :key="message.id"
-              class="commercial-lead-message"
-            >
-              <div class="d-flex align-center justify-space-between ga-2 mb-2">
-                <v-chip size="x-small" color="pink-darken-2" variant="tonal">
-                  {{ message.eventType === "MESSAGE" ? "Mensagem" : "Evento do Instagram" }}
-                </v-chip>
-                <span class="text-caption text-grey-darken-1">
-                  {{ formatDate(message.occurredAt || message.createdAt) }}
-                </span>
-              </div>
-              <p class="text-body-2 text-grey-darken-4 mb-0">
-                {{ message.messageText || "Evento recebido sem texto." }}
-              </p>
-            </div>
-          </div>
-          <p v-else class="text-caption text-grey-darken-1 mb-5">
-            Nenhuma mensagem recebida pelo webhook ainda.
-          </p>
-
           <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">Histórico</h3>
           <div v-if="selectedCommercialLead.events.length" class="commercial-lead-timeline">
             <div v-for="event in [...selectedCommercialLead.events].reverse()" :key="event.id" class="commercial-lead-event">
@@ -1766,12 +1742,6 @@ const commercialLeadStageOptionsForSelected = computed(() => {
     value,
   }));
 });
-
-const selectedCommercialLeadInstagramMessages = computed(() =>
-  [...(selectedCommercialLead.value?.instagramWebhookEvents ?? [])]
-    .filter((message) => message.eventType === "MESSAGE")
-    .reverse(),
-);
 
 const topChurches = computed(() =>
   [...adminChurches.value]

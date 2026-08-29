@@ -5,8 +5,6 @@ import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import fastifyStatic from "@fastify/static";
 import path from "node:path";
-import { Readable } from "node:stream";
-import { parse as parseQueryString } from "node:querystring";
 import { mkdir } from "node:fs/promises";
 import { AuthRoutes } from "./src/interfaces/routes/AuthRoutes.ts";
 import { UserRoutes } from "./src/interfaces/routes/UserRoutes.ts";
@@ -33,7 +31,6 @@ import { BirthdayRoutes } from "./src/interfaces/routes/BirthdayRoutes.ts";
 import { AttendanceRoutes } from "./src/interfaces/routes/AttendanceRoutes.ts";
 import { ServiceOccurrenceRoutes } from "./src/interfaces/routes/ServiceOccurrenceRoutes.ts";
 import { PastoralRoutes } from "./src/interfaces/routes/PastoralRoutes.ts";
-import { InstagramRoutes } from "./src/interfaces/routes/InstagramRoutes.ts";
 import TenantHandler from "./src/interfaces/plugins/TenantHandler.ts";
 import { startMessageRuleScheduler } from "./src/infrastructure/whatsapp/messageRuleScheduler.ts";
 import { startBirthdayScheduler } from "./src/infrastructure/whatsapp/birthdayScheduler.ts";
@@ -45,33 +42,6 @@ const server = fastify({
   logger: true,
 });
 
-server.addContentTypeParser(
-  "application/x-www-form-urlencoded",
-  { parseAs: "string" },
-  (_request, body, done) => {
-    try {
-      done(null, parseQueryString(body as string));
-    } catch (error) {
-      done(error as Error);
-    }
-  },
-);
-
-server.addHook("preParsing", async (request, _reply, payload) => {
-  const path = (request.raw.url || "").split("?")[0];
-  if (path !== "/api/webhooks/instagram" || request.method !== "POST") {
-    return payload;
-  }
-
-  const chunks: Buffer[] = [];
-  for await (const chunk of payload) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-
-  const rawBody = Buffer.concat(chunks);
-  (request as typeof request & { rawBody?: Buffer }).rawBody = rawBody;
-  return Readable.from([rawBody]);
-});
 const uploadsRoot = path.join(process.cwd(), "uploads");
 
 await mkdir(uploadsRoot, { recursive: true });
@@ -129,7 +99,6 @@ await server.register(BirthdayRoutes, { prefix: "/" });
 await server.register(AttendanceRoutes, { prefix: "/" });
 await server.register(ServiceOccurrenceRoutes, { prefix: "/" });
 await server.register(PastoralRoutes, { prefix: "/" });
-await server.register(InstagramRoutes, { prefix: "/" });
 
 await server.listen({ port, host: "0.0.0.0" });
 

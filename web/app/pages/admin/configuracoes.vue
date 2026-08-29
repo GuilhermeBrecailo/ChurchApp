@@ -15,25 +15,6 @@
       <UtilsPageHelpButton title="Configurações" />
     </div>
 
-    <v-alert
-      v-if="instagramReturnStatus === 'connected'"
-      type="success"
-      variant="tonal"
-      density="compact"
-      class="mb-4"
-    >
-      Instagram conectado com sucesso.
-    </v-alert>
-    <v-alert
-      v-else-if="instagramReturnStatus === 'error'"
-      type="error"
-      variant="tonal"
-      density="compact"
-      class="mb-4"
-    >
-      Não foi possível conectar o Instagram. Tente novamente.
-    </v-alert>
-
     <section v-if="canManageMembersByRole" class="church-admin-section mb-6">
       <div class="section-heading mb-4">
         <div>
@@ -160,72 +141,6 @@
                 class="text-none"
                 :loading="isDisconnectingWhatsApp"
                 @click="handleDisconnectWhatsApp"
-              >
-                Desconectar
-              </v-btn>
-            </div>
-          </template>
-        </v-card>
-      </div>
-
-      <div v-if="isChurchWideManager" class="mt-6">
-        <div class="section-heading mb-4">
-          <div>
-            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Instagram</h2>
-            <p class="text-caption text-grey-darken-1 mb-0">Conecte o Instagram profissional da igreja para receber mensagens</p>
-          </div>
-        </div>
-
-        <v-card class="invite-code-card rounded-xl pa-5 elevation-1 border-subtle">
-          <div class="d-flex align-center gap-3 mb-4">
-            <v-avatar size="40" :color="avatarBgIndigo">
-              <Instagram size="20" :color="accentColor" />
-            </v-avatar>
-            <div>
-              <p class="font-weight-bold mb-0" style="font-size:0.9rem;">
-                {{ instagramConnected ? `@${instagramUsername || "Instagram conectado"}` : "Instagram não conectado" }}
-              </p>
-              <p class="text-caption text-grey-darken-1 mb-0">
-                {{ instagramConnected ? "As mensagens podem ser recebidas pelo ChurchApp" : "Use uma conta profissional do Instagram" }}
-              </p>
-            </div>
-          </div>
-
-          <div v-if="instagramStatusLoading" class="d-flex justify-center pa-4">
-            <v-progress-circular indeterminate size="28" color="pink-darken-2" />
-          </div>
-
-          <template v-else>
-            <v-alert
-              v-if="instagramError"
-              type="error"
-              variant="tonal"
-              density="compact"
-              class="mb-4"
-            >
-              {{ instagramError }}
-            </v-alert>
-
-            <div class="d-flex gap-2 flex-wrap">
-              <v-btn
-                v-if="!instagramConnected"
-                color="pink-darken-2"
-                variant="flat"
-                size="small"
-                class="text-none font-weight-bold"
-                :loading="isConnectingInstagram"
-                @click="handleConnectInstagram"
-              >
-                <Instagram size="15" class="mr-1" /> Conectar Instagram
-              </v-btn>
-              <v-btn
-                v-else
-                color="red-darken-2"
-                variant="tonal"
-                size="small"
-                class="text-none"
-                :loading="isDisconnectingInstagram"
-                @click="handleDisconnectInstagram"
               >
                 Desconectar
               </v-btn>
@@ -753,7 +668,6 @@ import {
   CheckCircle2,
   Lock,
   UserCheck,
-  Instagram,
 } from "lucide-vue-next";
 import { useAuth } from "../../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
@@ -762,12 +676,10 @@ import { useChurchInvite } from "../../../composables/useChurchInvite";
 import { useChurch } from "../../../composables/useChurch";
 import { useServiceTimes, type ServiceTime } from "../../../composables/useServiceTimes";
 import { useWhatsApp } from "../../../composables/useWhatsApp";
-import { useInstagram } from "../../../composables/useInstagram";
 import { FONT_OPTIONS } from "../../../composables/useChurchAppearance";
 import { useChurchPlan, PLAN_LABELS, PLAN_FEATURE_LABELS, type PlanFeature } from "../../../composables/usePlan";
 
 const router = useRouter();
-const route = useRoute();
 
 const { user, updateNavPreviewRole } = useAuth();
 const { isDark } = useThemeMode();
@@ -870,57 +782,6 @@ const handleCopyInviteLink = () => {
 };
 
 const { getWhatsAppStatus, connectWhatsApp, disconnectWhatsApp } = useWhatsApp();
-const { getInstagramStatus, getInstagramConnectUrl, disconnectInstagram } = useInstagram();
-
-const instagramReturnStatus = computed(() => {
-  const status = route.query.instagram;
-  return status === "connected" || status === "error" ? status : null;
-});
-const instagramConnected = ref(false);
-const instagramUsername = ref("");
-const instagramStatusLoading = ref(false);
-const isConnectingInstagram = ref(false);
-const isDisconnectingInstagram = ref(false);
-const instagramError = ref("");
-
-const loadInstagramStatus = async () => {
-  if (!isChurchWideManager.value) return;
-  instagramStatusLoading.value = true;
-  const { data, error } = await getInstagramStatus();
-  instagramConnected.value = data?.connected ?? false;
-  instagramUsername.value = data?.username ?? "";
-  if (error) instagramError.value = error;
-  instagramStatusLoading.value = false;
-};
-
-const handleConnectInstagram = async () => {
-  instagramError.value = "";
-  isConnectingInstagram.value = true;
-  const { data, error } = await getInstagramConnectUrl();
-  isConnectingInstagram.value = false;
-
-  if (error || !data?.authorizationUrl) {
-    instagramError.value = error || "Não foi possível iniciar a conexão com o Instagram.";
-    return;
-  }
-
-  window.location.assign(data.authorizationUrl);
-};
-
-const handleDisconnectInstagram = async () => {
-  isDisconnectingInstagram.value = true;
-  instagramError.value = "";
-  const { error } = await disconnectInstagram();
-  isDisconnectingInstagram.value = false;
-
-  if (error) {
-    instagramError.value = error;
-    return;
-  }
-
-  instagramConnected.value = false;
-  instagramUsername.value = "";
-};
 
 const whatsappConnected = ref(false);
 const whatsappStatusLoading = ref(false);
@@ -1243,7 +1104,6 @@ onMounted(async () => {
     canAccessChurchAdmin.value ? loadServiceTimes() : Promise.resolve(),
     loadInviteCode(),
     loadWhatsAppStatus(),
-    loadInstagramStatus(),
   ]);
 });
 </script>
