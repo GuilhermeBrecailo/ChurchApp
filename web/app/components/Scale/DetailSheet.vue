@@ -667,6 +667,14 @@ onUnmounted(() => {
   gap: 18px;
   max-height: calc(min(92vh, 920px) - 96px);
   overflow-y: auto;
+  /* Sem isso, o navegador computa overflow-x como "auto" tambem (regra do
+     CSS: se um eixo de overflow e "visible" e o outro nao, o "visible" vira
+     "auto") - qualquer conteudo interno que estoure a largura (nome/cargo
+     longo, chip sem quebra, etc.) transforma o corpo inteiro do modal num
+     scroll horizontal arrastavel no touch, e um gesto vertical com qualquer
+     componente lateral arrasta TODAS as linhas de lado, cortando o padding
+     esquerdo - era exatamente o que causava o corte visual no mobile. */
+  overflow-x: hidden;
   padding: 18px 20px 24px;
 }
 
