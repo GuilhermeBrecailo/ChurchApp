@@ -148,6 +148,105 @@ describe("extractSongsFromPages", () => {
     expect(songs[0].key).toBe("C");
   });
 
+  it("detecta metadados de PDF mesclado onde 'Tom:' vem vazio ANTES do titulo/artista e o valor do tom sobra logo apos 'Composicao de:' (ex: ilovepdf_merged)", () => {
+    // Reproduz a ordem de extracao real de um PDF do Cifra Club "impresso e
+    // mesclado": ao contrario do rodape classico (titulo, artista,
+    // "Composicao de:", "Tom: X"), aqui "Tom:" sai vazio 3 linhas antes do
+    // titulo, e o valor do tom vira a linha seguinte a "Composicao de:".
+    const page = [
+      "[Primeira Parte]",
+      "Verso da primeira musica",
+      "Segunda linha do verso",
+      "[Refrão]",
+      "Refrao da primeira musica",
+      "Tom: ",
+      "Primeira Musica",
+      "Banda Exemplo",
+      "Composição de: Compositor Um",
+      "A",
+      "AEF#mD",
+      "AEF#mD",
+    ].join("\n");
+
+    const songs = extractSongsFromPages([page]);
+
+    expect(songs).toHaveLength(1);
+    expect(songs[0].title).toBe("Primeira Musica");
+    expect(songs[0].artist).toBe("Banda Exemplo");
+    expect(songs[0].key).toBe("A");
+    expect(songs[0].lyrics).toContain("Verso da primeira musica");
+    expect(songs[0].lyrics).toContain("Refrao da primeira musica");
+    // o bloco de cifra solta apos "Composicao de:" (formato desse PDF) nao
+    // fica colado na letra
+    expect(songs[0].lyrics).not.toContain("AEF#mD");
+  });
+
+  it("nao quebra em musicas fantasmas quando uma musica desse formato mesclado ocupa mais de uma pagina", () => {
+    const page1 = [
+      "[Intro]",
+      "Verso 1 da primeira musica",
+      "Tom: ",
+      "Primeira Musica",
+      "Banda Exemplo",
+      "Composição de: Compositor Um",
+      "A",
+      "AEF#mD",
+    ].join("\n");
+    const page2 = [
+      "Continuação da primeira musica",
+      "Mais uma linha da letra",
+      "[Ponte]",
+      "Ultima linha",
+    ].join("\n");
+    const page3 = [
+      "[Intro]",
+      "Verso 1 da segunda musica",
+      "Tom: ",
+      "Segunda Musica",
+      "Outra Banda",
+      "Composição de: Compositor Dois",
+      "Em",
+      "CD2Em7Bm7",
+    ].join("\n");
+
+    const songs = extractSongsFromPages([page1, page2, page3]);
+
+    expect(songs).toHaveLength(2);
+    expect(songs[0].title).toBe("Primeira Musica");
+    expect(songs[0].lyrics).toContain("Continuação da primeira musica");
+    expect(songs[1].title).toBe("Segunda Musica");
+    expect(songs[1].key).toBe("Em");
+  });
+
+  it("recupera acordes colados sem espaco (extracao de PDF de duas colunas) sem vazar pra letra", () => {
+    // No formato mesclado (Padrao 2), o bloco de cifra solta apos
+    // "Composicao de:" as vezes vem com acordes vizinhos colados (ex
+    // "AEF#mD" == "A E F#m D") - precisa virar cifra legivel, e uma
+    // pagina de continuacao com o mesmo problema (ex "BmD") nao pode
+    // vazar como se fosse letra.
+    const page1 = [
+      "[Intro]",
+      "Verso 1",
+      "Tom: ",
+      "Primeira Musica",
+      "Banda Exemplo",
+      "Composição de: Compositor Um",
+      "A",
+      "AEF#mD",
+    ].join("\n");
+    const page2 = ["[Final]", "Ultima linha da letra", "BmD", "AF#mED"].join("\n");
+
+    const songs = extractSongsFromPages([page1, page2]);
+
+    expect(songs).toHaveLength(1);
+    expect(songs[0].lyrics).not.toContain("BmD");
+    expect(songs[0].lyrics).not.toContain("AF#mED");
+    expect(songs[0].lyrics).toContain("Ultima linha da letra");
+    expect(songs[0].chords).toContain("A E F#m D");
+    expect(songs[0].chords).toContain("Bm D");
+    expect(songs[0].chords).toContain("A F#m E D");
+  });
+
   it("separa uma linha de secao colada com acordes (ex: [Solo] C Dm Am F)", () => {
     const page = [
       "C",

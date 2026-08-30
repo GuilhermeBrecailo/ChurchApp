@@ -38,7 +38,11 @@ const CHORD_TOKEN_RE =
 const SECTION_TAG_PREFIX_RE = /^(\[[^\]]*\])\s*(.*)$/;
 
 function isChordToken(token: string): boolean {
-  return token === "(" || token === ")" || CHORD_TOKEN_RE.test(token);
+  if (token === "(" || token === ")" || CHORD_TOKEN_RE.test(token)) return true;
+  // extracao de PDF de duas colunas as vezes cola acordes vizinhos sem
+  // espaco (ex "BmD" == "Bm D", "AF#mED" == "A F#m E D") - se o token
+  // inteiro decompoe limpo numa sequencia de 2+ acordes validos, e cifra.
+  return splitGluedChordTokens(token) !== null;
 }
 
 // Uma linha e "so cifra" quando TODOS os tokens dela sao acordes (ou
@@ -162,7 +166,54 @@ type PageSongMetadata = {
   artist: string;
   key: string;
   footerStartIndex: number;
+  // So preenchido no Padrao 2 (PDF mesclado): indice, em `lines`, de onde
+  // comeca o bloco de cifra solta que sobra apos "Composicao de:" (o
+  // primeiro token dele e o proprio valor do tom). Esse bloco fica fora do
+  // corpo letra+cifra normal (ele vem DEPOIS do rodape, nao antes), entao
+  // precisa ser recolhido a parte e anexado so ao campo de cifra.
+  chordAppendixStartIndex?: number;
 };
+
+// Casa um UNICO acorde a partir do inicio da string (sem ancora no fim), pra
+// ser usado em decomposicao sequencial - ver splitGluedChordTokens.
+const CHORD_SEGMENT_RE =
+  /^[A-G][#b]?(?:m|min|maj|dim|aug|sus[24]?|add)?\d{0,2}(?:\(\d{1,2}M?\))?(?:\/[A-G][#b]?)?/;
+
+// Extracao de PDF de duas colunas as vezes cola acordes vizinhos sem espaco
+// (ex "AEF#mD" == "A E F#m D"). Tenta decompor a string inteira numa
+// sequencia de 2+ acordes validos, de trasa pra frente; se sobrar qualquer
+// caractere que nao fecha um acorde, desiste (retorna null) - mais seguro
+// deixar a linha como veio do que arriscar destruir letra de verdade.
+function splitGluedChordTokens(token: string): string[] | null {
+  const segments: string[] = [];
+  let rest = token;
+
+  while (rest.length > 0) {
+    const match = rest.match(CHORD_SEGMENT_RE);
+    if (!match || match[0].length === 0) return null;
+    segments.push(match[0]);
+    rest = rest.slice(match[0].length);
+  }
+
+  return segments.length > 1 ? segments : null;
+}
+
+// Normaliza uma linha do apendice de cifra: marcador de secao e parenteses
+// de progressao ficam intactos; um token colado que decompoe 100% em
+// acordes validos vira acordes separados por espaco; qualquer outra coisa
+// (inclusive uma linha que nao decompoe limpo) volta como veio - sem
+// tentativa de "adivinhar", pra nao inventar acorde errado.
+function expandGluedChords(line: string): string {
+  const trimmed = line.trim();
+  if (!trimmed) return line;
+  if (SECTION_TAG_PREFIX_RE.test(trimmed)) return line;
+
+  const compact = trimmed.replace(/\s+/g, "");
+  if (compact === "(" || compact === ")" || compact === "()") return line;
+
+  const segments = splitGluedChordTokens(compact);
+  return segments ? segments.join(" ") : line;
+}
 
 function normalizeLines(text: string): string[] {
   return text
@@ -179,22 +230,49 @@ function findCifraClubMetadata(lines: string[]): PageSongMetadata | null {
   const compositionIndex = lines.findIndex((line) => /^Composi[cç][aã]o de:/i.test(line));
   if (compositionIndex < 2) return null;
 
+  // Padrao 1: rodape "impresso" classico do Cifra Club - titulo, artista,
+  // "Composicao de:" e, logo depois, "Tom: X" (ou "Afinacao: X") ja com o
+  // valor colado na mesma linha.
   const footerWindow = lines.slice(compositionIndex, Math.min(lines.length, compositionIndex + 6));
-  const hasTomOrAfinacao = footerWindow.some(
+  const hasTomOrAfinacaoAfter = footerWindow.some(
     (line) => /^Tom:/i.test(line) || /^Afina[cç][aã]o:/i.test(line),
   );
 
-  if (!hasTomOrAfinacao) return null;
+  if (hasTomOrAfinacaoAfter) {
+    const tomLine = footerWindow.find((line) => /^Tom:/i.test(line));
+    const key = tomLine ? tomLine.replace(/^Tom:\s*/i, "").trim() : "";
 
-  const tomLine = footerWindow.find((line) => /^Tom:/i.test(line));
-  const key = tomLine ? tomLine.replace(/^Tom:\s*/i, "").trim() : "";
+    return {
+      title: lines[compositionIndex - 2].slice(0, MAX_TITLE_LENGTH).trim(),
+      artist: lines[compositionIndex - 1].trim(),
+      key,
+      footerStartIndex: compositionIndex - 2,
+    };
+  }
 
-  return {
-    title: lines[compositionIndex - 2].slice(0, MAX_TITLE_LENGTH).trim(),
-    artist: lines[compositionIndex - 1].trim(),
-    key,
-    footerStartIndex: compositionIndex - 2,
-  };
+  // Padrao 2: PDF mesclado (varias musicas do Cifra Club unidas num so
+  // arquivo, ex: "ilovepdf_merged"). A extracao de texto do PDF nao segue a
+  // ordem visual: um rotulo "Tom:" VAZIO sai 3 linhas antes do titulo, e o
+  // valor do tom sobra como a linha logo apos "Composicao de:" (antes do
+  // bloco de cifra solta que vem em seguida). Ex real:
+  //   ...letra...\nTom: \nQuebrantado\nVineyard\nComposicao de: Jeremy Riddle\nA\n...
+  const bareTomIndex = compositionIndex - 3;
+  const hasBareTomBefore = bareTomIndex >= 0 && /^Tom:\s*$/i.test(lines[bareTomIndex] ?? "");
+
+  if (hasBareTomBefore) {
+    const candidateKey = (lines[compositionIndex + 1] ?? "").trim();
+    const key = CHORD_TOKEN_RE.test(candidateKey) ? candidateKey : "";
+
+    return {
+      title: lines[compositionIndex - 2].slice(0, MAX_TITLE_LENGTH).trim(),
+      artist: lines[compositionIndex - 1].trim(),
+      key,
+      footerStartIndex: bareTomIndex,
+      chordAppendixStartIndex: compositionIndex + 1,
+    };
+  }
+
+  return null;
 }
 
 function cleanPageLyrics(
@@ -207,9 +285,14 @@ function cleanPageLyrics(
   );
   const { lyricLines, chordLines } = splitLyricsFromChords(bodyLines);
 
+  const chordAppendix =
+    metadata?.chordAppendixStartIndex !== undefined
+      ? lines.slice(metadata.chordAppendixStartIndex).map(expandGluedChords)
+      : [];
+
   return {
     lyrics: lyricLines.join("\n").trim(),
-    chords: chordLines.join("\n").trim(),
+    chords: [...chordLines.map(expandGluedChords), ...chordAppendix].join("\n").trim(),
     metadata,
   };
 }
