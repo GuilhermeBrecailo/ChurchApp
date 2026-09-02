@@ -96,11 +96,30 @@
       </div>
     </template>
 
-    <v-dialog v-model="dialogOpen" max-width="560">
+    <UtilsResponsiveOverlay
+      v-model="dialogOpen"
+      max-width="560"
+      variant="form"
+      scrollable
+    >
       <v-card class="pa-5">
-        <h2 class="text-h6 font-weight-bold mb-4">
-          {{ editingId ? "Editar visita" : "Nova visita" }}
-        </h2>
+        <div class="responsive-dialog-header mb-4">
+          <div>
+            <p class="app-page-kicker mb-1">Cuidado pastoral</p>
+            <h2 class="text-h6 font-weight-bold mb-0">
+              {{ editingId ? "Editar visita" : "Nova visita" }}
+            </h2>
+          </div>
+          <v-btn
+            icon
+            variant="text"
+            size="small"
+            aria-label="Fechar formulário de visita"
+            @click="dialogOpen = false"
+          >
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
 
         <v-form @submit.prevent="saveVisit">
           <v-select
@@ -165,7 +184,7 @@
             {{ dialogError }}
           </v-alert>
 
-          <div class="d-flex justify-end ga-2">
+          <div class="dialog-actions d-flex justify-end ga-2">
             <v-btn variant="text" class="text-none" @click="dialogOpen = false">Cancelar</v-btn>
             <v-btn type="submit" color="purple-darken-3" class="text-none" :loading="saving">
               Salvar
@@ -173,7 +192,7 @@
           </div>
         </v-form>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
     <UtilsConfirmDialog
       :model-value="!!confirmDeleteId"

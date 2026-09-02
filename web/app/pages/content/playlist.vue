@@ -2,7 +2,7 @@
   <div class="pa-4 pb-8 page-wrapper">
     <div class="playlist-header mb-5">
       <div class="content-detail-title-group min-w-0">
-        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+        <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
           <ChevronLeft size="20" />
         </v-btn>
         <div class="min-w-0">
@@ -87,14 +87,14 @@
       </v-card>
     </div>
 
-    <UtilsResponsiveOverlay v-model="isOverlayOpen" scrollable max-width="680">
+    <UtilsResponsiveOverlay v-model="isOverlayOpen" variant="detail" scrollable max-width="680">
       <div v-if="activeSong" class="song-overlay">
         <div class="song-overlay-header pa-4">
           <div class="min-w-0">
             <h2 class="text-h6 font-weight-bold mb-0">{{ activeSong.mediaItem.title }}</h2>
             <p class="text-caption text-grey mb-0">{{ activeSong.mediaItem.department.name }}</p>
           </div>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="isOverlayOpen = false">
+          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar música" @click="isOverlayOpen = false">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>

@@ -5,7 +5,7 @@
   >
     <div class="config-header mb-4">
       <div class="content-detail-title-group min-w-0">
-        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+        <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
           <ChevronLeft size="20" />
         </v-btn>
         <div class="flex-1 min-w-0">
@@ -149,11 +149,11 @@
         </v-card>
       </div>
 
-      <UtilsResponsiveOverlay v-model="isWhatsAppDialogOpen" max-width="420" @after-leave="stopWhatsAppPolling">
+      <UtilsResponsiveOverlay v-model="isWhatsAppDialogOpen" max-width="420" variant="form" scrollable @after-leave="stopWhatsAppPolling">
         <v-card class="rounded-xl pa-6 bg-white" elevation="0">
           <div class="responsive-dialog-header mb-4">
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">Conectar WhatsApp</h2>
-            <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeWhatsAppDialog">
+            <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar configuração do WhatsApp" @click="closeWhatsAppDialog">
               <v-icon size="20">mdi-close</v-icon>
             </v-btn>
           </div>
@@ -554,7 +554,7 @@
               <v-chip v-if="!time.isActive" size="x-small" variant="tonal" color="grey-darken-1">
                 Inativo
               </v-chip>
-              <v-btn icon variant="text" color="grey-darken-1" size="small" @click="editServiceTime(time)">
+              <v-btn icon variant="text" color="grey-darken-1" size="small" :aria-label="`Editar horário ${time.label}`" @click="editServiceTime(time)">
                 <Pencil size="15" />
               </v-btn>
               <v-btn

@@ -2,7 +2,7 @@
   <div class="bible-page pa-4 pb-8">
     <div class="bible-header mb-4">
       <div class="content-detail-title-group min-w-0">
-        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+        <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
           <ChevronLeft size="20" />
         </v-btn>
         <div class="flex-1 min-w-0">

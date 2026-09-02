@@ -4,6 +4,7 @@
     :persistent="true"
     :scrollable="false"
     max-width="480"
+    variant="form"
     mobile-class="onboarding-bottom-sheet"
   >
     <v-card class="onboarding-card rounded-xl" elevation="0">
@@ -20,11 +21,14 @@
       </div>
 
       <div class="onboarding-dots">
-        <span
+        <button
           v-for="(_, i) in slides"
           :key="i"
+          type="button"
           class="onboarding-dot"
           :class="{ active: i === current }"
+          :aria-label="`Ir para a etapa ${i + 1}`"
+          :aria-current="i === current ? 'step' : undefined"
           @click="goTo(i)"
         />
       </div>
@@ -211,8 +215,11 @@ onMounted(() => {
 }
 
 .onboarding-dot {
+  appearance: none;
   width: 8px;
   height: 8px;
+  padding: 0;
+  border: 0;
   border-radius: 50%;
   background: #e5e7eb;
   cursor: pointer;
@@ -222,6 +229,11 @@ onMounted(() => {
 .onboarding-dot.active {
   background: var(--app-color-accent);
   transform: scale(1.3);
+}
+
+.onboarding-dot:focus-visible {
+  outline: 3px solid var(--app-color-accent-muted);
+  outline-offset: 4px;
 }
 
 .onboarding-actions {
@@ -259,6 +271,26 @@ onMounted(() => {
 .slide-right-leave-to {
   opacity: 0;
   transform: translateX(40px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-left-enter-active,
+  .slide-left-leave-active,
+  .slide-right-enter-active,
+  .slide-right-leave-active {
+    transition: none !important;
+  }
+
+  .slide-left-enter-from,
+  .slide-left-leave-to,
+  .slide-right-enter-from,
+  .slide-right-leave-to {
+    transform: none;
+  }
+
+  .onboarding-dot {
+    transition: none;
+  }
 }
 
 :global(.onboarding-bottom-sheet) {

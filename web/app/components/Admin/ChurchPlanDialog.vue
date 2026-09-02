@@ -1,9 +1,28 @@
 <template>
-  <v-dialog :model-value="modelValue" max-width="440" @update:model-value="close">
+  <UtilsResponsiveOverlay
+    :model-value="modelValue"
+    max-width="440"
+    variant="form"
+    @update:model-value="close"
+  >
     <v-card class="rounded-xl pa-2">
-      <v-card-title class="text-subtitle-1 font-weight-bold">
-        Plano de {{ church?.name }}
-      </v-card-title>
+      <div class="responsive-dialog-header pa-2 pb-1">
+        <div>
+          <p class="app-page-kicker mb-1">Configuração comercial</p>
+          <h2 class="text-subtitle-1 font-weight-bold">
+            Plano de {{ church?.name }}
+          </h2>
+        </div>
+        <v-btn
+          icon
+          variant="text"
+          size="small"
+          aria-label="Fechar configuração do plano"
+          @click="close"
+        >
+          <v-icon size="20">mdi-close</v-icon>
+        </v-btn>
+      </div>
 
       <v-card-text>
         <p class="text-caption text-grey-darken-1 mb-4">
@@ -19,7 +38,7 @@
           item-value="value"
           variant="outlined"
           density="comfortable"
-          color="indigo-darken-2"
+          color="purple-darken-3"
           hide-details="auto"
           class="mb-4"
         />
@@ -30,7 +49,7 @@
           label="Trial expira em"
           variant="outlined"
           density="comfortable"
-          color="indigo-darken-2"
+          color="purple-darken-3"
           hide-details="auto"
           clearable
           class="mb-1"
@@ -44,11 +63,11 @@
         </v-alert>
       </v-card-text>
 
-      <v-card-actions>
+      <v-card-actions class="dialog-actions">
         <v-spacer />
         <v-btn variant="text" class="text-none" @click="close">Cancelar</v-btn>
         <v-btn
-          color="indigo-darken-2"
+          color="purple-darken-3"
           variant="flat"
           class="text-none font-weight-bold"
           :loading="isSaving"
@@ -58,7 +77,7 @@
         </v-btn>
       </v-card-actions>
     </v-card>
-  </v-dialog>
+  </UtilsResponsiveOverlay>
 </template>
 
 <script setup lang="ts">

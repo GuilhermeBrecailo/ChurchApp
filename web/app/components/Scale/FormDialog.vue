@@ -1,5 +1,5 @@
 <template>
-  <UtilsResponsiveOverlay :model-value="modelValue" max-width="520" @update:model-value="handleOpenChange">
+  <UtilsResponsiveOverlay :model-value="modelValue" max-width="520" variant="form" scrollable @update:model-value="handleOpenChange">
     <v-card class="rounded-xl pa-6" elevation="0">
       <div class="responsive-dialog-header mb-5">
         <div class="d-flex align-center min-w-0">

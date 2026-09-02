@@ -1,5 +1,10 @@
 <template>
-  <v-dialog :model-value="modelValue" max-width="420" @update:model-value="emitClose">
+  <UtilsResponsiveOverlay
+    :model-value="modelValue"
+    max-width="420"
+    variant="confirm"
+    @update:model-value="emitClose"
+  >
     <v-card class="confirm-card pa-5 bg-white" elevation="0">
       <v-btn
         icon
@@ -7,6 +12,7 @@
         color="grey-darken-1"
         size="small"
         class="confirm-close-btn"
+        aria-label="Fechar confirmação"
         :disabled="loading"
         @click="$emit('cancel')"
       >
@@ -14,8 +20,8 @@
       </v-btn>
 
       <div class="d-flex align-start ga-3 mb-4">
-        <v-avatar color="#FEE2E2" size="42">
-          <Trash2 size="20" color="#B91C1C" />
+        <v-avatar class="confirm-icon" size="42">
+          <Trash2 size="20" color="var(--app-color-danger)" />
         </v-avatar>
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
@@ -27,7 +33,7 @@
         </div>
       </div>
 
-      <div class="d-flex justify-end ga-2">
+      <div class="dialog-actions d-flex justify-end ga-2">
         <v-btn
           variant="text"
           color="grey-darken-1"
@@ -48,7 +54,7 @@
         </v-btn>
       </div>
     </v-card>
-  </v-dialog>
+  </UtilsResponsiveOverlay>
 </template>
 
 <script setup lang="ts">
@@ -87,8 +93,11 @@ const emitClose = (value: boolean) => {
 <style scoped>
 .confirm-card {
   position: relative;
-  border-radius: 8px;
-  border: 1px solid #fee2e2;
+}
+
+.confirm-icon {
+  background: var(--app-color-danger-tint);
+  color: var(--app-color-danger);
 }
 
 .confirm-close-btn {

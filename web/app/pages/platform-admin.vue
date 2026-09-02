@@ -283,6 +283,8 @@
       v-model="isChurchDetailsSheetOpen"
       scrollable
       max-width="920"
+      variant="detail"
+      :fullscreen="$vuetify.display.smAndDown"
       mobile-class="church-details-mobile-sheet"
       @after-leave="closeChurchDetails"
     >
@@ -307,6 +309,7 @@
             variant="text"
             color="grey-darken-1"
             size="small"
+            aria-label="Fechar detalhes da igreja"
             @click="isChurchDetailsSheetOpen = false"
           >
             <v-icon size="20">mdi-close</v-icon>
@@ -607,7 +610,7 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
-    <UtilsResponsiveOverlay v-model="isAdminUserDetailsOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isAdminUserDetailsOpen" max-width="520" variant="detail" scrollable>
       <v-card
         v-if="selectedAdminUser"
         class="rounded-xl pa-6 bg-white"
@@ -627,7 +630,7 @@
               </p>
             </div>
           </div>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeAdminUserDetails">
+          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar detalhes do usuário" @click="closeAdminUserDetails">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>
@@ -845,7 +848,7 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
-    <UtilsResponsiveOverlay v-model="isAdminDepartmentDetailsOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isAdminDepartmentDetailsOpen" max-width="520" variant="detail" scrollable>
       <v-card
         v-if="selectedAdminDepartment"
         class="rounded-xl pa-6 bg-white"
@@ -865,7 +868,7 @@
               </p>
             </div>
           </div>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeAdminDepartmentDetails">
+          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar detalhes do ministério" @click="closeAdminDepartmentDetails">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>
@@ -903,7 +906,7 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
-    <UtilsResponsiveOverlay v-model="isAdminScheduleDetailsOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isAdminScheduleDetailsOpen" max-width="520" variant="detail" scrollable>
       <v-card
         v-if="selectedAdminSchedule"
         class="rounded-xl pa-6 bg-white"
@@ -923,7 +926,7 @@
               </p>
             </div>
           </div>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeAdminScheduleDetails">
+          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar detalhes da escala" @click="closeAdminScheduleDetails">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>
@@ -1099,7 +1102,7 @@
       </div>
     </section>
 
-    <UtilsResponsiveOverlay v-model="isCommercialLeadFormOpen" max-width="620">
+    <UtilsResponsiveOverlay v-model="isCommercialLeadFormOpen" max-width="620" variant="form" scrollable>
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
@@ -1115,7 +1118,7 @@
               </p>
             </div>
           </div>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeCommercialLeadForm">
+          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar formulário de lead" @click="closeCommercialLeadForm">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>
@@ -1268,7 +1271,7 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
-    <UtilsResponsiveOverlay v-model="isCommercialLeadDetailsOpen" max-width="620">
+    <UtilsResponsiveOverlay v-model="isCommercialLeadDetailsOpen" max-width="620" variant="detail" scrollable>
       <v-card
         v-if="isLoadingCommercialLeadDetails"
         class="rounded-xl pa-6 bg-white"
@@ -1295,7 +1298,7 @@
               </p>
             </div>
           </div>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="isCommercialLeadDetailsOpen = false">
+          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar detalhes do lead" @click="isCommercialLeadDetailsOpen = false">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>

@@ -5,7 +5,7 @@
   >
     <div class="relatorios-header mb-4">
       <div class="content-detail-title-group min-w-0">
-        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+        <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
           <ChevronLeft size="20" />
         </v-btn>
         <div class="flex-1 min-w-0">
@@ -219,13 +219,13 @@
       </v-card>
     </section>
 
-    <UtilsResponsiveOverlay v-model="isAttendanceDialogOpen" max-width="480">
+    <UtilsResponsiveOverlay v-model="isAttendanceDialogOpen" max-width="480" variant="detail" scrollable>
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
             Registrar presença
           </h2>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="isAttendanceDialogOpen = false">
+          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar relatório de presença" @click="isAttendanceDialogOpen = false">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>

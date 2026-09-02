@@ -31,7 +31,13 @@
       >
         {{ musica.categoria }}
       </v-chip>
-      <v-btn icon variant="text" size="small" color="grey-darken-1">
+      <v-btn
+        icon
+        variant="text"
+        size="small"
+        color="grey-darken-1"
+        :aria-label="`Abrir música ${musica.titulo}`"
+      >
         <ExternalLink size="16" />
       </v-btn>
     </div>

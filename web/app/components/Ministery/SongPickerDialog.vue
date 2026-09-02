@@ -1,5 +1,5 @@
 <template>
-  <UtilsResponsiveOverlay :model-value="modelValue" max-width="560" scrollable @update:model-value="$emit('update:modelValue', $event)">
+  <UtilsResponsiveOverlay :model-value="modelValue" max-width="560" variant="detail" scrollable @update:model-value="$emit('update:modelValue', $event)">
     <v-card class="song-picker" elevation="0">
       <div class="song-picker-header">
         <div class="min-w-0">

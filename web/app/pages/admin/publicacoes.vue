@@ -5,7 +5,7 @@
   >
     <div class="publicacoes-header mb-4">
       <div class="content-detail-title-group min-w-0">
-        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+        <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
           <ChevronLeft size="20" />
         </v-btn>
         <div class="flex-1 min-w-0">
@@ -603,10 +603,10 @@
               <span>{{ item.title }}</span>
             </div>
             <div class="d-flex ga-1">
-              <v-btn icon variant="text" color="grey-darken-1" size="small" @click="item.onEdit()">
+              <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Editar publicação" @click="item.onEdit()">
                 <Pencil size="16" />
               </v-btn>
-              <v-btn icon variant="text" color="red-darken-2" size="small" @click="item.onDelete()">
+              <v-btn icon variant="text" color="red-darken-2" size="small" aria-label="Excluir publicação" @click="item.onDelete()">
                 <Trash2 size="16" />
               </v-btn>
             </div>

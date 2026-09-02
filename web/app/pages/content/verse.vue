@@ -2,7 +2,7 @@
   <div class="pa-4 pb-8 page-wrapper">
     <div class="verse-header mb-4">
       <div class="content-detail-title-group min-w-0">
-        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+        <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
           <ChevronLeft size="20" />
         </v-btn>
         <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-0">
@@ -93,7 +93,7 @@
       </p>
     </v-card>
 
-    <UtilsResponsiveOverlay v-model="isPublishDialogOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isPublishDialogOpen" max-width="520" variant="form" scrollable>
       <v-card class="rounded-xl pa-6" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">

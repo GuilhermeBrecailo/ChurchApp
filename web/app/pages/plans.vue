@@ -85,11 +85,24 @@
       </v-alert>
     </v-card>
 
-    <v-dialog v-model="isConfirmOpen" max-width="420">
+    <UtilsResponsiveOverlay v-model="isConfirmOpen" max-width="420" variant="confirm">
       <v-card class="rounded-xl pa-2">
-        <v-card-title class="text-subtitle-1 font-weight-bold">
-          {{ confirmTitle }}
-        </v-card-title>
+        <div class="responsive-dialog-header pa-2 pb-1">
+          <div>
+            <p class="app-page-kicker mb-1">Confirmação</p>
+            <h2 class="text-subtitle-1 font-weight-bold">{{ confirmTitle }}</h2>
+          </div>
+          <v-btn
+            icon
+            variant="text"
+            size="small"
+            aria-label="Fechar confirmação"
+            :disabled="isConfirmLoading"
+            @click="closeConfirm"
+          >
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
         <v-card-text>
           <p class="text-body-2 text-grey-darken-1 mb-0">{{ confirmMessage }}</p>
           <v-alert
@@ -102,7 +115,7 @@
             {{ confirmError }}
           </v-alert>
         </v-card-text>
-        <v-card-actions>
+        <v-card-actions class="dialog-actions">
           <v-spacer />
           <v-btn variant="text" class="text-none" @click="closeConfirm">
             Cancelar
@@ -118,7 +131,7 @@
           </v-btn>
         </v-card-actions>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
     <div class="plans-compare">
       <v-card class="plans-column rounded-xl pa-5 elevation-1">

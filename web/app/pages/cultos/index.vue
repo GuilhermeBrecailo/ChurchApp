@@ -111,7 +111,12 @@
       </div>
     </template>
 
-    <v-dialog v-model="isDialogOpen" max-width="560">
+    <UtilsResponsiveOverlay
+      v-model="isDialogOpen"
+      max-width="560"
+      variant="form"
+      scrollable
+    >
       <v-card class="pa-5 rounded-xl">
         <div class="d-flex align-center justify-space-between mb-4">
           <div>
@@ -120,7 +125,13 @@
               Informe os dados que aparecerão no card.
             </p>
           </div>
-          <v-btn icon variant="text" color="grey-darken-1" @click="isDialogOpen = false">
+          <v-btn
+            icon
+            variant="text"
+            color="grey-darken-1"
+            aria-label="Fechar novo culto"
+            @click="isDialogOpen = false"
+          >
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </div>
@@ -187,7 +198,7 @@
           {{ formError }}
         </v-alert>
 
-        <div class="d-flex justify-end ga-2">
+        <div class="dialog-actions d-flex justify-end ga-2">
           <v-btn variant="text" color="grey-darken-1" class="text-none" @click="isDialogOpen = false">
             Cancelar
           </v-btn>
@@ -201,7 +212,7 @@
           </v-btn>
         </div>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
   </div>
 </template>
 

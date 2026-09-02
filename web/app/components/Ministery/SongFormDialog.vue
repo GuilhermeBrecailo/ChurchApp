@@ -1,5 +1,5 @@
 <template>
-  <UtilsResponsiveOverlay v-model="isOpen" max-width="520">
+  <UtilsResponsiveOverlay v-model="isOpen" max-width="520" variant="form" scrollable>
     <v-card class="rounded-xl pa-6 bg-white" elevation="0">
       <div class="responsive-dialog-header mb-5">
         <div class="d-flex align-center min-w-0">

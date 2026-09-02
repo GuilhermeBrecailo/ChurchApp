@@ -1,11 +1,11 @@
 <template>
-  <v-dialog v-model="isOpen" max-width="400">
+  <UtilsResponsiveOverlay v-model="isOpen" max-width="400" variant="form" scrollable>
     <v-card class="rounded-xl pa-4">
-      <div class="d-flex justify-space-between align-center mb-4">
-        <h3 class="text-subtitle-1 font-weight-bold text-center flex-grow-1">
+      <div class="responsive-dialog-header mb-4">
+        <h2 class="text-subtitle-1 font-weight-bold">
           Nova Música
-        </h3>
-        <v-btn icon variant="text" size="small" @click="isOpen = false">
+        </h2>
+        <v-btn icon variant="text" size="small" aria-label="Fechar nova música" @click="isOpen = false">
           <X size="20" />
         </v-btn>
       </div>
@@ -49,16 +49,18 @@
         density="compact"
         class="mb-4"
       />
-      <v-btn
+      <div class="dialog-actions">
+        <v-btn
         color="purple-darken-3"
         block
         class="text-none rounded-lg"
         @click="isOpen = false"
       >
         Salvar Música
-      </v-btn>
+        </v-btn>
+      </div>
     </v-card>
-  </v-dialog>
+  </UtilsResponsiveOverlay>
 </template>
 
 <script setup>

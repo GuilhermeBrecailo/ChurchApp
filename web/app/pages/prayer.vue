@@ -2,7 +2,7 @@
   <div class="pa-4 pb-8 page-wrapper">
     <div class="prayer-header mb-4">
       <div class="prayer-title-group min-w-0">
-        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+        <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
           <ChevronLeft size="20" />
         </v-btn>
         <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-0">Pedidos de Oração</h1>
@@ -202,7 +202,12 @@
     </v-window>
 
     <!-- New prayer dialog -->
-    <v-dialog v-model="showNewDialog" max-width="480" :fullscreen="$vuetify.display.xs">
+    <UtilsResponsiveOverlay
+      v-model="showNewDialog"
+      max-width="480"
+      variant="form"
+      :fullscreen="$vuetify.display.xs"
+    >
       <v-card class="rounded-xl pa-5" elevation="0">
         <div class="responsive-dialog-header mb-4">
           <div class="d-flex align-center gap-3">
@@ -214,7 +219,13 @@
               <p class="text-caption text-grey-darken-1 mb-0">Compartilhe com sua comunidade</p>
             </div>
           </div>
-          <v-btn icon variant="text" size="small" @click="showNewDialog = false">
+        <v-btn
+          icon
+          variant="text"
+          size="small"
+          aria-label="Fechar novo pedido"
+          @click="showNewDialog = false"
+        >
             <X size="18" />
           </v-btn>
         </div>
@@ -258,7 +269,7 @@
           {{ formError }}
         </v-alert>
 
-        <div class="d-flex gap-2 justify-end">
+        <div class="dialog-actions d-flex gap-2 justify-end">
           <v-btn variant="text" color="grey-darken-1" class="text-none" @click="showNewDialog = false">
             Cancelar
           </v-btn>
@@ -272,7 +283,7 @@
           </v-btn>
         </div>
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
   </div>
 </template>
 

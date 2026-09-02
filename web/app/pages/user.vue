@@ -365,6 +365,8 @@
     <UtilsResponsiveOverlay
       v-model="isPasswordDialogOpen"
       max-width="480"
+      variant="form"
+      scrollable
       :persistent="mustChangePassword"
     >
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">

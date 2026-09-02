@@ -12,12 +12,12 @@
           :aria-label="`Abrir ajuda da tela ${title}`"
           @click="isOpen = true"
         >
-          <HelpCircle size="16" />
+          <HelpCircle size="16" aria-hidden="true" />
         </v-btn>
       </template>
     </v-tooltip>
 
-    <UtilsResponsiveOverlay v-model="isOpen" max-width="560" scrollable>
+    <UtilsResponsiveOverlay v-model="isOpen" max-width="560" variant="detail" scrollable>
       <v-card class="page-help-modal" elevation="0">
         <div class="page-help-header">
           <div class="min-w-0">
@@ -31,7 +31,7 @@
             :aria-label="`Fechar ajuda da tela ${title}`"
             @click="isOpen = false"
           >
-            <X size="20" />
+            <X size="20" aria-hidden="true" />
           </v-btn>
         </div>
 
@@ -76,6 +76,7 @@
                 class="page-help-step-dot"
                 :class="{ 'page-help-step-dot-active': i === stepIndex }"
                 :aria-label="`Ir para o passo ${i + 1}`"
+                :aria-current="i === stepIndex ? 'step' : undefined"
                 @click="stepIndex = i"
               />
             </div>
@@ -303,6 +304,11 @@ const whatsappHref = computed(() => {
   padding: 0;
   background: var(--app-color-border);
   cursor: pointer;
+}
+
+.page-help-step-dot:focus-visible {
+  outline: 3px solid var(--app-color-accent-muted);
+  outline-offset: 3px;
 }
 
 .page-help-step-dot-active {

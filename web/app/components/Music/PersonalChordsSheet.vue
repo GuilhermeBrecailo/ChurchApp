@@ -2,6 +2,7 @@
   <UtilsResponsiveOverlay
     :model-value="modelValue"
     scrollable
+    variant="form"
     max-width="560"
     mobile-class="personal-chords-sheet"
     @update:model-value="emit('update:modelValue', $event)"

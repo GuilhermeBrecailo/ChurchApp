@@ -1,7 +1,7 @@
 <template>
   <div class="pa-4 bg-grey-lighten-4 min-vh-100">
     <div class="d-flex align-center mb-4">
-      <v-btn icon variant="text" @click="router.back()" class="mr-2">
+      <v-btn icon variant="text" aria-label="Voltar para ministérios" @click="router.back()" class="mr-2">
         <ArrowLeft size="20" />
       </v-btn>
       <span class="text-body-2 text-grey-darken-1 font-weight-medium"
@@ -74,13 +74,13 @@
       </div>
     </div>
 
-    <v-dialog v-model="dialogEscala" max-width="400">
+    <UtilsResponsiveOverlay v-model="dialogEscala" max-width="400" variant="form" scrollable>
       <v-card class="rounded-xl pa-4">
         <div class="d-flex justify-space-between align-center mb-4">
           <h3 class="text-subtitle-1 font-weight-bold text-center flex-grow-1">
             Novo Culto / Evento
           </h3>
-          <v-btn icon variant="text" size="small" @click="dialogEscala = false"
+          <v-btn icon variant="text" size="small" aria-label="Fechar nova escala" @click="dialogEscala = false"
             ><X size="20"
           /></v-btn>
         </div>
@@ -122,15 +122,15 @@
           >Salvar Escala</v-btn
         >
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
-    <v-dialog v-model="dialogMusica" max-width="400">
+    <UtilsResponsiveOverlay v-model="dialogMusica" max-width="400" variant="form" scrollable>
       <v-card class="rounded-xl pa-4">
         <div class="d-flex justify-space-between align-center mb-4">
           <h3 class="text-subtitle-1 font-weight-bold text-center flex-grow-1">
             Nova Música
           </h3>
-          <v-btn icon variant="text" size="small" @click="dialogMusica = false"
+          <v-btn icon variant="text" size="small" aria-label="Fechar nova música" @click="dialogMusica = false"
             ><X size="20"
           /></v-btn>
         </div>
@@ -182,15 +182,15 @@
           >Salvar Música</v-btn
         >
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
 
-    <v-dialog v-model="dialogTarefa" max-width="400">
+    <UtilsResponsiveOverlay v-model="dialogTarefa" max-width="400" variant="form" scrollable>
       <v-card class="rounded-xl pa-4">
         <div class="d-flex justify-space-between align-center mb-4">
           <h3 class="text-subtitle-1 font-weight-bold text-center flex-grow-1">
             Nova Tarefa
           </h3>
-          <v-btn icon variant="text" size="small" @click="dialogTarefa = false"
+          <v-btn icon variant="text" size="small" aria-label="Fechar nova tarefa" @click="dialogTarefa = false"
             ><X size="20"
           /></v-btn>
         </div>
@@ -223,7 +223,7 @@
           >Criar Tarefa</v-btn
         >
       </v-card>
-    </v-dialog>
+    </UtilsResponsiveOverlay>
   </div>
 </template>
 

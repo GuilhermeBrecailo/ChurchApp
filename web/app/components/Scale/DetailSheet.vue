@@ -2,6 +2,7 @@
   <UtilsResponsiveOverlay
     :model-value="modelValue"
     scrollable
+    variant="detail"
     :scrim="true"
     max-width="980"
     mobile-class="scale-details-mobile-sheet"
@@ -63,7 +64,7 @@
               </v-btn>
             </template>
           </v-tooltip>
-          <v-btn icon variant="text" color="grey-darken-1" @click="$emit('update:modelValue', false)">
+          <v-btn icon variant="text" color="grey-darken-1" aria-label="Fechar detalhes da escala" @click="$emit('update:modelValue', false)">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>
@@ -374,7 +375,7 @@
     </v-card>
   </UtilsResponsiveOverlay>
 
-  <UtilsResponsiveOverlay v-model="isSongFullscreenOpen" fullscreen>
+  <UtilsResponsiveOverlay v-model="isSongFullscreenOpen" fullscreen variant="fullscreen">
     <MusicPlaylistReader
       :songs="songs"
       :initial-index="playlistIndex"

@@ -36,6 +36,9 @@
   --app-radius-md: 10px;
   --app-radius-lg: 12px;
   --app-radius-card: 12px;
+  --app-overlay-radius: 16px;
+  --app-overlay-sheet-radius: 24px;
+  --app-overlay-content-gap: 16px;
   --app-motion-duration-fast: 160ms;
   --app-motion-duration-base: 200ms;
   --app-motion-duration-slow: 400ms;
@@ -731,6 +734,102 @@ body {
 .app-theme-dark .v-overlay__content .v-card,
 .app-theme-dark .responsive-bottom-sheet .v-bottom-sheet__content {
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.58) !important;
+}
+
+/* ============================================================
+   OVERLAYS — BASE RESPONSIVA
+   ============================================================ */
+.responsive-overlay .v-overlay__content {
+  max-width: 100%;
+}
+
+.responsive-overlay .v-overlay__content > .v-card {
+  border: 1px solid var(--app-color-border);
+  border-radius: var(--app-overlay-radius) !important;
+  background: var(--app-color-surface);
+  color: var(--app-color-text);
+  box-shadow: var(--app-shadow-lg);
+}
+
+.responsive-overlay .v-bottom-sheet__content {
+  border: 1px solid var(--app-color-border);
+  border-bottom: 0;
+  border-radius: var(--app-overlay-sheet-radius) var(--app-overlay-sheet-radius) 0 0;
+  background: var(--app-color-surface);
+  color: var(--app-color-text);
+  box-shadow: var(--app-shadow-lg);
+}
+
+.responsive-overlay--scrollable .v-overlay__content > .v-card,
+.responsive-overlay--scrollable .v-bottom-sheet__content {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.responsive-overlay--scrollable :where(
+    .dialog-actions,
+    .admin-dialog-actions,
+    .member-dialog-actions,
+    .password-dialog-actions,
+    .v-card-actions
+  ) {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  flex-shrink: 0;
+  background: var(--app-color-surface);
+  border-top: 1px solid var(--app-color-border-subtle);
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.responsive-overlay--fullscreen .v-overlay__content > .v-card {
+  border-radius: 0 !important;
+}
+
+.responsive-overlay--form .dialog-actions,
+.responsive-overlay--confirm .dialog-actions,
+.responsive-overlay--detail .dialog-actions,
+.responsive-overlay--form .v-card-actions,
+.responsive-overlay--confirm .v-card-actions,
+.responsive-overlay--detail .v-card-actions {
+  border-top: 1px solid var(--app-color-border-subtle);
+  gap: var(--app-overlay-content-gap);
+}
+
+@media (max-width: 600px) {
+  .responsive-overlay .v-overlay__content {
+    margin: 16px;
+  }
+
+  .responsive-overlay .v-bottom-sheet__content {
+    margin: 0;
+  }
+
+  .responsive-overlay--scrollable .v-overlay__content > .v-card,
+  .responsive-overlay--scrollable .v-bottom-sheet__content {
+    max-height: calc(100dvh - 16px);
+  }
+
+  .responsive-overlay--scrollable :where(
+      .dialog-actions,
+      .admin-dialog-actions,
+      .member-dialog-actions,
+      .password-dialog-actions,
+      .v-card-actions
+    ) {
+    margin-inline: -1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .responsive-overlay,
+  .responsive-overlay * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ============================================================

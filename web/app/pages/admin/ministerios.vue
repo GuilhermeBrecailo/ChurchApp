@@ -5,7 +5,7 @@
   >
     <div class="ministerios-header mb-4">
       <div class="content-detail-title-group min-w-0">
-        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+        <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
           <ChevronLeft size="20" />
         </v-btn>
         <div class="flex-1 min-w-0">
@@ -141,7 +141,7 @@
       </v-alert>
     </section>
 
-    <UtilsResponsiveOverlay v-model="isDepartmentDialogOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isDepartmentDialogOpen" max-width="520" variant="form" scrollable>
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
@@ -157,7 +157,7 @@
               </p>
             </div>
           </div>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeDepartmentDialog">
+          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar cadastro de ministério" @click="closeDepartmentDialog">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>
@@ -243,7 +243,7 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
-    <UtilsResponsiveOverlay v-model="isChurchDepartmentDetailsOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isChurchDepartmentDetailsOpen" max-width="520" variant="detail" scrollable>
       <v-card
         v-if="selectedChurchDepartment"
         class="rounded-xl pa-6 bg-white"
@@ -263,7 +263,7 @@
               </p>
             </div>
           </div>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeChurchDepartmentDetails">
+          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar detalhes do ministério" @click="closeChurchDepartmentDetails">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>

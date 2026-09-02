@@ -270,9 +270,14 @@
         </v-window-item>
       </v-window>
 
-      <v-dialog v-model="isEditDialogOpen" max-width="560">
+      <UtilsResponsiveOverlay
+        v-model="isEditDialogOpen"
+        max-width="560"
+        variant="form"
+        scrollable
+      >
         <v-card class="pa-5 rounded-lg" elevation="0">
-          <div class="d-flex align-start justify-space-between ga-3 mb-4">
+          <div class="responsive-dialog-header mb-4">
             <div>
               <h2 class="text-h6 font-weight-bold mb-0">Editar culto</h2>
               <p class="text-body-2 text-grey-darken-1 mb-0">
@@ -285,6 +290,7 @@
               color="grey-darken-1"
               aria-label="Fechar edição"
               :disabled="isSavingCult"
+              class="ml-auto"
               @click="closeEditDialog"
             >
               <v-icon>mdi-close</v-icon>
@@ -367,7 +373,7 @@
             {{ editError }}
           </v-alert>
 
-          <div class="d-flex justify-end ga-2">
+          <div class="dialog-actions d-flex justify-end ga-2">
             <v-btn variant="text" color="grey-darken-1" class="text-none" :disabled="isSavingCult" @click="closeEditDialog">
               Cancelar
             </v-btn>
@@ -381,7 +387,7 @@
             </v-btn>
           </div>
         </v-card>
-      </v-dialog>
+      </UtilsResponsiveOverlay>
 
       <UtilsConfirmDialog
         v-model="isDeleteDialogOpen"

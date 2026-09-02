@@ -2,7 +2,7 @@
   <div class="pastoral-profile-page app-operational-page pa-4 pb-16">
     <header class="app-page-header profile-header">
       <div class="content-detail-title-group min-w-0">
-        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+        <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar para pessoas" @click="router.back()">
           <ChevronLeft size="20" />
         </v-btn>
         <div class="min-w-0">

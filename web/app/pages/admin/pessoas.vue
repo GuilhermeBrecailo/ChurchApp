@@ -5,7 +5,7 @@
   >
     <div class="pessoas-header app-page-header">
       <div class="content-detail-title-group min-w-0">
-        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+        <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
           <ChevronLeft size="20" />
         </v-btn>
         <div class="flex-1 min-w-0">
@@ -486,13 +486,13 @@
       </div>
     </section>
 
-    <UtilsResponsiveOverlay v-model="isRosterDialogOpen" max-width="480">
+    <UtilsResponsiveOverlay v-model="isRosterDialogOpen" max-width="480" variant="form" scrollable>
       <v-card class="app-surface pa-5" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
             {{ editingRosterId ? "Editar pessoa" : "Adicionar ao rol" }}
           </h2>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="isRosterDialogOpen = false">
+          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar cadastro de pessoa" @click="isRosterDialogOpen = false">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>
@@ -649,7 +649,7 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
-    <UtilsResponsiveOverlay v-model="isMemberDialogOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isMemberDialogOpen" max-width="520" variant="form" scrollable>
       <v-card class="app-surface pa-5" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
@@ -665,7 +665,7 @@
               </p>
             </div>
           </div>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeMemberDialog">
+          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar cadastro de membro" @click="closeMemberDialog">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>
@@ -764,7 +764,7 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
-    <UtilsResponsiveOverlay v-model="isMemberDetailsOpen" max-width="520">
+    <UtilsResponsiveOverlay v-model="isMemberDetailsOpen" max-width="520" variant="detail" scrollable>
       <v-card v-if="selectedMember" class="app-surface pa-5" elevation="0">
         <div class="responsive-dialog-header mb-4">
           <div class="d-flex align-center min-w-0">
@@ -792,7 +792,7 @@
               </p>
             </div>
           </div>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="closeMemberDetails">
+          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar detalhes do membro" @click="closeMemberDetails">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>
@@ -984,7 +984,7 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
-    <UtilsResponsiveOverlay v-model="isRoleDialogOpen" max-width="480">
+    <UtilsResponsiveOverlay v-model="isRoleDialogOpen" max-width="480" variant="form" scrollable>
       <v-card class="role-dialog-card app-surface pa-5" elevation="0">
         <div class="d-flex align-center justify-space-between mb-5">
           <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">

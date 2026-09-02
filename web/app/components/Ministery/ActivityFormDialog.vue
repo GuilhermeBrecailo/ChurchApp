@@ -1,5 +1,5 @@
 <template>
-  <UtilsResponsiveOverlay v-model="isOpen" max-width="520">
+  <UtilsResponsiveOverlay v-model="isOpen" max-width="520" variant="form" scrollable>
     <v-card class="rounded-xl pa-6 bg-white" elevation="0">
       <div class="responsive-dialog-header mb-5">
         <div class="d-flex align-center min-w-0">
@@ -15,7 +15,7 @@
             </p>
           </div>
         </div>
-        <v-btn icon variant="text" color="grey-darken-1" size="small" @click="$emit('close')">
+        <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar atividade" @click="$emit('close')">
           <v-icon size="20">mdi-close</v-icon>
         </v-btn>
       </div>

@@ -1,5 +1,5 @@
 <template>
-  <UtilsResponsiveOverlay v-model="isOpen" fullscreen>
+  <UtilsResponsiveOverlay v-model="isOpen" fullscreen variant="fullscreen">
     <MusicSongReader
       :song="song"
       :tab="songViewerTab"

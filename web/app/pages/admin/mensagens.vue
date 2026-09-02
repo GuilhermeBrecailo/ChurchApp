@@ -5,7 +5,7 @@
   >
     <div class="mensagens-header mb-4">
       <div class="content-detail-title-group min-w-0">
-        <v-btn icon variant="text" size="small" class="mr-2" @click="router.back()">
+        <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
           <ChevronLeft size="20" />
         </v-btn>
         <div class="flex-1 min-w-0">
@@ -413,13 +413,13 @@
       </div>
     </section>
 
-    <UtilsResponsiveOverlay v-model="isTemplateDialogOpen" max-width="480">
+    <UtilsResponsiveOverlay v-model="isTemplateDialogOpen" max-width="480" variant="form" scrollable>
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
             {{ editingTemplateId ? "Editar modelo" : "Novo modelo" }}
           </h2>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="isTemplateDialogOpen = false">
+          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar modelo de mensagem" @click="isTemplateDialogOpen = false">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>
@@ -475,13 +475,13 @@
       </v-card>
     </UtilsResponsiveOverlay>
 
-    <UtilsResponsiveOverlay v-model="isRuleDialogOpen" max-width="480">
+    <UtilsResponsiveOverlay v-model="isRuleDialogOpen" max-width="480" variant="form" scrollable>
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
             {{ editingRuleId ? "Editar regra" : "Nova regra automática" }}
           </h2>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" @click="isRuleDialogOpen = false">
+          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar regra de mensagem" @click="isRuleDialogOpen = false">
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>

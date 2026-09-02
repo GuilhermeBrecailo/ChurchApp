@@ -1,7 +1,7 @@
 <template>
-  <UtilsResponsiveOverlay v-model="isOpen" max-width="640">
+  <UtilsResponsiveOverlay v-model="isOpen" max-width="640" variant="form" scrollable>
     <v-card class="rounded-xl pa-6" elevation="0">
-      <div class="d-flex align-center justify-space-between mb-5">
+      <div class="responsive-dialog-header mb-5">
         <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
           Importar músicas do PDF
         </h2>
@@ -10,6 +10,7 @@
           variant="text"
           color="grey-darken-1"
           size="small"
+          aria-label="Fechar importação de músicas"
           @click="$emit('close')"
         >
           <v-icon size="20">mdi-close</v-icon>

@@ -25,7 +25,8 @@
     "whatsapp:setup": "npx tsx --env-file=.env scripts/whatsapp-setup.ts",
     "whatsapp:business-digest": "npx tsx --env-file=.env scripts/send-business-digest.ts",
     "whatsapp:alert": "npx tsx --env-file=.env scripts/send-whatsapp-alert.ts",
-    "leads:find": "npx tsx --env-file=.env scripts/find-church-leads.ts"
+    "leads:find": "npx tsx --env-file=.env scripts/find-church-leads.ts",
+    "audit:membership-integrity": "npx tsx --env-file=.env scripts/audit-membership-integrity.ts"
   },
   "keywords": [],
   "author": "",

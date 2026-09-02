@@ -38,55 +38,13 @@
       </div>
     </div>
 
-    <v-dialog v-model="showMore" max-width="420" scrollable>
-      <v-card class="more-dialog-card">
-        <v-card-title class="more-dialog-title">
-          Tudo por aqui
-          <v-btn icon variant="text" size="small" aria-label="Fechar" @click="showMore = false">
-            <X size="18" />
-          </v-btn>
-        </v-card-title>
-
-        <v-card-text class="more-dialog-content">
-          <v-text-field
-            v-model="search"
-            placeholder="Buscar (config, mensagens, cultos...)"
-            variant="outlined"
-            density="comfortable"
-            hide-details
-            autofocus
-            clearable
-            class="mb-3"
-          >
-            <template #prepend-inner>
-              <Search size="18" />
-            </template>
-          </v-text-field>
-
-          <div v-if="filteredItems.length === 0" class="more-empty">
-            Nada encontrado para "{{ search }}".
-          </div>
-
-          <div v-else class="more-list">
-            <button
-              v-for="entry in filteredItems"
-              :key="entry.key"
-              type="button"
-              class="more-row"
-              @click="handleSelect(entry.route)"
-            >
-              <v-avatar size="36" :color="isDark ? entry.bgColorDark : entry.bgColor">
-                <component :is="iconComponents[entry.icon]" size="17" :color="isDark ? entry.iconColorDark : entry.iconColor" />
-              </v-avatar>
-              <span class="more-row-copy">
-                <strong>{{ entry.title }}</strong>
-                <small>{{ entry.description }}</small>
-              </span>
-            </button>
-          </div>
-        </v-card-text>
-      </v-card>
-    </v-dialog>
+    <LayoutsMoreOptionsOverlay
+      v-model="showMore"
+      :items="moreItems"
+      :subtitle="moreSubtitle"
+      search-placeholder="Buscar atalho"
+      @select="handleSelect"
+    />
   </UtilsTitle>
 </template>
 
@@ -106,14 +64,12 @@ import {
   House,
   MessageCircle,
   MoreHorizontal,
-  Search,
   User,
   Users,
-  X,
 } from "lucide-vue-next";
 import { useAuth } from "../../../../composables/useAuth";
 import {
-  getAllNavigationItems,
+  getMoreNavigationItems,
   getQuickAccessItems,
   type RoleNavigationIcon,
 } from "../../../utils/roleNavigation";
@@ -123,7 +79,12 @@ const { isDark } = useThemeMode();
 const { user } = useAuth();
 
 const menuItems = computed(() => getQuickAccessItems(user.value));
-const allItems = computed(() => getAllNavigationItems(user.value));
+const moreItems = computed(() => getMoreNavigationItems(user.value));
+const moreSubtitle = computed(() =>
+  user.value?.is_admin === true || user.value?.role === "PASTOR"
+    ? "Administração, pessoas e configurações ficam aqui."
+    : "Atalhos disponíveis para o seu perfil.",
+);
 const iconComponents: Record<RoleNavigationIcon, unknown> = {
   book: BookOpen,
   calendar: CalendarCheck,
@@ -142,16 +103,6 @@ const iconComponents: Record<RoleNavigationIcon, unknown> = {
 };
 
 const showMore = ref(false);
-const search = ref("");
-
-const filteredItems = computed(() => {
-  const query = search.value.trim().toLowerCase();
-  if (!query) return allItems.value;
-
-  return allItems.value.filter((entry) =>
-    `${entry.title} ${entry.description}`.toLowerCase().includes(query),
-  );
-});
 
 const goToRoute = (route: string) => {
   if (route) {
@@ -161,7 +112,6 @@ const goToRoute = (route: string) => {
 
 const handleSelect = (route: string) => {
   showMore.value = false;
-  search.value = "";
   goToRoute(route);
 };
 </script>
@@ -213,70 +163,4 @@ const handleSelect = (route: string) => {
   flex-shrink: 0;
 }
 
-.more-dialog-card {
-  border-radius: 16px;
-}
-
-.more-dialog-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 1rem;
-  font-weight: 800;
-}
-
-.more-dialog-content {
-  max-height: 60vh;
-}
-
-.more-empty {
-  padding: 24px 4px;
-  text-align: center;
-  color: var(--app-color-text-muted);
-  font-size: 0.86rem;
-}
-
-.more-list {
-  display: grid;
-  gap: 6px;
-}
-
-.more-row {
-  appearance: none;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 10px;
-  border: 1px solid var(--app-color-border-subtle);
-  border-radius: 10px;
-  background: var(--app-color-surface);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 0.16s ease, background-color 0.16s ease;
-}
-
-.more-row:hover {
-  border-color: var(--app-color-accent);
-}
-
-.more-row-copy {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.more-row-copy strong {
-  font-size: 0.88rem;
-  font-weight: 800;
-  color: var(--app-color-text);
-}
-
-.more-row-copy small {
-  font-size: 0.76rem;
-  color: var(--app-color-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 </style>

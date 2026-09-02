@@ -1,7 +1,7 @@
 <template>
   <div class="pa-4 bg-grey-lighten-4 min-vh-100">
     <div class="ministery-back-row mb-4">
-      <v-btn icon variant="text" class="mr-2" @click="router.back()">
+      <v-btn icon variant="text" class="mr-2" aria-label="Voltar para ministérios" @click="router.back()">
         <ArrowLeft size="20" />
       </v-btn>
       <span class="text-body-2 text-grey-darken-1 font-weight-medium">
