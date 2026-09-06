@@ -79,6 +79,24 @@ export function extractHtmlAttribute(html: string, pattern: RegExp) {
   return match?.[1] ? decodeHtmlEntities(match[1]).trim() : "";
 }
 
+const CIFRA_CLUB_DISPLAY_QUERY_KEYS = ["instrument", "key", "keyShape"] as const;
+
+export function preserveCifraClubDisplayOptions(canonicalUrl: string, sourceUrl: string) {
+  try {
+    const canonical = new URL(canonicalUrl);
+    const source = new URL(sourceUrl);
+
+    for (const queryKey of CIFRA_CLUB_DISPLAY_QUERY_KEYS) {
+      const value = source.searchParams.get(queryKey);
+      if (value !== null) canonical.searchParams.set(queryKey, value);
+    }
+
+    return canonical.toString();
+  } catch {
+    return canonicalUrl || sourceUrl;
+  }
+}
+
 export function extractCifraClubText(html: string) {
   const preMatch = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
   if (preMatch?.[1]) {

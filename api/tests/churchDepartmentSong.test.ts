@@ -435,8 +435,39 @@ describe("ChurchDepartmentAdapters - musicas", () => {
       );
 
       expect(result.key).toBe("G");
-      expect(result.url).toBe("https://www.cifraclub.com.br/gabriela-rocha/me-atraiu/simplificada.html");
+      expect(result.url).toBe(
+        "https://www.cifraclub.com.br/gabriela-rocha/me-atraiu/simplificada.html?instrument=keyboard",
+      );
       expect(result.chords).toContain("[Intro] C  D  G/B  C");
+    });
+
+    it("preserva instrumento e tom transposto do mesmo link do Cifra Club", async () => {
+      const html = `
+        <title>Quem É Esse? - Julliany Souza - Cifra Club</title>
+        <link rel="canonical" href="https://www.cifraclub.com.br/julliany-souza/quem-e-esse/simplificada.html" />
+        <div data-chord-config="true">
+          <div><span>Tom: </span> <button>Dm</button></div>
+        </div>
+        <article data-chord-container="true">
+          <pre>[Intro] <b>C</b>  <b>D2</b>  <b>Em7</b>  <b>Bm7</b>\n\nEu me deparei</pre>
+        </article>
+      `;
+      global.fetch = jest.fn().mockResolvedValue({ ok: true, text: async () => html }) as unknown as typeof fetch;
+
+      const result = await adapters.importCifraClubSong(
+        makeRequest({
+          params: { id: "dept-1" },
+          body: {
+            url: "https://www.cifraclub.com.br/julliany-souza/quem-e-esse/simplificada.html?instrument=keyboard&key=Dm",
+          },
+        }),
+      );
+
+      expect(result.url).toBe(
+        "https://www.cifraclub.com.br/julliany-souza/quem-e-esse/simplificada.html?instrument=keyboard&key=Dm",
+      );
+      expect(result.key).toBe("Dm");
+      expect(result.chords).toContain("[Intro] C  D2  Em7  Bm7");
     });
   });
 
