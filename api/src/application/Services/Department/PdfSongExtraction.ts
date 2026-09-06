@@ -27,6 +27,8 @@ export type ExtractedSong = {
 
 const MAX_TITLE_LENGTH = 60;
 const FOOTER_MARKERS = [/^Composi[cç][aã]o de:/i, /^Tom:/i, /^Afina[cç][aã]o:/i];
+const METADATA_LOOKBACK_LINES = 8;
+const METADATA_LOOKAHEAD_LINES = 12;
 
 // Casa um token de cifra isolado (acorde), ex: Em7, C9/E, D4(7), G#, Am.
 // Raiz A-G obrigatoria (maiuscula) e o resto e sufixo/extensao/baixo -
@@ -36,6 +38,36 @@ const CHORD_TOKEN_RE =
   /^\(?[A-G][#b]?(?:m|min|maj|dim|aug|sus[24]?|add)?\d{0,2}(?:\(\d{1,2}\))?(?:\/[A-G][#b]?)?\)?$/;
 
 const SECTION_TAG_PREFIX_RE = /^(\[[^\]]*\])\s*(.*)$/;
+
+function normalizeMetadataLabel(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function isCompositionLine(line: string): boolean {
+  return normalizeMetadataLabel(line).startsWith("composicao de:");
+}
+
+function isTomLine(line: string): boolean {
+  return normalizeMetadataLabel(line).startsWith("tom:");
+}
+
+function isTuningLine(line: string): boolean {
+  const tokens = line.split(/\s+/).filter(Boolean);
+  return tokens.length === 6 && tokens.every((token) => /^[A-G](?:#|b)?$/i.test(token));
+}
+
+function isRhythmLine(line: string): boolean {
+  const normalized = normalizeMetadataLabel(line);
+  return /^\[ritmo padrao\]/.test(normalized) || /^\d{2,4}(?:\s*bpm)?$/.test(normalized);
+}
+
+function isMetadataNoiseLine(line: string): boolean {
+  return isCompositionLine(line) || isTomLine(line) || isTuningLine(line) || isRhythmLine(line);
+}
 
 function isChordToken(token: string): boolean {
   if (token === "(" || token === ")" || CHORD_TOKEN_RE.test(token)) return true;
@@ -223,10 +255,10 @@ function normalizeLines(text: string): string[] {
 }
 
 function looksLikeFooterLine(line: string): boolean {
-  return FOOTER_MARKERS.some((marker) => marker.test(line));
+  return isMetadataNoiseLine(line) || FOOTER_MARKERS.some((marker) => marker.test(line));
 }
 
-function findCifraClubMetadata(lines: string[]): PageSongMetadata | null {
+function findCifraClubMetadataLegacy(lines: string[]): PageSongMetadata | null {
   const compositionIndex = lines.findIndex((line) => /^Composi[cç][aã]o de:/i.test(line));
   if (compositionIndex < 2) return null;
 
@@ -275,6 +307,73 @@ function findCifraClubMetadata(lines: string[]): PageSongMetadata | null {
   return null;
 }
 
+function findCifraClubMetadata(lines: string[]): PageSongMetadata | null {
+  const legacyMetadata = findCifraClubMetadataLegacy(lines);
+  const compositionIndex = lines.findIndex(isCompositionLine);
+  if (compositionIndex < 2) return legacyMetadata;
+
+  const titleIndex = compositionIndex - 2;
+  const artistIndex = compositionIndex - 1;
+  const title = lines[titleIndex]?.trim() ?? "";
+  const artist = lines[artistIndex]?.trim() ?? "";
+
+  if (!title || !artist || isMetadataNoiseLine(title) || isMetadataNoiseLine(artist)) {
+    return legacyMetadata;
+  }
+
+  let preTitleTomIndex = -1;
+  const lookbackStart = Math.max(0, compositionIndex - METADATA_LOOKBACK_LINES);
+  for (let index = compositionIndex - 1; index >= lookbackStart; index -= 1) {
+    if (isTomLine(lines[index] ?? "")) {
+      preTitleTomIndex = index;
+      break;
+    }
+  }
+
+  let explicitTomKey = "";
+  const lookaheadEnd = Math.min(lines.length, compositionIndex + METADATA_LOOKAHEAD_LINES);
+  for (let index = compositionIndex + 1; index < lookaheadEnd; index += 1) {
+    const match = lines[index]?.match(/^Tom:\s*(.*)$/i);
+    if (match) {
+      explicitTomKey = match[1]?.trim() ?? "";
+      break;
+    }
+  }
+
+  let keyAfterComposition = "";
+  let keyAfterCompositionIndex = -1;
+  for (let index = compositionIndex + 1; index < lookaheadEnd; index += 1) {
+    const candidate = lines[index]?.trim() ?? "";
+    if (!candidate || isMetadataNoiseLine(candidate)) continue;
+
+    const tomMatch = candidate.match(/^Tom:\s*(.*)$/i);
+    const possibleKey = tomMatch?.[1]?.trim() || candidate;
+    if (CHORD_TOKEN_RE.test(possibleKey)) {
+      keyAfterComposition = possibleKey;
+      keyAfterCompositionIndex = index;
+      break;
+    }
+  }
+
+  const isMergedLayout = preTitleTomIndex !== -1 && preTitleTomIndex < titleIndex;
+  const key = explicitTomKey || (isMergedLayout ? keyAfterComposition : "");
+
+  return {
+    title: title.slice(0, MAX_TITLE_LENGTH),
+    artist,
+    key,
+    footerStartIndex: isMergedLayout ? preTitleTomIndex : titleIndex,
+    ...(isMergedLayout
+      ? {
+          chordAppendixStartIndex:
+            keyAfterCompositionIndex !== -1
+              ? keyAfterCompositionIndex + 1
+              : compositionIndex + 1,
+        }
+      : {}),
+  };
+}
+
 function cleanPageLyrics(
   pageText: string,
 ): { lyrics: string; chords: string; metadata: PageSongMetadata | null } {
@@ -287,7 +386,10 @@ function cleanPageLyrics(
 
   const chordAppendix =
     metadata?.chordAppendixStartIndex !== undefined
-      ? lines.slice(metadata.chordAppendixStartIndex).map(expandGluedChords)
+      ? lines
+          .slice(metadata.chordAppendixStartIndex)
+          .filter((line) => !isMetadataNoiseLine(line))
+          .map(expandGluedChords)
       : [];
 
   return {

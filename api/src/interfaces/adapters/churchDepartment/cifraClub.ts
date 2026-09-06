@@ -150,5 +150,14 @@ export function extractCifraClubKey(html: string) {
     if (normalized) return normalized;
   }
 
+  const configMarker = html.search(/data-chord-config=["']true["']/i);
+  if (configMarker >= 0) {
+    const configText = stripHtml(html.slice(configMarker, configMarker + 1500)).replace(/\s+/g, " ");
+    const configMatch = configText.match(/\bTom\s*:\s*([A-G][#b]?m?)\b/i);
+    const normalized = configMatch?.[1] ? normalizeSongKey(configMatch[1]) : null;
+
+    if (normalized) return normalized;
+  }
+
   return "";
 }

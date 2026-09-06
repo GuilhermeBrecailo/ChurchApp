@@ -63,6 +63,29 @@ const moreOptionsComponentPath = resolve(root, "app/components/layouts/MoreOptio
 const moreOptionsComponent = existsSync(moreOptionsComponentPath)
   ? readFileSync(moreOptionsComponentPath, "utf8")
   : "";
+const stableFilterOverlaySources = [
+  "app/components/Ministery/SongPickerDialog.vue",
+  "app/components/Scale/SongPickerDialog.vue",
+  "app/components/layouts/MoreOptionsOverlay.vue",
+].map((relativePath) => ({
+  relativePath,
+  content: readFileSync(resolve(root, relativePath), "utf8"),
+}));
+const scaleSelectSources = [
+  "app/components/Scale/FormDialog.vue",
+  "app/components/Scale/AssignmentsDialog.vue",
+].map((relativePath) => ({
+  relativePath,
+  content: readFileSync(resolve(root, relativePath), "utf8"),
+}));
+const scaleDetails = readFileSync(
+  resolve(root, "app/components/Scale/DetailSheet.vue"),
+  "utf8",
+);
+const pdfImportDialog = readFileSync(
+  resolve(root, "app/components/Ministery/SongPdfImportDialog.vue"),
+  "utf8",
+);
 const onboarding = readFileSync(resolve(root, "app/components/OnboardingModal/index.vue"), "utf8");
 
 const checks = [
@@ -119,6 +142,51 @@ const checks = [
     "MoreOptionsOverlay existe como componente compartilhado",
     /UtilsResponsiveOverlay/,
     moreOptionsComponent,
+  ],
+  ...stableFilterOverlaySources.map(({ relativePath, content }) => [
+    `${relativePath} preserva altura durante filtros`,
+    /height:\s*min\(72dvh,\s*600px\);/,
+    content,
+  ]),
+  [
+    "ScaleDetailSheet usa estrutura flexível e altura estável",
+    /display:\s*flex;[\s\S]*?height:\s*min\(92dvh,\s*920px\);/,
+    scaleDetails,
+  ],
+  [
+    "ScaleDetailSheet usa tokens de superfície",
+    /background:\s*var\(--app-color-surface\)/,
+    scaleDetails,
+  ],
+  ...scaleSelectSources.map(({ relativePath, content }) => [
+    `${relativePath} configura menu de select fora do sheet`,
+    /menu-props="scaleSelectMenuProps"/,
+    content,
+  ]),
+  [
+    "tema define camada para menus de select da escala",
+    /scale-select-menu/,
+    theme,
+  ],
+  [
+    "importacao PDF oferece zona de upload acessivel",
+    /pdf-import-upload-zone[\s\S]*role="button"[\s\S]*tabindex="0"/,
+    pdfImportDialog,
+  ],
+  [
+    "importacao PDF exibe o arquivo selecionado",
+    /selectedFileName[\s\S]*pdf-import-file-card/,
+    pdfImportDialog,
+  ],
+  [
+    "importacao PDF anuncia progresso para tecnologias assistivas",
+    /aria-live="polite"[\s\S]*isExtractingPdfSongs/,
+    pdfImportDialog,
+  ],
+  [
+    "importacao PDF possui rodape de acoes dedicado",
+    /pdf-import-actions/,
+    pdfImportDialog,
   ],
   ...moreOptionsSources.map(({ relativePath, content }) => [
     `${relativePath} usa MoreOptionsOverlay`,

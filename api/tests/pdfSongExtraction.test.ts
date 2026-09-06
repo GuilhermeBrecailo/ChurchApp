@@ -181,6 +181,61 @@ describe("extractSongsFromPages", () => {
     expect(songs[0].lyrics).not.toContain("AEF#mD");
   });
 
+  it("detecta rodape mesclado quando o bloco de ritmo fica entre Tom e o titulo", () => {
+    const page = [
+      "[Primeira Parte]",
+      "Letra da Vitoria no deserto",
+      "Tom:",
+      "[Ritmo Padrao]141 bpm",
+      "Vitoria No Deserto",
+      "Aline Barros",
+      "Composicao de: Luciano Moreira",
+      "G",
+      "1234",
+      "GDEmC",
+    ].join("\n");
+
+    const songs = extractSongsFromPages([page]);
+
+    expect(songs).toHaveLength(1);
+    expect(songs[0]).toMatchObject({
+      title: "Vitoria No Deserto",
+      artist: "Aline Barros",
+      key: "G",
+    });
+    expect(songs[0].lyrics).toContain("Letra da Vitoria no deserto");
+    expect(songs[0].lyrics).not.toContain("Ritmo Padrao");
+    expect(songs[0].chords).toContain("G D Em C");
+    expect(songs[0].chords).not.toContain("1234");
+  });
+
+  it("detecta documento do Cifra Club com Afinacao antes do titulo e Composicao sem espaco", () => {
+    const page = [
+      "[Intro]",
+      "Letra de Quem E Esse",
+      "Tom:",
+      "Afinacao:",
+      "Quem E Esse?",
+      "Julliany Souza",
+      "Composicao de:Leo Brandao",
+      "Em",
+      "E A D G B E",
+      "CD2Em7Bm7",
+    ].join("\n");
+
+    const songs = extractSongsFromPages([page]);
+
+    expect(songs).toHaveLength(1);
+    expect(songs[0]).toMatchObject({
+      title: "Quem E Esse?",
+      artist: "Julliany Souza",
+      key: "Em",
+    });
+    expect(songs[0].lyrics).toContain("Letra de Quem E Esse");
+    expect(songs[0].chords).not.toContain("E A D G B E");
+    expect(songs[0].chords).toContain("C D2 Em7 Bm7");
+  });
+
   it("nao quebra em musicas fantasmas quando uma musica desse formato mesclado ocupa mais de uma pagina", () => {
     const page1 = [
       "[Intro]",

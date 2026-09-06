@@ -411,6 +411,33 @@ describe("ChurchDepartmentAdapters - musicas", () => {
       expect(result.key).toBe("G");
       expect(result.youtubeUrl).toBe("https://www.youtube.com/watch?v=abc123");
     });
+
+    it("extrai o tom do markup atual da pagina simplificada com instrumento", async () => {
+      const html = `
+        <title>Me Atraiu - Gabriela Rocha - Cifra Club</title>
+        <link rel="canonical" href="https://www.cifraclub.com.br/gabriela-rocha/me-atraiu/simplificada.html" />
+        <div class="ebNp" data-chord-config="true" data-chord-select="true">
+          <div class="IERZz"><span>Tom: </span> <button class="eVroG">G</button></div>
+        </div>
+        <article data-chord-container="true">
+          <pre class="_crVx"><div>[Intro] <b data-chord-name="C">C</b>  <b data-chord-name="D">D</b>  <b data-chord-name="G/B">G/B</b>  <b data-chord-name="C">C</b>\n\nEu poderia estar</div></pre>
+        </article>
+      `;
+      global.fetch = jest.fn().mockResolvedValue({ ok: true, text: async () => html }) as unknown as typeof fetch;
+
+      const result = await adapters.importCifraClubSong(
+        makeRequest({
+          params: { id: "dept-1" },
+          body: {
+            url: "https://www.cifraclub.com.br/gabriela-rocha/me-atraiu/simplificada.html?instrument=keyboard",
+          },
+        }),
+      );
+
+      expect(result.key).toBe("G");
+      expect(result.url).toBe("https://www.cifraclub.com.br/gabriela-rocha/me-atraiu/simplificada.html");
+      expect(result.chords).toContain("[Intro] C  D  G/B  C");
+    });
   });
 
   describe("previewSongsFromPdf / importSongsFromPdf", () => {
@@ -443,6 +470,21 @@ describe("ChurchDepartmentAdapters - musicas", () => {
       ).rejects.toThrow("Envie um arquivo PDF válido");
     });
 
+    it("previewSongsFromPdf rejeita conteudo que nao e um PDF", async () => {
+      await expect(
+        adapters.previewSongsFromPdf(
+          makeRequest({
+            params: { id: "dept-1" },
+            file: async () => ({
+              filename: "repertorio.pdf",
+              mimetype: "application/pdf",
+              toBuffer: async () => Buffer.from("not-a-pdf"),
+            }),
+          }),
+        ),
+      ).rejects.toThrow("O arquivo enviado não parece ser um PDF válido");
+    });
+
     it("previewSongsFromPdf rejeita quando nao extrai nenhuma musica", async () => {
       mockExtractPdfPages.mockResolvedValue(["pagina 1"]);
       mockExtractSongsFromPages.mockReturnValue([]);
@@ -454,7 +496,7 @@ describe("ChurchDepartmentAdapters - musicas", () => {
             file: async () => ({
               filename: "repertorio.pdf",
               mimetype: "application/pdf",
-              toBuffer: async () => Buffer.from("conteudo"),
+              toBuffer: async () => Buffer.from("%PDF-1.7"),
             }),
           }),
         ),
@@ -471,7 +513,7 @@ describe("ChurchDepartmentAdapters - musicas", () => {
           file: async () => ({
             filename: "repertorio.pdf",
             mimetype: "application/pdf",
-            toBuffer: async () => Buffer.from("conteudo"),
+            toBuffer: async () => Buffer.from("%PDF-1.7"),
           }),
         }),
       );
@@ -499,6 +541,7 @@ describe("ChurchDepartmentAdapters - musicas", () => {
     });
 
     it("importSongsFromPdf cria as musicas revisadas numa transacao", async () => {
+      mockPrismaClient.mediaItem.findFirst.mockResolvedValue(null);
       mockPrismaClient.$transaction.mockResolvedValue([songRow]);
 
       const result = await adapters.importSongsFromPdf(
@@ -510,6 +553,21 @@ describe("ChurchDepartmentAdapters - musicas", () => {
 
       expect(result).toEqual({ songs: [songRow] });
       expect(mockPrismaClient.$transaction).toHaveBeenCalled();
+    });
+
+    it("importSongsFromPdf rejeita titulo que ja existe no ministerio", async () => {
+      mockPrismaClient.mediaItem.findFirst.mockResolvedValue({ id: "song-existing" });
+
+      await expect(
+        adapters.importSongsFromPdf(
+          makeRequest({
+            params: { id: "dept-1" },
+            body: { songs: [{ title: "Grande e o Senhor" }] },
+          }),
+        ),
+      ).rejects.toThrow("Ja existe uma musica com esse nome neste ministerio");
+
+      expect(mockPrismaClient.$transaction).not.toHaveBeenCalled();
     });
   });
 });

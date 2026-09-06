@@ -352,11 +352,23 @@ export class SongAdapters {
     }
 
     const buffer = await file.toBuffer();
+    if (buffer.byteLength < 5 || buffer.subarray(0, 5).toString("ascii") !== "%PDF-") {
+      throw new DomainError("O arquivo enviado não parece ser um PDF válido");
+    }
+
     if (buffer.byteLength > PDF_MAX_SIZE_BYTES) {
       throw new DomainError("O PDF deve ter no máximo 10 MB");
     }
 
-    const pages = await extractPdfPages(buffer);
+    let pages: string[];
+    try {
+      pages = await extractPdfPages(buffer);
+    } catch {
+      throw new DomainError(
+        "Não foi possível ler este PDF. Verifique se o arquivo não está corrompido.",
+      );
+    }
+
     const songs = extractSongsFromPages(pages);
 
     if (songs.length === 0) {
@@ -406,6 +418,21 @@ export class SongAdapters {
 
     if (songs.length === 0) {
       throw new DomainError("Nenhuma música para importar");
+    }
+
+    const normalizedTitles = new Set<string>();
+    for (const song of songs) {
+      const normalizedTitle = song.title
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+
+      if (normalizedTitles.has(normalizedTitle)) {
+        throw new DomainError("O PDF possui músicas com títulos repetidos");
+      }
+
+      normalizedTitles.add(normalizedTitle);
+      await this.assertUniqueSongTitle(id, song.title);
     }
 
     const created = await $prismaClient.$transaction(
