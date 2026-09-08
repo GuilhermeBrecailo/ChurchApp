@@ -3,7 +3,7 @@
     <div class="ministery-section-actions mb-4">
       <v-btn
         v-if="canManageDepartment"
-        color="purple-darken-3"
+        color="primary"
         class="rounded-lg text-none"
         @click="$emit('create')"
       >
@@ -13,7 +13,7 @@
 
     <v-card
       v-if="tasks.length === 0 && !tasksError"
-      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
     >
       <CheckSquare size="32" color="#9CA3AF" class="mb-3" />
       <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -25,7 +25,7 @@
       <v-card
         v-for="task in tasks"
         :key="task.id"
-        class="ministery-content-card pa-4 elevation-1 bg-white"
+        class="ministery-content-card app-surface pa-4"
       >
         <div class="d-flex justify-space-between align-start ga-3">
           <div>
@@ -42,7 +42,7 @@
               Responsável: {{ task.assignee?.name || "Sem responsável" }}
             </p>
           </div>
-          <v-chip size="small" color="purple-darken-3" variant="tonal">
+          <v-chip size="small" color="primary" variant="tonal">
             {{ priorityLabel(task.priority) }}
           </v-chip>
         </div>
@@ -52,6 +52,7 @@
             variant="text"
             color="grey-darken-1"
             size="small"
+            :aria-label="`Editar tarefa ${task.title}`"
             @click="$emit('edit', task)"
           >
             <Pencil size="16" />
@@ -61,6 +62,7 @@
             variant="text"
             color="red-darken-2"
             size="small"
+            :aria-label="`Excluir tarefa ${task.title}`"
             @click="$emit('delete', task)"
           >
             <Trash2 size="16" />

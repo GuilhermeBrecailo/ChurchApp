@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 pb-8 page-wrapper">
+  <div class="pa-4 pb-8 page-wrapper app-operational-page">
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
       {{ errorMessage }}
     </v-alert>
@@ -17,7 +17,7 @@
       </div>
 
       <div class="reader-layout">
-        <v-card class="rounded-xl pa-3 elevation-1 bg-white border-subtle chapter-sidebar">
+        <v-card class="app-surface rounded-xl pa-3 border-subtle chapter-sidebar">
           <button
             v-for="chapter in chapters"
             :key="chapter.id"
@@ -31,8 +31,8 @@
           </button>
         </v-card>
 
-        <v-card class="rounded-xl pa-5 elevation-1 bg-white border-subtle">
-          <p v-if="currentChapter.bibleRef" class="text-caption font-weight-bold text-indigo-darken-2 mb-2">
+        <v-card class="app-surface rounded-xl pa-5 border-subtle">
+          <p v-if="currentChapter.bibleRef" class="text-caption font-weight-bold text-primary mb-2">
             {{ currentChapter.bibleRef }}
           </p>
           <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-4">
@@ -52,7 +52,7 @@
               Capítulo anterior
             </v-btn>
             <v-btn
-              color="purple-darken-3"
+              color="primary"
               class="text-none"
               :disabled="currentIndex === chapters.length - 1"
               @click="goToOffset(1)"
@@ -63,7 +63,7 @@
         </v-card>
       </div>
 
-      <v-card class="rounded-xl pa-5 elevation-1 bg-white border-subtle mt-5 comments-card">
+      <v-card class="app-surface rounded-xl pa-5 border-subtle mt-5 comments-card">
         <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-4">
           Comentários
           <span class="text-body-2 text-grey-darken-1 font-weight-regular">({{ comments.length }})</span>
@@ -85,7 +85,7 @@
             class="flex-grow-1"
           />
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="text-none align-self-end"
             :disabled="!newComment.trim() || postingComment"
             :loading="postingComment"
@@ -113,6 +113,7 @@
                 variant="text"
                 color="grey-darken-1"
                 icon
+                :aria-label="`Excluir comentário de ${comment.author.name}`"
                 @click="removeComment(comment.id)"
               >
                 <Trash2 size="16" />

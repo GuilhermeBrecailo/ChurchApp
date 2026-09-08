@@ -9,8 +9,7 @@
         item-value="value"
         variant="outlined"
         density="compact"
-        color="purple-darken-3"
-        bg-color="white"
+        color="primary"
         hide-details
       />
       <v-select
@@ -21,13 +20,12 @@
         item-value="value"
         variant="outlined"
         density="compact"
-        color="purple-darken-3"
-        bg-color="white"
+        color="primary"
         hide-details
       />
     </div>
 
-    <v-tabs v-model="tab" color="purple-darken-3" class="mb-4">
+    <v-tabs v-model="tab" color="primary" class="mb-4">
       <v-tab value="confirmations">Confirmação</v-tab>
       <v-tab value="attendance">Presença</v-tab>
       <v-tab value="members">Membros</v-tab>
@@ -53,15 +51,15 @@
 
       <v-window-item value="attendance">
         <div class="report-stat-grid mb-4">
-          <v-card class="pa-4 elevation-1 bg-white border-subtle">
+          <v-card class="app-surface pa-4 border-subtle">
             <span class="report-stat">{{ attendance?.attendanceRate ?? 0 }}%</span>
             <small>presença</small>
           </v-card>
-          <v-card class="pa-4 elevation-1 bg-white border-subtle">
+          <v-card class="app-surface pa-4 border-subtle">
             <span class="report-stat">{{ attendance?.attended ?? 0 }}</span>
             <small>presentes</small>
           </v-card>
-          <v-card class="pa-4 elevation-1 bg-white border-subtle">
+          <v-card class="app-surface pa-4 border-subtle">
             <span class="report-stat">{{ attendance?.absent ?? 0 }}</span>
             <small>ausentes</small>
           </v-card>
@@ -205,7 +203,7 @@ onMounted(loadReports);
 }
 
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
 }
 
 @media (max-width: 720px) {

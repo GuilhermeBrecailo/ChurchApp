@@ -20,6 +20,7 @@
           variant="text"
           color="grey-darken-1"
           size="small"
+          aria-label="Fechar formulário de escala"
           :disabled="isSaving"
           @click="handleOpenChange(false)"
         >
@@ -34,15 +35,16 @@
           prepend-inner-icon="mdi-calendar-text-outline"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           :bg-color="isDark ? 'transparent' : 'white'"
           class="scale-input mb-4"
+          :menu-props="scaleSelectMenuProps"
           hide-details="auto"
           :disabled="isSaving"
         />
 
         <div v-if="linkedCultLabel" class="locked-cult mb-4">
-          <v-icon size="20" color="purple-darken-3">mdi-church</v-icon>
+          <v-icon size="20" color="primary">mdi-church</v-icon>
           <div class="min-w-0">
             <p class="text-caption text-grey-darken-1 mb-0">Culto selecionado</p>
             <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
@@ -60,9 +62,10 @@
           prepend-inner-icon="mdi-church"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           :bg-color="isDark ? 'transparent' : 'white'"
           class="scale-input mb-4"
+          :menu-props="scaleSelectMenuProps"
           hide-details="auto"
           :disabled="isSaving"
         />
@@ -74,7 +77,7 @@
             type="date"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             :bg-color="isDark ? 'transparent' : 'white'"
             class="scale-input"
             hide-details="auto"
@@ -86,7 +89,7 @@
             type="time"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             :bg-color="isDark ? 'transparent' : 'white'"
             class="scale-input"
             hide-details="auto"
@@ -103,7 +106,7 @@
           prepend-inner-icon="mdi-account-group-outline"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           :bg-color="isDark ? 'transparent' : 'white'"
           class="scale-input mb-4"
           hide-details="auto"
@@ -117,7 +120,7 @@
             type="date"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             :bg-color="isDark ? 'transparent' : 'white'"
             class="scale-input"
             hide-details="auto"
@@ -129,7 +132,7 @@
             type="time"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             :bg-color="isDark ? 'transparent' : 'white'"
             class="scale-input"
             hide-details="auto"
@@ -143,7 +146,7 @@
           prepend-inner-icon="mdi-text"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           :bg-color="isDark ? 'transparent' : 'white'"
           class="scale-input mb-4"
           hide-details="auto"
@@ -241,9 +244,10 @@
           prepend-inner-icon="mdi-file-document-outline"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           :bg-color="isDark ? 'transparent' : 'white'"
           class="scale-input mb-4"
+          :menu-props="scaleSelectMenuProps"
           hide-details="auto"
           multiple
           chips
@@ -276,9 +280,10 @@
               prepend-inner-icon="mdi-account-outline"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               :bg-color="isDark ? 'transparent' : 'white'"
               class="scale-input"
+              :menu-props="scaleSelectMenuProps"
               hide-details="auto"
               :disabled="isSaving || !scheduleForm.departmentId"
             />
@@ -289,9 +294,10 @@
               placeholder="ex: Teclado"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               :bg-color="isDark ? 'transparent' : 'white'"
               class="scale-input"
+              :menu-props="scaleSelectMenuProps"
               hide-details="auto"
               :disabled="isSaving || !scheduleForm.departmentId"
             />
@@ -325,6 +331,7 @@
                 variant="text"
                 color="grey-darken-1"
                 size="small"
+                :aria-label="`Remover ${volunteer.name} da escala`"
                 :disabled="isSaving"
                 @click="removeFormVolunteer(volunteer.userId)"
               >
@@ -350,7 +357,7 @@
           </v-btn>
           <v-btn
             type="submit"
-            color="purple-darken-3"
+            color="primary"
             class="text-none font-weight-bold"
             :loading="isSaving"
             :disabled="isSaving"
@@ -425,6 +432,11 @@ const serviceTimeOptions = computed(() =>
 );
 
 const { isDark } = useThemeMode();
+const scaleSelectMenuProps = {
+  attach: "body",
+  contentClass: "scale-select-menu",
+  maxHeight: 320,
+};
 const accentColor = computed(() => (isDark.value ? "#f0975a" : "#B5472A"));
 const avatarBgColor = computed(() => (isDark.value ? "rgba(240,151,90,0.16)" : "#F7E2D3"));
 const linkedCult = ref<ServiceOccurrenceDetail | null>(null);

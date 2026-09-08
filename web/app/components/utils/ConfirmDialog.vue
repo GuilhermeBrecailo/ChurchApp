@@ -5,7 +5,7 @@
     variant="confirm"
     @update:model-value="emitClose"
   >
-    <v-card class="confirm-card pa-5 bg-white" elevation="0">
+  <v-card class="confirm-card app-surface pa-5" elevation="0">
       <v-btn
         icon
         variant="text"

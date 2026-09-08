@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 page-wrapper min-vh-100 pb-16 igreja-page">
+  <div class="pa-4 page-wrapper min-vh-100 pb-16 igreja-page app-operational-page">
     <header class="igreja-header mb-5">
       <p class="text-caption font-weight-bold text-uppercase text-grey-darken-1 mb-1">
         {{ user?.activeChurch?.name || user?.church?.name || "Igreja" }}

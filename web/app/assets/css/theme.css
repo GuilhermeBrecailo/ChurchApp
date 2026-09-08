@@ -1,9 +1,9 @@
 /*
  * DESIGN TOKENS — Padrão de uso:
  * - Em <style scoped> custom: usar var(--app-color-accent) para cor de destaque
- * - Em props Vuetify (color="..."): usar "purple-darken-3" (Vuetify não resolve CSS vars em props) —
- *   esse nome fica mapeado abaixo (ver bloco "ACCENT — PONTE COM VUETIFY") para var(--app-color-accent),
- *   então trocar o token aqui também troca a cor de quem usa o prop Vuetify.
+ * - Em props Vuetify (color="..."): usar "primary"; a cor é definida no tema do Vuetify
+ *   e acompanha os tokens --app-color-accent / --app-color-accent-soft nos temas claro e escuro,
+ *   então alterar esses tokens mantém o produto consistente entre componentes.
  * - NÃO introduzir hex inline fora da paleta terracota/âmbar em novos componentes
  * - Ver spec: openspec/changes/frontend-visual-polish/specs/ui-design-tokens/spec.md
  *
@@ -39,6 +39,10 @@
   --app-overlay-radius: 16px;
   --app-overlay-sheet-radius: 24px;
   --app-overlay-content-gap: 16px;
+  --app-control-height: 44px;
+  --app-control-height-compact: 36px;
+  --app-control-radius: 10px;
+  --app-focus-ring: 0 0 0 3px color-mix(in srgb, var(--app-color-accent) 20%, transparent);
   --app-motion-duration-fast: 160ms;
   --app-motion-duration-base: 200ms;
   --app-motion-duration-slow: 400ms;
@@ -215,13 +219,14 @@ body {
   background: var(--app-color-surface) !important;
   border: 1px solid var(--app-color-border-subtle) !important;
   border-radius: var(--app-radius-card) !important;
-  box-shadow: none !important;
+  box-shadow: var(--app-shadow-sm) !important;
 }
 
 .app-surface-muted {
   background: var(--app-color-surface-soft) !important;
   border: 1px solid var(--app-color-border-subtle) !important;
   border-radius: var(--app-radius-card) !important;
+  box-shadow: var(--app-shadow-sm) !important;
 }
 
 .app-interactive-surface {
@@ -246,6 +251,44 @@ body {
   outline-offset: 2px;
 }
 
+.app-operational-page .v-btn,
+.app-operational-page .v-list-item,
+.app-operational-page button,
+.app-operational-page a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-operational-page .v-btn {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.app-operational-page .v-btn:focus-visible,
+.app-operational-page .v-list-item:focus-visible,
+.app-operational-page button:focus-visible,
+.app-operational-page a:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-color-accent) 34%, transparent);
+  outline-offset: 2px;
+}
+
+.app-operational-page .v-field:focus-within {
+  border-radius: var(--app-radius-md);
+}
+
+@media (max-width: 600px) {
+  .app-operational-page {
+    padding-inline: 12px !important;
+  }
+
+  .app-page-header {
+    margin-bottom: 16px;
+  }
+
+  .app-operational-page .v-card-text {
+    padding: 14px !important;
+  }
+}
+
 .app-section-title {
   color: var(--app-color-text);
   font-size: 0.95rem;
@@ -259,8 +302,222 @@ body {
   line-height: 1.45;
 }
 
+/* ============================================================
+   COMPONENTES COMPARTILHADOS — CONTROLES E ESTADOS
+   Um único acabamento para botões, campos, listas e overlays. As páginas
+   continuam livres para ter hierarquia própria, mas os controles falam a
+   mesma linguagem e mantêm foco/hover consistentes.
+   ============================================================ */
+:where(.app-operational-page, .responsive-overlay) .v-btn {
+  min-height: var(--app-control-height);
+  border-radius: var(--app-control-radius);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  transition:
+    background-color var(--app-motion-duration-fast) ease,
+    border-color var(--app-motion-duration-fast) ease,
+    box-shadow var(--app-motion-duration-fast) ease,
+    transform var(--app-motion-duration-fast) var(--app-motion-ease-standard);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-btn--size-small {
+  min-height: var(--app-control-height-compact);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-btn--icon {
+  min-width: var(--app-control-height);
+  border-radius: 12px;
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-btn--icon.v-btn--size-small {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-btn--size-x-small {
+  min-width: 32px;
+  min-height: 32px;
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-btn:not(.v-btn--disabled):hover {
+  transform: translateY(-1px);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-btn:not(.v-btn--disabled):active {
+  transform: translateY(0);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-btn--variant-text:hover,
+:where(.app-operational-page, .responsive-overlay) .v-btn--variant-plain:hover,
+:where(.app-operational-page, .responsive-overlay) .v-btn--icon:hover {
+  background: var(--app-color-surface-soft);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--app-focus-ring);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-field {
+  border-radius: var(--app-control-radius);
+  transition:
+    background-color var(--app-motion-duration-fast) ease,
+    border-color var(--app-motion-duration-fast) ease,
+    box-shadow var(--app-motion-duration-fast) ease;
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-field--variant-outlined {
+  background: var(--app-color-surface);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-field--variant-outlined .v-field__outline {
+  color: var(--app-color-border);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-field--variant-outlined:hover:not(.v-field--disabled) .v-field__outline {
+  color: var(--app-color-border-strong);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-field--focused {
+  box-shadow: var(--app-focus-ring);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-field--focused .v-field__outline {
+  color: var(--app-color-accent);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-label {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-input--disabled {
+  opacity: 0.62;
+}
+
+/* Menus de select/autocomplete e listas de ação */
+.v-overlay-container .v-menu > .v-overlay__content,
+.v-overlay-container .v-list {
+  border: 1px solid var(--app-color-border);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-color-surface) !important;
+  box-shadow: var(--app-shadow-lg);
+}
+
+.v-overlay-container .v-list {
+  padding: 6px;
+  color: var(--app-color-text);
+}
+
+.v-overlay-container .v-list-item {
+  min-height: 44px;
+  margin: 2px 0;
+  border-radius: var(--app-radius-md);
+  color: var(--app-color-text);
+  transition: background-color var(--app-motion-duration-fast) ease;
+}
+
+.v-overlay-container .v-list-item:hover,
+.v-overlay-container .v-list-item:focus-visible {
+  background: var(--app-color-surface-soft);
+}
+
+.v-overlay-container .v-list-item--active {
+  background: var(--app-color-accent-tint);
+  color: var(--app-color-accent);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-chip {
+  border-radius: var(--app-radius-sm);
+  font-weight: 700;
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-alert {
+  border-radius: var(--app-control-radius);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-tabs {
+  --v-tabs-height: 44px;
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-tab {
+  min-width: 0;
+  border-radius: var(--app-control-radius) var(--app-control-radius) 0 0;
+  font-weight: 700;
+  text-transform: none;
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-btn-toggle {
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--app-color-border);
+  border-radius: var(--app-control-radius);
+  background: var(--app-color-surface-soft);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-btn-toggle .v-btn {
+  min-height: var(--app-control-height-compact);
+  border-radius: 8px;
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-btn-toggle .v-btn--active {
+  background: var(--app-color-surface);
+  box-shadow: var(--app-shadow-sm);
+  color: var(--app-color-accent);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-data-table {
+  overflow: hidden;
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: var(--app-radius-card);
+  background: var(--app-color-surface);
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-data-table-header__content {
+  color: var(--app-color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-data-table__tr:hover {
+  background: var(--app-color-surface-soft);
+}
+
+/* Elementos nativos também precisam participar do sistema visual. */
+:where(.app-operational-page, .responsive-overlay) :where(input, textarea, select):focus-visible,
+.more-options-row:focus-visible {
+  outline: none;
+  box-shadow: var(--app-focus-ring);
+}
+
+:where(.app-operational-page, .responsive-overlay, .more-options-list) {
+  scrollbar-color: var(--app-color-border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+:where(.app-operational-page, .responsive-overlay, .more-options-list)::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+:where(.app-operational-page, .responsive-overlay, .more-options-list)::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--app-color-border-strong);
+  background-clip: padding-box;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .app-interactive-surface {
+    transition: none;
+  }
+
+  :where(.app-operational-page, .responsive-overlay) .v-btn,
+  :where(.app-operational-page, .responsive-overlay) .v-field,
+  .v-overlay-container .v-list-item {
     transition: none;
   }
 
@@ -271,15 +528,11 @@ body {
 }
 
 /* ============================================================
-   ACCENT — PONTE COM VUETIFY (funciona em light e dark)
+   ACCENT — COMPATIBILIDADE LEGADA (funciona em light e dark)
    ============================================================
-   Vuetify não resolve CSS vars em props color="...", então o app usa o
-   nome fixo "purple-darken-3" como "cor de destaque" (ver comentário no
-   topo do arquivo). Esta ponte faz esse nome (e variantes próximas)
-   resolverem sempre para var(--app-color-accent) — funciona nos dois
-   temas porque a variável já muda de valor sozinha dentro de
-   .app-theme-dark. Trocar o accent aqui vira a cor de botão/link/ícone
-   "de marca" do app inteiro sem precisar tocar em cada componente. */
+   Alguns conteúdos antigos ainda podem carregar classes roxas. Esta ponte
+   preserva esses casos sem reintroduzir roxo na linguagem visual nova;
+   componentes novos devem usar tokens CSS ou color="primary". */
 .text-purple-700,
 .hover\:text-purple-900:hover,
 .text-purple-darken-3,
@@ -755,9 +1008,37 @@ body {
   border: 1px solid var(--app-color-border);
   border-bottom: 0;
   border-radius: var(--app-overlay-sheet-radius) var(--app-overlay-sheet-radius) 0 0;
+  max-height: min(96dvh, 960px);
   background: var(--app-color-surface);
   color: var(--app-color-text);
   box-shadow: var(--app-shadow-lg);
+}
+
+.responsive-bottom-sheet .v-bottom-sheet__content > .v-card {
+  border-radius: var(--app-overlay-sheet-radius) var(--app-overlay-sheet-radius) 0 0 !important;
+}
+
+.scale-select-menu {
+  z-index: 2500 !important;
+}
+
+.scale-select-menu .v-list {
+  border: 1px solid var(--app-color-border);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-color-surface) !important;
+  color: var(--app-color-text);
+  box-shadow: var(--app-shadow-lg);
+  padding: 6px;
+}
+
+.scale-select-menu .v-list-item {
+  min-height: 44px;
+  border-radius: var(--app-radius-md);
+}
+
+.scale-select-menu .v-list-item--active {
+  background: var(--app-color-accent-tint);
+  color: var(--app-color-accent);
 }
 
 .responsive-overlay--scrollable .v-overlay__content > .v-card,
@@ -867,6 +1148,27 @@ body {
 .scale-details-header,
 .scale-fullscreen-header {
   position: relative;
+}
+
+.responsive-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.responsive-dialog-header > :first-child {
+  min-width: 0;
+}
+
+.responsive-dialog-header h2 {
+  color: var(--app-color-text);
+  line-height: 1.2;
+}
+
+.responsive-dialog-header p {
+  color: var(--app-color-text-muted);
+  line-height: 1.4;
 }
 
 .responsive-dialog-header > .v-btn[icon],

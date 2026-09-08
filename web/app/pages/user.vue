@@ -1,5 +1,5 @@
 <template>
-  <div class="profile-page pa-4 min-vh-100 pb-20">
+  <div class="profile-page pa-4 min-vh-100 pb-20 app-operational-page">
     <section class="profile-hero mb-4">
       <div class="profile-hero-banner">
         <div class="profile-hero-circles">
@@ -33,7 +33,7 @@
         />
         <div class="profile-summary-copy">
           <div class="profile-chip-row mb-2">
-            <v-chip size="x-small" color="indigo-darken-2" variant="flat" class="font-weight-bold rounded-sm">
+            <v-chip size="x-small" color="primary" variant="flat" class="font-weight-bold rounded-sm">
               {{ roleLabel }}
             </v-chip>
             <v-chip
@@ -131,7 +131,7 @@
       </section>
 
       <div class="profile-action-grid mb-4">
-        <v-btn to="/scale" variant="tonal" color="indigo-darken-2" class="profile-action-btn text-none">
+        <v-btn to="/scale" variant="tonal" color="primary" class="profile-action-btn text-none">
           <CalendarDays size="17" class="mr-2" /> Escalas
         </v-btn>
         <v-btn to="/ministery" variant="tonal" color="teal-darken-2" class="profile-action-btn text-none">
@@ -141,14 +141,14 @@
           v-if="user?.is_admin || user?.role === 'PASTOR' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'"
           to="/admin"
           variant="tonal"
-          color="purple-darken-3"
+          color="primary"
           class="profile-action-btn text-none"
         >
           <Shield size="17" class="mr-2" /> Admin
         </v-btn>
       </div>
 
-      <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
+      <v-card class="profile-card app-surface pa-4 mb-4">
         <div class="section-heading">
           <div class="section-icon section-icon-indigo">
             <UserRound size="18" />
@@ -192,7 +192,7 @@
         />
       </v-card>
 
-      <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
+      <v-card class="profile-card app-surface pa-4 mb-4">
         <div class="section-heading">
           <div class="section-icon section-icon-teal">
             <BadgeCheck size="18" />
@@ -227,7 +227,7 @@
         </div>
       </v-card>
 
-      <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
+      <v-card class="profile-card app-surface pa-4 mb-4">
         <div class="section-heading">
           <div class="section-icon section-icon-amber">
             <CalendarX size="18" />
@@ -244,7 +244,7 @@
           type="date"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           bg-color="white"
           hide-details
           class="profile-input flex-grow-1"
@@ -254,9 +254,10 @@
         <v-btn
           variant="outlined"
           color="grey-darken-1"
-          class="profile-icon-btn bg-white"
+          class="profile-icon-btn app-surface"
           size="large"
           icon
+          aria-label="Adicionar data de indisponibilidade"
           :disabled="isLoading || isSaving"
           @click="addUnavailableDate"
         >
@@ -288,7 +289,7 @@
       </v-card>
 
 
-    <v-card class="profile-card pa-4 mb-6 elevation-1 bg-white">
+    <v-card class="profile-card app-surface pa-4 mb-6">
       <div class="security-row">
         <div class="min-w-0">
           <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
@@ -369,7 +370,7 @@
       scrollable
       :persistent="mustChangePassword"
     >
-      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+      <v-card class="app-surface rounded-xl pa-6" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="min-w-0">
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-1">
@@ -398,7 +399,7 @@
           type="password"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           bg-color="white"
           class="profile-input mb-3"
           hide-details="auto"
@@ -411,7 +412,7 @@
           type="password"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           bg-color="white"
           class="profile-input mb-4"
           hide-details="auto"
@@ -780,7 +781,7 @@ onMounted(loadPageData);
 .profile-hero {
   border-radius: 16px;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--app-color-surface);
   border: 1px solid var(--app-color-border);
   box-shadow: var(--app-shadow-md);
 }
@@ -788,7 +789,7 @@ onMounted(loadPageData);
 .profile-hero-banner {
   position: relative;
   height: 80px;
-  background: linear-gradient(135deg, var(--app-color-accent) 0%, var(--app-color-accent-soft) 60%, var(--app-color-accent-muted) 100%);
+  background: var(--app-color-accent);
   overflow: hidden;
 }
 
@@ -828,7 +829,7 @@ onMounted(loadPageData);
 
 .profile-avatar {
   flex: 0 0 auto;
-  background: linear-gradient(135deg, var(--app-color-accent), var(--app-color-accent-muted)) !important;
+  background: var(--app-color-accent) !important;
   border: 3px solid var(--app-color-surface) !important;
   box-shadow: 0 4px 16px rgba(181, 71, 42, 0.3) !important;
 }

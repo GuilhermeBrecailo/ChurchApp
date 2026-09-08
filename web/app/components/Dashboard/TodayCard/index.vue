@@ -31,7 +31,7 @@
             <v-chip
               v-else
               size="x-small"
-              color="purple-darken-3"
+              color="primary"
               variant="flat"
               class="text-none font-weight-bold"
             >

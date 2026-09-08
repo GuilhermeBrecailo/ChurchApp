@@ -31,7 +31,7 @@
             v-model="inviteCode"
             label="Código de convite"
             variant="outlined"
-            color="indigo-darken-2"
+            color="primary"
             density="comfortable"
             placeholder="Ex: A1B2C3D4"
             hide-details="auto"
@@ -45,7 +45,7 @@
           </v-alert>
 
           <v-btn
-            color="indigo-darken-2"
+            color="primary"
             block
             class="text-none font-weight-bold rounded-lg"
             size="large"
@@ -69,7 +69,7 @@
             label="Nome da igreja"
             placeholder="Igreja Quadrangular Centro"
             variant="outlined"
-            color="purple-darken-3"
+            color="primary"
             class="mb-4"
             :disabled="loading"
           />
@@ -79,7 +79,7 @@
               v-model="form.city"
               label="Cidade"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               :disabled="loading"
             />
 
@@ -87,7 +87,7 @@
               v-model="form.state"
               label="Estado"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               :disabled="loading"
             />
           </div>
@@ -96,7 +96,7 @@
             v-model="form.road"
             label="Endereço"
             variant="outlined"
-            color="purple-darken-3"
+            color="primary"
             class="mb-4"
             :disabled="loading"
           />
@@ -106,7 +106,7 @@
               v-model="form.number"
               label="Número"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               :disabled="loading"
             />
 
@@ -114,7 +114,7 @@
               v-model="form.localZipCode"
               label="CEP"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               :disabled="loading"
             />
           </div>
@@ -123,7 +123,7 @@
             v-model="form.document"
             label="Documento"
             variant="outlined"
-            color="purple-darken-3"
+            color="primary"
             class="mb-4"
             :disabled="loading"
           />
@@ -141,7 +141,7 @@
           <v-btn
             type="submit"
             block
-            color="purple-darken-3"
+            color="primary"
             size="large"
             class="text-none font-bold"
             :loading="loading"
@@ -154,7 +154,7 @@
 
       <v-btn
         variant="text"
-        color="purple-darken-3"
+        color="primary"
         class="self-start text-none"
         :disabled="loading"
         @click="handleLogout"

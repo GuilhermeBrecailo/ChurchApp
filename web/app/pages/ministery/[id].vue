@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 bg-grey-lighten-4 min-vh-100">
+  <div class="pa-4 min-vh-100 app-operational-page">
     <div class="ministery-back-row mb-4">
       <v-btn icon variant="text" class="mr-2" aria-label="Voltar para ministérios" @click="router.back()">
         <ArrowLeft size="20" />
@@ -22,7 +22,7 @@
     <template v-if="department">
       <div class="ministery-detail-header mb-5">
         <div class="min-w-0">
-          <p class="text-caption text-purple-darken-3 font-weight-bold mb-1">
+          <p class="text-caption text-primary font-weight-bold mb-1">
             {{ departmentTypeLabel(department.type) }}
           </p>
           <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
@@ -58,7 +58,7 @@
           v-for="tab in tabs"
           :key="tab.value"
           :variant="activeTab === tab.value ? 'flat' : 'outlined'"
-          :color="activeTab === tab.value ? 'purple-darken-3' : 'grey-darken-1'"
+          :color="activeTab === tab.value ? 'primary' : 'grey-darken-1'"
           class="tab-chip font-weight-medium cursor-pointer"
           @click="activeTab = tab.value"
         >
@@ -950,13 +950,13 @@ const leaderPendingItems = computed(() =>
       label: "Escalas não visualizadas",
       description: "Pessoas que ainda não abriram a convocação.",
       value: notViewedCount.value,
-      color: "indigo-darken-2",
+      color: "primary",
     },
     {
       label: "Pedidos de troca",
       description: "Respostas que pedem substituição ou alinhamento.",
       value: swapRequestCount.value,
-      color: "purple-darken-3",
+      color: "primary",
     },
     {
       label: "Escalas sem equipe",
@@ -1071,7 +1071,7 @@ const responseStatusColor = (status?: string) => {
     CONFIRMED: "teal-darken-2",
     DECLINED: "red-darken-2",
     MAYBE: "amber-darken-3",
-    SWAP_REQUESTED: "indigo-darken-2",
+    SWAP_REQUESTED: "primary",
     PENDING: "grey",
   };
 

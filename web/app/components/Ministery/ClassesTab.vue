@@ -3,7 +3,7 @@
     <div class="ministery-section-actions mb-4">
       <PlanLock v-if="canManageDepartment" feature="MINISTRY_RESOURCES">
         <v-btn
-          color="purple-darken-3"
+          color="primary"
           class="rounded-lg text-none"
           @click="$emit('create')"
         >
@@ -14,7 +14,7 @@
 
     <v-card
       v-if="activityResources.length === 0 && !resourcesError"
-      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
     >
       <BookOpen size="32" color="#9CA3AF" class="mb-3" />
       <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -26,7 +26,7 @@
       <v-card
         v-for="activity in activityResources"
         :key="activity.id"
-        class="ministery-content-card pa-4 elevation-1 bg-white"
+        class="ministery-content-card app-surface pa-4"
       >
         <div class="d-flex justify-space-between align-start ga-3">
           <div class="min-w-0">
@@ -40,7 +40,7 @@
               {{ activity.metadata.notes }}
             </p>
           </div>
-          <v-chip size="small" color="purple-darken-3" variant="tonal">
+          <v-chip size="small" color="primary" variant="tonal">
             PDF
           </v-chip>
         </div>
@@ -51,7 +51,7 @@
             target="_blank"
             rel="noopener noreferrer"
             variant="tonal"
-            color="purple-darken-3"
+            color="primary"
             size="small"
             class="text-none"
           >
@@ -63,6 +63,7 @@
             variant="text"
             color="red-darken-2"
             size="small"
+            :aria-label="`Excluir atividade ${activity.title}`"
             @click="$emit('delete', activity)"
           >
             <Trash2 size="16" />

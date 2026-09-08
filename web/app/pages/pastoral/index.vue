@@ -12,7 +12,7 @@
       </div>
       <v-btn
         to="/pastoral/visitas"
-        color="purple-darken-3"
+        color="primary"
         class="text-none font-weight-bold"
         variant="flat"
       >
@@ -64,7 +64,7 @@
                     Pessoas e ações que merecem cuidado antes de virarem atraso.
                   </p>
                 </div>
-                <v-btn to="/pastoral/pessoas" variant="tonal" color="purple-darken-3" class="text-none">
+                <v-btn to="/pastoral/pessoas" variant="tonal" color="primary" class="text-none">
                   Ver pessoas
                 </v-btn>
               </div>
@@ -104,7 +104,7 @@
                     Acompanhamentos agendados ou em aberto.
                   </p>
                 </div>
-                <v-btn to="/pastoral/visitas" variant="tonal" color="purple-darken-3" class="text-none">
+                <v-btn to="/pastoral/visitas" variant="tonal" color="primary" class="text-none">
                   Gerenciar
                 </v-btn>
               </div>
@@ -139,7 +139,7 @@
                 Atalhos do pastor
               </h2>
               <div class="shortcut-list">
-                <v-btn to="/pastoral/visitas" block variant="tonal" color="purple-darken-3" class="text-none justify-start">
+                <v-btn to="/pastoral/visitas" block variant="tonal" color="primary" class="text-none justify-start">
                   <HandHeart size="16" class="mr-2" />
                   Organizar visitas
                 </v-btn>
@@ -351,6 +351,22 @@ onMounted(loadDashboard);
   border-radius: 8px;
   color: var(--app-color-text);
   text-decoration: none;
+  transition:
+    background-color var(--app-motion-duration-fast) ease,
+    border-color var(--app-motion-duration-fast) ease,
+    transform var(--app-motion-duration-fast) var(--app-motion-ease-standard);
+}
+
+.priority-row:hover,
+.compact-row:hover {
+  border-color: color-mix(in srgb, var(--app-color-accent) 26%, var(--app-color-border));
+  background: var(--app-color-surface-soft);
+}
+
+.priority-row:focus-visible,
+.compact-row:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-color-accent) 34%, transparent);
+  outline-offset: 2px;
 }
 
 .priority-leading {
@@ -398,6 +414,9 @@ onMounted(loadDashboard);
   border-bottom: 1px solid var(--app-color-border-subtle);
   color: var(--app-color-text);
   text-decoration: none;
+  transition:
+    background-color var(--app-motion-duration-fast) ease,
+    border-color var(--app-motion-duration-fast) ease;
 }
 
 .compact-row:last-child {
@@ -432,6 +451,13 @@ onMounted(loadDashboard);
   .pastoral-header .v-btn,
   .section-heading .v-btn {
     width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .priority-row,
+  .compact-row {
+    transition: none;
   }
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <v-card
     :id="`schedule-${event.id}`"
-    class="rounded-lg pa-4 mb-4 elevation-1 bg-white schedule-card"
+  class="app-surface app-interactive-surface rounded-lg pa-4 mb-4 schedule-card"
     :class="{ 'schedule-card-selected': selected }"
     role="button"
     tabindex="0"
@@ -192,8 +192,8 @@ const needsSwap = computed(
 const assignmentStatusColor = computed(() => {
   if (isConfirmed.value) return "teal-darken-2";
   if (isDeclined.value) return "red-darken-2";
-  if (needsSwap.value) return "indigo-darken-2";
-  if (currentUserAssignment.value?.viewedAt) return "indigo-darken-2";
+  if (needsSwap.value) return "primary";
+  if (currentUserAssignment.value?.viewedAt) return "primary";
   return "grey";
 });
 const confirmationSummary = computed(() => {

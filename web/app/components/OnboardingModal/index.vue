@@ -46,7 +46,7 @@
         <v-spacer />
         <v-btn
           v-if="!isLast"
-          color="purple-darken-3"
+          color="primary"
           variant="flat"
           class="text-none onboarding-btn-next"
           rounded="lg"
@@ -56,7 +56,7 @@
         </v-btn>
         <v-btn
           v-else
-          color="purple-darken-3"
+          color="primary"
           variant="flat"
           class="text-none onboarding-btn-next"
           rounded="lg"

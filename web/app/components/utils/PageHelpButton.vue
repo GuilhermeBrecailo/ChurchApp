@@ -6,7 +6,7 @@
           v-bind="props"
           icon
           variant="tonal"
-          color="purple-darken-3"
+          color="primary"
           size="x-small"
           class="page-help-trigger"
           :aria-label="`Abrir ajuda da tela ${title}`"
@@ -61,7 +61,7 @@
               icon
               variant="text"
               size="small"
-              color="purple-darken-3"
+              color="primary"
               :disabled="stepIndex === 0"
               aria-label="Passo anterior"
               @click="stepIndex--"
@@ -84,7 +84,7 @@
               icon
               variant="text"
               size="small"
-              color="purple-darken-3"
+              color="primary"
               :disabled="stepIndex === steps.length - 1"
               aria-label="Próximo passo"
               @click="stepIndex++"
@@ -125,7 +125,7 @@
         </div>
 
         <div v-else-if="loading" class="page-help-empty">
-          <v-progress-circular indeterminate color="purple-darken-3" size="22" width="2" />
+          <v-progress-circular indeterminate color="primary" size="22" width="2" />
           <p class="mb-0">Carregando ajuda...</p>
         </div>
 

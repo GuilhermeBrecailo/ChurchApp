@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isPlatformAdmin" class="platform-admin-page pa-4 min-vh-100 pb-20">
+  <div v-if="isPlatformAdmin" class="platform-admin-page app-operational-page pa-4 min-vh-100 pb-20">
     <div class="platform-hero mb-6">
       <div class="min-w-0">
         <p class="platform-kicker mb-2">Admin master</p>
@@ -11,7 +11,7 @@
             <v-btn
               v-if="isPlatformAdmin && canAccessChurchAdmin"
               variant="text"
-              color="indigo-darken-2"
+              color="primary"
               size="small"
               class="text-none dual-role-switch"
               @click="router.push('/admin')"
@@ -94,7 +94,7 @@
     </MotionStaggerGroup>
 
     <section class="master-panel mb-6">
-      <v-card class="master-panel-card pa-4 bg-white elevation-0 border-subtle">
+      <v-card class="master-panel-card pa-4 app-surface elevation-0 border-subtle">
         <div class="master-panel-heading mb-3">
           <BarChart3 size="18" />
           <h2>Saúde da plataforma</h2>
@@ -115,7 +115,7 @@
         </div>
       </v-card>
 
-      <v-card class="master-panel-card pa-4 bg-white elevation-0 border-subtle">
+      <v-card class="master-panel-card pa-4 app-surface elevation-0 border-subtle">
         <div class="master-panel-heading mb-3">
           <Users size="18" />
           <h2>Maiores igrejas</h2>
@@ -149,7 +149,7 @@
             Selecione uma igreja para abrir o painel de informações.
           </p>
         </div>
-        <v-chip size="small" color="indigo-darken-2" variant="tonal">
+        <v-chip size="small" color="primary" variant="tonal">
           {{ filteredAdminChurches.length }} de {{ adminChurches.length }}
         </v-chip>
       </div>
@@ -161,7 +161,7 @@
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
           density="compact"
-          color="indigo-darken-2"
+          color="primary"
           bg-color="white"
           hide-details
         />
@@ -174,7 +174,7 @@
           prepend-inner-icon="mdi-filter-outline"
           variant="outlined"
           density="compact"
-          color="indigo-darken-2"
+          color="primary"
           bg-color="white"
           hide-details
         />
@@ -182,14 +182,14 @@
 
       <v-card
         v-if="isLoadingPlatform"
-        class="platform-loading rounded-lg pa-4 elevation-0 bg-white border-subtle"
+        class="platform-loading rounded-lg pa-4 elevation-0 app-surface border-subtle"
       >
         <v-skeleton-loader type="list-item-three-line@5" />
       </v-card>
 
       <v-card
         v-else-if="adminChurches.length === 0"
-        class="platform-empty rounded-lg pa-6 elevation-0 bg-white border-subtle"
+        class="platform-empty rounded-lg pa-6 elevation-0 app-surface border-subtle"
       >
         <Church size="34" color="#9CA3AF" class="mb-3" />
         <p class="text-body-2 text-grey-darken-1 font-weight-medium mb-0 text-center">
@@ -199,7 +199,7 @@
 
       <v-card
         v-else-if="filteredAdminChurches.length === 0"
-        class="platform-empty rounded-lg pa-6 elevation-0 bg-white border-subtle"
+        class="platform-empty rounded-lg pa-6 elevation-0 app-surface border-subtle"
       >
         <Church size="34" color="#9CA3AF" class="mb-3" />
         <p class="text-body-2 text-grey-darken-1 font-weight-medium mb-0 text-center">
@@ -288,7 +288,7 @@
       mobile-class="church-details-mobile-sheet"
       @after-leave="closeChurchDetails"
     >
-      <v-card class="church-details-sheet bg-white" elevation="0">
+      <v-card class="church-details-sheet app-surface" elevation="0">
         <div class="sheet-handle" />
         <div class="church-details-header">
           <div class="d-flex align-center min-w-0">
@@ -320,8 +320,8 @@
           <v-tabs
             v-model="activeChurchSheetTab"
             density="compact"
-            color="indigo-darken-2"
-            slider-color="indigo-darken-2"
+            color="primary"
+            slider-color="primary"
             class="church-sheet-tabs"
             grow
           >
@@ -460,7 +460,7 @@
                 </div>
                 <v-btn
                   variant="tonal"
-                  color="indigo-darken-2"
+                  color="primary"
                   size="small"
                   class="text-none font-weight-bold"
                   @click="openPlanDialog(selectedChurch)"
@@ -476,13 +476,13 @@
                   Membros
                 </h3>
                 <div class="detail-heading-actions">
-                  <v-chip size="small" color="indigo-darken-2" variant="tonal">
+                  <v-chip size="small" color="primary" variant="tonal">
                     {{ selectedChurch.users.length }}
                   </v-chip>
                   <v-btn
                     v-if="selectedChurch.users.length > churchPreviewLimit"
                     variant="text"
-                    color="indigo-darken-2"
+                    color="primary"
                     size="small"
                     class="text-none"
                     @click="showAllChurchUsers = !showAllChurchUsers"
@@ -506,7 +506,7 @@
                       {{ member.email }}
                     </p>
                   </div>
-                  <v-chip size="small" color="purple-darken-3" variant="tonal">
+                  <v-chip size="small" color="primary" variant="tonal">
                     {{ adminUserRoleLabel(member.role) }}
                   </v-chip>
                 </div>
@@ -519,13 +519,13 @@
                   Ministérios
                 </h3>
                 <div class="detail-heading-actions">
-                  <v-chip size="small" color="purple-darken-3" variant="tonal">
+                  <v-chip size="small" color="primary" variant="tonal">
                     {{ selectedChurch.departments.length }}
                   </v-chip>
                   <v-btn
                     v-if="selectedChurch.departments.length > churchPreviewLimit"
                     variant="text"
-                    color="indigo-darken-2"
+                    color="primary"
                     size="small"
                     class="text-none"
                     @click="showAllChurchDepartments = !showAllChurchDepartments"
@@ -569,7 +569,7 @@
                   <v-btn
                     v-if="(selectedChurch.schedules?.length || 0) > churchPreviewLimit"
                     variant="text"
-                    color="indigo-darken-2"
+                    color="primary"
                     size="small"
                     class="text-none"
                     @click="showAllChurchSchedules = !showAllChurchSchedules"
@@ -613,7 +613,7 @@
     <UtilsResponsiveOverlay v-model="isAdminUserDetailsOpen" max-width="520" variant="detail" scrollable>
       <v-card
         v-if="selectedAdminUser"
-        class="rounded-xl pa-6 bg-white"
+        class="rounded-xl pa-6 app-surface"
         elevation="0"
       >
         <div class="responsive-dialog-header mb-5">
@@ -699,14 +699,14 @@
               label="Adicionar cargo"
               variant="outlined"
               density="compact"
-              color="purple-darken-3"
+              color="primary"
               hide-details
               class="assign-role-select"
               :disabled="!canAssignSelectedAdminUserRole || isAssigningRole"
             />
             <v-btn
               size="small"
-              color="purple-darken-3"
+              color="primary"
               variant="tonal"
               class="text-none"
               :loading="isAssigningRole"
@@ -742,7 +742,7 @@
             label="Nome"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="mb-3"
             hide-details="auto"
             :disabled="!canEditSelectedAdminUser"
@@ -752,7 +752,7 @@
             label="Telefone"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="mb-3"
             hide-details="auto"
             :disabled="!canEditSelectedAdminUser"
@@ -765,7 +765,7 @@
             label="Papel"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="mb-3"
             hide-details="auto"
             :disabled="!canEditSelectedAdminUser"
@@ -804,7 +804,7 @@
 
           <div class="d-flex flex-wrap gap-2">
             <v-btn
-              color="purple-darken-3"
+              color="primary"
               variant="tonal"
               class="text-none"
               :loading="isSavingAdminUser"
@@ -814,7 +814,7 @@
               Salvar alterações
             </v-btn>
             <v-btn
-              color="indigo-darken-2"
+              color="primary"
               variant="tonal"
               class="text-none"
               :loading="isResettingAdminUserPassword"
@@ -851,7 +851,7 @@
     <UtilsResponsiveOverlay v-model="isAdminDepartmentDetailsOpen" max-width="520" variant="detail" scrollable>
       <v-card
         v-if="selectedAdminDepartment"
-        class="rounded-xl pa-6 bg-white"
+        class="rounded-xl pa-6 app-surface"
         elevation="0"
       >
         <div class="responsive-dialog-header mb-5">
@@ -909,7 +909,7 @@
     <UtilsResponsiveOverlay v-model="isAdminScheduleDetailsOpen" max-width="520" variant="detail" scrollable>
       <v-card
         v-if="selectedAdminSchedule"
-        class="rounded-xl pa-6 bg-white"
+        class="rounded-xl pa-6 app-surface"
         elevation="0"
       >
         <div class="responsive-dialog-header mb-5">
@@ -975,7 +975,7 @@
         <div class="d-flex align-center ga-2 flex-wrap">
           <v-btn
             size="small"
-            color="indigo-darken-2"
+            color="primary"
             variant="tonal"
             class="text-none"
             @click="openCommercialLeadForm"
@@ -983,7 +983,7 @@
             <v-icon start size="17">mdi-account-plus-outline</v-icon>
             Adicionar lead
           </v-btn>
-          <v-chip size="small" color="indigo-darken-2" variant="tonal">
+          <v-chip size="small" color="primary" variant="tonal">
             {{ commercialLeadTotal }} leads
           </v-chip>
         </div>
@@ -999,7 +999,7 @@
           prepend-inner-icon="mdi-filter-outline"
           variant="outlined"
           density="compact"
-          color="indigo-darken-2"
+          color="primary"
           bg-color="white"
           hide-details
           @update:model-value="loadCommercialLeads"
@@ -1013,14 +1013,14 @@
           prepend-inner-icon="mdi-timeline-outline"
           variant="outlined"
           density="compact"
-          color="indigo-darken-2"
+          color="primary"
           bg-color="white"
           hide-details
           @update:model-value="loadCommercialLeads"
         />
         <v-btn
           variant="tonal"
-          color="indigo-darken-2"
+          color="primary"
           class="text-none"
           :loading="isLoadingCommercialLeads"
           @click="loadCommercialLeads"
@@ -1051,14 +1051,14 @@
 
       <v-card
         v-if="isLoadingCommercialLeads"
-        class="rounded-lg pa-4 elevation-0 bg-white border-subtle"
+        class="rounded-lg pa-4 elevation-0 app-surface border-subtle"
       >
         <v-skeleton-loader type="list-item-three-line@4" />
       </v-card>
 
       <v-card
         v-else-if="filteredCommercialLeads.length === 0"
-        class="platform-empty rounded-lg pa-6 elevation-0 bg-white border-subtle"
+        class="platform-empty rounded-lg pa-6 elevation-0 app-surface border-subtle"
       >
         <Users size="34" color="#9CA3AF" class="mb-3" />
         <p class="text-body-2 text-grey-darken-1 font-weight-medium mb-0 text-center">
@@ -1103,7 +1103,7 @@
     </section>
 
     <UtilsResponsiveOverlay v-model="isCommercialLeadFormOpen" max-width="620" variant="form" scrollable>
-      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+      <v-card class="rounded-xl pa-6 app-surface" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
             <v-avatar :color="avatarBgIndigo" size="44" class="mr-3">
@@ -1133,7 +1133,7 @@
             prepend-inner-icon="mdi-filter-outline"
             variant="outlined"
             density="comfortable"
-            color="indigo-darken-2"
+            color="primary"
             class="admin-input mb-4"
             hide-details="auto"
             :disabled="isCreatingCommercialLead"
@@ -1145,7 +1145,7 @@
             prepend-inner-icon="mdi-domain"
             variant="outlined"
             density="comfortable"
-            color="indigo-darken-2"
+            color="primary"
             class="admin-input mb-4"
             hide-details="auto"
             autocomplete="off"
@@ -1160,7 +1160,7 @@
             prepend-inner-icon="mdi-account-circle-outline"
             variant="outlined"
             density="comfortable"
-            color="indigo-darken-2"
+            color="primary"
             class="admin-input mb-4"
             hide-details="auto"
             autocomplete="off"
@@ -1175,7 +1175,7 @@
             prepend-inner-icon="mdi-link-variant"
             variant="outlined"
             density="comfortable"
-            color="indigo-darken-2"
+            color="primary"
             class="admin-input mb-4"
             hide-details="auto"
             autocomplete="off"
@@ -1189,7 +1189,7 @@
               prepend-inner-icon="mdi-map-marker-outline"
               variant="outlined"
               density="comfortable"
-              color="indigo-darken-2"
+              color="primary"
               class="admin-input mb-4"
               hide-details="auto"
               autocomplete="off"
@@ -1200,7 +1200,7 @@
               label="UF"
               variant="outlined"
               density="comfortable"
-              color="indigo-darken-2"
+              color="primary"
               class="admin-input mb-4"
               hide-details="auto"
               maxlength="2"
@@ -1215,7 +1215,7 @@
             prepend-inner-icon="mdi-web"
             variant="outlined"
             density="comfortable"
-            color="indigo-darken-2"
+            color="primary"
             class="admin-input mb-4"
             hide-details="auto"
             autocomplete="off"
@@ -1230,7 +1230,7 @@
             prepend-inner-icon="mdi-source-branch"
             variant="outlined"
             density="comfortable"
-            color="indigo-darken-2"
+            color="primary"
             class="admin-input mb-4"
             hide-details="auto"
             autocomplete="off"
@@ -1259,7 +1259,7 @@
             </v-btn>
             <v-btn
               type="submit"
-              color="indigo-darken-2"
+              color="primary"
               class="text-none font-weight-bold"
               :loading="isCreatingCommercialLead"
               :disabled="isCreatingCommercialLead"
@@ -1274,14 +1274,14 @@
     <UtilsResponsiveOverlay v-model="isCommercialLeadDetailsOpen" max-width="620" variant="detail" scrollable>
       <v-card
         v-if="isLoadingCommercialLeadDetails"
-        class="rounded-xl pa-6 bg-white"
+        class="rounded-xl pa-6 app-surface"
         elevation="0"
       >
         <v-skeleton-loader type="article, list-item-three-line@3" />
       </v-card>
       <v-card
         v-else-if="selectedCommercialLead"
-        class="rounded-xl pa-6 bg-white commercial-lead-details"
+        class="rounded-xl pa-6 app-surface commercial-lead-details"
         elevation="0"
       >
         <div class="responsive-dialog-header mb-5">
@@ -1370,12 +1370,12 @@
               item-value="value"
               variant="outlined"
               density="comfortable"
-              color="indigo-darken-2"
+              color="primary"
               hide-details
               :disabled="selectedCommercialLead.doNotContact || isSavingCommercialLeadStage"
             />
             <v-btn
-              color="indigo-darken-2"
+              color="primary"
               variant="tonal"
               class="text-none"
               :loading="isSavingCommercialLeadStage"
@@ -1430,9 +1430,9 @@
     />
   </div>
 
-  <div v-else class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
+  <div v-else class="pa-4 app-operational-page min-vh-100 pb-20">
     <v-card
-      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle permission-empty"
+      class="rounded-xl pa-6 elevation-1 app-surface d-flex flex-column align-center justify-center border-subtle permission-empty"
     >
       <UserCheck size="34" color="#9CA3AF" class="mb-3" />
       <h1 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
@@ -1854,7 +1854,7 @@ const commercialLeadStageColor = (stage: CommercialLeadStage) => {
   if (stage === "ACTIVATED" || stage === "ACTIVE") return "teal-darken-2";
   if (stage === "PAUSED") return "grey-darken-1";
   if (stage === "INTERESTED" || stage === "WHATSAPP_PENDING") return "amber-darken-3";
-  return "indigo-darken-2";
+  return "primary";
 };
 
 const commercialLeadName = (lead: CommercialLead) =>
@@ -2499,7 +2499,7 @@ onMounted(async () => {
 }
 
 .master-summary-grid div {
-  border: 1px solid #eef2f7;
+  border: 1px solid var(--app-color-border-subtle);
   border-radius: 8px;
   background: var(--app-color-surface-soft);
   display: grid;
@@ -2889,7 +2889,7 @@ onMounted(async () => {
   min-width: 0;
   border: 1px solid #eef2f7;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--app-color-surface);
   padding: 12px;
 }
 

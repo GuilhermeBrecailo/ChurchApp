@@ -1,6 +1,6 @@
 <template>
   <UtilsResponsiveOverlay v-model="isOpen" max-width="520" variant="form" scrollable>
-    <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+    <v-card class="app-surface rounded-xl pa-6" elevation="0">
       <div class="responsive-dialog-header mb-5">
         <div class="d-flex align-center min-w-0">
           <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
@@ -30,7 +30,7 @@
       <PlanLock v-if="!editingSongId" feature="PDF_SONG_IMPORT">
         <v-btn
           variant="tonal"
-          color="purple-darken-3"
+          color="primary"
           class="rounded-lg text-none mb-5"
           block
           :disabled="isCreatingSong || isImportingCifraClubSong"
@@ -43,7 +43,7 @@
       <v-form autocomplete="off" @submit.prevent="$emit('submit')">
         <v-tabs
           v-model="songFormTab"
-          color="purple-darken-3"
+          color="primary"
           density="comfortable"
           class="mb-4 song-form-tabs"
           grow
@@ -61,7 +61,7 @@
               prepend-inner-icon="mdi-music-note-outline"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               bg-color="white"
               class="ministery-input mb-4"
               hide-details="auto"
@@ -74,7 +74,7 @@
               prepend-inner-icon="mdi-account-music-outline"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               bg-color="white"
               class="ministery-input mb-4"
               hide-details="auto"
@@ -88,7 +88,7 @@
                 :items="songKeyOptions"
                 variant="outlined"
                 density="comfortable"
-                color="purple-darken-3"
+                color="primary"
                 bg-color="white"
                 class="ministery-input"
                 hide-details="auto"
@@ -103,7 +103,7 @@
                 type="number"
                 variant="outlined"
                 density="comfortable"
-                color="purple-darken-3"
+                color="primary"
                 bg-color="white"
                 class="ministery-input"
                 hide-details="auto"
@@ -121,7 +121,7 @@
               :items="songCategoryOptions"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               bg-color="white"
               class="ministery-input mb-4"
               hide-details="auto"
@@ -137,7 +137,7 @@
               prepend-inner-icon="mdi-link-variant"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               bg-color="white"
               class="ministery-input mb-2"
               hide-details="auto"
@@ -159,7 +159,7 @@
               <PlanLock feature="CIFRA_CLUB_IMPORT">
                 <v-btn
                   variant="tonal"
-                  color="deep-purple-darken-2"
+                  color="primary"
                   class="text-none font-weight-bold"
                   :loading="isImportingCifraClubSong"
                   :disabled="isCreatingSong || isImportingCifraClubSong || (!songForm.url && (!songForm.title || !songForm.artist))"
@@ -176,7 +176,7 @@
               prepend-inner-icon="mdi-format-text"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               bg-color="white"
               class="ministery-input mb-4"
               hide-details="auto"
@@ -191,7 +191,7 @@
               prepend-inner-icon="mdi-guitar-acoustic"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               bg-color="white"
               class="ministery-input mb-4 chords-input"
               hide-details="auto"
@@ -206,7 +206,7 @@
               prepend-inner-icon="mdi-piano"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               bg-color="white"
               class="ministery-input chords-input"
               hide-details="auto"
@@ -225,7 +225,7 @@
               prepend-inner-icon="mdi-music-circle-outline"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               bg-color="white"
               class="ministery-input mb-4"
               :disabled="isCreatingSong || isImportingCifraClubSong"
@@ -236,7 +236,7 @@
               prepend-inner-icon="mdi-text"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               bg-color="white"
               class="ministery-input mb-4"
               hide-details="auto"
@@ -252,7 +252,7 @@
                   :href="songForm.pdfUrl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-caption text-purple-darken-3"
+                  class="text-caption text-primary"
                 >
                   {{ songForm.pdfFileName || "Abrir PDF" }}
                 </a>
@@ -276,7 +276,7 @@
               prepend-inner-icon="mdi-file-pdf-box"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               bg-color="white"
               class="ministery-input"
               hide-details="auto"
@@ -309,7 +309,7 @@
           </v-btn>
           <v-btn
             type="submit"
-            color="purple-darken-3"
+            color="primary"
             class="text-none font-weight-bold"
             :loading="isCreatingSong"
             :disabled="isCreatingSong || isImportingCifraClubSong"

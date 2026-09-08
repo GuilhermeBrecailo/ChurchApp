@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 pb-8 page-wrapper">
+  <div class="pa-4 pb-8 page-wrapper app-operational-page">
     <div class="prayer-header mb-4">
       <div class="prayer-title-group min-w-0">
         <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
@@ -13,7 +13,7 @@
     <v-tabs
       v-if="isChurchManager"
       v-model="activeTab"
-      color="purple-darken-3"
+      color="primary"
       density="comfortable"
       class="mb-4"
     >
@@ -28,7 +28,7 @@
 
     <v-btn
       v-if="activeTab === 'community'"
-      color="purple-darken-3"
+      color="primary"
       class="text-none font-weight-bold rounded-lg mb-5"
       block
       elevation="1"
@@ -47,14 +47,14 @@
           <v-skeleton-loader v-for="i in 4" :key="i" type="list-item-three-line" class="mb-3 rounded-xl" />
         </div>
 
-        <div v-else-if="items.length === 0" class="prayer-empty-state">
+        <div v-else-if="items.length === 0" class="prayer-empty-state app-surface">
           <div class="prayer-empty-icon-wrap">
             <Heart size="36" :color="isDark ? '#f0975a' : '#B5472A'" />
           </div>
           <h3 class="prayer-empty-title">Nenhum pedido ainda</h3>
           <p class="prayer-empty-body">Seja o primeiro a compartilhar um pedido de oração com a comunidade. Pedidos passam pela revisão do pastor antes de aparecer aqui.</p>
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             variant="tonal"
             class="text-none mt-2"
             @click="showNewDialog = true"
@@ -67,7 +67,7 @@
           <v-card
             v-for="item in items"
             :key="item.id"
-            class="prayer-card rounded-xl pa-4 elevation-1 mb-3"
+            class="prayer-card app-surface rounded-xl pa-4 mb-3"
             :class="{ 'prayer-card--answered': item.isAnswered }"
           >
             <div class="d-flex align-start gap-3">
@@ -116,7 +116,7 @@
           <v-skeleton-loader v-for="i in 3" :key="i" type="list-item-three-line" class="mb-3 rounded-xl" />
         </div>
 
-        <div v-else-if="pendingItems.length === 0" class="prayer-empty-state">
+        <div v-else-if="pendingItems.length === 0" class="prayer-empty-state app-surface">
           <div class="prayer-empty-icon-wrap">
             <CheckCircle size="36" :color="isDark ? '#f0975a' : '#B5472A'" />
           </div>
@@ -234,7 +234,7 @@
           v-model="form.title"
           label="Título"
           variant="outlined"
-          color="purple-darken-3"
+          color="primary"
           density="comfortable"
           class="mb-3"
           hide-details="auto"
@@ -245,7 +245,7 @@
           v-model="form.body"
           label="Descreva seu pedido"
           variant="outlined"
-          color="purple-darken-3"
+          color="primary"
           density="comfortable"
           rows="3"
           auto-grow
@@ -256,7 +256,7 @@
         <v-checkbox
           v-model="form.isAnonymous"
           label="Publicar como anônimo"
-          color="purple-darken-3"
+          color="primary"
           hide-details
           class="mb-2"
         />
@@ -274,7 +274,7 @@
             Cancelar
           </v-btn>
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="text-none font-weight-bold"
             :loading="saving"
             @click="submitPrayer"

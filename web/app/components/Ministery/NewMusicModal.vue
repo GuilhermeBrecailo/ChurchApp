@@ -51,7 +51,7 @@
       />
       <div class="dialog-actions">
         <v-btn
-        color="purple-darken-3"
+        color="primary"
         block
         class="text-none rounded-lg"
         @click="isOpen = false"

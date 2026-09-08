@@ -90,8 +90,8 @@ export default defineNuxtConfig({
           light: {
             dark: false,
             colors: {
-              primary: "#4f46e5",
-              secondary: "#7c3aed",
+              primary: "#b5472a",
+              secondary: "#0f766e",
               background: "#f6f7f9",
               surface: "#ffffff",
               error: "#dc2626",
@@ -100,8 +100,8 @@ export default defineNuxtConfig({
           dark: {
             dark: true,
             colors: {
-              primary: "#a7c7ff",
-              secondary: "#70d6c8",
+              primary: "#f0975a",
+              secondary: "#5eead4",
               background: "#0d1117",
               surface: "#151b23",
               error: "#f87171",
@@ -115,7 +115,7 @@ export default defineNuxtConfig({
     head: {
       title: "ChurchApp",
       meta: [
-        { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" },
+        { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
         { name: "theme-color", content: "#b5472a" },
         { name: "apple-mobile-web-app-capable", content: "yes" },
         { name: "apple-mobile-web-app-title", content: "ChurchApp" },
@@ -156,9 +156,9 @@ export default defineNuxtConfig({
     // dentro do container. "localhost" dentro do container web NÃO alcança o
     // container api (bug: refresh token falhava sempre que a pagina era
     // renderizada no servidor, so funcionava em navegacao client-side).
-    apiInternalBase: process.env.NUXT_API_INTERNAL_BASE || process.env.NUXT_PUBLIC_URL_BACKEND || "https://api.appcunch.shop",
+    apiInternalBase: process.env.NUXT_API_INTERNAL_BASE || process.env.NUXT_PUBLIC_URL_BACKEND || "https://api.churchapp.site",
     public: {
-      URL_BACKEND: process.env.NUXT_PUBLIC_URL_BACKEND || "https://api.appcunch.shop",
+      URL_BACKEND: process.env.NUXT_PUBLIC_URL_BACKEND || "https://api.churchapp.site",
       // Usado pra montar URL absoluta de og:image/canonical nas paginas
       // publicas (c/[slug].vue, comece.vue) - precisa ser absoluta porque
       // WhatsApp/Instagram nao resolvem caminho relativo ao gerar preview.

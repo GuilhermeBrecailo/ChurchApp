@@ -7,7 +7,7 @@
           Semana da igreja
         </h2>
       </div>
-      <v-btn to="/pastoral" size="small" color="purple-darken-3" class="text-none">
+      <v-btn to="/pastoral" size="small" color="primary" class="text-none">
         <HandHeart size="15" class="mr-1" /> Painel
       </v-btn>
     </div>

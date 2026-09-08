@@ -15,7 +15,7 @@
         </v-btn>
         <div class="flex flex-col items-center mb-8">
           <div class="auth-icon-circle mb-4">
-            <v-icon size="40" color="purple-darken-3">
+            <v-icon size="40" color="primary">
               mdi-account-plus-outline
             </v-icon>
           </div>
@@ -34,7 +34,7 @@
             variant="outlined"
             density="comfortable"
             :bg-color="isDark ? 'transparent' : 'white'"
-            color="purple-darken-3"
+            color="primary"
             class="auth-input mb-4"
             hide-details="auto"
             :disabled="loading"
@@ -49,7 +49,7 @@
             variant="outlined"
             density="comfortable"
             :bg-color="isDark ? 'transparent' : 'white'"
-            color="purple-darken-3"
+            color="primary"
             class="auth-input mb-4"
             hide-details="auto"
             :disabled="loading"
@@ -64,7 +64,7 @@
             variant="outlined"
             density="comfortable"
             :bg-color="isDark ? 'transparent' : 'white'"
-            color="purple-darken-3"
+            color="primary"
             class="auth-input mb-4"
             hide-details="auto"
             :disabled="loading"
@@ -80,7 +80,7 @@
             variant="outlined"
             density="comfortable"
             :bg-color="isDark ? 'transparent' : 'white'"
-            color="purple-darken-3"
+            color="primary"
             class="auth-input mb-4"
             hide-details="auto"
             :disabled="loading"
@@ -96,7 +96,7 @@
             variant="outlined"
             density="comfortable"
             :bg-color="isDark ? 'transparent' : 'white'"
-            color="purple-darken-3"
+            color="primary"
             class="auth-input mb-8"
             hide-details="auto"
             :disabled="loading"
@@ -124,7 +124,7 @@
           <v-btn
             type="submit"
             block
-            color="purple-darken-3"
+            color="primary"
             size="x-large"
             class="auth-btn text-none font-bold"
             rounded="xl"
@@ -262,7 +262,7 @@ const handleRegister = async () => {
 .auth-card {
   border-radius: 28px !important;
   border: 1px solid rgba(229, 231, 235, 0.9) !important;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 24px 64px rgba(33, 30, 27, 0.12), 0 4px 16px rgba(33, 30, 27, 0.06) !important;
   background: var(--app-color-surface) !important;
   overflow: hidden;
   border-color: var(--app-color-border) !important;
@@ -333,7 +333,7 @@ const handleRegister = async () => {
   letter-spacing: 0.01em !important;
 }
 
-:global(.app-theme-dark) .auth-btn.bg-purple-darken-3 {
+:global(.app-theme-dark) .auth-btn.bg-primary {
   box-shadow: 0 4px 16px rgba(240, 151, 90, 0.3) !important;
 }
 

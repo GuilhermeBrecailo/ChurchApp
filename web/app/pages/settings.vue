@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
+  <div class="pa-4 min-vh-100 pb-20 app-operational-page">
     <div class="app-help-header mb-6">
       <div class="min-w-0">
         <div class="app-help-title-row">
@@ -15,7 +15,7 @@
     </div>
 
     <v-card
-      class="settings-card pa-4 elevation-1 mb-4 d-flex align-center justify-space-between flex-wrap ga-3"
+      class="settings-card app-surface pa-4 mb-4 d-flex align-center justify-space-between flex-wrap ga-3"
     >
       <div>
         <p class="text-caption text-grey-darken-1 mb-1">Plano atual</p>
@@ -36,7 +36,7 @@
       <v-btn
         to="/plans"
         variant="tonal"
-        color="purple-darken-3"
+        color="primary"
         size="small"
         class="text-none font-weight-bold"
       >
@@ -66,7 +66,7 @@
       Apenas pastores ou admins podem editar os dados da igreja.
     </v-alert>
 
-    <v-card class="settings-card pa-4 elevation-1">
+    <v-card class="settings-card app-surface pa-4">
       <v-form @submit.prevent="handleSaveChurch">
         <div class="d-flex align-center mb-5">
           <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="48" class="mr-3">
@@ -87,7 +87,7 @@
             target="_blank"
             rel="noopener noreferrer"
             variant="tonal"
-            color="purple-darken-3"
+            color="primary"
             size="small"
             class="text-none flex-shrink-0"
           >
@@ -116,7 +116,7 @@
               prepend-inner-icon="mdi-image-outline"
               variant="outlined"
               density="compact"
-              color="purple-darken-3"
+              color="primary"
               hide-details="auto"
               show-size
               :disabled="!canEditChurch || isUploadingPhoto"
@@ -139,7 +139,7 @@
           v-model="form.name"
           label="Nome da igreja"
           variant="outlined"
-          color="purple-darken-3"
+          color="primary"
           :disabled="!canEditChurch || loading"
         />
 
@@ -148,7 +148,7 @@
             v-model="form.city"
             label="Cidade"
             variant="outlined"
-            color="purple-darken-3"
+            color="primary"
             :disabled="!canEditChurch || loading"
           />
 
@@ -156,7 +156,7 @@
             v-model="form.state"
             label="Estado"
             variant="outlined"
-            color="purple-darken-3"
+            color="primary"
             :disabled="!canEditChurch || loading"
           />
         </div>
@@ -165,7 +165,7 @@
           v-model="form.road"
           label="Endereço"
           variant="outlined"
-          color="purple-darken-3"
+          color="primary"
           :disabled="!canEditChurch || loading"
         />
 
@@ -174,7 +174,7 @@
             v-model="form.number"
             label="Número"
             variant="outlined"
-            color="purple-darken-3"
+            color="primary"
             :disabled="!canEditChurch || loading"
           />
 
@@ -182,7 +182,7 @@
             v-model="form.localZipCode"
             label="CEP"
             variant="outlined"
-            color="purple-darken-3"
+            color="primary"
             :disabled="!canEditChurch || loading"
           />
         </div>
@@ -191,7 +191,7 @@
           v-model="form.complement"
           label="Complemento"
           variant="outlined"
-          color="purple-darken-3"
+          color="primary"
           :disabled="!canEditChurch || loading"
         />
 
@@ -199,7 +199,7 @@
           v-model="form.document"
           label="Documento"
           variant="outlined"
-          color="purple-darken-3"
+          color="primary"
           :disabled="!canEditChurch || loading"
         />
 
@@ -216,7 +216,7 @@
         <div class="d-flex justify-end">
           <v-btn
             type="submit"
-            color="purple-darken-3"
+            color="primary"
             class="text-none font-weight-bold"
             :loading="loading"
             :disabled="!canEditChurch || loading"

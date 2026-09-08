@@ -1,6 +1,6 @@
 <template>
-  <div class="pa-4 page-wrapper min-vh-100 pb-16 culto-hub">
-    <v-progress-circular v-if="loading" indeterminate size="28" color="purple-darken-3" class="ma-4" />
+  <div class="pa-4 page-wrapper min-vh-100 pb-16 culto-hub app-operational-page">
+    <v-progress-circular v-if="loading" indeterminate size="28" color="primary" class="ma-4" />
 
     <template v-else-if="occurrence">
       <div class="culto-hero mb-4">
@@ -28,7 +28,7 @@
           <v-btn
             v-if="canEditCult"
             variant="tonal"
-            color="purple-darken-3"
+            color="primary"
             class="text-none"
             size="small"
             @click="openEditDialog"
@@ -62,16 +62,16 @@
           </v-btn>
         </div>
         <div class="d-flex flex-wrap ga-2">
-          <v-btn color="purple-darken-3" class="text-none" size="small" @click="tab = 'escalas'">
+          <v-btn color="primary" class="text-none" size="small" @click="tab = 'escalas'">
             <Plus size="15" class="mr-1" /> Adicionar escala
           </v-btn>
-          <v-btn variant="tonal" color="purple-darken-3" class="text-none" size="small" @click="tab = 'membros'">
+          <v-btn variant="tonal" color="primary" class="text-none" size="small" @click="tab = 'membros'">
             Gerenciar presença
           </v-btn>
         </div>
       </v-card>
 
-      <v-tabs v-model="tab" color="purple-darken-3" class="mb-4">
+      <v-tabs v-model="tab" color="primary" class="mb-4">
         <v-tab value="escalas">Escalas</v-tab>
         <v-tab value="visitantes">Visitantes</v-tab>
         <v-tab value="membros">Membros</v-tab>
@@ -86,7 +86,7 @@
                 v-for="department in manageableDepartments"
                 :key="department.id"
                 variant="tonal"
-                color="purple-darken-3"
+                color="primary"
                 class="text-none justify-start"
                 @click="router.push(`/ministery/${department.id}?culto=${occurrence.id}`)"
               >
@@ -138,7 +138,7 @@
                 label="Visitantes"
                 variant="outlined"
                 density="comfortable"
-                color="purple-darken-3"
+                color="primary"
                 hide-details="auto"
               />
               <v-text-field
@@ -148,14 +148,14 @@
                 label="Membros"
                 variant="outlined"
                 density="comfortable"
-                color="purple-darken-3"
+                color="primary"
                 hide-details="auto"
               />
             </div>
 
             <v-btn
               v-if="occurrence.serviceTimeId"
-              color="purple-darken-3"
+              color="primary"
               class="rounded-lg text-none mb-4"
               :loading="isSavingAttendance"
               @click="handleSaveAttendance"
@@ -172,7 +172,7 @@
               <v-tooltip v-else-if="!canFinalize" text="Disponível a partir do horário do culto">
                 <template #activator="{ props: tooltipProps }">
                   <span v-bind="tooltipProps">
-                    <v-btn variant="tonal" color="purple-darken-3" class="text-none" disabled>
+                    <v-btn variant="tonal" color="primary" class="text-none" disabled>
                       Finalizar culto
                     </v-btn>
                   </span>
@@ -181,7 +181,7 @@
               <v-btn
                 v-else
                 variant="tonal"
-                color="purple-darken-3"
+                color="primary"
                 class="text-none"
                 :loading="isFinalizing"
                 @click="handleFinalize"
@@ -213,7 +213,7 @@
               label="Buscar no rol da igreja"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               prepend-inner-icon="mdi-magnify"
               hide-details="auto"
               class="mb-3"
@@ -232,7 +232,7 @@
                 <v-btn
                   size="small"
                   variant="tonal"
-                  :color="isPresent(member.id) ? 'teal-darken-2' : 'purple-darken-3'"
+                  :color="isPresent(member.id) ? 'teal-darken-2' : 'primary'"
                   class="text-none"
                   :loading="markingId === member.id"
                   @click="toggleAttendee(member.id)"
@@ -307,7 +307,7 @@
           <div class="d-flex flex-wrap ga-2 mb-4">
             <v-btn
               variant="tonal"
-              color="purple-darken-3"
+              color="primary"
               size="small"
               class="text-none"
               :loading="isUploadingImage"
@@ -334,7 +334,7 @@
             label="Título"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             hide-details="auto"
             class="mb-3"
           />
@@ -345,7 +345,7 @@
               type="date"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               hide-details="auto"
             />
             <v-text-field
@@ -354,7 +354,7 @@
               type="time"
               variant="outlined"
               density="comfortable"
-              color="purple-darken-3"
+              color="primary"
               hide-details="auto"
             />
           </div>
@@ -363,7 +363,7 @@
             label="Observações"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             rows="3"
             hide-details="auto"
             class="mb-4"
@@ -378,7 +378,7 @@
               Cancelar
             </v-btn>
             <v-btn
-              color="purple-darken-3"
+              color="primary"
               class="text-none font-weight-bold"
               :loading="isSavingCult"
               @click="saveCultEdits"
@@ -766,7 +766,7 @@ onMounted(load);
   overflow: hidden;
   border-radius: 18px;
   aspect-ratio: 16 / 9;
-  background: #f8fafc;
+  background: var(--app-color-surface-soft);
   border: 1px solid var(--app-color-border);
 }
 
@@ -783,7 +783,8 @@ onMounted(load);
   height: 100%;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f7e2d3, #fff7ed);
+  background: var(--app-color-accent-tint);
+  border: 1px dashed color-mix(in srgb, var(--app-color-accent) 34%, var(--app-color-border));
 }
 
 .culto-info-card {
@@ -801,10 +802,10 @@ onMounted(load);
 .culto-form-image {
   overflow: hidden;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 2.4 / 1;
   border: 1px solid var(--app-color-border);
-  border-radius: 12px;
-  background: #f8fafc;
+  border-radius: var(--app-radius-md);
+  background: var(--app-color-surface-soft);
 }
 
 .culto-form-image img {
@@ -820,7 +821,8 @@ onMounted(load);
   height: 100%;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f7e2d3, #fff7ed);
+  background: var(--app-color-accent-tint);
+  border: 1px dashed color-mix(in srgb, var(--app-color-accent) 34%, var(--app-color-border));
 }
 
 .culto-form-grid {

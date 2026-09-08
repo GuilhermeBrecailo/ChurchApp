@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="canAccessChurchAdmin && isChurchWideManager"
-    class="church-admin-page pa-4 bg-grey-lighten-4 min-vh-100 pb-20"
+    class="church-admin-page app-operational-page pa-4 min-vh-100 pb-20"
   >
     <div class="mensagens-header mb-4">
       <div class="content-detail-title-group min-w-0">
@@ -23,7 +23,7 @@
         <v-btn
           v-for="tab in messagesSubTabs"
           :key="tab.value"
-          :color="messagesSubTab === tab.value ? 'purple-darken-3' : 'grey-darken-2'"
+          :color="messagesSubTab === tab.value ? 'primary' : 'grey-darken-2'"
           :variant="messagesSubTab === tab.value ? 'flat' : 'tonal'"
           class="text-none"
           @click="messagesSubTab = tab.value"
@@ -39,7 +39,7 @@
       <div v-show="messagesSubTab === 'modelos'">
         <div class="d-flex justify-end mb-4">
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="rounded-lg text-none px-4"
             size="small"
             elevation="1"
@@ -54,12 +54,12 @@
         </v-alert>
 
         <div v-if="templatesLoading" class="d-flex justify-center pa-6">
-          <v-progress-circular indeterminate size="28" color="purple-darken-3" />
+          <v-progress-circular indeterminate size="28" color="primary" />
         </div>
 
         <v-card
           v-else-if="messageTemplates.length === 0"
-          class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+          class="rounded-xl pa-6 elevation-1 app-surface d-flex flex-column align-center justify-center border-subtle"
         >
           <MessageSquare size="32" color="#9CA3AF" class="mb-3" />
           <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -71,7 +71,7 @@
           <v-card
             v-for="template in messageTemplates"
             :key="template.id"
-            class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
+            class="member-card rounded-xl pa-4 elevation-1 app-surface border-subtle"
             role="button"
             tabindex="0"
             :aria-label="`Editar modelo ${template.name}`"
@@ -104,7 +104,7 @@
             item-value="id"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="mb-3"
             hide-details="auto"
           />
@@ -116,7 +116,7 @@
             item-value="value"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="mb-4"
             hide-details="auto"
           />
@@ -126,7 +126,7 @@
               {{ selectedRecipientIds.length }} selecionado{{ selectedRecipientIds.length === 1 ? "" : "s" }}
             </p>
             <div v-if="rosterMembersLoading" class="d-flex justify-center pa-4">
-              <v-progress-circular indeterminate size="24" color="purple-darken-3" />
+              <v-progress-circular indeterminate size="24" color="primary" />
             </div>
             <p v-else-if="rosterMembersForSelection.length === 0" class="text-caption text-grey-darken-1 mb-0">
               Nenhuma pessoa no rol ainda.
@@ -145,7 +145,7 @@
               >
                 <v-checkbox
                   :model-value="selectedRecipientIds.includes(member.id)"
-                  color="purple-darken-3"
+                  color="primary"
                   density="compact"
                   hide-details
                   class="recipient-picker-checkbox"
@@ -170,7 +170,7 @@
           </v-alert>
 
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             variant="flat"
             class="text-none font-weight-bold"
             :disabled="
@@ -189,7 +189,7 @@
       <div v-show="messagesSubTab === 'regras'">
         <div class="d-flex justify-end mb-4">
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="rounded-lg text-none px-4"
             size="small"
             elevation="1"
@@ -204,12 +204,12 @@
         </v-alert>
 
         <div v-if="rulesLoading" class="d-flex justify-center pa-6">
-          <v-progress-circular indeterminate size="28" color="purple-darken-3" />
+          <v-progress-circular indeterminate size="28" color="primary" />
         </div>
 
         <v-card
           v-else-if="messageRules.length === 0"
-          class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+          class="rounded-xl pa-6 elevation-1 app-surface d-flex flex-column align-center justify-center border-subtle"
         >
           <Clock size="32" color="#9CA3AF" class="mb-3" />
           <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -221,7 +221,7 @@
           <v-card
             v-for="rule in messageRules"
             :key="rule.id"
-            class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
+            class="member-card rounded-xl pa-4 elevation-1 app-surface border-subtle"
             role="button"
             tabindex="0"
             :aria-label="`Editar regra`"
@@ -255,12 +255,12 @@
         </v-alert>
 
         <div v-if="logsLoading" class="d-flex justify-center pa-6">
-          <v-progress-circular indeterminate size="28" color="purple-darken-3" />
+          <v-progress-circular indeterminate size="28" color="primary" />
         </div>
 
         <v-card
           v-else-if="messageLogs.length === 0"
-          class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+          class="rounded-xl pa-6 elevation-1 app-surface d-flex flex-column align-center justify-center border-subtle"
         >
           <History size="32" color="#9CA3AF" class="mb-3" />
           <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -272,7 +272,7 @@
           <v-card
             v-for="log in messageLogs"
             :key="log.id"
-            class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
+            class="member-card rounded-xl pa-4 elevation-1 app-surface border-subtle"
           >
             <v-avatar :color="avatarBgIndigo" size="44" class="member-avatar">
               <History size="20" :color="accentColor" />
@@ -305,7 +305,7 @@
             </div>
             <v-switch
               :model-value="birthdaySetting?.isActive ?? false"
-              color="purple-darken-3"
+              color="primary"
               hide-details
               :disabled="birthdaySettingSaving || !birthdaySetting?.templateId"
               @update:model-value="handleToggleBirthdayAuto"
@@ -319,7 +319,7 @@
             item-value="id"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="mb-3"
             hide-details="auto"
             :disabled="birthdaySettingSaving"
@@ -331,7 +331,7 @@
             label="Horário do envio automático"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             hide-details="auto"
             :disabled="birthdaySettingSaving"
             @update:model-value="handleSetBirthdayNotifyTime"
@@ -345,7 +345,7 @@
           <v-btn
             v-for="option in birthdayRangeOptions"
             :key="option.value"
-            :color="birthdayRange === option.value ? 'purple-darken-3' : 'grey-darken-2'"
+            :color="birthdayRange === option.value ? 'primary' : 'grey-darken-2'"
             :variant="birthdayRange === option.value ? 'flat' : 'tonal'"
             class="text-none"
             @click="birthdayRange = option.value"
@@ -359,12 +359,12 @@
         </v-alert>
 
         <div v-if="birthdaysLoading" class="d-flex justify-center pa-6">
-          <v-progress-circular indeterminate size="28" color="purple-darken-3" />
+          <v-progress-circular indeterminate size="28" color="primary" />
         </div>
 
         <v-card
           v-else-if="birthdayMembers.length === 0"
-          class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+          class="rounded-xl pa-6 elevation-1 app-surface d-flex flex-column align-center justify-center border-subtle"
         >
           <Cake size="32" color="#9CA3AF" class="mb-3" />
           <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">{{ birthdayEmptyLabel }}</p>
@@ -374,7 +374,7 @@
           <v-card
             v-for="member in birthdayMembers"
             :key="member.id"
-            class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
+            class="member-card rounded-xl pa-4 elevation-1 app-surface border-subtle"
           >
             <v-avatar :color="avatarBgIndigo" size="44" class="member-avatar">
               <Cake size="20" :color="accentColor" />
@@ -400,7 +400,7 @@
             {{ sendBirthdaysSuccess }}
           </v-alert>
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             variant="flat"
             class="text-none font-weight-bold"
             :disabled="!whatsappConnected || !birthdaySetting?.templateId"
@@ -414,7 +414,7 @@
     </section>
 
     <UtilsResponsiveOverlay v-model="isTemplateDialogOpen" max-width="480" variant="form" scrollable>
-      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+      <v-card class="rounded-xl pa-6 app-surface" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
             {{ editingTemplateId ? "Editar modelo" : "Novo modelo" }}
@@ -429,7 +429,7 @@
           label="Nome do modelo"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -438,7 +438,7 @@
           label="Mensagem"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-2"
           hide-details="auto"
           rows="4"
@@ -462,7 +462,7 @@
               Cancelar
             </v-btn>
             <v-btn
-              color="purple-darken-3"
+              color="primary"
               variant="flat"
               class="text-none font-weight-bold"
               :loading="isSavingTemplate"
@@ -476,7 +476,7 @@
     </UtilsResponsiveOverlay>
 
     <UtilsResponsiveOverlay v-model="isRuleDialogOpen" max-width="480" variant="form" scrollable>
-      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+      <v-card class="rounded-xl pa-6 app-surface" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
             {{ editingRuleId ? "Editar regra" : "Nova regra automática" }}
@@ -504,7 +504,7 @@
           item-value="id"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -515,7 +515,7 @@
           label="Minutos depois do culto"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -527,7 +527,7 @@
           item-value="id"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -539,14 +539,14 @@
           item-value="value"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
         <v-switch
           v-model="ruleForm.isActive"
           label="Regra ativa"
-          color="purple-darken-3"
+          color="primary"
           density="comfortable"
           hide-details
           class="mb-2"
@@ -566,7 +566,7 @@
               Cancelar
             </v-btn>
             <v-btn
-              color="purple-darken-3"
+              color="primary"
               variant="flat"
               class="text-none font-weight-bold"
               :disabled="sortedServiceTimes.length === 0"
@@ -581,9 +581,9 @@
     </UtilsResponsiveOverlay>
   </div>
 
-  <div v-else class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
+  <div v-else class="pa-4 app-operational-page min-vh-100 pb-20">
     <v-card
-      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle permission-empty"
+      class="rounded-xl pa-6 elevation-1 app-surface d-flex flex-column align-center justify-center border-subtle permission-empty"
     >
       <UserCheck size="34" color="#9CA3AF" class="mb-3" />
       <h1 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
@@ -1109,7 +1109,7 @@ onMounted(async () => {
   padding-bottom: 90px !important; /* Espaço para o Bottom Navigation */
 }
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
 }
 
 .church-admin-page {
@@ -1199,7 +1199,7 @@ onMounted(async () => {
   gap: 6px;
   max-height: 320px;
   overflow-y: auto;
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
   border-radius: 12px;
   padding: 6px;
 }

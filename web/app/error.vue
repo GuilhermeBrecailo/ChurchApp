@@ -3,7 +3,7 @@
     <v-card class="auth-card w-full max-w-md" elevation="0">
       <div class="auth-card-inner text-center">
         <div class="auth-icon-circle mb-4 mx-auto">
-          <v-icon size="40" :color="isDark ? 'accent-soft' : 'purple-darken-3'">
+          <v-icon size="40" :color="isDark ? 'accent-soft' : 'primary'">
             {{ isNotFound ? "mdi-map-marker-question-outline" : "mdi-alert-circle-outline" }}
           </v-icon>
         </div>
@@ -14,7 +14,7 @@
         <div class="d-flex flex-column ga-3">
           <v-btn
             block
-            color="purple-darken-3"
+            color="primary"
             size="large"
             class="auth-btn text-none font-bold"
             rounded="xl"
@@ -124,7 +124,7 @@ const reset = () => {
   letter-spacing: 0.01em !important;
 }
 
-:global(.app-theme-dark) .auth-btn.bg-purple-darken-3 {
+:global(.app-theme-dark) .auth-btn.bg-primary {
   box-shadow: 0 4px 16px rgba(240, 151, 90, 0.3) !important;
 }
 </style>

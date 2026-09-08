@@ -10,7 +10,7 @@
           Pessoas com alerta pastoral, visitas abertas ou retorno marcado.
         </p>
       </div>
-      <v-btn to="/pastoral/visitas" color="purple-darken-3" class="text-none font-weight-bold">
+      <v-btn to="/pastoral/visitas" color="primary" class="text-none font-weight-bold">
         <HandHeart size="16" class="mr-2" />
         Nova visita
       </v-btn>
@@ -33,7 +33,7 @@
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
           density="compact"
-          color="purple-darken-3"
+          color="primary"
           hide-details
         />
       </div>
@@ -83,7 +83,7 @@
             <v-chip
               v-if="person.openVisits > 0"
               size="small"
-              color="purple-darken-3"
+              color="primary"
               variant="tonal"
             >
               {{ person.openVisits }} visita{{ person.openVisits === 1 ? "" : "s" }}

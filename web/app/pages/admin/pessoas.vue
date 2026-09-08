@@ -29,7 +29,7 @@
       <v-btn
         v-for="tab in pessoasSubTabs"
         :key="tab.value"
-        :color="activeSection === tab.value ? 'purple-darken-3' : 'grey-darken-2'"
+        :color="activeSection === tab.value ? 'primary' : 'grey-darken-2'"
         :variant="activeSection === tab.value ? 'flat' : 'text'"
         class="text-none pessoas-subtab"
         size="small"
@@ -46,7 +46,7 @@
         </h2>
         <v-btn
           v-if="canManageMembersByRole"
-          color="purple-darken-3"
+          color="primary"
           class="rounded-lg text-none px-4"
           size="small"
           elevation="1"
@@ -126,7 +126,7 @@
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
           density="compact"
-          color="purple-darken-3"
+          color="primary"
           hide-details
         />
         <v-select
@@ -138,7 +138,7 @@
           prepend-inner-icon="mdi-account-filter-outline"
           variant="outlined"
           density="compact"
-          color="purple-darken-3"
+          color="primary"
           hide-details
         />
         <v-select
@@ -150,7 +150,7 @@
           prepend-inner-icon="mdi-shield-account-outline"
           variant="outlined"
           density="compact"
-          color="purple-darken-3"
+          color="primary"
           hide-details
         />
       </div>
@@ -204,7 +204,7 @@
             <v-chip
               v-if="leaderDepartmentNames(member.id).length"
               size="small"
-              color="indigo-darken-2"
+              color="primary"
               variant="tonal"
             >
               Líder
@@ -218,7 +218,7 @@
             >
               {{ memberRole.name }}
             </v-chip>
-            <v-chip size="small" color="purple-darken-3" variant="tonal">
+            <v-chip size="small" color="primary" variant="tonal">
               {{ churchMemberRoleLabel(member) }}
             </v-chip>
           </div>
@@ -248,7 +248,7 @@
         </div>
         <PlanLock feature="CUSTOM_ROLES">
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="rounded-lg text-none px-4"
             size="small"
             elevation="1"
@@ -266,7 +266,7 @@
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
           density="compact"
-          color="purple-darken-3"
+          color="primary"
           hide-details
         />
         <v-select
@@ -278,7 +278,7 @@
           prepend-inner-icon="mdi-view-module-outline"
           variant="outlined"
           density="compact"
-          color="purple-darken-3"
+          color="primary"
           hide-details
         />
       </div>
@@ -313,7 +313,7 @@
                 v-for="module in rolePermissionModules(role.permissions)"
                 :key="module.key"
                 size="x-small"
-                color="indigo-darken-2"
+                color="primary"
                 variant="tonal"
               >
                 {{ module.label }}
@@ -333,6 +333,7 @@
                 variant="text"
                 color="grey-darken-1"
                 size="small"
+                aria-label="Editar cargo"
                 @click="openEditRole(role)"
               >
                 <Pencil size="16" />
@@ -342,6 +343,7 @@
                 variant="text"
                 color="red-darken-2"
                 size="small"
+                aria-label="Remover cargo"
                 @click="pendingDeleteRoleId = role.id"
               >
                 <Trash2 size="16" />
@@ -383,7 +385,7 @@
           </p>
         </div>
         <v-btn
-          color="purple-darken-3"
+          color="primary"
           class="rounded-lg text-none px-4"
           size="small"
           elevation="1"
@@ -400,7 +402,7 @@
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
           density="compact"
-          color="purple-darken-3"
+          color="primary"
           hide-details
         />
         <v-select
@@ -412,7 +414,7 @@
           prepend-inner-icon="mdi-filter-outline"
           variant="outlined"
           density="compact"
-          color="purple-darken-3"
+          color="primary"
           hide-details
         />
       </div>
@@ -428,7 +430,7 @@
       </v-alert>
 
       <div v-if="rosterLoading" class="d-flex justify-center pa-6">
-        <v-progress-circular indeterminate size="28" color="purple-darken-3" />
+        <v-progress-circular indeterminate size="28" color="primary" />
       </div>
 
       <v-card
@@ -467,7 +469,7 @@
           </div>
 
           <div class="member-badges">
-            <v-chip v-if="member.userId" size="small" color="indigo-darken-2" variant="tonal">
+            <v-chip v-if="member.userId" size="small" color="primary" variant="tonal">
               Tem login
             </v-chip>
             <v-chip
@@ -502,7 +504,7 @@
           label="Nome"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -511,7 +513,7 @@
           label="E-mail (opcional)"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -520,7 +522,7 @@
           label="Telefone (opcional)"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -530,7 +532,7 @@
           type="date"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -539,7 +541,7 @@
           label="Observações (opcional)"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
           rows="2"
@@ -637,7 +639,7 @@
             Cancelar
           </v-btn>
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             variant="flat"
             class="text-none font-weight-bold"
             :loading="isSavingRoster"
@@ -677,7 +679,7 @@
             prepend-inner-icon="mdi-account-outline"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="admin-input mb-4"
             hide-details="auto"
             autocomplete="off"
@@ -691,7 +693,7 @@
             prepend-inner-icon="mdi-email-outline"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="admin-input mb-4"
             hide-details="auto"
             autocomplete="off"
@@ -705,7 +707,7 @@
             prepend-inner-icon="mdi-phone-outline"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="admin-input mb-4"
             hide-details="auto"
             autocomplete="off"
@@ -722,7 +724,7 @@
             "
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="admin-input mb-4"
             hide-details="auto"
             autocomplete="off"
@@ -752,7 +754,7 @@
             </v-btn>
             <v-btn
               type="submit"
-              color="purple-darken-3"
+              color="primary"
               class="text-none font-weight-bold"
               :loading="isCreatingMember"
               :disabled="isCreatingMember"
@@ -783,7 +785,7 @@
                 <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
                   {{ selectedMember.name }}
                 </h2>
-                <v-chip size="x-small" variant="tonal" color="purple-darken-3" class="text-none font-weight-bold">
+                <v-chip size="x-small" variant="tonal" color="primary" class="text-none font-weight-bold">
                   {{ selectedMember.role === "PASTOR" ? "Pastor" : "Membro" }}
                 </v-chip>
               </div>
@@ -799,7 +801,7 @@
 
         <div class="member-dialog-rule mb-4" />
 
-        <div class="member-info mb-5 pa-3 rounded-lg bg-grey-lighten-5">
+        <div class="member-info app-surface-muted mb-5 pa-3">
           <div>
             <p class="text-caption text-grey-darken-1 mb-1">Telefone</p>
             <p class="text-body-2 font-weight-medium text-grey-darken-4 mb-0">
@@ -822,7 +824,7 @@
               item-value="value"
               variant="outlined"
               density="compact"
-              color="purple-darken-3"
+              color="primary"
               hide-details="auto"
               class="admin-input"
               :disabled="isUpdatingMember"
@@ -835,7 +837,7 @@
           label="Nome"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="admin-input mb-3"
           hide-details="auto"
           :readonly="!canManageMembersByRole || !canEditSelectedMember"
@@ -848,7 +850,7 @@
           type="email"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="admin-input mb-3"
           hide-details="auto"
           :readonly="!canManageMembersByRole || !canEditSelectedMember"
@@ -860,7 +862,7 @@
           label="Telefone"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="admin-input mb-4"
           hide-details="auto"
           :readonly="!canManageMembersByRole || !canEditSelectedMember"
@@ -901,13 +903,13 @@
             prepend-inner-icon="mdi-badge-account-outline"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="admin-input"
             hide-details="auto"
             :disabled="!canAssignSelectedMemberRole || isAssigningRole"
           />
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             variant="tonal"
             class="text-none"
             :loading="isAssigningRole"
@@ -971,7 +973,7 @@
             </v-btn>
             <v-btn
               v-if="canManageMembersByRole && canEditSelectedMember"
-              color="purple-darken-3"
+              color="primary"
               class="text-none"
               :loading="isUpdatingMember || isAssigningRole"
               :disabled="isUpdatingMember || isAssigningRole"
@@ -995,6 +997,7 @@
             variant="text"
             color="grey-darken-1"
             size="small"
+            aria-label="Fechar editor de cargo"
             @click="isRoleDialogOpen = false"
           >
             <v-icon size="20">mdi-close</v-icon>
@@ -1006,7 +1009,7 @@
           label="Nome do cargo"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -1016,7 +1019,7 @@
           label="Descrição (opcional)"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-4"
           hide-details="auto"
         />
@@ -1028,7 +1031,7 @@
           v-model="roleForm.scope"
           mandatory
           divided
-          color="purple-darken-3"
+          color="primary"
           density="comfortable"
           class="mb-3 role-scope-toggle"
         >
@@ -1045,7 +1048,7 @@
           label="Ministério"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -1059,7 +1062,7 @@
               v-for="preset in presetRoleOptions"
               :key="preset.value"
               :variant="selectedRolePreset === preset.value ? 'flat' : 'tonal'"
-              :color="selectedRolePreset === preset.value ? 'purple-darken-3' : 'grey-darken-2'"
+              :color="selectedRolePreset === preset.value ? 'primary' : 'grey-darken-2'"
               size="small"
               class="text-none role-preset-button"
               @click="chooseRolePreset(preset.value)"
@@ -1118,7 +1121,7 @@
               <div class="permission-module-meta">
                 <v-chip
                   size="x-small"
-                  color="purple-darken-3"
+                  color="primary"
                   :variant="countModuleSelected(module) === 0 ? 'outlined' : countModuleSelected(module) === module.permissions.length ? 'flat' : 'tonal'"
                 >
                   {{ countModuleSelected(module) }}/{{ module.permissions.length }}
@@ -1145,7 +1148,7 @@
                   <v-switch
                     v-model="roleForm.permissions"
                     :value="perm.key"
-                    color="purple-darken-3"
+                    color="primary"
                     density="compact"
                     hide-details
                     class="permission-row-switch"
@@ -1176,7 +1179,7 @@
             Cancelar
           </v-btn>
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="text-none font-weight-bold"
             :loading="isSavingRole"
             @click="saveRole"

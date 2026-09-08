@@ -44,7 +44,7 @@ watch(() => props.value, render);
   max-width: 176px;
   height: auto;
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--app-color-surface);
   padding: 10px;
   box-sizing: border-box;
 }

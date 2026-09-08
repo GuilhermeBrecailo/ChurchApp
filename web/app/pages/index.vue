@@ -78,7 +78,7 @@
             label="Nome da igreja"
             placeholder="Igreja Quadrangular Centro"
             variant="outlined"
-            color="purple-darken-3"
+            color="primary"
             class="mb-4"
             :disabled="loading"
           />
@@ -88,7 +88,7 @@
               v-model="churchForm.city"
               label="Cidade"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               :disabled="loading"
             />
 
@@ -96,7 +96,7 @@
               v-model="churchForm.state"
               label="Estado"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               :disabled="loading"
             />
           </div>
@@ -105,7 +105,7 @@
             v-model="churchForm.road"
             label="Endereço"
             variant="outlined"
-            color="purple-darken-3"
+            color="primary"
             class="mb-4"
             :disabled="loading"
           />
@@ -115,7 +115,7 @@
               v-model="churchForm.number"
               label="Número"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               :disabled="loading"
             />
 
@@ -123,7 +123,7 @@
               v-model="churchForm.localZipCode"
               label="CEP"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               :disabled="loading"
             />
           </div>
@@ -140,7 +140,7 @@
 
           <v-btn
             type="submit"
-            color="purple-darken-3"
+            color="primary"
             size="large"
             block
             class="text-none font-weight-bold rounded-lg"
@@ -173,7 +173,7 @@
         <v-btn
           block
           variant="tonal"
-          color="purple-darken-3"
+          color="primary"
           class="text-none font-weight-bold rounded-lg"
           size="large"
           @click="fetchMe"
@@ -202,7 +202,7 @@
         <v-btn
           to="/onboarding/church"
           block
-          color="purple-darken-3"
+          color="primary"
           class="text-none font-weight-bold rounded-lg"
           size="large"
         >

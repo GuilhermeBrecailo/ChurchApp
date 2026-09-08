@@ -3,7 +3,7 @@
     <div class="ministery-section-actions mb-4">
       <v-btn
         v-if="canManageSongs"
-        color="purple-darken-3"
+        color="primary"
         class="rounded-lg text-none"
         @click="$emit('create')"
       >
@@ -12,7 +12,7 @@
       <v-btn
         v-if="canManageSongs && songs.length >= 2"
         variant="tonal"
-        color="purple-darken-3"
+        color="primary"
         class="rounded-lg text-none"
         @click="$emit('create-mix')"
       >
@@ -22,7 +22,7 @@
 
     <v-card
       v-if="songs.length === 0 && !songsError"
-      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
     >
       <Music size="32" color="#9CA3AF" class="mb-3" />
       <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -30,7 +30,7 @@
       </p>
       <v-btn
         v-if="canManageSongs"
-        color="purple-darken-3"
+        color="primary"
         variant="tonal"
         class="rounded-lg text-none mt-4"
         @click="$emit('create')"
@@ -43,7 +43,7 @@
       <v-card
         v-for="song in songs"
         :key="song.id"
-        class="ministery-content-card pa-4 elevation-1 bg-white song-click-card"
+        class="ministery-content-card app-surface pa-4 song-click-card"
         role="button"
         tabindex="0"
         @click="$emit('open-viewer', song)"
@@ -59,7 +59,7 @@
               {{ song.metadata?.artist || "Artista não informado" }}
             </p>
             <div class="song-chip-row d-flex flex-wrap ga-2">
-              <v-chip size="x-small" color="purple-darken-3" variant="tonal">
+              <v-chip size="x-small" color="primary" variant="tonal">
                 {{ song.metadata?.songCategory || "Louvor" }}
               </v-chip>
               <v-chip v-if="song.metadata?.key" size="x-small" variant="tonal">
@@ -71,7 +71,7 @@
               <v-chip
                 v-if="song.metadata?.lyrics"
                 size="x-small"
-                color="indigo-darken-2"
+                color="primary"
                 variant="tonal"
               >
                 Letra
@@ -87,7 +87,7 @@
               <v-chip
                 v-if="song.metadata?.pdf?.url"
                 size="x-small"
-                color="deep-purple-darken-2"
+                color="primary"
                 variant="tonal"
               >
                 PDF
@@ -107,7 +107,7 @@
               v-if="song.metadata?.lyrics || song.metadata?.chords"
               icon
               variant="text"
-              color="purple-darken-3"
+              color="primary"
               size="small"
               aria-label="Abrir letra e cifra em tela cheia"
               @click.stop="$emit('open-viewer', song)"
@@ -123,6 +123,7 @@
               variant="text"
               color="grey-darken-1"
               size="small"
+              :aria-label="`Abrir link da música ${song.title}`"
               @click.stop
             >
               <ExternalLink size="16" />
@@ -143,7 +144,7 @@
             target="_blank"
             rel="noopener noreferrer"
             variant="tonal"
-            color="purple-darken-3"
+            color="primary"
             size="small"
             class="text-none"
           >
@@ -162,8 +163,9 @@
           <v-btn
             icon
             variant="text"
-            color="purple-darken-3"
+            color="primary"
             size="small"
+            :aria-label="`Abrir música ${song.title}`"
             @click.stop="$emit('open-viewer', song)"
           >
             <BookOpen size="16" />
@@ -173,6 +175,7 @@
             variant="text"
             color="grey-darken-1"
             size="small"
+            :aria-label="`Editar música ${song.title}`"
             @click.stop="$emit('edit', song)"
           >
             <Pencil size="16" />
@@ -182,6 +185,7 @@
             variant="text"
             color="red-darken-2"
             size="small"
+            :aria-label="`Excluir música ${song.title}`"
             @click.stop="$emit('delete', song)"
           >
             <Trash2 size="16" />
@@ -194,7 +198,7 @@
         >
           <v-btn
             variant="tonal"
-            color="purple-darken-3"
+            color="primary"
             size="small"
             class="text-none"
             @click.stop="$emit('open-viewer', song)"

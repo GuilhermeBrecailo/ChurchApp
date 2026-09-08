@@ -1,6 +1,6 @@
 <template>
   <v-card
-    class="ministry-card rounded-xl pa-3 mb-3 elevation-1 bg-white cursor-pointer"
+    class="ministry-card app-surface app-interactive-surface rounded-xl pa-3 mb-3 cursor-pointer"
   >
     <v-avatar size="48" color="#F7E2D3" class="ministry-avatar rounded-lg">
       <Users size="20" color="#B5472A" />

@@ -1,6 +1,6 @@
 <template>
   <section>
-    <v-card class="ministery-content-card pa-4 elevation-1 bg-white">
+    <v-card class="ministery-content-card app-surface pa-4">
       <div class="overview-schedules-header mb-3">
         <div class="leader-card-title">
           <Calendar size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
@@ -10,7 +10,7 @@
         </div>
         <v-btn
           variant="text"
-          color="purple-darken-3"
+          color="primary"
           size="small"
           class="text-none font-weight-bold"
           @click="$emit('view-all')"
@@ -33,7 +33,7 @@
               {{ formatScheduleDate(schedule.date) }}
             </p>
           </div>
-          <v-chip size="small" color="purple-darken-3" variant="tonal">
+          <v-chip size="small" color="primary" variant="tonal">
             {{ schedule.assignments?.length || 0 }} escalados
           </v-chip>
         </div>

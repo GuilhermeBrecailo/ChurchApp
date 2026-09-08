@@ -13,7 +13,7 @@
         <v-btn
           icon
           variant="tonal"
-          color="purple-darken-3"
+          color="primary"
           size="small"
           aria-label="Editar minha cifra"
           @click="emit('edit-personal-chords')"
@@ -31,7 +31,7 @@
               v-bind="menuProps"
               icon
               variant="tonal"
-              color="purple-darken-3"
+              color="primary"
               size="small"
               aria-label="Controles de velocidade e tom"
             >
@@ -39,7 +39,7 @@
             </v-btn>
           </template>
 
-          <v-card min-width="288" rounded="lg" elevation="4">
+          <v-card class="song-reader-controls-card app-surface" min-width="288" elevation="0">
             <v-card-text class="pa-4">
               <template v-if="tab === 'chords'">
                 <p class="song-reader-control-label mb-2">Tom</p>
@@ -78,7 +78,7 @@
                   label="Trocar para"
                   variant="outlined"
                   density="compact"
-                  color="purple-darken-3"
+                  color="primary"
                   hide-details="auto"
                   class="mb-4"
                   @update:model-value="applyKey"
@@ -105,7 +105,7 @@
                 max="80"
                 step="4"
                 density="compact"
-                color="purple-darken-3"
+                color="primary"
                 hide-details
                 class="mt-1"
               />
@@ -129,7 +129,7 @@
     <div class="song-reader-toolbar">
       <v-tabs
         v-model="tab"
-        color="purple-darken-3"
+        color="primary"
         density="compact"
         class="song-reader-tabs"
       >
@@ -160,7 +160,7 @@
       <v-btn
         v-if="showResumeScrollButton"
         class="song-reader-resume-btn text-none"
-        color="purple-darken-3"
+        color="primary"
         rounded="pill"
         prepend-icon="mdi-play"
         @click="songTextRenderer?.resume()"
@@ -176,7 +176,7 @@
     <div v-if="hasPrev || hasNext" class="song-reader-nav">
       <v-btn
         variant="tonal"
-        color="purple-darken-3"
+        color="primary"
         class="text-none"
         :disabled="!hasPrev"
         @click="emit('prev')"
@@ -185,7 +185,7 @@
       </v-btn>
       <v-btn
         variant="flat"
-        color="purple-darken-3"
+        color="primary"
         class="text-none"
         :disabled="!hasNext"
         @click="emit('next')"
@@ -393,7 +393,7 @@ defineExpose({ tab });
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 18px 10px;
+  padding: max(14px, env(safe-area-inset-top)) 18px 10px;
   border-bottom: 1px solid var(--app-color-border);
 }
 
@@ -497,6 +497,12 @@ defineExpose({ tab });
   padding: 12px 18px;
 }
 
+.song-reader-extra :deep(.song-viewer-notes) {
+  margin: 0;
+  color: var(--app-color-text-muted) !important;
+  line-height: 1.5;
+}
+
 .song-reader-nav {
   display: flex;
   align-items: center;
@@ -507,6 +513,19 @@ defineExpose({ tab });
 }
 
 @media (max-width: 420px) {
+  .song-reader-header {
+    gap: 8px;
+    padding-inline: 14px;
+  }
+
+  .song-reader-title {
+    font-size: 1.02rem;
+  }
+
+  .song-reader-header-actions {
+    flex-shrink: 0;
+  }
+
   .song-reader-text {
     font-size: 1rem;
     padding: 16px;
@@ -521,6 +540,12 @@ defineExpose({ tab });
 
   .song-reader-chips {
     justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .song-reader-resume-btn {
+    transition: none;
   }
 }
 </style>

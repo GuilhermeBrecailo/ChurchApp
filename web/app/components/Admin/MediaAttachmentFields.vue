@@ -9,7 +9,7 @@
     <div class="d-flex align-center flex-wrap ga-2 mb-3">
       <v-btn
         variant="tonal"
-        color="purple-darken-3"
+        color="primary"
         size="small"
         class="text-none"
         :loading="isUploading"
@@ -41,7 +41,7 @@
       :model-value="props.videoUrl"
       label="Link de vídeo (YouTube/Instagram)"
       variant="outlined"
-      color="purple-darken-3"
+      color="primary"
       hide-details="auto"
       @update:model-value="(value) => emit('update:videoUrl', String(value ?? ''))"
     />

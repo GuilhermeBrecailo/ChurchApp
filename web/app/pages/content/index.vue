@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 pb-8 page-wrapper">
+  <div class="pa-4 pb-8 page-wrapper app-operational-page">
     <div class="content-page-header mb-5">
       <div class="app-help-header">
         <div class="min-w-0">
@@ -21,7 +21,7 @@
         :to="item.route"
         class="content-card-link"
       >
-        <v-card class="content-card rounded-xl pa-4 elevation-1" :class="{ 'content-card-dark': isDark }">
+        <v-card class="content-card app-surface rounded-xl pa-4" :class="{ 'content-card-dark': isDark }">
           <div class="d-flex align-center gap-3">
             <v-avatar size="48" :color="isDark ? item.bgColorDark : item.bgColor">
               <component :is="item.icon" size="22" :color="isDark ? item.iconColorDark : item.iconColor" />

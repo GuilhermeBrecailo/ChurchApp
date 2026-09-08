@@ -27,6 +27,7 @@
       <v-text-field
         v-model="search"
         :placeholder="props.searchPlaceholder"
+        :aria-label="props.searchPlaceholder"
         variant="outlined"
         density="comfortable"
         hide-details
@@ -160,6 +161,11 @@ function select(route: string) {
 
 <style scoped>
 .more-options-card {
+  display: flex;
+  flex-direction: column;
+  height: min(72dvh, 600px);
+  max-height: min(86vh, 760px);
+  overflow: hidden;
   padding: 16px;
   border-radius: var(--app-overlay-radius) !important;
   background: var(--app-color-surface) !important;
@@ -194,6 +200,10 @@ function select(route: string) {
 }
 
 .more-options-empty {
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  min-height: 0;
   padding: 22px 4px;
   color: var(--app-color-text-muted);
   font-size: 0.86rem;
@@ -201,6 +211,9 @@ function select(route: string) {
 }
 
 .more-options-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   display: grid;
   gap: 8px;
 }

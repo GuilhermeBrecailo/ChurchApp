@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 page-wrapper min-vh-100">
+  <div class="pa-4 page-wrapper min-vh-100 app-operational-page">
     <div class="scale-page-header mb-5">
       <div class="min-w-0">
         <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">Escalas</h1>
@@ -37,21 +37,21 @@
     </div>
 
     <div v-if="canCreateChurchSchedule" class="leader-summary-grid mb-5">
-      <v-card class="leader-summary-card pa-3 elevation-1">
+      <v-card class="leader-summary-card app-surface pa-3">
         <Clock class="stat-icon" size="18" :color="accentColor" />
         <p class="text-caption text-grey-darken-1 mb-1 mt-1">Pendentes</p>
         <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
           {{ leaderSummary.pending }}
         </h2>
       </v-card>
-      <v-card class="leader-summary-card pa-3 elevation-1">
+      <v-card class="leader-summary-card app-surface pa-3">
         <EyeOff class="stat-icon" size="18" :color="accentColor" />
         <p class="text-caption text-grey-darken-1 mb-1 mt-1">Não viram</p>
         <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
           {{ leaderSummary.notViewed }}
         </h2>
       </v-card>
-      <v-card class="leader-summary-card pa-3 elevation-1">
+      <v-card class="leader-summary-card app-surface pa-3">
         <Repeat2 class="stat-icon" size="18" :color="accentColor" />
         <p class="text-caption text-grey-darken-1 mb-1 mt-1">Trocas</p>
         <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -84,7 +84,7 @@
 
       <v-card
         v-else-if="filteredSchedules.length === 0 && !schedulesError"
-        class="rounded-xl pa-6 elevation-1 d-flex flex-column align-center justify-center"
+        class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center"
       >
         <Calendar size="32" :color="isDark ? '#484f58' : '#9CA3AF'" class="mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -617,12 +617,12 @@ watch(schedules, async () => {
 
 .filter-strip::before {
   left: 0;
-  background: linear-gradient(90deg, #f5f5f5 0%, rgba(245, 245, 245, 0) 100%);
+    background: linear-gradient(90deg, var(--app-color-background) 0%, transparent 100%);
 }
 
 .filter-strip::after {
   right: 0;
-  background: linear-gradient(270deg, #f5f5f5 0%, rgba(245, 245, 245, 0) 100%);
+    background: linear-gradient(270deg, var(--app-color-background) 0%, transparent 100%);
 }
 
 .filter-scroll {
@@ -671,8 +671,7 @@ watch(schedules, async () => {
 }
 
 .leader-summary-card {
-  border: 1px solid #f3f4f6;
-  border-radius: 8px !important;
+  min-height: 92px;
 }
 
 .stat-icon {
@@ -709,6 +708,11 @@ watch(schedules, async () => {
 
   .leader-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .scale-header-actions .v-btn {
+    min-width: 40px;
+    padding-inline: 10px !important;
   }
 }
 </style>

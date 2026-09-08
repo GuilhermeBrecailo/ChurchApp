@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="canAccessChurchAdmin && isChurchWideManager"
-    class="church-admin-page pa-4 bg-grey-lighten-4 min-vh-100 pb-20"
+    class="church-admin-page app-operational-page pa-4 min-vh-100 pb-20"
   >
     <div class="publicacoes-header mb-4">
       <div class="content-detail-title-group min-w-0">
@@ -31,14 +31,14 @@
         {{ contentError }}
       </v-alert>
 
-      <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle mb-4">
+      <v-card class="rounded-xl pa-4 elevation-1 app-surface border-subtle mb-4">
         <p class="content-field-label mb-2">O que você quer publicar?</p>
         <div class="content-type-selector">
           <v-btn
             v-for="option in contentTypeOptions"
             :key="option.value"
             :variant="activeContentType === option.value ? 'flat' : 'outlined'"
-            :color="activeContentType === option.value ? 'purple-darken-3' : 'grey-darken-1'"
+            :color="activeContentType === option.value ? 'primary' : 'grey-darken-1'"
             class="text-none content-type-btn"
             size="small"
             @click="activeContentType = option.value"
@@ -49,7 +49,7 @@
         </div>
       </v-card>
 
-      <v-card v-if="activeContentType === 'AVISO'" class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
+      <v-card v-if="activeContentType === 'AVISO'" class="rounded-xl pa-4 elevation-1 app-surface border-subtle">
         <div class="d-flex align-center mb-4">
           <Megaphone size="18" :color="churchAccent" class="mr-2" />
           <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
@@ -86,7 +86,7 @@
               v-model="announcementForm.title"
               label="Título"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               hide-details="auto"
             />
           </div>
@@ -99,7 +99,7 @@
               v-model="announcementForm.body"
               label="Texto"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               auto-grow
               rows="2"
               hide-details="auto"
@@ -109,7 +109,7 @@
         <p class="content-field-label mt-4 mb-2">Tipo <span class="content-required">*</span></p>
         <v-btn-toggle
           v-model="announcementForm.kind"
-          color="purple-darken-3"
+          color="primary"
           variant="outlined"
           density="comfortable"
           mandatory
@@ -123,7 +123,7 @@
           <v-checkbox
             v-model="announcementForm.pinned"
             label="Fixar"
-            color="purple-darken-3"
+            color="primary"
             hide-details
           />
           <v-text-field
@@ -131,7 +131,7 @@
             label="Expira em"
             type="date"
             variant="outlined"
-            color="purple-darken-3"
+            color="primary"
             hide-details="auto"
           />
         </div>
@@ -143,14 +143,14 @@
         <v-switch
           v-model="announcementForm.isPublic"
           label="Publicar também na página pública da igreja"
-          color="purple-darken-3"
+          color="primary"
           density="comfortable"
           hide-details
           class="mb-4"
         />
         <div class="d-flex flex-wrap ga-2">
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="text-none font-weight-bold"
             :loading="isSavingAnnouncement"
             @click="saveAnnouncement"
@@ -169,7 +169,7 @@
         </div>
       </v-card>
 
-      <v-card v-else-if="activeContentType === 'VERSICULO'" class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
+      <v-card v-else-if="activeContentType === 'VERSICULO'" class="rounded-xl pa-4 elevation-1 app-surface border-subtle">
         <div class="d-flex align-center mb-4">
           <BookMarked size="18" :color="churchAccent" class="mr-2" />
           <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
@@ -206,7 +206,7 @@
               v-model="verseForm.text"
               label="Texto"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               auto-grow
               rows="2"
               hide-details="auto"
@@ -221,7 +221,7 @@
               v-model="verseForm.reference"
               label="Referência"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               hide-details="auto"
             />
           </div>
@@ -234,7 +234,7 @@
               v-model="verseForm.commentary"
               label="Comentário"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               auto-grow
               rows="2"
               hide-details="auto"
@@ -249,14 +249,14 @@
         <v-switch
           v-model="verseForm.isPublic"
           label="Publicar também na página pública da igreja"
-          color="purple-darken-3"
+          color="primary"
           density="comfortable"
           hide-details
           class="mb-4"
         />
         <div class="d-flex flex-wrap ga-2">
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="text-none font-weight-bold"
             :loading="isPublishingVerse"
             @click="saveDailyVerse"
@@ -275,7 +275,7 @@
         </div>
       </v-card>
 
-      <v-card v-else-if="activeContentType === 'DEVOCIONAL'" class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
+      <v-card v-else-if="activeContentType === 'DEVOCIONAL'" class="rounded-xl pa-4 elevation-1 app-surface border-subtle">
         <div class="d-flex align-center justify-space-between mb-4">
           <div class="d-flex align-center">
             <Heart size="18" :color="churchAccent" class="mr-2" />
@@ -283,7 +283,7 @@
               Devocionais
             </h3>
           </div>
-          <v-btn variant="tonal" color="purple-darken-3" size="small" class="text-none" @click="addDevotionalChapter">
+          <v-btn variant="tonal" color="primary" size="small" class="text-none" @click="addDevotionalChapter">
             <Plus size="16" class="mr-1" /> Adicionar capítulo
           </v-btn>
         </div>
@@ -317,7 +317,7 @@
               v-model="devotionalForm.title"
               label="Título"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               hide-details="auto"
             />
           </div>
@@ -330,7 +330,7 @@
               v-model="devotionalForm.description"
               label="Descrição"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
               auto-grow
               rows="2"
               hide-details="auto"
@@ -350,7 +350,7 @@
                 v-model="chapter.title"
                 :label="`Capítulo ${index + 1}`"
                 variant="outlined"
-                color="purple-darken-3"
+                color="primary"
                 class="mb-2"
                 hide-details="auto"
               />
@@ -364,7 +364,7 @@
                 v-model="chapter.bibleRef"
                 label="Referência bíblica"
                 variant="outlined"
-                color="purple-darken-3"
+                color="primary"
                 class="mb-2"
                 hide-details="auto"
               />
@@ -378,7 +378,7 @@
                 v-model="chapter.content"
                 label="Texto"
                 variant="outlined"
-                color="purple-darken-3"
+                color="primary"
                 auto-grow
                 rows="3"
                 hide-details="auto"
@@ -394,14 +394,14 @@
         <v-switch
           v-model="devotionalForm.isPublic"
           label="Publicar também na página pública da igreja"
-          color="purple-darken-3"
+          color="primary"
           density="comfortable"
           hide-details
           class="mb-3"
         />
         <div class="d-flex flex-wrap ga-2">
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="text-none font-weight-bold"
             :loading="isSavingDevotional"
             @click="saveDevotional"
@@ -420,7 +420,7 @@
         </div>
       </v-card>
 
-      <v-card v-else class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
+      <v-card v-else class="rounded-xl pa-4 elevation-1 app-surface border-subtle">
         <div class="d-flex align-center mb-1">
           <ImageIcon size="18" :color="churchAccent" class="mr-2" />
           <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
@@ -445,7 +445,7 @@
           v-model="postForm.title"
           label="Título"
           variant="outlined"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -453,7 +453,7 @@
           v-model="postForm.body"
           label="Texto"
           variant="outlined"
-          color="purple-darken-3"
+          color="primary"
           auto-grow
           rows="3"
           class="mb-3"
@@ -470,7 +470,7 @@
           <div class="d-flex align-center flex-wrap ga-2">
             <v-btn
               variant="tonal"
-              color="purple-darken-3"
+              color="primary"
               size="small"
               class="text-none"
               :loading="isUploadingPostImage"
@@ -503,14 +503,14 @@
           v-model="postForm.videoUrl"
           label="Link de vídeo (YouTube/Instagram)"
           variant="outlined"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
         <v-switch
           v-model="postForm.isPublic"
           label="Aparecer na página pública da igreja"
-          color="purple-darken-3"
+          color="primary"
           density="comfortable"
           hide-details
           class="mb-2"
@@ -518,14 +518,14 @@
         <v-switch
           v-model="postForm.pinned"
           label="Fixar no topo"
-          color="purple-darken-3"
+          color="primary"
           density="comfortable"
           hide-details
           class="mb-4"
         />
         <div class="d-flex ga-2">
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="text-none font-weight-bold"
             :loading="isSavingPost"
             @click="savePost"
@@ -544,7 +544,7 @@
         </div>
       </v-card>
 
-      <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle mt-4">
+      <v-card class="rounded-xl pa-4 elevation-1 app-surface border-subtle mt-4">
         <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">
           Publicado
         </h3>
@@ -552,7 +552,7 @@
         <div class="unified-filters mb-3">
           <v-btn-toggle
             v-model="unifiedTypeFilter"
-            color="purple-darken-3"
+            color="primary"
             variant="outlined"
             density="comfortable"
             mandatory
@@ -589,7 +589,7 @@
           >
             <div class="min-w-0">
               <div class="d-flex align-center ga-2 mb-1">
-                <v-chip size="x-small" variant="tonal" color="purple-darken-3">
+                <v-chip size="x-small" variant="tonal" color="primary">
                   {{ item.typeLabel }}
                 </v-chip>
                 <v-chip
@@ -619,9 +619,9 @@
     </section>
   </div>
 
-  <div v-else class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
+  <div v-else class="pa-4 app-operational-page min-vh-100 pb-20">
     <v-card
-      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle permission-empty"
+      class="rounded-xl pa-6 elevation-1 app-surface d-flex flex-column align-center justify-center border-subtle permission-empty"
     >
       <UserCheck size="34" color="#9CA3AF" class="mb-3" />
       <h1 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
@@ -1297,7 +1297,7 @@ onMounted(async () => {
   padding-bottom: 90px !important; /* Espaço para o Bottom Navigation */
 }
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
 }
 
 .church-admin-page {
@@ -1434,7 +1434,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
   border-radius: 8px;
   padding: 8px 10px;
 }
@@ -1450,7 +1450,7 @@ onMounted(async () => {
 }
 
 .chapter-admin-box {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
   border-radius: 8px;
   padding: 12px;
 }

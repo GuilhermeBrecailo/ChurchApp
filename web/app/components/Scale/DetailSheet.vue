@@ -31,7 +31,8 @@
                 v-bind="activatorProps"
                 icon
                 variant="tonal"
-                color="purple-darken-3"
+                color="primary"
+                aria-label="Gerenciar voluntários"
                 @click="$emit('manage-volunteers', localEvent)"
               >
                 <UserPlus size="18" />
@@ -45,6 +46,7 @@
                 icon
                 variant="tonal"
                 color="grey-darken-2"
+                aria-label="Editar escala"
                 @click="$emit('edit', localEvent)"
               >
                 <Pencil size="18" />
@@ -58,6 +60,7 @@
                 icon
                 variant="tonal"
                 color="red-darken-2"
+                aria-label="Excluir escala"
                 @click="$emit('delete', localEvent)"
               >
                 <Trash2 size="18" />
@@ -104,7 +107,7 @@
               <v-btn
                 v-if="!localEvent.currentUserAssignment.viewedAt"
                 variant="tonal"
-                color="indigo-darken-2"
+                color="primary"
                 size="small"
                 class="text-none"
                 @click="$emit('mark-viewed', localEvent)"
@@ -113,7 +116,7 @@
               </v-btn>
               <v-btn
                 v-if="localEvent.currentUserAssignment.confirmationStatus !== 'CONFIRMED'"
-                color="purple-darken-3"
+                color="primary"
                 size="small"
                 class="text-none"
                 @click="$emit('confirm-presence', localEvent)"
@@ -133,7 +136,7 @@
               <v-btn
                 v-if="localEvent.currentUserAssignment.confirmationStatus !== 'SWAP_REQUESTED'"
                 variant="tonal"
-                color="indigo-darken-2"
+                color="primary"
                 size="small"
                 class="text-none"
                 @click="$emit('request-swap', localEvent)"
@@ -207,13 +210,13 @@
               <Music size="18" />
               <h3>Louvor</h3>
             </div>
-            <v-chip size="small" variant="tonal" color="purple-darken-3">
+            <v-chip size="small" variant="tonal" color="primary">
               {{ songs.length }} músicas
             </v-chip>
           </div>
 
           <div class="scale-playlist-actions">
-            <v-btn color="purple-darken-3" class="text-none font-weight-bold" @click="openPlaylistSequence(0)">
+            <v-btn color="primary" class="text-none font-weight-bold" @click="openPlaylistSequence(0)">
               <Play size="16" class="mr-1" /> Tocar sequência
             </v-btn>
             <v-btn-toggle v-model="playlistMode" density="compact" mandatory class="song-instrument-toggle">
@@ -270,7 +273,7 @@
                         v-bind="leaderMenuProps"
                         size="small"
                         variant="tonal"
-                        color="purple-darken-3"
+                        color="primary"
                         class="scale-song-leader-chip"
                         prepend-icon="mdi-account-voice"
                         @click.stop
@@ -304,7 +307,7 @@
                     v-else-if="song.startedByName"
                     size="small"
                     variant="tonal"
-                    color="purple-darken-3"
+                    color="primary"
                     class="scale-song-leader-chip"
                     prepend-icon="mdi-account-voice"
                   >
@@ -470,7 +473,7 @@ const responseStatusColor = (status?: string) => {
     CONFIRMED: "teal-darken-2",
     DECLINED: "red-darken-2",
     MAYBE: "grey",
-    SWAP_REQUESTED: "indigo-darken-2",
+    SWAP_REQUESTED: "primary",
     PENDING: "grey",
   };
 
@@ -615,10 +618,14 @@ onUnmounted(() => {
 
 <style scoped>
 .scale-details-sheet {
+  display: flex;
+  flex-direction: column;
+  height: min(92dvh, 920px);
   max-height: min(92vh, 920px);
   overflow: hidden;
   border-radius: 22px 22px 0 0 !important;
-  background: #ffffff;
+  background: var(--app-color-surface) !important;
+  color: var(--app-color-text);
 }
 
 .scale-details-handle {
@@ -626,7 +633,7 @@ onUnmounted(() => {
   height: 4px;
   margin: 10px auto 2px;
   border-radius: 999px;
-  background: #d1d5db;
+  background: var(--app-color-border-strong);
 }
 
 .scale-details-header {
@@ -634,8 +641,9 @@ onUnmounted(() => {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 16px;
   align-items: start;
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid #f3f4f6;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--app-color-border-subtle);
+  background: var(--app-color-surface);
 }
 
 .scale-details-kicker,
@@ -648,7 +656,7 @@ onUnmounted(() => {
 }
 
 .scale-details-title {
-  color: #111827;
+  color: var(--app-color-text);
   font-size: 1.35rem;
   font-weight: 850;
   line-height: 1.15;
@@ -664,9 +672,10 @@ onUnmounted(() => {
 }
 
 .scale-details-body {
+  flex: 1 1 auto;
   display: grid;
-  gap: 18px;
-  max-height: calc(min(92vh, 920px) - 96px);
+  gap: 24px;
+  min-height: 0;
   overflow-y: auto;
   /* Sem isso, o navegador computa overflow-x como "auto" tambem (regra do
      CSS: se um eixo de overflow e "visible" e o outro nao, o "visible" vira
@@ -676,35 +685,36 @@ onUnmounted(() => {
      componente lateral arrasta TODAS as linhas de lado, cortando o padding
      esquerdo - era exatamente o que causava o corte visual no mobile. */
   overflow-x: hidden;
-  padding: 18px 20px 24px;
+  padding: 24px;
+  scrollbar-color: var(--app-color-border-strong) transparent;
 }
 
 .scale-details-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .scale-details-stat {
   display: grid;
   gap: 4px;
-  min-height: 74px;
+  min-height: 76px;
   align-content: center;
-  border: 1px solid #f3f4f6;
-  border-radius: 8px;
-  background: #fafafa;
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-color-surface-soft);
   padding: 12px;
 }
 
 .scale-details-stat span {
-  color: #111827;
+  color: var(--app-color-text);
   font-size: 1.35rem;
   font-weight: 900;
   line-height: 1;
 }
 
 .scale-details-stat small {
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   font-size: 0.78rem;
   font-weight: 750;
 }
@@ -712,14 +722,14 @@ onUnmounted(() => {
 .scale-response-panel {
   display: grid;
   gap: 14px;
-  border: 1px solid #f2d3bd;
-  border-radius: 8px;
-  background: var(--app-color-accent-tint, #F7E2D3);
-  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--app-color-accent) 24%, var(--app-color-border));
+  border-radius: var(--app-radius-lg);
+  background: var(--app-color-accent-tint);
+  padding: 16px;
 }
 
 .scale-response-status {
-  color: #111827;
+  color: var(--app-color-text);
   font-size: 0.92rem;
   font-weight: 850;
 }
@@ -745,7 +755,7 @@ onUnmounted(() => {
 
 .scale-details-section-title h3 {
   margin: 0;
-  color: #1f2937;
+  color: var(--app-color-text);
   font-size: 0.95rem;
   font-weight: 850;
 }
@@ -762,16 +772,16 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border: 1px solid #f3f4f6;
-  border-radius: 8px;
-  background: #ffffff;
-  padding: 11px 12px;
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: var(--app-radius-md);
+  background: var(--app-color-surface-soft);
+  padding: 12px 14px;
   text-decoration: none;
 }
 
 .scale-details-person-name,
 .scale-resource-item span {
-  color: #111827;
+  color: var(--app-color-text);
   font-size: 0.88rem;
   font-weight: 800;
 }
@@ -787,10 +797,10 @@ onUnmounted(() => {
   display: flex;
   gap: 10px;
   align-items: center;
-  border: 1px dashed #d1d5db;
-  border-radius: 8px;
-  background: #fafafa;
-  color: #6b7280;
+  border: 1px dashed var(--app-color-border-strong);
+  border-radius: var(--app-radius-md);
+  background: var(--app-color-surface-soft);
+  color: var(--app-color-text-muted);
   padding: 14px;
 }
 
@@ -798,9 +808,9 @@ onUnmounted(() => {
   align-items: flex-start;
   flex-direction: column;
   border-style: solid;
-  color: #92400e;
-  background: #fffbeb;
-  border-color: #fef3c7;
+  color: var(--app-color-warning);
+  background: var(--app-color-warning-tint);
+  border-color: color-mix(in srgb, var(--app-color-warning) 24%, var(--app-color-border));
 }
 
 .scale-song-list {
@@ -810,9 +820,9 @@ onUnmounted(() => {
 }
 
 .scale-song-card {
-  border: 1px solid #f2d3bd;
-  border-radius: 8px;
-  background: #fdfaf8;
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-color-surface-soft);
   touch-action: pan-y;
   transition:
     border-color 0.16s ease,
@@ -865,8 +875,8 @@ onUnmounted(() => {
 }
 
 .scale-song-card:has(.scale-song-info:hover) {
-  border-color: var(--app-color-accent, #B5472A);
-  box-shadow: 0 4px 14px rgba(181, 71, 42, 0.1);
+  border-color: color-mix(in srgb, var(--app-color-accent) 32%, var(--app-color-border));
+  box-shadow: var(--app-shadow-sm);
 }
 
 .scale-song-info:focus-visible {
@@ -891,7 +901,7 @@ onUnmounted(() => {
 }
 
 .scale-song-artist {
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   font-size: 0.82rem;
   font-weight: 650;
 }
@@ -930,6 +940,12 @@ onUnmounted(() => {
   margin-bottom: 12px;
 }
 
+@media (min-width: 900px) {
+  .scale-details-body {
+    padding-inline: 28px;
+  }
+}
+
 @media (max-width: 420px) {
   .scale-song-header {
     grid-template-columns: 1fr;
@@ -945,6 +961,11 @@ onUnmounted(() => {
 
   .scale-details-stats {
     grid-template-columns: 1fr;
+  }
+
+  .scale-details-header,
+  .scale-details-body {
+    padding-inline: 16px;
   }
 
   .scale-details-person,

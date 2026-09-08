@@ -3,7 +3,7 @@
     <div class="ministery-section-actions mb-4">
       <v-btn
         v-if="canManageSchedules"
-        color="purple-darken-3"
+        color="primary"
         class="rounded-lg text-none"
         @click="$emit('create')"
       >
@@ -13,7 +13,7 @@
 
     <v-card
       v-if="schedules.length === 0 && !schedulesError"
-      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
     >
       <Calendar size="32" color="#9CA3AF" class="mb-3" />
       <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -25,7 +25,7 @@
       <v-card
         v-for="schedule in visibleSchedules"
         :key="schedule.id"
-        class="ministery-content-card pa-4 elevation-1 bg-white"
+        class="ministery-content-card app-surface pa-4"
       >
         <div class="d-flex justify-space-between align-start ga-3">
           <div>
@@ -36,7 +36,7 @@
               {{ formatScheduleDate(schedule.date) }}
             </p>
           </div>
-          <v-chip size="small" color="purple-darken-3" variant="tonal">
+          <v-chip size="small" color="primary" variant="tonal">
             {{ schedule.assignments?.length || 0 }} voluntários
           </v-chip>
         </div>
@@ -49,7 +49,7 @@
             v-for="item in schedule.mediaItems"
             :key="item.id"
             size="small"
-            :color="item.mediaItem.category === 'MUSIC' ? 'purple-darken-3' : 'teal-darken-2'"
+            :color="item.mediaItem.category === 'MUSIC' ? 'primary' : 'teal-darken-2'"
             variant="tonal"
             class="schedule-media-chip"
             @click="$emit('open-media', item.mediaItem)"
@@ -79,7 +79,7 @@
         <div v-if="canManageSchedules" class="ministery-card-actions mt-3">
           <v-btn
             variant="text"
-            color="purple-darken-3"
+            color="primary"
             class="text-none font-weight-medium"
             size="small"
             @click="$emit('open-assignments', schedule)"
@@ -92,6 +92,7 @@
             variant="text"
             color="grey-darken-1"
             size="small"
+            :aria-label="`Editar escala ${schedule.title}`"
             @click="$emit('edit', schedule)"
           >
             <Pencil size="16" />
@@ -101,6 +102,7 @@
             variant="text"
             color="red-darken-2"
             size="small"
+            :aria-label="`Excluir escala ${schedule.title}`"
             @click="$emit('delete', schedule)"
           >
             <Trash2 size="16" />
@@ -112,7 +114,7 @@
     <div v-if="schedules.length > 1" class="d-flex justify-center mt-4">
       <v-btn
         variant="text"
-        color="purple-darken-3"
+        color="primary"
         class="text-none font-weight-medium"
         @click="$emit('update:showAllSchedules', !showAllSchedules)"
       >
@@ -207,7 +209,7 @@ defineEmits<{
   padding: 9px 10px;
   border: 1px solid #f3f4f6;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--app-color-surface);
 }
 .schedule-assignment-name,
 .schedule-assignment-role {

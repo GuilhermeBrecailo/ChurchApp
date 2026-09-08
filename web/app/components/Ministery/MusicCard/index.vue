@@ -1,7 +1,7 @@
 <template>
   <v-card
     color="white"
-    class="music-card rounded-xl pa-4 mb-3 elevation-1 d-flex align-center"
+    class="music-card app-surface app-interactive-surface rounded-xl pa-4 mb-3 d-flex align-center"
   >
     <div class="music-icon-wrapper rounded-lg d-flex align-center justify-center mr-4 flex-shrink-0">
       <Music size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
@@ -79,7 +79,7 @@ const getBadgeColor = (categoria) => {
 }
 
 .music-card {
-  background-color: #ffffff !important;
+  background-color: var(--app-color-surface) !important;
   color: #111827;
 }
 </style>

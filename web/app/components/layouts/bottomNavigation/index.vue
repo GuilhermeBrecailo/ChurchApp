@@ -1,6 +1,7 @@
 <template>
   <v-bottom-navigation
     class="bottom-nav"
+    aria-label="Navegação principal"
     height="68"
     :bg-color="isDark ? 'transparent' : 'transparent'"
     app
@@ -178,7 +179,7 @@ const handleMoreSelect = (route: string) => {
 
 .custom-btn.v-btn--active {
   color: var(--app-color-accent) !important;
-  background-color: transparent !important;
+  background-color: var(--app-color-accent-tint) !important;
 }
 
 .custom-btn.v-btn--active .nav-icon {

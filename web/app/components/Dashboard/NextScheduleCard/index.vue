@@ -59,7 +59,7 @@
       </div>
       <v-btn
         to="/scale"
-        color="purple-darken-3"
+        color="primary"
         variant="tonal"
         size="small"
         class="text-none"

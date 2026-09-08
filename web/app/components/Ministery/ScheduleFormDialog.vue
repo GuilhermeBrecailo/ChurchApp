@@ -1,6 +1,6 @@
 <template>
   <UtilsResponsiveOverlay v-model="isOpen" max-width="520" variant="form" scrollable>
-    <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+    <v-card class="app-surface rounded-xl pa-6" elevation="0">
       <div class="responsive-dialog-header mb-5">
         <div class="d-flex align-center min-w-0">
           <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
@@ -27,7 +27,7 @@
           prepend-inner-icon="mdi-calendar-text-outline"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           bg-color="white"
           class="ministery-input mb-4"
           hide-details="auto"
@@ -35,7 +35,7 @@
         />
 
         <div v-if="lockedCultLabel" class="locked-cult mb-4">
-          <v-icon size="20" color="purple-darken-3">mdi-church</v-icon>
+          <v-icon size="20" color="primary">mdi-church</v-icon>
           <div class="min-w-0">
             <p class="text-caption text-grey-darken-1 mb-0">Culto selecionado</p>
             <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
@@ -53,7 +53,7 @@
           prepend-inner-icon="mdi-church"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           bg-color="white"
           class="ministery-input mb-4"
           hide-details="auto"
@@ -67,7 +67,7 @@
             type="date"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             bg-color="white"
             class="ministery-input"
             hide-details="auto"
@@ -79,7 +79,7 @@
             type="time"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             bg-color="white"
             class="ministery-input"
             hide-details="auto"
@@ -94,7 +94,7 @@
             type="date"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             bg-color="white"
             class="ministery-input"
             hide-details="auto"
@@ -106,7 +106,7 @@
             type="time"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             bg-color="white"
             class="ministery-input"
             hide-details="auto"
@@ -120,7 +120,7 @@
           prepend-inner-icon="mdi-text"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           bg-color="white"
           class="ministery-input mb-4"
           hide-details="auto"
@@ -176,7 +176,7 @@
           prepend-inner-icon="mdi-file-document-outline"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           bg-color="white"
           class="ministery-input mb-4"
           hide-details="auto"
@@ -208,7 +208,7 @@
           </v-btn>
           <v-btn
             type="submit"
-            color="purple-darken-3"
+            color="primary"
             class="text-none font-weight-bold"
             :loading="isCreatingSchedule"
             :disabled="isCreatingSchedule"

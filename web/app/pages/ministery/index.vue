@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 bg-grey-lighten-4 min-vh-100">
+  <div class="pa-4 min-vh-100 app-operational-page">
     <div class="app-help-header mb-5">
       <div class="min-w-0">
         <div class="app-help-title-row">
@@ -9,7 +9,7 @@
           <div class="ministery-header-actions">
             <v-btn
               v-if="canCreateDepartment"
-              color="purple-darken-3"
+              color="primary"
               class="rounded-lg text-none px-4"
               elevation="2"
               @click="isDepartmentDialogOpen = true"
@@ -30,7 +30,7 @@
         v-for="tab in listTabs"
         :key="tab.value"
         :variant="activeTab === tab.value ? 'flat' : 'outlined'"
-        :color="activeTab === tab.value ? 'purple-darken-3' : 'grey-darken-1'"
+        :color="activeTab === tab.value ? 'primary' : 'grey-darken-1'"
         class="tab-chip font-weight-medium cursor-pointer"
         @click="activeTab = tab.value"
       >
@@ -64,7 +64,7 @@
 
     <v-card
       v-else-if="departments.length === 0 && !departmentsError"
-      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
     >
       <Building size="32" color="#9CA3AF" class="mb-3" />
       <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -72,7 +72,7 @@
       </p>
       <v-btn
         v-if="canCreateDepartment"
-        color="purple-darken-3"
+        color="primary"
         variant="tonal"
         class="rounded-lg text-none mt-4"
         @click="isDepartmentDialogOpen = true"
@@ -83,7 +83,7 @@
 
     <v-card
       v-else-if="activeTab === 'overview'"
-      class="rounded-xl pa-4 elevation-1 bg-white border-subtle"
+      class="app-surface rounded-xl pa-4 border-subtle"
     >
       <p class="text-caption font-weight-bold text-grey-darken-1 mb-3">
         Por tipo
@@ -97,14 +97,14 @@
           <span class="text-body-2 font-weight-bold text-grey-darken-4">
             {{ item.label }}
           </span>
-          <v-chip size="small" variant="tonal" color="purple-darken-3">
+          <v-chip size="small" variant="tonal" color="primary">
             {{ item.total }}
           </v-chip>
         </div>
       </div>
       <v-btn
         variant="text"
-        color="purple-darken-3"
+        color="primary"
         class="text-none font-weight-bold mt-2"
         @click="activeTab = 'departments'"
       >
@@ -134,9 +134,10 @@
           icon
           variant="text"
           color="red-darken-2"
-          size="small"
-          class="ministery-delete-btn"
-          :disabled="isDeletingDepartment"
+      size="small"
+      class="ministery-delete-btn"
+      :aria-label="`Excluir ministério ${department.name}`"
+      :disabled="isDeletingDepartment"
           @click.stop="handleDeleteDepartment(department)"
         >
           <Trash2 size="17" />
@@ -155,7 +156,7 @@
     </v-alert>
 
     <UtilsResponsiveOverlay v-model="isDepartmentDialogOpen" max-width="520" variant="form" scrollable>
-      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+      <v-card class="app-surface rounded-xl pa-6" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
             <v-avatar color="#F7E2D3" size="44" class="mr-3">
@@ -189,7 +190,7 @@
             prepend-inner-icon="mdi-domain"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             bg-color="white"
             class="ministery-input mb-4"
             hide-details="auto"
@@ -206,7 +207,7 @@
             prepend-inner-icon="mdi-shape-outline"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             bg-color="white"
             class="ministery-input mb-4"
             hide-details="auto"
@@ -222,7 +223,7 @@
             prepend-inner-icon="mdi-account-star-outline"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             bg-color="white"
             class="ministery-input mb-4"
             hide-details="auto"
@@ -246,7 +247,7 @@
               "
               :color="
                 departmentForm.modules.includes(module.value)
-                  ? 'purple-darken-3'
+                  ? 'primary'
                   : 'grey-darken-1'
               "
               class="cursor-pointer font-weight-medium"
@@ -279,7 +280,7 @@
             </v-btn>
             <v-btn
               type="submit"
-              color="purple-darken-3"
+              color="primary"
               class="text-none font-weight-bold"
               :loading="isCreatingDepartment"
               :disabled="isCreatingDepartment"
@@ -551,19 +552,19 @@ onMounted(async () => {
   min-height: 72px;
   align-content: center;
   gap: 5px;
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--app-color-surface);
   padding: 14px;
 }
 .ministery-summary-item span {
-  color: #111827;
+  color: var(--app-color-text);
   font-size: 1.3rem;
   font-weight: 900;
   line-height: 1;
 }
 .ministery-summary-item small {
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   font-size: 0.82rem;
   font-weight: 750;
 }
@@ -592,7 +593,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
   border-radius: 8px;
   padding: 10px 12px;
 }
@@ -611,7 +612,7 @@ onMounted(async () => {
   z-index: 2;
 }
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
 }
 .ministery-input :deep(.v-field) {
   border-radius: 14px;

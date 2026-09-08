@@ -1,6 +1,6 @@
 <template>
   <v-card
-    class="ministery-card rounded-lg pa-5 elevation-1 cursor-pointer"
+    class="ministery-card app-surface app-interactive-surface rounded-lg pa-5 cursor-pointer"
     role="button"
     tabindex="0"
     @click="$emit('click')"
@@ -17,7 +17,7 @@
           <h3 class="ministery-title mb-0">
             {{ ministerio.nome }}
           </h3>
-          <v-chip v-if="ministerio.tipo" size="x-small" color="purple-darken-3" variant="tonal">
+          <v-chip v-if="ministerio.tipo" size="x-small" color="primary" variant="tonal">
             {{ ministerio.tipo }}
           </v-chip>
         </div>

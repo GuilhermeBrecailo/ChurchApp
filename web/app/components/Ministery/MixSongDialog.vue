@@ -1,6 +1,6 @@
 <template>
   <UtilsResponsiveOverlay v-model="isOpen" max-width="560" variant="form" scrollable>
-    <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+    <v-card class="app-surface rounded-xl pa-6" elevation="0">
       <div class="responsive-dialog-header mb-5">
         <div class="d-flex align-center min-w-0">
           <v-avatar color="#F7E2D3" size="44" class="mr-3">
@@ -18,6 +18,7 @@
           variant="text"
           color="grey-darken-1"
           size="small"
+          aria-label="Fechar combinação de músicas"
           :disabled="isCreatingMix"
           @click="$emit('close')"
         >
@@ -34,7 +35,7 @@
           label="Música 1"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           :disabled="isCreatingMix"
         />
@@ -47,7 +48,7 @@
           label="Música 2"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           :disabled="isCreatingMix"
         />
@@ -57,7 +58,7 @@
           label="Título do mix"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           :disabled="isCreatingMix"
         />
@@ -78,7 +79,7 @@
 
         <v-btn
           type="submit"
-          color="purple-darken-3"
+          color="primary"
           class="rounded-lg text-none"
           block
           :loading="isCreatingMix"

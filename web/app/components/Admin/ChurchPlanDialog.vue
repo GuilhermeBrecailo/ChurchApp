@@ -38,7 +38,7 @@
           item-value="value"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           hide-details="auto"
           class="mb-4"
         />
@@ -49,7 +49,7 @@
           label="Trial expira em"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           hide-details="auto"
           clearable
           class="mb-1"
@@ -67,7 +67,7 @@
         <v-spacer />
         <v-btn variant="text" class="text-none" @click="close">Cancelar</v-btn>
         <v-btn
-          color="purple-darken-3"
+          color="primary"
           variant="flat"
           class="text-none font-weight-bold"
           :loading="isSaving"

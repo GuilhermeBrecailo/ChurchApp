@@ -7,10 +7,10 @@
     mobile-class="personal-chords-sheet"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <v-card rounded="lg">
+    <v-card class="personal-chords-card app-surface" elevation="0">
       <v-card-item>
         <template #prepend>
-          <v-icon color="purple-darken-3" size="20">mdi-pencil-outline</v-icon>
+          <v-icon color="primary" size="20">mdi-pencil-outline</v-icon>
         </template>
         <v-card-title class="text-subtitle-1 font-weight-bold">
           Minha cifra
@@ -37,7 +37,7 @@
             label="Meu tom"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="personal-chords-input"
             hide-details="auto"
             clearable
@@ -51,7 +51,7 @@
           label="Minha cifra"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="personal-chords-input personal-chords-textarea mb-3"
           hide-details="auto"
           rows="9"
@@ -70,7 +70,7 @@
             Usar cifra da escala
           </v-btn>
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="text-none"
             :loading="isSavingSongPreference"
             :disabled="isLoadingSongPreference"
@@ -93,7 +93,7 @@
           placeholder="Ex: acelerar no refrão, atenção na ponte..."
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="personal-chords-input mb-3"
           hide-details="auto"
           rows="3"
@@ -104,7 +104,7 @@
         <div class="personal-chords-actions">
           <v-spacer />
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="text-none"
             :loading="isSavingSongPreference"
             :disabled="isLoadingSongPreference"
@@ -147,6 +147,10 @@ defineEmits<{
 </script>
 
 <style scoped>
+.personal-chords-card {
+  overflow: hidden;
+}
+
 .personal-chords-input :deep(.v-field) {
   border-radius: 14px;
 }

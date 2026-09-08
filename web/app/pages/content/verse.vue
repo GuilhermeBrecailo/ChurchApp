@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 pb-8 page-wrapper">
+  <div class="pa-4 pb-8 page-wrapper app-operational-page">
     <div class="verse-header mb-4">
       <div class="content-detail-title-group min-w-0">
         <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
@@ -14,7 +14,7 @@
 
     <v-btn
       v-if="canPublish"
-      color="purple-darken-3"
+      color="primary"
       class="text-none font-weight-bold rounded-lg mb-5"
       block
       elevation="1"
@@ -70,7 +70,7 @@
             class="rounded-xl pa-4 elevation-0 border-subtle mb-2"
           >
             <div class="d-flex align-center justify-space-between mb-2 gap-3">
-              <p class="text-subtitle-2 font-weight-bold text-indigo-darken-2 mb-0">
+              <p class="text-subtitle-2 font-weight-bold text-primary mb-0">
                 {{ verse.reference }}
               </p>
               <span class="text-caption text-grey-darken-1">
@@ -109,6 +109,7 @@
             variant="text"
             color="grey-darken-1"
             size="small"
+            aria-label="Fechar publicação do versículo"
             :disabled="isPublishing"
             @click="closePublishDialog"
           >
@@ -123,7 +124,7 @@
             placeholder="Ex.: João 3:16"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="mb-4"
             hide-details="auto"
             :disabled="isPublishing"
@@ -134,7 +135,7 @@
             label="Texto do versículo"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="mb-4"
             rows="4"
             auto-grow
@@ -147,7 +148,7 @@
             label="Comentário (opcional)"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="mb-4"
             rows="3"
             auto-grow
@@ -162,7 +163,7 @@
             prepend-inner-icon="mdi-video-outline"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="mb-2"
             hide-details="auto"
             :disabled="isPublishing"
@@ -170,7 +171,7 @@
 
           <v-switch
             v-model="publishForm.isPublic"
-            color="purple-darken-3"
+            color="primary"
             density="compact"
             hide-details
             class="mb-1"
@@ -203,7 +204,7 @@
             </v-btn>
             <v-btn
               type="submit"
-              color="purple-darken-3"
+              color="primary"
               class="text-none font-weight-bold"
               :loading="isPublishing"
               :disabled="isPublishing"

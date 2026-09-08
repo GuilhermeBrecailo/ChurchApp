@@ -1,6 +1,6 @@
 <template>
   <UtilsResponsiveOverlay v-model="isOpen" max-width="560" variant="form" scrollable>
-    <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+  <v-card class="app-surface rounded-xl pa-6" elevation="0">
       <div class="responsive-dialog-header mb-5">
         <div class="d-flex align-center min-w-0">
           <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
@@ -41,7 +41,7 @@
           prepend-inner-icon="mdi-account-outline"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           bg-color="white"
           class="ministery-input"
           hide-details="auto"
@@ -55,7 +55,7 @@
           placeholder="ex: Teclado"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           bg-color="white"
           class="ministery-input"
           hide-details="auto"
@@ -65,7 +65,7 @@
       </div>
 
       <v-btn
-        color="purple-darken-3"
+        color="primary"
         variant="tonal"
         class="text-none mb-4"
         :disabled="isSavingAssignments || !assignmentForm.userId"
@@ -78,7 +78,7 @@
         <v-card
           v-for="assignment in draftAssignments"
           :key="assignment.userId"
-          class="rounded-lg pa-3 bg-grey-lighten-5"
+          class="app-surface-muted rounded-lg pa-3"
           elevation="0"
         >
           <div class="d-flex justify-space-between align-start ga-3 flex-wrap">
@@ -91,7 +91,7 @@
                 placeholder="Função (ex: Teclado)"
                 variant="underlined"
                 density="compact"
-                color="purple-darken-3"
+                color="primary"
                 hide-details
                 class="assignment-role-input mb-1"
                 :disabled="isSavingAssignments"
@@ -99,7 +99,7 @@
               <div class="d-flex flex-wrap ga-2 mt-2">
                 <v-chip
                   size="x-small"
-                  :color="assignment.viewedAt ? 'indigo-darken-2' : 'grey'"
+                  :color="assignment.viewedAt ? 'primary' : 'grey'"
                   variant="tonal"
                 >
                   {{ assignment.viewedAt ? "Viu" : "Não viu" }}
@@ -134,6 +134,7 @@
                 variant="text"
                 color="teal-darken-2"
                 size="small"
+                :aria-label="`Marcar ${assignment.name} como presente`"
                 :disabled="isSavingAssignments"
                 @click="$emit('mark-attendance', assignment, 'PRESENT')"
               >
@@ -144,6 +145,7 @@
                 variant="text"
                 color="red-darken-2"
                 size="small"
+                :aria-label="`Marcar ${assignment.name} como ausente`"
                 :disabled="isSavingAssignments"
                 @click="$emit('mark-attendance', assignment, 'ABSENT')"
               >
@@ -154,6 +156,7 @@
                 variant="text"
                 color="grey-darken-1"
                 size="small"
+                :aria-label="`Remover ${assignment.name} da escala`"
                 :disabled="isSavingAssignments"
                 @click="$emit('remove-draft-assignment', assignment.userId)"
               >
@@ -166,7 +169,7 @@
 
       <v-card
         v-else
-        class="rounded-lg pa-5 bg-grey-lighten-5 text-center mb-4"
+        class="app-surface-muted rounded-lg pa-5 text-center mb-4"
         elevation="0"
       >
         <p class="text-caption text-grey-darken-1 mb-0">
@@ -195,7 +198,7 @@
           Cancelar
         </v-btn>
         <v-btn
-          color="purple-darken-3"
+          color="primary"
           class="text-none font-weight-bold"
           :loading="isSavingAssignments"
           :disabled="isSavingAssignments"

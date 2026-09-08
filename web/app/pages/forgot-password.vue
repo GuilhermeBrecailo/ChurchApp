@@ -5,7 +5,7 @@
       <div class="auth-card-inner">
         <div class="flex flex-col items-center mb-8 text-center">
           <div class="auth-icon-circle mb-4">
-            <v-icon size="40" color="purple-darken-3">mdi-lock-reset</v-icon>
+            <v-icon size="40" color="primary">mdi-lock-reset</v-icon>
           </div>
           <h1 class="app-page-title auth-title">Recuperar senha</h1>
           <p class="auth-subtitle mt-2">
@@ -21,7 +21,7 @@
         <v-btn
           to="/login"
           block
-          color="purple-darken-3"
+          color="primary"
           size="x-large"
           class="auth-btn text-none font-bold"
           rounded="xl"
@@ -54,7 +54,7 @@ definePageMeta({
 .auth-card {
   border-radius: 28px !important;
   border: 1px solid rgba(229, 231, 235, 0.9) !important;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 24px 64px rgba(33, 30, 27, 0.12), 0 4px 16px rgba(33, 30, 27, 0.06) !important;
   background: var(--app-color-surface) !important;
   overflow: hidden;
   border-color: var(--app-color-border) !important;
@@ -95,7 +95,7 @@ definePageMeta({
   letter-spacing: 0.01em !important;
 }
 
-:global(.app-theme-dark) .auth-btn.bg-purple-darken-3 {
+:global(.app-theme-dark) .auth-btn.bg-primary {
   box-shadow: 0 4px 16px rgba(240, 151, 90, 0.3) !important;
 }
 </style>

@@ -28,7 +28,7 @@
               v-bind="menuProps"
               icon
               variant="tonal"
-              color="purple-darken-3"
+              color="primary"
               size="small"
               aria-label="Rolagem automática"
             >
@@ -36,7 +36,7 @@
             </v-btn>
           </template>
 
-          <v-card min-width="260" rounded="lg" elevation="4">
+          <v-card class="playlist-reader-controls-card app-surface" min-width="260" elevation="0">
             <v-card-text class="pa-4">
               <p class="playlist-reader-control-label mb-1">Rolagem automática</p>
               <span class="text-caption text-grey-darken-1">{{ scrollSpeedLabel }}</span>
@@ -46,7 +46,7 @@
                 max="80"
                 step="4"
                 density="compact"
-                color="purple-darken-3"
+                color="primary"
                 hide-details
                 class="mt-1"
               />
@@ -85,7 +85,7 @@
               <v-switch
                 v-model="isBold"
                 label="Negrito"
-                color="purple-darken-3"
+                color="primary"
                 density="compact"
                 hide-details
                 inset
@@ -155,7 +155,7 @@
     <v-btn
       v-if="showResumeScrollButton"
       class="playlist-resume-btn text-none"
-      color="purple-darken-3"
+      color="primary"
       rounded="pill"
       prepend-icon="mdi-play"
       @click="resumeAutoScroll"
@@ -471,7 +471,7 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 18px 10px;
+  padding: max(14px, env(safe-area-inset-top)) 18px 10px;
   border-bottom: 1px solid var(--app-color-border);
 }
 
@@ -575,7 +575,21 @@ onBeforeUnmount(() => {
   font-weight: 800;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 600px) {
+  .playlist-reader-header {
+    flex-wrap: wrap;
+    padding-inline: 14px;
+  }
+
+  .playlist-reader-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .playlist-reader-tabs {
+    margin-right: auto;
+  }
+
   .playlist-song-title {
     font-size: 1.35rem;
   }

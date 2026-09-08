@@ -1,5 +1,5 @@
 <template>
-  <v-card class="confirmation-card rounded-xl pa-5 elevation-1 mb-4" :class="{ 'confirmation-card--confirmed': isConfirmed }">
+  <v-card class="confirmation-card app-surface rounded-xl pa-5 mb-4" :class="{ 'confirmation-card--confirmed': isConfirmed }">
     <div class="d-flex align-center gap-3 mb-4">
       <v-avatar size="40" :color="statusBg">
         <component :is="statusIcon" size="20" :color="statusIconColor" />
@@ -30,7 +30,7 @@
 
     <div v-if="currentStatus === 'PENDING' || currentStatus === 'MAYBE'" class="d-flex gap-2 flex-wrap">
       <v-btn
-        color="indigo-darken-2"
+        color="primary"
         variant="flat"
         size="small"
         class="text-none font-weight-bold"

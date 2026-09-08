@@ -16,7 +16,7 @@
       </div>
       <v-btn
         :to="`/pastoral/visitas?memberId=${personId}`"
-        color="purple-darken-3"
+        color="primary"
         class="text-none font-weight-bold"
       >
         <HandHeart size="16" class="mr-2" />
@@ -63,7 +63,7 @@
               </v-chip>
               <v-chip
                 v-if="openVisits.length"
-                color="purple-darken-3"
+                color="primary"
                 variant="tonal"
                 size="small"
               >

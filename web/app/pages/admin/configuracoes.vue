@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="canAccessChurchAdmin"
-    class="church-admin-page pa-4 bg-grey-lighten-4 min-vh-100 pb-20"
+    class="church-admin-page app-operational-page pa-4 min-vh-100 pb-20"
   >
     <div class="config-header mb-4">
       <div class="content-detail-title-group min-w-0">
@@ -35,7 +35,7 @@
         </div>
 
         <div v-if="inviteCodeLoading" class="d-flex justify-center pa-4">
-          <v-progress-circular indeterminate size="28" color="indigo-darken-2" />
+          <v-progress-circular indeterminate size="28" color="primary" />
         </div>
 
         <template v-else>
@@ -59,7 +59,7 @@
 
           <div class="d-flex gap-2 flex-wrap">
             <v-btn
-              color="indigo-darken-2"
+              color="primary"
               variant="flat"
               size="small"
               class="text-none font-weight-bold"
@@ -108,7 +108,7 @@
           </div>
 
           <div v-if="whatsappStatusLoading" class="d-flex justify-center pa-4">
-            <v-progress-circular indeterminate size="28" color="purple-darken-3" />
+            <v-progress-circular indeterminate size="28" color="primary" />
           </div>
 
           <template v-else>
@@ -125,7 +125,7 @@
             <div class="d-flex gap-2 flex-wrap">
               <v-btn
                 v-if="!whatsappConnected"
-                color="purple-darken-3"
+                color="primary"
                 variant="flat"
                 size="small"
                 class="text-none font-weight-bold"
@@ -150,7 +150,7 @@
       </div>
 
       <UtilsResponsiveOverlay v-model="isWhatsAppDialogOpen" max-width="420" variant="form" scrollable @after-leave="stopWhatsAppPolling">
-        <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+        <v-card class="rounded-xl pa-6 app-surface" elevation="0">
           <div class="responsive-dialog-header mb-4">
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">Conectar WhatsApp</h2>
             <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar configuração do WhatsApp" @click="closeWhatsAppDialog">
@@ -159,7 +159,7 @@
           </div>
 
           <div v-if="isConnectingWhatsApp" class="d-flex flex-column align-center pa-6">
-            <v-progress-circular indeterminate size="32" color="purple-darken-3" class="mb-3" />
+            <v-progress-circular indeterminate size="32" color="primary" class="mb-3" />
             <p class="text-caption text-grey-darken-1 mb-0">Gerando QR code...</p>
           </div>
 
@@ -180,7 +180,7 @@
               <img :src="whatsappQr" alt="QR code do WhatsApp" style="width: 240px; height: 240px; border-radius: 12px;" />
             </div>
             <div class="d-flex align-center justify-center ga-2">
-              <v-progress-circular indeterminate size="16" width="2" color="purple-darken-3" />
+              <v-progress-circular indeterminate size="16" width="2" color="primary" />
               <span class="text-caption text-grey-darken-1">Aguardando leitura...</span>
             </div>
           </template>
@@ -246,7 +246,7 @@
           </v-avatar>
           <v-btn
             variant="tonal"
-            color="purple-darken-3"
+            color="primary"
             size="small"
             class="text-none"
             :loading="isUploadingLogo"
@@ -279,8 +279,8 @@
           prepend-inner-icon="mdi-web"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
-          bg-color="white"
+          color="primary"
+          
           class="mb-3"
           hide-details="auto"
           :disabled="isSavingPublicChurch"
@@ -324,8 +324,8 @@
           label="Estilo da letra"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
-          bg-color="white"
+          color="primary"
+          
           class="mb-4"
           hide-details="auto"
           :disabled="isSavingPublicChurch"
@@ -344,8 +344,8 @@
             prepend-inner-icon="mdi-phone"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
+            color="primary"
+            
             hide-details="auto"
             :disabled="isSavingPublicChurch"
           />
@@ -355,8 +355,8 @@
             prepend-inner-icon="mdi-whatsapp"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
+            color="primary"
+            
             hide-details="auto"
             :disabled="isSavingPublicChurch"
           />
@@ -366,8 +366,8 @@
             prepend-inner-icon="mdi-email"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
+            color="primary"
+            
             hide-details="auto"
             :disabled="isSavingPublicChurch"
           />
@@ -377,8 +377,8 @@
             prepend-inner-icon="mdi-instagram"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
+            color="primary"
+            
             hide-details="auto"
             :disabled="isSavingPublicChurch"
           />
@@ -388,8 +388,8 @@
             prepend-inner-icon="mdi-facebook"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
+            color="primary"
+            
             hide-details="auto"
             :disabled="isSavingPublicChurch"
           />
@@ -399,8 +399,8 @@
             prepend-inner-icon="mdi-youtube"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
+            color="primary"
+            
             hide-details="auto"
             :disabled="isSavingPublicChurch"
           />
@@ -410,8 +410,8 @@
             prepend-inner-icon="mdi-web"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
+            color="primary"
+            
             hide-details="auto"
             :disabled="isSavingPublicChurch"
           />
@@ -439,7 +439,7 @@
 
         <div class="d-flex gap-2 flex-wrap">
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             variant="flat"
             size="small"
             class="text-none font-weight-bold"
@@ -492,8 +492,8 @@
             label="Dia"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
+            color="primary"
+            
             hide-details="auto"
           />
           <v-text-field
@@ -502,8 +502,8 @@
             type="time"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
+            color="primary"
+            
             hide-details="auto"
           />
           <v-text-field
@@ -512,15 +512,15 @@
             placeholder="ex: Culto da Família"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
+            color="primary"
+            
             hide-details="auto"
           />
         </div>
 
         <div class="d-flex gap-2 mb-4">
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="text-none font-weight-bold"
             size="small"
             :loading="isSavingServiceTime"
@@ -560,9 +560,10 @@
               <v-btn
                 icon
                 variant="text"
-                color="red-darken-2"
-                size="small"
-                @click="removeServiceTime(time.id)"
+              color="red-darken-2"
+              size="small"
+              :aria-label="`Excluir horário ${time.label}`"
+              @click="removeServiceTime(time.id)"
               >
                 <Trash2 size="15" />
               </v-btn>
@@ -609,7 +610,7 @@
           v-if="isChurchWideManager"
           to="/plans"
           variant="tonal"
-          color="purple-darken-3"
+          color="primary"
           size="small"
           class="text-none font-weight-bold"
         >
@@ -634,9 +635,9 @@
     </section>
   </div>
 
-  <div v-else class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
+  <div v-else class="pa-4 app-operational-page min-vh-100 pb-20">
     <v-card
-      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle permission-empty"
+      class="rounded-xl pa-6 elevation-1 app-surface d-flex flex-column align-center justify-center border-subtle permission-empty"
     >
       <UserCheck size="34" color="#9CA3AF" class="mb-3" />
       <h1 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
@@ -1116,7 +1117,7 @@ onMounted(async () => {
   padding-bottom: 90px !important; /* Espaço para o Bottom Navigation */
 }
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
 }
 
 .permission-empty {

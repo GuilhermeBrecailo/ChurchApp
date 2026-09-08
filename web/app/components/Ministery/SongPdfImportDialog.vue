@@ -668,6 +668,7 @@ watch(isOpen, (open) => {
   padding: 16px 28px 28px;
   border-top: 1px solid var(--app-color-border-subtle);
   background: var(--app-color-surface);
+  box-shadow: 0 -10px 22px color-mix(in srgb, var(--app-color-surface) 86%, transparent);
 }
 
 @media (max-width: 600px) {
@@ -715,11 +716,15 @@ watch(isOpen, (open) => {
     bottom: -22px;
     justify-content: space-between;
     margin: 20px -18px -22px;
-    padding: 14px 18px 22px;
+    padding: 14px 18px max(22px, env(safe-area-inset-bottom));
+  }
+
+  .pdf-import-actions .v-btn {
+    min-width: 0;
   }
 
   .pdf-import-actions .v-btn:first-child {
-    max-width: 48%;
+    max-width: 46%;
     white-space: normal;
   }
 }

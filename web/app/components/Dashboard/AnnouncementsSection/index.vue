@@ -19,7 +19,7 @@
               {{ announcement.title }}
             </h4>
           </div>
-          <v-chip v-if="announcement.pinned" size="x-small" color="indigo-darken-2" variant="tonal">
+          <v-chip v-if="announcement.pinned" size="x-small" color="secondary" variant="tonal">
             Fixado
           </v-chip>
         </div>

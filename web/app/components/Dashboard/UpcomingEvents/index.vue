@@ -12,7 +12,7 @@
          especifica. -->
     <v-btn
       variant="tonal"
-      color="purple-darken-3"
+      color="primary"
       size="small"
       block
       class="text-none rounded-lg mb-3"

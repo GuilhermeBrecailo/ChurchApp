@@ -21,7 +21,7 @@
 
     <v-card
       v-if="configuredEntries.length"
-      class="help-video-list mb-4 elevation-1 bg-white border-subtle"
+      class="help-video-list app-surface mb-4 border-subtle"
     >
       <div class="help-video-list-heading">
         <div>
@@ -50,7 +50,7 @@
             <v-chip
               size="x-small"
               variant="tonal"
-              :color="row.entry.contentType === 'STEPS' ? 'teal-darken-2' : 'purple-darken-2'"
+              :color="row.entry.contentType === 'STEPS' ? 'teal-darken-2' : 'primary'"
             >
               {{ row.entry.contentType === "STEPS" ? "Imagem+texto" : "Vídeo" }}
             </v-chip>
@@ -60,7 +60,7 @@
             <v-btn
               icon
               variant="text"
-              color="purple-darken-3"
+              color="primary"
               size="small"
               :aria-label="`Editar tutorial de ${row.label}`"
               @click="selectPage(row.pageKey)"
@@ -91,8 +91,8 @@
       label="Tela"
       variant="outlined"
       density="comfortable"
-      color="purple-darken-3"
-      bg-color="white"
+      color="primary"
+      
       hide-details="auto"
       class="admin-input mb-4"
     >
@@ -113,15 +113,15 @@
 
     <v-card
       v-if="selectedPage"
-      class="help-video-form rounded-xl pa-4 elevation-1 bg-white border-subtle"
+      class="help-video-form app-surface rounded-xl pa-4 border-subtle"
     >
       <v-text-field
         v-model="draft.title"
         label="Título"
         variant="outlined"
         density="comfortable"
-        color="purple-darken-3"
-        bg-color="white"
+        color="primary"
+        
         hide-details="auto"
         class="admin-input mb-3"
         :disabled="isSaving"
@@ -132,8 +132,8 @@
         label="Descrição"
         variant="outlined"
         density="comfortable"
-        color="purple-darken-3"
-        bg-color="white"
+        color="primary"
+        
         rows="2"
         auto-grow
         hide-details="auto"
@@ -144,7 +144,7 @@
       <v-btn-toggle
         v-model="draft.contentType"
         mandatory
-        color="purple-darken-3"
+        color="primary"
         density="comfortable"
         variant="outlined"
         class="mb-4"
@@ -172,8 +172,8 @@
           accept="video/mp4,video/webm,video/ogg"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
-          bg-color="white"
+          color="primary"
+          
           prepend-icon=""
           prepend-inner-icon="mdi-video-outline"
           hide-details="auto"
@@ -235,7 +235,7 @@
           <div class="d-flex align-center flex-wrap ga-2 mb-2">
             <v-btn
               variant="tonal"
-              color="purple-darken-3"
+              color="primary"
               size="small"
               class="text-none"
               :loading="step.uploading"
@@ -259,8 +259,8 @@
             label="Texto do passo"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
+            color="primary"
+            
             rows="2"
             auto-grow
             hide-details="auto"
@@ -270,7 +270,7 @@
 
         <v-btn
           variant="tonal"
-          color="purple-darken-3"
+          color="primary"
           size="small"
           class="text-none mb-3"
           :disabled="isSaving"
@@ -282,7 +282,7 @@
 
       <div class="d-flex ga-2">
         <v-btn
-          color="purple-darken-3"
+          color="primary"
           class="text-none font-weight-bold"
           size="small"
           :loading="isSaving"
@@ -715,7 +715,7 @@ const handleRemove = async () => {
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 10px;
   padding: 12px;
-  background: #fafafa;
+  background: var(--app-color-surface-soft);
 }
 
 .help-step-head {

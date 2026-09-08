@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 pb-8 page-wrapper">
+  <div class="pa-4 pb-8 page-wrapper app-operational-page">
     <div class="notif-header mb-5">
       <div class="min-w-0">
         <div class="app-help-title-row">
@@ -8,7 +8,7 @@
             <UtilsPageHelpButton title="Notificações" />
             <v-btn
               v-if="unreadCount > 0"
-              color="purple-darken-3"
+              color="primary"
               variant="tonal"
               size="small"
               class="text-none font-weight-bold rounded-lg"

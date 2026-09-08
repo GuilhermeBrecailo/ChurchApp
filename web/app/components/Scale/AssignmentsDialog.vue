@@ -20,6 +20,7 @@
           variant="text"
           color="grey-darken-1"
           size="small"
+          aria-label="Fechar atribuições"
           :disabled="isSaving"
           @click="handleOpenChange(false)"
         >
@@ -37,9 +38,10 @@
           prepend-inner-icon="mdi-account-outline"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           :bg-color="isDark ? 'transparent' : 'white'"
           class="scale-input"
+          :menu-props="scaleSelectMenuProps"
           hide-details="auto"
           :disabled="isSaving"
         />
@@ -50,9 +52,10 @@
           placeholder="ex: Teclado"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           :bg-color="isDark ? 'transparent' : 'white'"
           class="scale-input"
+          :menu-props="scaleSelectMenuProps"
           hide-details="auto"
           :disabled="isSaving"
         />
@@ -72,7 +75,7 @@
         <v-card
           v-for="assignment in draftAssignments"
           :key="assignment.userId"
-          class="rounded-lg pa-3 bg-grey-lighten-5"
+          class="app-surface-muted rounded-lg pa-3"
           elevation="0"
         >
           <div class="d-flex justify-space-between align-center gap-3">
@@ -86,7 +89,7 @@
               <div class="d-flex flex-wrap ga-2 mt-2">
                 <v-chip
                   size="x-small"
-                  :color="assignment.viewedAt ? 'indigo-darken-2' : 'grey'"
+                  :color="assignment.viewedAt ? 'primary' : 'grey'"
                   variant="tonal"
                 >
                   {{ assignment.viewedAt ? "Viu" : "Não viu" }}
@@ -121,6 +124,7 @@
                 variant="text"
                 color="teal-darken-2"
                 size="small"
+                :aria-label="`Marcar ${assignment.name} como presente`"
                 :disabled="isSaving"
                 @click="markAttendance(assignment, 'PRESENT')"
               >
@@ -131,6 +135,7 @@
                 variant="text"
                 color="red-darken-2"
                 size="small"
+                :aria-label="`Marcar ${assignment.name} como ausente`"
                 :disabled="isSaving"
                 @click="markAttendance(assignment, 'ABSENT')"
               >
@@ -142,6 +147,7 @@
               variant="text"
               color="grey-darken-1"
               size="small"
+              :aria-label="`Remover ${assignment.name} da escala`"
               :disabled="isSaving"
               @click="removeDraftAssignment(assignment.userId)"
             >
@@ -153,7 +159,7 @@
 
       <v-card
         v-else
-        class="rounded-lg pa-5 bg-grey-lighten-5 text-center mb-4"
+        class="app-surface-muted rounded-lg pa-5 text-center mb-4"
         elevation="0"
       >
         <p class="text-caption text-grey-darken-1 mb-0">
@@ -182,7 +188,7 @@
           Cancelar
         </v-btn>
         <v-btn
-          color="purple-darken-3"
+          color="primary"
           class="text-none font-weight-bold"
           :loading="isSaving"
           :disabled="isSaving"
@@ -218,6 +224,11 @@ const emit = defineEmits<{
 
 const { updateScheduleAssignments, updateScheduleAssignmentAttendance } = useDepartments();
 const { isDark } = useThemeMode();
+const scaleSelectMenuProps = {
+  attach: "body",
+  contentClass: "scale-select-menu",
+  maxHeight: 320,
+};
 const accentColor = computed(() => (isDark.value ? "#f0975a" : "#B5472A"));
 const avatarBgColor = computed(() => (isDark.value ? "rgba(240,151,90,0.16)" : "#F7E2D3"));
 
@@ -280,7 +291,7 @@ const responseStatusColor = (status?: string) => {
     CONFIRMED: "teal-darken-2",
     DECLINED: "red-darken-2",
     MAYBE: "grey",
-    SWAP_REQUESTED: "indigo-darken-2",
+    SWAP_REQUESTED: "primary",
     PENDING: "grey",
   };
 

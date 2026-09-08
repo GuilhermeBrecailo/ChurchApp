@@ -1,5 +1,5 @@
 <template>
-  <div class="bible-page pa-4 pb-8">
+  <div class="bible-page pa-4 pb-8 app-operational-page">
     <div class="bible-header mb-4">
       <div class="content-detail-title-group min-w-0">
         <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
@@ -21,7 +21,7 @@
         label="Versão"
         variant="outlined"
         density="comfortable"
-        color="purple-darken-3"
+        color="primary"
         hide-details
         class="bible-select"
         @update:model-value="fetchChapter"
@@ -35,7 +35,7 @@
         label="Livro"
         variant="outlined"
         density="comfortable"
-        color="purple-darken-3"
+        color="primary"
         hide-details
         class="bible-select"
         @update:model-value="onBookChange"
@@ -47,7 +47,7 @@
         label="Capítulo"
         variant="outlined"
         density="comfortable"
-        color="purple-darken-3"
+        color="primary"
         hide-details
         class="bible-select"
         @update:model-value="fetchChapter"
@@ -61,7 +61,7 @@
       <v-chip
         size="x-small"
         variant="tonal"
-        :color="usedFallback ? 'amber-darken-2' : 'purple-darken-3'"
+        :color="usedFallback ? 'amber-darken-2' : 'primary'"
         class="ml-2"
       >
         {{ usedFallback ? "Almeida (alternativa)" : versionLabel }}
@@ -108,7 +108,7 @@
       <details :open="hasUnsavedNote">
         <summary>
           Meu comentário particular
-          <v-icon v-if="originalNoteContent" size="14" color="purple-darken-3" class="ml-1">
+          <v-icon v-if="originalNoteContent" size="14" color="primary" class="ml-1">
             mdi-note-text-outline
           </v-icon>
         </summary>
@@ -122,7 +122,7 @@
           placeholder="Suas anotações sobre este capítulo..."
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           bg-color="white"
           class="bible-note-input mb-3"
           hide-details="auto"
@@ -135,7 +135,7 @@
           <span v-if="noteSavedJustNow" class="text-caption text-green-darken-2">Comentário salvo</span>
           <v-spacer />
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="text-none"
             :loading="isSavingNote"
             :disabled="isLoadingNote || !hasUnsavedNote"
@@ -165,7 +165,7 @@
       <v-spacer />
       <v-btn
         variant="outlined"
-        color="purple-darken-3"
+        color="primary"
         class="text-none"
         :disabled="!hasNextChapter() || loading"
         @click="nextChapter"

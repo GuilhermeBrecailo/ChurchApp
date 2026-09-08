@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 pb-8 page-wrapper">
+  <div class="pa-4 pb-8 page-wrapper app-operational-page">
     <div class="content-page-header mb-4">
       <div class="content-detail-title-group min-w-0">
         <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
@@ -14,7 +14,7 @@
 
     <v-btn
       v-if="canPublish"
-      color="purple-darken-3"
+      color="primary"
       class="text-none font-weight-bold rounded-lg mb-5"
       block
       elevation="1"
@@ -36,7 +36,7 @@
         :to="`/content/devotionals/${devotional.id}`"
         class="devotional-link"
       >
-        <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle devotional-card">
+        <v-card class="app-surface rounded-xl pa-4 border-subtle devotional-card">
           <div class="d-flex align-center mb-3">
             <v-avatar color="#FFF1F2" size="42" class="mr-3">
               <Heart size="20" color="#F43F5E" />
@@ -65,7 +65,7 @@
 
     <v-card
       v-else
-      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
     >
       <Heart size="34" color="#9CA3AF" class="mb-3" />
       <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -102,7 +102,7 @@
             label="Título da série"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="mb-4"
             hide-details="auto"
             :disabled="isSaving"
@@ -113,7 +113,7 @@
             label="Descrição (opcional)"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="mb-4"
             rows="2"
             auto-grow
@@ -128,7 +128,7 @@
             prepend-inner-icon="mdi-video-outline"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             class="mb-2"
             hide-details="auto"
             :disabled="isSaving"
@@ -136,7 +136,7 @@
 
           <v-switch
             v-model="createForm.isPublic"
-            color="purple-darken-3"
+            color="primary"
             density="compact"
             hide-details
             class="mb-1"
@@ -166,6 +166,7 @@
                 variant="text"
                 color="red-darken-2"
                 size="small"
+                :aria-label="`Remover capítulo ${index + 1}`"
                 :disabled="isSaving"
                 @click="removeChapter(index)"
               >
@@ -178,7 +179,7 @@
               label="Título do capítulo"
               variant="outlined"
               density="compact"
-              color="purple-darken-3"
+              color="primary"
               class="mb-3"
               hide-details="auto"
               :disabled="isSaving"
@@ -190,7 +191,7 @@
               placeholder="Ex.: Salmos 23"
               variant="outlined"
               density="compact"
-              color="purple-darken-3"
+              color="primary"
               class="mb-3"
               hide-details="auto"
               :disabled="isSaving"
@@ -201,7 +202,7 @@
               label="Texto"
               variant="outlined"
               density="compact"
-              color="purple-darken-3"
+              color="primary"
               rows="4"
               auto-grow
               hide-details="auto"
@@ -211,7 +212,7 @@
 
           <v-btn
             variant="tonal"
-            color="purple-darken-3"
+            color="primary"
             size="small"
             class="text-none mb-4"
             :disabled="isSaving"
@@ -242,7 +243,7 @@
             </v-btn>
             <v-btn
               type="submit"
-              color="purple-darken-3"
+              color="primary"
               class="text-none font-weight-bold"
               :loading="isSaving"
               :disabled="isSaving"

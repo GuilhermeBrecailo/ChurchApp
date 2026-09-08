@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="canAccessChurchAdmin"
-    class="church-admin-page pa-4 bg-grey-lighten-4 min-vh-100 pb-20"
+    class="church-admin-page app-operational-page pa-4 min-vh-100 pb-20"
   >
     <div class="ministerios-header mb-4">
       <div class="content-detail-title-group min-w-0">
@@ -22,7 +22,7 @@
         </h2>
         <v-btn
           v-if="canManageDepartments"
-          color="purple-darken-3"
+          color="primary"
           class="rounded-lg text-none px-4"
           size="small"
           elevation="1"
@@ -39,8 +39,7 @@
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
           density="compact"
-          color="purple-darken-3"
-          bg-color="white"
+          color="primary"
           hide-details
         />
         <v-select
@@ -52,15 +51,14 @@
           prepend-inner-icon="mdi-shape-outline"
           variant="outlined"
           density="compact"
-          color="purple-darken-3"
-          bg-color="white"
+          color="primary"
           hide-details
         />
       </div>
 
       <v-card
         v-if="departments.length === 0"
-        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+        class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
       >
         <Building size="32" color="#9CA3AF" class="mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -70,7 +68,7 @@
 
       <v-card
         v-else-if="filteredDepartments.length === 0"
-        class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+        class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
       >
         <Building size="32" color="#9CA3AF" class="mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
@@ -102,18 +100,20 @@
             <v-btn
               icon
               variant="text"
-              color="grey-darken-1"
-              size="small"
-              @click.stop="openDepartmentEditDialog(department)"
+          color="grey-darken-1"
+          size="small"
+          :aria-label="`Editar ministério ${department.name}`"
+          @click.stop="openDepartmentEditDialog(department)"
             >
               <v-icon size="18">mdi-pencil-outline</v-icon>
             </v-btn>
             <v-btn
               icon
               variant="text"
-              color="red-darken-2"
-              size="small"
-              @click.stop="handleDeleteDepartment(department)"
+          color="red-darken-2"
+          size="small"
+          :aria-label="`Excluir ministério ${department.name}`"
+          @click.stop="handleDeleteDepartment(department)"
             >
               <v-icon size="18">mdi-delete-outline</v-icon>
             </v-btn>
@@ -142,7 +142,7 @@
     </section>
 
     <UtilsResponsiveOverlay v-model="isDepartmentDialogOpen" max-width="520" variant="form" scrollable>
-      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+      <v-card class="app-surface rounded-xl pa-6" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
             <v-avatar :color="avatarBgPurple" size="44" class="mr-3">
@@ -169,8 +169,7 @@
             prepend-inner-icon="mdi-domain"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
+            color="primary"
             class="admin-input mb-4"
             hide-details="auto"
             autocomplete="off"
@@ -186,8 +185,7 @@
             prepend-inner-icon="mdi-shape-outline"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
+            color="primary"
             class="admin-input mb-4"
             hide-details="auto"
             :disabled="isCreatingDepartment"
@@ -202,8 +200,7 @@
             prepend-inner-icon="mdi-account-star-outline"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
-            bg-color="white"
+            color="primary"
             class="admin-input mb-4"
             hide-details="auto"
             :disabled="isCreatingDepartment"
@@ -231,7 +228,7 @@
             </v-btn>
             <v-btn
               type="submit"
-              color="purple-darken-3"
+              color="primary"
               class="text-none font-weight-bold"
               :loading="isCreatingDepartment"
               :disabled="isCreatingDepartment"
@@ -246,7 +243,7 @@
     <UtilsResponsiveOverlay v-model="isChurchDepartmentDetailsOpen" max-width="520" variant="detail" scrollable>
       <v-card
         v-if="selectedChurchDepartment"
-        class="rounded-xl pa-6 bg-white"
+      class="app-surface rounded-xl pa-6"
         elevation="0"
       >
         <div class="responsive-dialog-header mb-5">
@@ -311,9 +308,9 @@
     />
   </div>
 
-  <div v-else class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
+  <div v-else class="pa-4 app-operational-page min-vh-100 pb-20">
     <v-card
-      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle permission-empty"
+      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle permission-empty"
     >
       <UserCheck size="34" color="#9CA3AF" class="mb-3" />
       <h1 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
@@ -639,7 +636,7 @@ onMounted(async () => {
   padding-bottom: 90px !important; /* Espaço para o Bottom Navigation */
 }
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
 }
 
 .church-admin-page {

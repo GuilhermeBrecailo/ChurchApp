@@ -10,7 +10,7 @@
       @edit-personal-chords="isPersonalChordsSheetOpen = true"
     >
       <template v-if="song?.metadata?.notes" #extra>
-        <p class="text-caption text-grey-darken-1">
+        <p class="song-viewer-notes text-caption">
           {{ song.metadata.notes }}
         </p>
       </template>

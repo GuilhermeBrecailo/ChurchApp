@@ -1,5 +1,5 @@
 <template>
-  <div class="join-page pa-4">
+  <div class="join-page app-operational-page pa-4">
     <div class="join-card-wrap">
       <div class="join-icon-wrap mb-5">
         <Church size="32" :color="isDark ? '#f0975a' : '#B5472A'" />
@@ -13,7 +13,7 @@
           v-model="code"
           label="Código de convite"
           variant="outlined"
-          color="indigo-darken-2"
+          color="primary"
           density="comfortable"
           class="mb-4"
           placeholder="Ex: A1B2C3D4"
@@ -27,7 +27,7 @@
         </v-alert>
 
         <v-btn
-          color="indigo-darken-2"
+          color="primary"
           block
           size="large"
           class="text-none font-weight-bold rounded-xl"
@@ -52,7 +52,7 @@
             v-model="code"
             label="Código de convite"
             variant="outlined"
-            color="indigo-darken-2"
+            color="primary"
             density="comfortable"
             class="mb-4"
             placeholder="Ex: A1B2C3D4"
@@ -63,7 +63,7 @@
           />
 
           <v-btn
-            color="indigo-darken-2"
+            color="primary"
             block
             size="large"
             class="text-none font-weight-bold rounded-xl"
@@ -87,7 +87,7 @@
               prepend-inner-icon="mdi-account-outline"
               variant="outlined"
               density="comfortable"
-              color="indigo-darken-2"
+              color="primary"
               class="join-input mb-4"
               hide-details="auto"
               :disabled="registerLoading"
@@ -101,7 +101,7 @@
               prepend-inner-icon="mdi-email-outline"
               variant="outlined"
               density="comfortable"
-              color="indigo-darken-2"
+              color="primary"
               class="join-input mb-4"
               hide-details="auto"
               :disabled="registerLoading"
@@ -115,7 +115,7 @@
               prepend-inner-icon="mdi-phone-outline"
               variant="outlined"
               density="comfortable"
-              color="indigo-darken-2"
+              color="primary"
               class="join-input mb-4"
               hide-details="auto"
               :disabled="registerLoading"
@@ -130,7 +130,7 @@
               :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
               variant="outlined"
               density="comfortable"
-              color="indigo-darken-2"
+              color="primary"
               class="join-input mb-4"
               hide-details="auto"
               :disabled="registerLoading"
@@ -145,7 +145,7 @@
               prepend-inner-icon="mdi-lock-check-outline"
               variant="outlined"
               density="comfortable"
-              color="indigo-darken-2"
+              color="primary"
               class="join-input mb-4"
               hide-details="auto"
               :disabled="registerLoading"
@@ -164,7 +164,7 @@
             <v-btn
               type="submit"
               block
-              color="indigo-darken-2"
+              color="primary"
               size="large"
               class="text-none font-weight-bold rounded-xl"
               :loading="registerLoading"
@@ -195,7 +195,7 @@
           <v-btn
             to="/login"
             block
-            color="indigo-darken-2"
+            color="primary"
             size="large"
             class="text-none font-weight-bold rounded-xl"
           >

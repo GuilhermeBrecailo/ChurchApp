@@ -10,7 +10,7 @@
         </p>
       </div>
       <v-btn
-        color="purple-darken-3"
+        color="primary"
         class="text-none rounded-lg"
         @click="$emit('go-to-schedules')"
       >
@@ -40,7 +40,7 @@
 
     <v-card
       v-if="canManageMinistryMembers"
-      class="ministery-content-card pa-4 elevation-1 bg-white mb-4"
+      class="ministery-content-card app-surface pa-4 mb-4"
     >
       <div class="leader-card-title mb-3">
         <UserPlus size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
@@ -73,7 +73,7 @@
           :no-data-text="membersCount ? 'Todos os membros já estão neste ministério' : 'Nenhum membro disponível'"
         />
         <v-btn
-          color="purple-darken-3"
+          color="primary"
           class="text-none rounded-lg"
           :loading="isAddingMember"
           :disabled="!selectedMemberToAdd"
@@ -113,6 +113,7 @@
               variant="text"
               size="small"
               color="error"
+              :aria-label="`Remover ${member.name} do ministério`"
               :disabled="member.id === leaderId"
               @click="$emit('request-remove-member', member)"
             >
@@ -125,7 +126,7 @@
               v-for="cargo in memberCargos(member.id)"
               :key="cargo.id"
               size="x-small"
-              color="purple-darken-3"
+              color="primary"
               variant="tonal"
               :closable="isAssigningCargo !== member.id"
               @click:close="$emit('remove-cargo', member.id, cargo.id)"
@@ -155,7 +156,7 @@
             />
             <v-btn
               size="small"
-              color="purple-darken-3"
+              color="primary"
               variant="tonal"
               class="text-none"
               :loading="isAssigningCargo === member.id"
@@ -176,7 +177,7 @@
       <v-card
         v-for="metric in leaderMetrics"
         :key="metric.label"
-        class="leader-metric-card pa-4 elevation-1 bg-white"
+        class="leader-metric-card app-surface pa-4"
       >
         <div class="leader-metric-icon" :class="metric.className">
           <component :is="metric.icon" size="18" />
@@ -187,7 +188,7 @@
     </div>
 
     <div class="leader-panel-grid mb-4">
-      <v-card class="ministery-content-card pa-4 elevation-1 bg-white">
+      <v-card class="ministery-content-card app-surface pa-4">
         <div class="leader-card-title mb-3">
           <AlertTriangle size="18" color="#B45309" />
           <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
@@ -219,7 +220,7 @@
         </p>
       </v-card>
 
-      <v-card class="ministery-content-card pa-4 elevation-1 bg-white">
+      <v-card class="ministery-content-card app-surface pa-4">
         <div class="leader-card-title mb-3">
           <BarChart3 size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
           <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
@@ -245,7 +246,7 @@
       </v-card>
     </div>
 
-    <v-card class="ministery-content-card pa-4 elevation-1 bg-white mb-4">
+    <v-card class="ministery-content-card app-surface pa-4 mb-4">
       <div class="leader-card-title mb-3">
         <BellRing size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
         <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
@@ -270,7 +271,7 @@
               </span>
             </p>
             <div class="d-flex flex-wrap ga-2 mt-2">
-              <v-chip size="x-small" color="indigo-darken-2" variant="tonal">
+              <v-chip size="x-small" color="primary" variant="tonal">
                 {{ schedule.assignments?.length || 0 }} escalados
               </v-chip>
               <v-chip size="x-small" color="teal-darken-2" variant="tonal">
@@ -285,7 +286,7 @@
           <PlanLock v-if="canSendNotifications" feature="SCHEDULE_REMINDER">
             <v-btn
               variant="tonal"
-              color="purple-darken-3"
+              color="primary"
               class="text-none leader-reminder-btn"
               :loading="isSendingReminderId === schedule.id"
               :disabled="Boolean(isSendingReminderId) || !(schedule.assignments?.length)"

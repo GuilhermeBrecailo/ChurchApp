@@ -1,6 +1,6 @@
 <template>
   <UtilsResponsiveOverlay v-model="isOpen" max-width="520" variant="form" scrollable>
-    <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+    <v-card class="app-surface rounded-xl pa-6" elevation="0">
       <div class="responsive-dialog-header mb-5">
         <div class="d-flex align-center min-w-0">
           <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
@@ -27,7 +27,7 @@
           prepend-inner-icon="mdi-checkbox-marked-outline"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           bg-color="white"
           class="ministery-input mb-4"
           hide-details="auto"
@@ -40,7 +40,7 @@
           prepend-inner-icon="mdi-text"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           bg-color="white"
           class="ministery-input mb-4"
           hide-details="auto"
@@ -56,7 +56,7 @@
           prepend-inner-icon="mdi-flag-outline"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           bg-color="white"
           class="ministery-input mb-4"
           hide-details="auto"
@@ -72,7 +72,7 @@
           prepend-inner-icon="mdi-account-outline"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           bg-color="white"
           class="ministery-input mb-4"
           hide-details="auto"
@@ -102,7 +102,7 @@
           </v-btn>
           <v-btn
             type="submit"
-            color="purple-darken-3"
+            color="primary"
             class="text-none font-weight-bold"
             :loading="isCreatingTask"
             :disabled="isCreatingTask"

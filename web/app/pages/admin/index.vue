@@ -15,7 +15,7 @@
             <v-btn
               v-if="isPlatformAdmin && canAccessChurchAdmin"
               variant="text"
-              color="indigo-darken-2"
+              color="primary"
               size="small"
               class="text-none dual-role-switch"
               @click="router.push('/platform-admin')"
@@ -39,16 +39,12 @@
     </v-alert>
 
     <div class="hub-list">
-      <v-card
+      <NuxtLink
         v-for="item in visibleAdminHubItems"
         :key="item.route"
-        class="member-card app-surface app-interactive-surface pa-3"
-        role="button"
-        tabindex="0"
+        :to="item.route"
+        class="member-card app-surface app-interactive-surface pa-3 text-decoration-none"
         :aria-label="`Abrir ${item.title}`"
-        @click="router.push(item.route)"
-        @keydown.enter="router.push(item.route)"
-        @keydown.space.prevent="router.push(item.route)"
       >
         <v-avatar :color="item.avatarBg" size="44" class="member-avatar">
           <component :is="item.icon" size="20" :color="item.iconColor" />
@@ -58,7 +54,7 @@
           <p class="text-caption text-grey-darken-1 mb-0">{{ item.description }}</p>
         </div>
         <ChevronRight size="18" class="member-chevron" />
-      </v-card>
+      </NuxtLink>
     </div>
 
     <div class="stats-grid church-stats-grid mb-6">
@@ -135,7 +131,7 @@ const departmentsError = ref("");
 const adminHubItems = computed(() => [
   { route: "/admin/relatorios", title: "Relatórios", description: "Confirmações, presença de culto, liderança", icon: BarChart3, avatarBg: "orange-lighten-4", iconColor: "#B5472A", requiresChurchWideManager: true },
   { route: "/admin/pessoas", title: "Pessoas", description: "Membros, cargos e rol de visitantes", icon: Users, avatarBg: "blue-lighten-4", iconColor: "#2563eb", requiresChurchWideManager: false },
-  { route: "/admin/ministerios", title: "Gestão de ministérios", description: "Escalas, repertório, líderes", icon: Music, avatarBg: "purple-lighten-4", iconColor: "#7c3aed", requiresChurchWideManager: false },
+  { route: "/admin/ministerios", title: "Gestão de ministérios", description: "Escalas, repertório, líderes", icon: Music, avatarBg: "orange-lighten-4", iconColor: "#C2542C", requiresChurchWideManager: false },
   { route: "/admin/publicacoes", title: "Publicações", description: "Avisos, devocionais, versículo do dia", icon: Newspaper, avatarBg: "teal-lighten-4", iconColor: "#0f766e", requiresChurchWideManager: true },
   { route: "/admin/mensagens", title: "Mensagens", description: "WhatsApp: modelos, envios, aniversariantes", icon: MessageSquare, avatarBg: "orange-lighten-4", iconColor: "#B5472A", requiresChurchWideManager: true },
   { route: "/admin/configuracoes", title: "Configurações", description: "Perfil, horários, WhatsApp, plano", icon: Settings2, avatarBg: "grey-lighten-3", iconColor: "#475569", requiresChurchWideManager: false },
@@ -294,6 +290,8 @@ onMounted(async () => {
   grid-template-columns: 44px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
+  color: var(--app-color-text);
+  text-decoration: none;
 }
 
 .member-avatar {

@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="canAccessChurchAdmin && isChurchWideManager"
-    class="church-admin-page pa-4 bg-grey-lighten-4 min-vh-100 pb-20"
+    class="church-admin-page app-operational-page pa-4 min-vh-100 pb-20"
   >
     <div class="relatorios-header mb-4">
       <div class="content-detail-title-group min-w-0">
@@ -42,34 +42,34 @@
       </div>
 
       <div class="pastoral-report-grid mb-4">
-        <v-card class="report-kpi-card pa-4 elevation-1 bg-white border-subtle">
+        <v-card class="report-kpi-card app-surface pa-4 border-subtle" elevation="0">
           <span>{{ churchReport.confirmationRate }}%</span>
           <small>confirmação nas escalas</small>
         </v-card>
-        <v-card class="report-kpi-card pa-4 elevation-1 bg-white border-subtle">
+        <v-card class="report-kpi-card app-surface pa-4 border-subtle" elevation="0">
           <span>{{ churchReport.attendanceRate }}%</span>
           <small>presença registrada</small>
         </v-card>
-        <v-card class="report-kpi-card pa-4 elevation-1 bg-white border-subtle">
+        <v-card class="report-kpi-card app-surface pa-4 border-subtle" elevation="0">
           <span>{{ churchReport.pendingResponses }}</span>
           <small>respostas pendentes</small>
         </v-card>
-        <v-card class="report-kpi-card pa-4 elevation-1 bg-white border-subtle">
+        <v-card class="report-kpi-card app-surface pa-4 border-subtle" elevation="0">
           <span>{{ churchReport.openTasks }}</span>
           <small>tarefas cadastradas</small>
         </v-card>
-        <v-card class="report-kpi-card pa-4 elevation-1 bg-white border-subtle">
+        <v-card class="report-kpi-card app-surface pa-4 border-subtle" elevation="0">
           <span>{{ rosterReport.visitors }}</span>
           <small>visitantes no rol</small>
         </v-card>
-        <v-card class="report-kpi-card pa-4 elevation-1 bg-white border-subtle">
+        <v-card class="report-kpi-card app-surface pa-4 border-subtle" elevation="0">
           <span>{{ rosterReport.members }}</span>
           <small>membros no rol</small>
         </v-card>
       </div>
 
       <div class="pastoral-report-layout">
-        <v-card class="report-panel pa-4 elevation-1 bg-white border-subtle">
+        <v-card class="report-panel app-surface pa-4 border-subtle" elevation="0">
           <div class="report-panel-title mb-3">
             <BarChart3 size="18" />
             <h3>Ministérios</h3>
@@ -94,7 +94,7 @@
           </div>
         </v-card>
 
-        <v-card class="report-panel pa-4 elevation-1 bg-white border-subtle">
+        <v-card class="report-panel app-surface pa-4 border-subtle" elevation="0">
           <div class="report-panel-title mb-3">
             <UserCheck size="18" />
             <h3>Liderança</h3>
@@ -132,14 +132,14 @@
         </v-card>
       </div>
 
-      <v-card class="report-panel pa-4 elevation-1 bg-white border-subtle mt-4">
+      <v-card class="report-panel app-surface pa-4 border-subtle mt-4" elevation="0">
         <div class="d-flex align-center justify-space-between flex-wrap ga-3 mb-3">
           <div class="report-panel-title mb-0">
             <Users size="18" />
             <h3>Público do culto</h3>
           </div>
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="rounded-lg text-none px-4"
             size="small"
             elevation="1"
@@ -168,7 +168,7 @@
               </span>
               <v-btn
                 variant="tonal"
-                color="purple-darken-3"
+                color="primary"
                 size="small"
                 class="text-none"
                 :loading="finalizingServiceTimeId === serviceTime.id"
@@ -181,7 +181,7 @@
         </div>
 
         <div v-if="attendanceLoading" class="d-flex justify-center pa-6">
-          <v-progress-circular indeterminate size="28" color="purple-darken-3" />
+          <v-progress-circular indeterminate size="28" color="primary" />
         </div>
 
         <template v-else>
@@ -220,7 +220,7 @@
     </section>
 
     <UtilsResponsiveOverlay v-model="isAttendanceDialogOpen" max-width="480" variant="detail" scrollable>
-      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+      <v-card class="app-surface rounded-xl pa-6" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
             Registrar presença
@@ -248,7 +248,7 @@
           item-value="id"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -258,7 +258,7 @@
           type="date"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -269,7 +269,7 @@
           min="0"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -280,7 +280,7 @@
           min="0"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
         />
@@ -289,7 +289,7 @@
           label="Observação (opcional)"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           class="mb-3"
           hide-details="auto"
           rows="2"
@@ -305,7 +305,7 @@
             Cancelar
           </v-btn>
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             variant="flat"
             class="text-none font-weight-bold"
             :disabled="sortedServiceTimes.length === 0"
@@ -319,9 +319,9 @@
     </UtilsResponsiveOverlay>
   </div>
 
-  <div v-else class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
+  <div v-else class="pa-4 app-operational-page min-vh-100 pb-20">
     <v-card
-      class="rounded-xl pa-6 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle permission-empty"
+      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle permission-empty"
     >
       <UserCheck size="34" color="#9CA3AF" class="mb-3" />
       <h1 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
@@ -686,7 +686,7 @@ onMounted(async () => {
   padding-bottom: 90px !important; /* Espaço para o Bottom Navigation */
 }
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
 }
 
 .church-admin-page {
@@ -745,14 +745,14 @@ onMounted(async () => {
 }
 
 .report-kpi-card span {
-  color: #111827;
+  color: var(--app-color-text);
   font-size: 1.4rem;
   font-weight: 900;
   line-height: 1;
 }
 
 .report-kpi-card small {
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   font-size: 0.78rem;
   font-weight: 750;
 }
@@ -776,7 +776,7 @@ onMounted(async () => {
 
 .report-panel-title h3 {
   margin: 0;
-  color: #1f2937;
+  color: var(--app-color-text);
   font-size: 0.92rem;
   font-weight: 850;
 }
@@ -797,7 +797,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  color: #374151;
+  color: var(--app-color-text-soft);
   font-size: 0.82rem;
 }
 
@@ -812,7 +812,7 @@ onMounted(async () => {
   height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: #f3f4f6;
+  background: var(--app-color-surface-muted);
 }
 
 .report-track span {
@@ -824,7 +824,7 @@ onMounted(async () => {
 
 .report-row small,
 .leadership-row small {
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   font-size: 0.74rem;
   font-weight: 650;
 }
@@ -840,21 +840,21 @@ onMounted(async () => {
 .leadership-summary div {
   display: grid;
   gap: 4px;
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border);
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--app-color-surface-soft);
   padding: 10px;
 }
 
 .leadership-summary strong {
-  color: #111827;
+  color: var(--app-color-text);
   font-size: 1.1rem;
   font-weight: 900;
   line-height: 1;
 }
 
 .leadership-summary span {
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   font-size: 0.72rem;
   font-weight: 750;
 }
@@ -862,15 +862,15 @@ onMounted(async () => {
 .leadership-row {
   display: grid;
   gap: 3px;
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--app-color-surface-soft);
   padding: 10px 11px;
   border-color: var(--app-color-border);
 }
 
 .leadership-row span {
-  color: #111827;
+  color: var(--app-color-text);
   font-size: 0.84rem;
   font-weight: 800;
 }
@@ -884,22 +884,22 @@ onMounted(async () => {
 .attendance-totals div {
   display: grid;
   gap: 4px;
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border);
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--app-color-surface-soft);
   padding: 10px;
   border-color: var(--app-color-border);
 }
 
 .attendance-totals strong {
-  color: #111827;
+  color: var(--app-color-text);
   font-size: 1.1rem;
   font-weight: 900;
   line-height: 1;
 }
 
 .attendance-totals span {
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   font-size: 0.72rem;
   font-weight: 750;
 }
@@ -915,28 +915,28 @@ onMounted(async () => {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--app-color-surface-soft);
   padding: 10px 11px;
   border-color: var(--app-color-border);
 }
 
 .finalize-service-row strong {
   display: block;
-  color: #111827;
+  color: var(--app-color-text);
   font-size: 0.84rem;
   font-weight: 800;
 }
 
 .finalize-service-row small {
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   font-size: 0.74rem;
   font-weight: 700;
 }
 
 .finalize-service-time {
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   font-size: 0.74rem;
   font-weight: 700;
 }
@@ -951,22 +951,22 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--app-color-surface-soft);
   padding: 10px 11px;
   border-color: var(--app-color-border);
 }
 
 .attendance-row strong {
   display: block;
-  color: #111827;
+  color: var(--app-color-text);
   font-size: 0.84rem;
   font-weight: 800;
 }
 
 .attendance-row small {
-  color: #6b7280;
+  color: var(--app-color-text-muted);
   font-size: 0.74rem;
   font-weight: 700;
 }
@@ -979,7 +979,7 @@ onMounted(async () => {
 }
 
 .attendance-counts span {
-  color: #374151;
+  color: var(--app-color-text-soft);
   font-size: 0.76rem;
   font-weight: 700;
 }

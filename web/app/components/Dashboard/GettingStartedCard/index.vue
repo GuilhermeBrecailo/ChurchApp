@@ -24,12 +24,12 @@
 
           <template v-if="membersCount <= 1">
             <div v-if="inviteCodeLoading" class="d-flex justify-center pa-2">
-              <v-progress-circular indeterminate size="22" color="purple-darken-3" />
+              <v-progress-circular indeterminate size="22" color="primary" />
             </div>
             <div v-else class="setup-invite-row">
               <span class="setup-invite-code">{{ inviteCodeValue || "—" }}</span>
               <v-btn
-                color="purple-darken-3"
+                color="primary"
                 variant="flat"
                 size="small"
                 class="text-none font-weight-bold"
@@ -58,7 +58,7 @@
 
           <v-btn
             v-if="departmentsCount === 0"
-            color="purple-darken-3"
+            color="primary"
             variant="flat"
             size="small"
             class="text-none font-weight-bold"

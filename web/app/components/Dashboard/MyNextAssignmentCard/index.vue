@@ -38,7 +38,7 @@
 
     <div v-if="mySlot.confirmationStatus === 'PENDING'" class="d-flex gap-2 flex-wrap">
       <v-btn
-        color="purple-darken-3"
+        color="primary"
         variant="tonal"
         size="small"
         class="text-none font-weight-bold confirm-btn"
@@ -49,7 +49,7 @@
         <CheckCircle size="15" class="mr-1" /> Confirmar
       </v-btn>
       <v-btn
-        color="purple-darken-3"
+        color="primary"
         variant="outlined"
         size="small"
         class="text-none confirm-btn-outline"

@@ -94,7 +94,7 @@
               <v-btn
                 v-if="notifications.length"
                 variant="text"
-                color="purple-darken-3"
+                color="primary"
                 size="small"
                 class="text-none"
                 :disabled="inboxLoading || unreadCount === 0"
@@ -330,7 +330,7 @@ onMounted(async () => {
   background: var(--app-color-appbar-bg) !important;
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  padding: 5px 20px;
+  padding: 5px clamp(12px, 2.5vw, 20px);
   border-bottom: 1px solid var(--app-color-appbar-border) !important;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04) !important;
 }
@@ -395,7 +395,7 @@ onMounted(async () => {
 .notification-card {
   --church-accent: #B5472A;
   width: min(360px, calc(100vw - 32px));
-  border-radius: 8px;
+  border-radius: 16px;
   background: var(--app-color-surface);
   color: var(--app-color-text);
   border: 1px solid var(--app-color-border);
@@ -551,5 +551,28 @@ onMounted(async () => {
   font-size: 0.84rem;
   line-height: 1.35;
   color: var(--app-color-text-muted) !important;
+}
+
+@media (max-width: 600px) {
+  .appbar {
+    padding-inline: 10px;
+  }
+
+  .header-identity-wrap {
+    max-width: calc(100% - 84px);
+  }
+
+  .greeting-text,
+  .church-text {
+    font-size: 0.84rem;
+  }
+
+  .church-switcher {
+    max-width: 150px;
+  }
+
+  .notification-card {
+    width: min(360px, calc(100vw - 20px));
+  }
 }
 </style>

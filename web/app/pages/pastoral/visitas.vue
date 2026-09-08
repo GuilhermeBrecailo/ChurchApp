@@ -9,7 +9,7 @@
       </div>
       <v-btn
         v-if="canManagePastoralCare"
-        color="purple-darken-3"
+        color="primary"
         class="text-none"
         @click="openCreateDialog"
       >
@@ -22,7 +22,7 @@
     </v-alert>
 
     <template v-else>
-      <div class="visit-filters mb-4">
+      <div class="visit-filters app-surface-muted pa-1 mb-4">
         <v-btn-toggle v-model="statusFilter" mandatory divided density="comfortable">
           <v-btn value="ALL" class="text-none">Todas</v-btn>
           <v-btn value="OPEN" class="text-none">Abertas</v-btn>
@@ -85,7 +85,7 @@
             >
               <CheckCircle2 size="15" class="mr-1" /> Concluir
             </v-btn>
-            <v-btn size="small" color="purple-darken-3" variant="tonal" class="text-none" @click="openEditDialog(visit)">
+            <v-btn size="small" color="primary" variant="tonal" class="text-none" @click="openEditDialog(visit)">
               <Pencil size="15" class="mr-1" /> Editar
             </v-btn>
             <v-btn size="small" color="red-darken-2" variant="tonal" class="text-none" @click="confirmDeleteId = visit.id">
@@ -102,7 +102,7 @@
       variant="form"
       scrollable
     >
-      <v-card class="pa-5">
+      <v-card class="app-surface pa-5" elevation="0">
         <div class="responsive-dialog-header mb-4">
           <div>
             <p class="app-page-kicker mb-1">Cuidado pastoral</p>
@@ -129,7 +129,7 @@
             item-value="id"
             label="Pessoa"
             variant="outlined"
-            color="purple-darken-3"
+            color="primary"
             class="mb-3"
           />
 
@@ -137,7 +137,7 @@
             v-model="form.reason"
             label="Motivo"
             variant="outlined"
-            color="purple-darken-3"
+            color="primary"
             class="mb-3"
           />
 
@@ -149,7 +149,7 @@
               item-value="value"
               label="Prioridade"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
             />
             <v-select
               v-model="form.status"
@@ -158,7 +158,7 @@
               item-value="value"
               label="Status"
               variant="outlined"
-              color="purple-darken-3"
+              color="primary"
             />
           </div>
 
@@ -167,7 +167,7 @@
             type="datetime-local"
             label="Data prevista"
             variant="outlined"
-            color="purple-darken-3"
+            color="primary"
             class="mb-3"
           />
 
@@ -176,7 +176,7 @@
             label="Observações"
             rows="3"
             variant="outlined"
-            color="purple-darken-3"
+            color="primary"
             class="mb-3"
           />
 
@@ -186,7 +186,7 @@
 
           <div class="dialog-actions d-flex justify-end ga-2">
             <v-btn variant="text" class="text-none" @click="dialogOpen = false">Cancelar</v-btn>
-            <v-btn type="submit" color="purple-darken-3" class="text-none" :loading="saving">
+            <v-btn type="submit" color="primary" class="text-none" :loading="saving">
               Salvar
             </v-btn>
           </div>
@@ -342,7 +342,7 @@ function priorityColor(value: PastoralVisitPriority) {
   if (value === "URGENT") return "red-darken-2";
   if (value === "HIGH") return "orange-darken-2";
   if (value === "LOW") return "grey-darken-1";
-  return "purple-darken-3";
+  return "primary";
 }
 
 async function loadData() {
@@ -448,6 +448,7 @@ onMounted(loadData);
 
 .visit-filters {
   overflow-x: auto;
+  border-radius: var(--app-radius-card);
 }
 
 .visit-grid {
@@ -521,6 +522,31 @@ onMounted(loadData);
   margin-bottom: 12px;
 }
 
+.visit-card {
+  transition:
+    border-color var(--app-motion-duration-fast) ease,
+    transform var(--app-motion-duration-fast) var(--app-motion-ease-standard);
+}
+
+.visit-card:hover {
+  border-color: color-mix(in srgb, var(--app-color-accent) 26%, var(--app-color-border));
+  transform: translateY(-1px);
+}
+
+.visit-card:focus-within {
+  border-color: var(--app-color-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visit-card {
+    transition: none;
+  }
+
+  .visit-card:hover {
+    transform: none;
+  }
+}
+
 @media (min-width: 680px) {
   .visit-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -528,6 +554,12 @@ onMounted(loadData);
 
   .visit-form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .visit-actions .v-btn {
+    flex: 1 1 auto;
   }
 }
 </style>

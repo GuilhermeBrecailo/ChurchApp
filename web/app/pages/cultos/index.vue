@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 page-wrapper min-vh-100 pb-16">
+  <div class="pa-4 page-wrapper min-vh-100 pb-16 app-operational-page">
     <div class="cultos-page-header mb-5">
       <div>
         <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">Cultos</h1>
@@ -9,7 +9,7 @@
       </div>
       <v-btn
         v-if="canCreateCult"
-        color="purple-darken-3"
+        color="primary"
         class="text-none font-weight-bold"
         size="small"
         @click="openCreateDialog"
@@ -18,7 +18,7 @@
       </v-btn>
     </div>
 
-    <v-progress-circular v-if="loading" indeterminate size="28" color="purple-darken-3" class="ma-4" />
+    <v-progress-circular v-if="loading" indeterminate size="28" color="primary" class="ma-4" />
 
     <template v-else>
       <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mb-4">
@@ -33,7 +33,7 @@
         </p>
         <v-btn
           v-if="canCreateCult"
-          color="purple-darken-3"
+          color="primary"
           variant="tonal"
           class="text-none"
           size="small"
@@ -46,7 +46,7 @@
         <v-card
           v-for="item in upcoming"
           :key="`${item.occurrenceId ?? item.serviceTimeId}-${item.date}`"
-          class="cultos-card elevation-1"
+          class="cultos-card app-surface app-interactive-surface"
           role="button"
           tabindex="0"
           :loading="resolvingKey === `${item.serviceTimeId}-${item.date}`"
@@ -54,7 +54,10 @@
           @keydown.enter="openUpcoming(item)"
           @keydown.space.prevent="openUpcoming(item)"
         >
-          <div class="culto-image-frame">
+          <div
+            class="culto-image-frame"
+            :class="{ 'culto-image-frame--with-image': Boolean(item.imageUrl) }"
+          >
             <img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.label" />
             <div v-else class="culto-image-placeholder">
               <Cross size="34" color="#B5472A" />
@@ -65,7 +68,7 @@
             <p class="text-caption text-grey-darken-1 mb-3">
               {{ weekdayName(item.weekday) }} · {{ item.time }} · {{ formatDate(item.date) }}
             </p>
-            <v-chip size="x-small" variant="tonal" color="purple-darken-3">
+            <v-chip size="x-small" variant="tonal" color="primary">
               {{ item.scheduleCount }} escalas
             </v-chip>
           </div>
@@ -80,14 +83,17 @@
         <v-card
           v-for="item in recent"
           :key="item.id"
-          class="cultos-card elevation-1"
+          class="cultos-card app-surface app-interactive-surface"
           role="button"
           tabindex="0"
           @click="router.push(`/cultos/${item.id}`)"
           @keydown.enter="router.push(`/cultos/${item.id}`)"
           @keydown.space.prevent="router.push(`/cultos/${item.id}`)"
         >
-          <div class="culto-image-frame">
+          <div
+            class="culto-image-frame"
+            :class="{ 'culto-image-frame--with-image': Boolean(item.imageUrl) }"
+          >
             <img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.label" />
             <div v-else class="culto-image-placeholder">
               <Cross size="34" color="#B5472A" />
@@ -99,7 +105,7 @@
               {{ weekdayName(item.weekday) }} · {{ item.time }} · {{ formatDate(item.date) }}
             </p>
             <div class="d-flex ga-2">
-              <v-chip size="x-small" variant="tonal" color="purple-darken-3">
+              <v-chip size="x-small" variant="tonal" color="primary">
                 {{ item.scheduleCount }} escalas
               </v-chip>
               <v-chip size="x-small" variant="tonal">
@@ -145,7 +151,7 @@
         <input ref="fileInput" type="file" accept="image/*" class="d-none" @change="handleImageChange" />
         <v-btn
           variant="tonal"
-          color="purple-darken-3"
+          color="primary"
           size="small"
           class="text-none mb-4"
           :loading="isUploadingImage"
@@ -159,7 +165,7 @@
           label="Título"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           hide-details="auto"
           class="mb-3"
         />
@@ -170,7 +176,7 @@
             type="date"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             hide-details="auto"
           />
           <v-text-field
@@ -179,7 +185,7 @@
             type="time"
             variant="outlined"
             density="comfortable"
-            color="purple-darken-3"
+            color="primary"
             hide-details="auto"
           />
         </div>
@@ -188,7 +194,7 @@
           label="Observações"
           variant="outlined"
           density="comfortable"
-          color="purple-darken-3"
+          color="primary"
           rows="3"
           hide-details="auto"
           class="mb-4"
@@ -203,7 +209,7 @@
             Cancelar
           </v-btn>
           <v-btn
-            color="purple-darken-3"
+            color="primary"
             class="text-none font-weight-bold"
             :loading="isSaving"
             @click="saveCult"
@@ -398,19 +404,21 @@ onMounted(load);
 .cultos-card {
   overflow: hidden;
   cursor: pointer;
-  border: 1px solid var(--app-color-border);
-  border-radius: 16px;
+  border-radius: var(--app-radius-card) !important;
 }
 
-.culto-image-frame,
-.culto-form-image {
+.culto-image-frame {
   width: 100%;
-  aspect-ratio: 16 / 9;
-  background: #f8fafc;
+  min-height: 112px;
+  background: var(--app-color-surface-soft);
 }
 
-.culto-image-frame img,
-.culto-form-image img {
+.culto-image-frame--with-image {
+  aspect-ratio: 16 / 9;
+  min-height: 0;
+}
+
+.culto-image-frame img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -429,7 +437,8 @@ onMounted(load);
 .culto-form-image-placeholder {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #f7e2d3, #fff7ed);
+  background: var(--app-color-accent-tint);
+  border: 1px dashed color-mix(in srgb, var(--app-color-accent) 34%, var(--app-color-border));
 }
 
 .cultos-empty {
@@ -437,8 +446,21 @@ onMounted(load);
   flex-direction: column;
   gap: 12px;
   border: 1px dashed var(--app-color-border);
-  border-radius: 16px;
-  background: #fff;
+  border-radius: var(--app-radius-card);
+  background: var(--app-color-surface);
+}
+
+.culto-form-image {
+  width: 100%;
+  aspect-ratio: 2.4 / 1;
+  background: var(--app-color-surface-soft);
+}
+
+.culto-form-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .culto-form-grid {

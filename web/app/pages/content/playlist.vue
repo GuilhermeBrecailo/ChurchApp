@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 pb-8 page-wrapper">
+  <div class="pa-4 pb-8 page-wrapper app-operational-page">
     <div class="playlist-header mb-5">
       <div class="content-detail-title-group min-w-0">
         <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
@@ -18,7 +18,7 @@
       placeholder="Buscar música..."
       variant="outlined"
       density="comfortable"
-      color="purple-darken-3"
+      color="primary"
       bg-color="white"
       hide-details
       clearable
@@ -41,7 +41,7 @@
       <p class="text-caption text-grey mb-4">
         Abra o repertório de um ministério para salvar o seu tom em cada música
       </p>
-      <v-btn to="/ministery" color="purple-darken-3" variant="tonal" size="small" class="text-none">
+      <v-btn to="/ministery" color="primary" variant="tonal" size="small" class="text-none">
         Ver músicas
       </v-btn>
     </div>
@@ -70,13 +70,13 @@
                   density="compact"
                   variant="outlined"
                   hide-details
-                  color="purple-darken-3"
+                  color="primary"
                   class="playlist-key-select"
                   placeholder="Tom"
                   @update:model-value="(val) => saveKey(song, val)"
                   @click.stop
                 />
-                <v-chip v-if="song.personalKey" size="x-small" color="purple-darken-3" variant="tonal">
+                <v-chip v-if="song.personalKey" size="x-small" color="primary" variant="tonal">
                   Seu tom
                 </v-chip>
               </div>
@@ -218,7 +218,7 @@ onMounted(async () => {
 }
 
 .playlist-card {
-  background: #ffffff;
+  background: var(--app-color-surface);
   border: 1px solid #f3f4f6;
   overflow: hidden;
 }

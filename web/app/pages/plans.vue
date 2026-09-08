@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 pb-8 page-wrapper">
+  <div class="pa-4 pb-8 page-wrapper app-operational-page">
     <div class="plans-header mb-5">
       <div class="min-w-0">
         <div class="app-help-title-row">
@@ -32,7 +32,7 @@
 
         <v-btn
           v-if="rawPlan === 'FREE'"
-          color="purple-darken-3"
+          color="primary"
           variant="flat"
           class="text-none font-weight-bold"
           :loading="isCreatingCheckout"
@@ -54,7 +54,7 @@
         <v-btn
           v-else-if="rawPlan === 'ILIMITADO'"
           variant="tonal"
-          color="purple-darken-3"
+          color="primary"
           class="text-none font-weight-bold"
           @click="openConfirm('upgrade-from-ilimitado')"
         >
@@ -121,7 +121,7 @@
             Cancelar
           </v-btn>
           <v-btn
-            :color="confirmAction === 'downgrade' ? 'red-darken-2' : 'purple-darken-3'"
+            :color="confirmAction === 'downgrade' ? 'red-darken-2' : 'primary'"
             variant="flat"
             class="text-none font-weight-bold"
             :loading="isConfirmLoading"

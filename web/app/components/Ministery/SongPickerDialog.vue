@@ -28,7 +28,7 @@
         prepend-inner-icon="mdi-magnify"
         variant="outlined"
         density="comfortable"
-        color="purple-darken-3"
+        color="primary"
         bg-color="white"
         class="ministery-input song-picker-search"
         hide-details
@@ -64,7 +64,7 @@
 
       <div class="song-picker-footer">
         <v-btn
-          color="purple-darken-3"
+          color="primary"
           class="text-none font-weight-bold"
           block
           @click="$emit('update:modelValue', false)"
@@ -117,6 +117,7 @@ const results = computed(() => {
 .song-picker {
   display: flex;
   flex-direction: column;
+  height: min(72dvh, 600px);
   max-height: min(86vh, 760px);
   border-radius: 16px;
   background: var(--app-color-surface);
