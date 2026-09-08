@@ -36,7 +36,7 @@ services:
       # host - ver /root/microservice-whatsapp no servidor. URL aponta pro IP
       # do host porque os dois docker-compose sao projetos independentes, sem
       # rede compartilhada.
-      - WHATSAPP_SERVICE_URL=${WHATSAPP_SERVICE_URL:-http://192.168.15.8:3060}
+      - WHATSAPP_SERVICE_URL=${WHATSAPP_SERVICE_URL:-http://192.168.15.10:3060}
       - WHATSAPP_GATEWAY_SECRET=${WHATSAPP_GATEWAY_SECRET:-}
     depends_on:
       db:
@@ -129,6 +129,8 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: "auth.churchapp.site"
+      KC_PROXY_HEADERS: "xforwarded"
       KC_HOSTNAME_STRICT: "false"
     depends_on:
       keycloak-db:
