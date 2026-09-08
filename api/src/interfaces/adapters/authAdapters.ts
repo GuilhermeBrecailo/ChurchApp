@@ -18,7 +18,7 @@ const keycloakRealm = process.env.KEYCLOAK_REALM || "clientA";
 const keycloakClientId = process.env.KEYCLOAK_CLIENT_USER_ID || keycloakRealm;
 const refreshCookieDomain =
   process.env.REFRESH_COOKIE_DOMAIN ||
-  (process.env.NODE_ENV === "production" ? ".appcunch.shop" : "");
+  (process.env.NODE_ENV === "production" ? ".churchapp.site" : "");
 const refreshReplayTtlMs = 15_000;
 
 interface AuthToken {
@@ -240,6 +240,9 @@ async function requestKeycloakToken(params: URLSearchParams) {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
+        "X-Forwarded-Proto": "https",
+        "X-Forwarded-Host": "auth.churchapp.site",
+        "X-Forwarded-Port": "443",
       },
       body: params,
     },

@@ -17,6 +17,7 @@ import {
   parseCifraClubTitle,
   extractCifraClubKey,
   deriveLyricsFromChords,
+  preserveCifraClubDisplayOptions,
 } from "./cifraClub";
 
 const songSelect = {
@@ -110,6 +111,7 @@ export class SongAdapters {
         html,
         /<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["'][^>]*>/i,
       ) || targetUrl;
+    const savedUrl = preserveCifraClubDisplayOptions(canonicalUrl, targetUrl);
     const youtubeUrl = extractHtmlAttribute(
       html,
       /(https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]+)/i,
@@ -126,7 +128,7 @@ export class SongAdapters {
       key: extractCifraClubKey(html),
       bpm: "",
       songCategory: "Louvor",
-      url: canonicalUrl,
+      url: savedUrl,
       notes: youtubeUrl ? `YouTube: ${youtubeUrl}` : "",
       lyrics: deriveLyricsFromChords(chords),
       chords,
