@@ -2,30 +2,34 @@
   <section id="produto" class="landing-section landing-product marketing-container">
     <div class="landing-section__heading landing-section__heading--split">
       <div>
-        <p class="landing-kicker">Veja por dentro</p>
-        <h2>Um produto feito para a semana real da igreja.</h2>
+        <p class="landing-kicker">Produto de verdade, rotina de verdade</p>
+        <h2>Veja onde a organização acontece.</h2>
       </div>
       <p>
-        O ChurchApp não é só uma lista de recursos. Ele acompanha o fluxo que começa na organização e termina com cada pessoa sabendo onde precisa estar.
+        O ChurchApp acompanha o fluxo da semana: do resumo da liderança à confirmação da próxima escala, passando pelo conteúdo e pelo cuidado da comunidade.
       </p>
     </div>
 
     <div class="landing-product__frame">
       <div class="landing-product__tabs" role="tablist" aria-label="Demonstração do produto">
         <button
-          v-for="screen in screens"
+          v-for="(screen, index) in screens"
           :id="`tab-${screen.key}`"
           :key="screen.key"
           type="button"
           role="tab"
           :aria-selected="screen.key === activeScreenKey"
           :aria-controls="`panel-${screen.key}`"
+          :tabindex="screen.key === activeScreenKey ? 0 : -1"
           class="landing-product__tab"
           :class="{ 'landing-product__tab--active': screen.key === activeScreenKey }"
           @click="selectScreen(screen.key)"
-          @keydown.enter.prevent="selectScreen(screen.key)"
-          @keydown.space.prevent="selectScreen(screen.key)"
+          @keydown.left.prevent="moveScreen(-1)"
+          @keydown.right.prevent="moveScreen(1)"
+          @keydown.home.prevent="selectScreen(screens[0]?.key ?? '')"
+          @keydown.end.prevent="selectScreen(screens[screens.length - 1]?.key ?? '')"
         >
+          <span class="landing-product__tab-number">0{{ index + 1 }}</span>
           {{ screen.label }}
         </button>
       </div>
@@ -35,6 +39,7 @@
         class="landing-product__preview"
         role="tabpanel"
         :aria-labelledby="`tab-${activeScreen.key}`"
+        tabindex="0"
       >
         <div class="landing-product__image-wrap">
           <div class="landing-product__image-bar" aria-hidden="true">
@@ -53,6 +58,7 @@
         <div class="landing-product__caption">
           <span class="landing-product__caption-number">0{{ activeScreenIndex + 1 }}</span>
           <div>
+            <p class="landing-product__caption-label">Dentro do produto</p>
             <h3>{{ activeScreen.label }}</h3>
             <p>{{ activeScreen.caption }}</p>
           </div>
@@ -89,10 +95,17 @@ const activeScreenKey = ref(props.screens[0]?.key ?? "");
 const activeScreen = computed(
   () => props.screens.find((screen) => screen.key === activeScreenKey.value) ?? props.screens[0] ?? emptyScreen,
 );
-const activeScreenIndex = computed(() => props.screens.findIndex((screen) => screen.key === activeScreen.value?.key));
+const activeScreenIndex = computed(() => Math.max(0, props.screens.findIndex((screen) => screen.key === activeScreen.value.key)));
 
 const selectScreen = (key: string) => {
   activeScreenKey.value = key;
+};
+
+const moveScreen = (direction: number) => {
+  if (!props.screens.length) return;
+
+  const nextIndex = (activeScreenIndex.value + direction + props.screens.length) % props.screens.length;
+  selectScreen(props.screens[nextIndex]?.key ?? "");
 };
 </script>
 
@@ -120,7 +133,7 @@ const selectScreen = (key: string) => {
   color: var(--landing-accent);
   font-size: 0.72rem;
   font-weight: 850;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -146,7 +159,7 @@ const selectScreen = (key: string) => {
   gap: 36px;
   align-items: center;
   padding: clamp(20px, 4vw, 48px);
-  border-radius: 24px;
+  border-radius: 16px;
   background: var(--landing-dark);
   box-shadow: 0 26px 50px rgba(35, 28, 23, 0.15);
 }
@@ -160,15 +173,16 @@ const selectScreen = (key: string) => {
 .landing-product__tab {
   display: flex;
   align-items: center;
+  gap: 12px;
   min-height: 48px;
   padding: 0 14px;
   border: 1px solid transparent;
-  border-radius: 11px;
+  border-radius: 10px;
   background: transparent;
   color: #b7aaa0;
   cursor: pointer;
   font: inherit;
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   font-weight: 750;
   text-align: left;
   transition: background-color 160ms ease, color 160ms ease;
@@ -185,6 +199,16 @@ const selectScreen = (key: string) => {
   color: #fffaf4;
 }
 
+.landing-product__tab-number {
+  color: #8f7e72;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.66rem;
+}
+
+.landing-product__tab--active .landing-product__tab-number {
+  color: #f8c6a8;
+}
+
 .landing-product__preview {
   display: grid;
   grid-template-columns: minmax(190px, 270px) minmax(0, 1fr);
@@ -193,11 +217,16 @@ const selectScreen = (key: string) => {
   min-height: 430px;
 }
 
+.landing-product__preview:focus-visible {
+  outline: 3px solid #f3b291;
+  outline-offset: 6px;
+}
+
 .landing-product__image-wrap {
   width: min(270px, 100%);
   overflow: hidden;
   border: 6px solid #2a2724;
-  border-radius: 24px;
+  border-radius: 22px;
   background: #2a2724;
   box-shadow: 0 22px 40px rgba(0, 0, 0, 0.28);
 }
@@ -235,6 +264,15 @@ const selectScreen = (key: string) => {
   font-weight: 700;
 }
 
+.landing-product__caption-label {
+  margin: 0 0 10px;
+  color: #f3b291;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .landing-product__caption h3 {
   color: #fffaf4;
   font-family: "Fraunces", Georgia, serif;
@@ -244,7 +282,7 @@ const selectScreen = (key: string) => {
   line-height: 1.04;
 }
 
-.landing-product__caption p {
+.landing-product__caption h3 + p {
   max-width: 390px;
   margin: 14px 0 0;
   color: #cdbfb6;
@@ -252,15 +290,17 @@ const selectScreen = (key: string) => {
   line-height: 1.7;
 }
 
+@media (max-width: 900px) {
+  .landing-section__heading--split {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
 @media (max-width: 820px) {
   .landing-section {
     padding-top: 76px;
     padding-bottom: 76px;
-  }
-
-  .landing-section__heading--split {
-    grid-template-columns: 1fr;
-    gap: 16px;
   }
 
   .landing-product__frame {
@@ -282,10 +322,17 @@ const selectScreen = (key: string) => {
   .landing-product__preview {
     grid-template-columns: 1fr;
     justify-items: center;
+    min-height: 0;
   }
 
   .landing-product__caption {
     width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-product__tab {
+    transition: none;
   }
 }
 </style>

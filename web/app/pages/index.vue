@@ -4,11 +4,11 @@
       <div class="app-page-header">
         <div class="app-page-header-copy">
           <div class="app-help-title-row">
-            <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">Início</h1>
+            <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">Sua semana começa aqui</h1>
             <UtilsPageHelpButton title="Início" />
           </div>
           <p class="text-body-2 text-grey-darken-1 mb-0">
-            Resumo da sua igreja, escalas e conteúdos recentes
+            Escalas, avisos e conteúdos importantes para você acompanhar a rotina da igreja.
           </p>
         </div>
       </div>

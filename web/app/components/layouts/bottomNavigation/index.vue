@@ -115,14 +115,12 @@ const handleMoreSelect = (route: string) => {
   width: 100%;
   max-width: 100vw;
   background: var(--app-color-shell-bg) !important;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-top: 1px solid var(--app-color-shell-border) !important;
-  border-radius: 20px 20px 0 0 !important;
+  border-radius: 16px 16px 0 0 !important;
   padding: 4px max(4px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom))
     max(4px, env(safe-area-inset-left));
   overflow: hidden;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 -4px 18px rgba(31, 30, 29, 0.06) !important;
 }
 
 .nav-label {

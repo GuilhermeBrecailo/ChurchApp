@@ -45,9 +45,10 @@
         :to="item.route"
         class="member-card app-surface app-interactive-surface pa-3 text-decoration-none"
         :aria-label="`Abrir ${item.title}`"
+        :style="{ '--hub-icon': item.iconColor }"
       >
-        <v-avatar :color="item.avatarBg" size="44" class="member-avatar">
-          <component :is="item.icon" size="20" :color="item.iconColor" />
+        <v-avatar size="44" class="member-avatar admin-hub-avatar">
+          <component :is="item.icon" size="20" />
         </v-avatar>
         <div class="member-copy">
           <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">{{ item.title }}</h3>
@@ -129,12 +130,12 @@ const membersError = ref("");
 const departmentsError = ref("");
 
 const adminHubItems = computed(() => [
-  { route: "/admin/relatorios", title: "Relatórios", description: "Confirmações, presença de culto, liderança", icon: BarChart3, avatarBg: "orange-lighten-4", iconColor: "#B5472A", requiresChurchWideManager: true },
-  { route: "/admin/pessoas", title: "Pessoas", description: "Membros, cargos e rol de visitantes", icon: Users, avatarBg: "blue-lighten-4", iconColor: "#2563eb", requiresChurchWideManager: false },
-  { route: "/admin/ministerios", title: "Gestão de ministérios", description: "Escalas, repertório, líderes", icon: Music, avatarBg: "orange-lighten-4", iconColor: "#C2542C", requiresChurchWideManager: false },
-  { route: "/admin/publicacoes", title: "Publicações", description: "Avisos, devocionais, versículo do dia", icon: Newspaper, avatarBg: "teal-lighten-4", iconColor: "#0f766e", requiresChurchWideManager: true },
-  { route: "/admin/mensagens", title: "Mensagens", description: "WhatsApp: modelos, envios, aniversariantes", icon: MessageSquare, avatarBg: "orange-lighten-4", iconColor: "#B5472A", requiresChurchWideManager: true },
-  { route: "/admin/configuracoes", title: "Configurações", description: "Perfil, horários, WhatsApp, plano", icon: Settings2, avatarBg: "grey-lighten-3", iconColor: "#475569", requiresChurchWideManager: false },
+  { route: "/admin/relatorios", title: "Relatórios", description: "Confirmações, presença de culto, liderança", icon: BarChart3, iconColor: "var(--app-color-accent)", requiresChurchWideManager: true },
+  { route: "/admin/pessoas", title: "Pessoas", description: "Membros, cargos e rol de visitantes", icon: Users, iconColor: "var(--app-color-success)", requiresChurchWideManager: false },
+  { route: "/admin/ministerios", title: "Gestão de ministérios", description: "Escalas, repertório, líderes", icon: Music, iconColor: "var(--app-color-accent-soft)", requiresChurchWideManager: false },
+  { route: "/admin/publicacoes", title: "Publicações", description: "Avisos, devocionais, versículo do dia", icon: Newspaper, iconColor: "var(--app-color-success)", requiresChurchWideManager: true },
+  { route: "/admin/mensagens", title: "Mensagens", description: "WhatsApp: modelos, envios, aniversariantes", icon: MessageSquare, iconColor: "var(--app-color-accent)", requiresChurchWideManager: true },
+  { route: "/admin/configuracoes", title: "Configurações", description: "Perfil, horários, WhatsApp, plano", icon: Settings2, iconColor: "var(--app-color-text-muted)", requiresChurchWideManager: false },
 ]);
 
 const visibleAdminHubItems = computed(() =>
@@ -292,6 +293,15 @@ onMounted(async () => {
   gap: 12px;
   color: var(--app-color-text);
   text-decoration: none;
+}
+
+.admin-hub-avatar {
+  background: color-mix(in srgb, var(--hub-icon) 13%, var(--app-color-surface)) !important;
+  color: var(--hub-icon) !important;
+}
+
+.admin-hub-avatar :deep(svg) {
+  color: currentColor !important;
 }
 
 .member-avatar {

@@ -1,7 +1,22 @@
 <template>
-  <div class="auth-page flex items-center justify-center min-h-screen p-4">
-    <MotionFadeInUp class="w-full max-w-md">
-    <v-card class="auth-card w-full max-w-md my-8" elevation="0">
+  <div class="auth-page">
+    <div class="auth-shell">
+      <aside class="auth-promo" aria-label="Comece a organizar sua igreja">
+        <NuxtLink to="/comece" class="auth-brand" aria-label="Voltar para o ChurchApp">
+          <span class="auth-brand__mark"><Church :size="17" aria-hidden="true" /></span>
+          ChurchApp
+        </NuxtLink>
+        <p class="auth-promo__eyebrow">Primeiro passo simples</p>
+        <h2>Comece com a próxima escala e organize o resto no seu ritmo.</h2>
+        <ul class="auth-promo__list">
+          <li><CheckCircle2 :size="17" aria-hidden="true" /> Cadastro da igreja em poucos minutos</li>
+          <li><CheckCircle2 :size="17" aria-hidden="true" /> Convites para líderes e membros</li>
+          <li><CheckCircle2 :size="17" aria-hidden="true" /> Três meses de Pro para experimentar</li>
+        </ul>
+      </aside>
+
+      <MotionFadeInUp class="auth-form-wrap">
+      <v-card class="auth-card w-full max-w-md my-8" elevation="0">
       <div class="auth-card-inner">
         <v-btn
           icon
@@ -19,7 +34,7 @@
               mdi-account-plus-outline
             </v-icon>
           </div>
-          <h1 class="app-page-title auth-title">Cadastrar igreja</h1>
+          <h1 class="app-page-title auth-title">Crie sua igreja</h1>
           <p class="auth-subtitle text-center">
             Crie sua conta de pastor titular para iniciar sua igreja.
           </p>
@@ -145,15 +160,16 @@
           <NuxtLink to="/login" class="auth-link font-bold">Faça login</NuxtLink>
         </div>
       </div>
-    </v-card>
-    </MotionFadeInUp>
+      </v-card>
+      </MotionFadeInUp>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { ChevronLeft } from "lucide-vue-next";
+import { CheckCircle2, ChevronLeft, Church } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 
 definePageMeta({
@@ -252,17 +268,112 @@ const handleRegister = async () => {
 
 <style scoped>
 .auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
+  padding: 28px 20px;
   background: var(--app-color-background) !important;
   background-image: none !important;
 }
 
+.auth-shell {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.86fr) minmax(380px, 1fr);
+  width: min(1020px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: 20px;
+  background: var(--app-color-surface);
+  box-shadow: var(--app-shadow-lg);
+}
+
+.auth-promo {
+  display: flex;
+  min-height: 700px;
+  flex-direction: column;
+  padding: 34px;
+  background: var(--app-color-text);
+  color: #fffaf4;
+}
+
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  width: max-content;
+  color: #fffaf4;
+  font-size: 1rem;
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  text-decoration: none;
+}
+
+.auth-brand__mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--app-color-accent);
+}
+
+.auth-promo__eyebrow {
+  margin: clamp(120px, 18vh, 190px) 0 16px;
+  color: #f3b291;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-promo h2 {
+  max-width: 360px;
+  color: #fffaf4;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(2rem, 3.4vw, 3rem);
+  font-weight: 650;
+  letter-spacing: -0.05em;
+  line-height: 1.04;
+}
+
+.auth-promo__list {
+  display: grid;
+  gap: 14px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+  color: #d8cdc5;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.auth-promo__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.auth-promo__list svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #f3b291;
+}
+
+.auth-form-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 22px;
+}
+
 .auth-card {
-  border-radius: 28px !important;
-  border: 1px solid rgba(229, 231, 235, 0.9) !important;
-  box-shadow: 0 24px 64px rgba(33, 30, 27, 0.12), 0 4px 16px rgba(33, 30, 27, 0.06) !important;
+  border-radius: 14px !important;
+  border: 0 !important;
+  box-shadow: none !important;
   background: var(--app-color-surface) !important;
   overflow: hidden;
   border-color: var(--app-color-border) !important;
@@ -290,7 +401,7 @@ const handleRegister = async () => {
 }
 
 .auth-title {
-  font-size: 2.125rem;
+  font-size: 1.85rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--app-color-text);
@@ -370,5 +481,39 @@ const handleRegister = async () => {
 .auth-terms-hint a {
   color: var(--app-color-accent);
   font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .auth-page {
+    align-items: flex-start;
+    padding: 14px;
+  }
+
+  .auth-shell {
+    display: block;
+    border-radius: 16px;
+  }
+
+  .auth-promo {
+    min-height: 0;
+    padding: 22px;
+  }
+
+  .auth-promo__eyebrow {
+    margin-top: 48px;
+  }
+
+  .auth-promo h2 {
+    font-size: 2rem;
+  }
+
+  .auth-promo__list {
+    gap: 9px;
+    margin-top: 20px;
+  }
+
+  .auth-form-wrap {
+    padding: 8px;
+  }
 }
 </style>

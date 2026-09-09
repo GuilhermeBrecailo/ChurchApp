@@ -1,14 +1,16 @@
 <template>
   <section id="como-funciona" class="landing-section landing-how-it-works marketing-container">
     <div class="landing-section__heading landing-section__heading--center">
-      <p class="landing-kicker">Comece sem complicação</p>
+      <p class="landing-kicker">Comece pelo essencial</p>
       <h2>Da primeira configuração à próxima escala.</h2>
-      <p>Você começa com o essencial e evolui conforme a rotina da sua igreja pede.</p>
+      <p>Você não precisa mudar tudo de uma vez. Organize um fluxo, convide a equipe e evolua a partir da rotina real.</p>
     </div>
 
     <ol class="landing-steps">
       <li v-for="(step, index) in steps" :key="step.title" class="landing-step">
-        <span class="landing-step__number">0{{ index + 1 }}</span>
+        <div class="landing-step__marker">
+          <span>0{{ index + 1 }}</span>
+        </div>
         <div>
           <h3>{{ step.title }}</h3>
           <p>{{ step.description }}</p>
@@ -30,11 +32,11 @@ const steps = [
   },
   {
     title: "Crie a próxima escala",
-    description: "Escolha funções, horários, músicas e responsáveis sem começar uma nova planilha.",
+    description: "Escolha funções, horários, músicas e responsáveis sem começar outra planilha.",
   },
   {
     title: "Deixe todos acompanharem",
-    description: "Cada membro consulta seus compromissos, confirma presença e recebe os avisos importantes.",
+    description: "Cada membro consulta compromissos, confirma presença e recebe avisos importantes.",
   },
 ];
 </script>
@@ -61,7 +63,7 @@ const steps = [
   color: var(--landing-accent);
   font-size: 0.72rem;
   font-weight: 850;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -85,7 +87,7 @@ const steps = [
 .landing-steps {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
+  gap: 12px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -93,32 +95,38 @@ const steps = [
 
 .landing-step {
   position: relative;
-  min-height: 170px;
-  padding: 0 24px 0 0;
+  min-height: 205px;
+  padding: 0 20px 0 0;
 }
 
 .landing-step:not(:last-child)::after {
   content: "";
   position: absolute;
-  top: 15px;
-  right: 20px;
-  width: calc(100% - 48px);
+  top: 17px;
+  right: 22px;
+  width: calc(100% - 52px);
   height: 1px;
   background: var(--landing-line-strong);
   transform: translateX(100%);
 }
 
-.landing-step__number {
+.landing-step__marker {
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  margin-bottom: 24px;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 25px;
+  border: 1px solid var(--landing-accent);
   border-radius: 50%;
-  background: var(--landing-accent);
-  color: #fffaf4;
+  background: var(--landing-background);
+}
+
+.landing-step__marker span {
+  color: var(--landing-accent);
   font-family: "IBM Plex Mono", monospace;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
 }
 

@@ -1,8 +1,10 @@
 <template>
   <header class="marketing-navbar">
+    <a href="#conteudo" class="marketing-skip-link">Pular para o conteúdo</a>
+
     <div class="marketing-navbar__inner">
       <NuxtLink to="/comece" class="marketing-brand" aria-label="ChurchApp — página inicial">
-        <span class="marketing-brand__mark">C</span>
+        <span class="marketing-brand__mark"><Church :size="17" stroke-width="2.4" aria-hidden="true" /></span>
         <span class="marketing-brand__name">ChurchApp</span>
       </NuxtLink>
 
@@ -11,8 +13,9 @@
         class="marketing-navbar__toggle"
         :aria-expanded="isOpen"
         aria-controls="marketing-navigation"
-        aria-label="Abrir menu"
+        :aria-label="isOpen ? 'Fechar menu' : 'Abrir menu'"
         @click="isOpen = !isOpen"
+        @keydown.esc="closeMenu"
       >
         <X v-if="isOpen" :size="20" aria-hidden="true" />
         <Menu v-else :size="20" aria-hidden="true" />
@@ -33,7 +36,7 @@
           Entrar
         </NuxtLink>
         <NuxtLink to="/register" class="marketing-button marketing-button--small" @click="closeMenu">
-          Começar grátis
+          Criar minha conta
           <ArrowUpRight :size="15" aria-hidden="true" />
         </NuxtLink>
       </nav>
@@ -43,7 +46,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { ArrowUpRight, Menu, X } from "lucide-vue-next";
+import { ArrowUpRight, Church, Menu, X } from "lucide-vue-next";
 
 const isOpen = ref(false);
 
@@ -57,8 +60,26 @@ const closeMenu = () => {
   position: sticky;
   top: 14px;
   z-index: 20;
-  width: min(1160px, calc(100% - 32px));
+  width: min(1180px, calc(100% - 32px));
   margin: 14px auto 0;
+}
+
+.marketing-skip-link {
+  position: absolute;
+  top: -100px;
+  left: 12px;
+  z-index: 30;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--landing-dark);
+  color: #fffaf4;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.marketing-skip-link:focus {
+  top: 8px;
 }
 
 .marketing-navbar__inner {
@@ -67,11 +88,10 @@ const closeMenu = () => {
   justify-content: space-between;
   min-height: 64px;
   padding: 8px 10px 8px 14px;
-  border: 1px solid var(--landing-line);
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--landing-paper) 88%, transparent);
-  box-shadow: 0 12px 30px rgba(40, 29, 22, 0.08);
-  backdrop-filter: blur(18px);
+  border: 1px solid var(--landing-line-strong);
+  border-radius: 16px;
+  background: var(--landing-paper);
+  box-shadow: 0 10px 24px rgba(40, 29, 22, 0.07);
 }
 
 .marketing-brand {
@@ -80,8 +100,8 @@ const closeMenu = () => {
   gap: 10px;
   color: var(--landing-ink);
   font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-weight: 850;
+  letter-spacing: -0.035em;
   text-decoration: none;
 }
 
@@ -90,12 +110,9 @@ const closeMenu = () => {
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 11px;
+  border-radius: 10px;
   background: var(--landing-accent);
   color: #fffaf4;
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 1.2rem;
-  line-height: 1;
 }
 
 .marketing-brand__name {
@@ -105,13 +122,13 @@ const closeMenu = () => {
 .marketing-navigation {
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 21px;
 }
 
 .marketing-navigation a {
   color: var(--landing-muted);
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 0.8rem;
+  font-weight: 750;
   text-decoration: none;
   transition: color 160ms ease;
 }
@@ -133,13 +150,13 @@ const closeMenu = () => {
   min-height: 48px;
   padding: 0 18px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 11px;
   background: var(--landing-accent);
   color: #fffaf4 !important;
   font-size: 0.88rem;
   font-weight: 800;
   text-decoration: none;
-  box-shadow: 0 10px 20px rgba(181, 71, 42, 0.2);
+  box-shadow: 0 8px 18px rgba(181, 71, 42, 0.18);
   transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -148,14 +165,14 @@ const closeMenu = () => {
   background: var(--landing-accent-strong);
   color: #fffaf4 !important;
   transform: translateY(-1px);
-  box-shadow: 0 14px 24px rgba(181, 71, 42, 0.25);
+  box-shadow: 0 12px 22px rgba(181, 71, 42, 0.23);
 }
 
 .marketing-button--small {
   min-height: 40px;
   padding-inline: 14px;
   border-radius: 10px;
-  font-size: 0.78rem;
+  font-size: 0.77rem;
 }
 
 .marketing-navbar__toggle {
@@ -164,7 +181,7 @@ const closeMenu = () => {
   width: 42px;
   height: 42px;
   border: 1px solid var(--landing-line-strong);
-  border-radius: 11px;
+  border-radius: 10px;
   background: transparent;
   color: var(--landing-ink);
   cursor: pointer;
@@ -191,8 +208,8 @@ const closeMenu = () => {
     align-items: stretch;
     gap: 0;
     padding: 8px;
-    border: 1px solid var(--landing-line);
-    border-radius: 16px;
+    border: 1px solid var(--landing-line-strong);
+    border-radius: 14px;
     background: var(--landing-paper);
     box-shadow: 0 18px 36px rgba(40, 29, 22, 0.13);
   }
@@ -202,11 +219,11 @@ const closeMenu = () => {
   }
 
   .marketing-navigation a {
-    min-height: 44px;
     display: flex;
     align-items: center;
+    min-height: 44px;
     padding: 0 12px;
-    border-radius: 10px;
+    border-radius: 9px;
   }
 
   .marketing-navigation a:hover,
@@ -228,6 +245,11 @@ const closeMenu = () => {
   .marketing-navigation a,
   .marketing-button {
     transition: none;
+  }
+
+  .marketing-button:hover,
+  .marketing-button:focus-visible {
+    transform: none;
   }
 }
 </style>

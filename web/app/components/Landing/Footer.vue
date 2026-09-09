@@ -1,19 +1,21 @@
 <template>
   <footer class="marketing-footer marketing-container">
     <div class="marketing-footer__main">
-      <NuxtLink to="/comece" class="marketing-brand" aria-label="ChurchApp — página inicial">
-        <span class="marketing-brand__mark">C</span>
-        <span class="marketing-brand__name">ChurchApp</span>
-      </NuxtLink>
-      <p>Organização simples para igrejas que cuidam de pessoas.</p>
-    </div>
+      <div>
+        <NuxtLink to="/comece" class="marketing-brand" aria-label="ChurchApp — página inicial">
+          <span class="marketing-brand__mark"><Church :size="17" stroke-width="2.4" aria-hidden="true" /></span>
+          <span class="marketing-brand__name">ChurchApp</span>
+        </NuxtLink>
+        <p>Organização simples para igrejas que cuidam de pessoas.</p>
+      </div>
 
-    <div class="marketing-footer__links">
-      <a href="#beneficios">Benefícios</a>
-      <a href="#planos">Planos</a>
-      <a href="#faq">FAQ</a>
-      <NuxtLink to="/login">Entrar</NuxtLink>
-      <NuxtLink to="/register">Começar grátis</NuxtLink>
+      <div class="marketing-footer__links">
+        <a href="#beneficios">Benefícios</a>
+        <a href="#produto">Produto</a>
+        <a href="#planos">Planos</a>
+        <a href="#faq">FAQ</a>
+        <NuxtLink to="/login">Entrar</NuxtLink>
+      </div>
     </div>
 
     <div class="marketing-footer__bottom">
@@ -27,6 +29,8 @@
 </template>
 
 <script setup lang="ts">
+import { Church } from "lucide-vue-next";
+
 const currentYear = new Date().getFullYear();
 </script>
 
@@ -38,9 +42,9 @@ const currentYear = new Date().getFullYear();
 
 .marketing-footer__main {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
+  gap: 28px;
   padding: 28px 0;
   border-top: 1px solid var(--landing-line-strong);
 }
@@ -51,8 +55,8 @@ const currentYear = new Date().getFullYear();
   gap: 10px;
   color: var(--landing-ink);
   font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-weight: 850;
+  letter-spacing: -0.035em;
   text-decoration: none;
 }
 
@@ -61,16 +65,13 @@ const currentYear = new Date().getFullYear();
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 11px;
+  border-radius: 10px;
   background: var(--landing-accent);
   color: #fffaf4;
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 1.2rem;
-  line-height: 1;
 }
 
 .marketing-footer__main p {
-  margin: 0;
+  margin: 10px 0 0;
   color: var(--landing-muted);
   font-size: 0.82rem;
 }
@@ -79,12 +80,13 @@ const currentYear = new Date().getFullYear();
 .marketing-footer__bottom {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 18px;
 }
 
 .marketing-footer__links {
-  padding-bottom: 28px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  padding-top: 8px;
 }
 
 .marketing-footer a {
@@ -100,6 +102,7 @@ const currentYear = new Date().getFullYear();
 }
 
 .marketing-footer__bottom {
+  justify-content: space-between;
   padding-top: 18px;
   border-top: 1px solid var(--landing-line);
   color: var(--landing-muted);
@@ -113,19 +116,13 @@ const currentYear = new Date().getFullYear();
 
 @media (max-width: 620px) {
   .marketing-footer__main,
-  .marketing-footer__links,
   .marketing-footer__bottom {
-    align-items: flex-start;
     flex-direction: column;
   }
 
-  .marketing-footer__main p {
-    margin-top: -8px;
-  }
-
   .marketing-footer__links {
-    flex-wrap: wrap;
-    flex-direction: row;
+    justify-content: flex-start;
+    padding-top: 0;
   }
 }
 </style>

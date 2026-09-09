@@ -1,4 +1,4 @@
-self.__APP_QUADRANGULAR_SW_VERSION__ = "2026-08-25-01";
+self.__APP_QUADRANGULAR_SW_VERSION__ = "2026-09-09-01";
 
 const CACHE_NAME = `app-quadrangular-${self.__APP_QUADRANGULAR_SW_VERSION__}`;
 const APP_SHELL = ["/", "/login", "/manifest.webmanifest", "/pwa-icon.svg"];

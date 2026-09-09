@@ -2,9 +2,9 @@
   <section class="landing-final-cta marketing-container">
     <div class="landing-final-cta__inner">
       <div>
-        <p class="landing-kicker">Pronto para organizar melhor?</p>
-        <h2>Comece pela próxima semana da sua igreja.</h2>
-        <p>Crie sua conta, convide sua equipe e veja a rotina ganhar clareza.</p>
+        <p class="landing-kicker">O próximo passo cabe hoje</p>
+        <h2>Comece a próxima semana com a igreja no mesmo lugar.</h2>
+        <p>Crie sua conta, convide sua equipe e tire a próxima escala da conversa perdida.</p>
       </div>
       <NuxtLink to="/register" class="marketing-button marketing-button--hero">
         Cadastrar minha igreja
@@ -30,9 +30,9 @@ import { ArrowRight } from "lucide-vue-next";
   gap: 30px;
   align-items: center;
   padding: clamp(28px, 5vw, 56px);
-  border-radius: 24px;
+  border-radius: 16px;
   background: var(--landing-accent);
-  box-shadow: 0 22px 44px rgba(181, 71, 42, 0.2);
+  box-shadow: 0 22px 44px rgba(181, 71, 42, 0.18);
 }
 
 .landing-final-cta .landing-kicker {

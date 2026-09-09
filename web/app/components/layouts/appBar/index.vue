@@ -328,11 +328,9 @@ onMounted(async () => {
 <style scoped>
 .appbar {
   background: var(--app-color-appbar-bg) !important;
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
   padding: 5px clamp(12px, 2.5vw, 20px);
   border-bottom: 1px solid var(--app-color-appbar-border) !important;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0 2px 10px rgba(31, 30, 29, 0.04) !important;
 }
 
 .header-identity-wrap {
@@ -359,7 +357,7 @@ onMounted(async () => {
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, var(--app-color-accent), var(--app-color-accent-muted));
+  background: var(--app-color-accent);
   box-shadow: 0 2px 8px rgba(181, 71, 42, 0.3);
 }
 
@@ -395,7 +393,7 @@ onMounted(async () => {
 .notification-card {
   --church-accent: #B5472A;
   width: min(360px, calc(100vw - 32px));
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--app-color-surface);
   color: var(--app-color-text);
   border: 1px solid var(--app-color-border);
@@ -426,7 +424,7 @@ onMounted(async () => {
   appearance: none;
   width: 100%;
   border: 1px solid var(--app-color-border);
-  border-radius: 8px;
+  border-radius: 11px;
   background: var(--app-color-surface);
   color: var(--app-color-text);
   cursor: pointer;
@@ -516,7 +514,7 @@ onMounted(async () => {
   gap: 5px;
   padding: 12px;
   border: 1px solid var(--app-color-border);
-  border-radius: 8px;
+  border-radius: 11px;
   background: var(--app-color-background);
 }
 

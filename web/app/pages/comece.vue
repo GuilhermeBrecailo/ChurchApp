@@ -2,7 +2,7 @@
   <div class="marketing-page">
     <LandingMarketingNavbar />
 
-    <main>
+    <main id="conteudo">
       <LandingHero :benefits="benefits" />
 
       <section class="landing-trust-strip marketing-container" aria-label="Condições para começar">
@@ -62,12 +62,12 @@ const config = useRuntimeConfig();
 const siteUrl = computed(() => config.public.siteUrl || "https://churchapp.site");
 
 useSeoMeta({
-  title: "ChurchApp — gestão de igreja sem planilhas",
+  title: "ChurchApp | Organize a rotina da sua igreja",
   description:
-    "Organize membros, ministérios, escalas, avisos e conteúdos da sua igreja em um só lugar. Comece gratuitamente com o ChurchApp.",
-  ogTitle: "ChurchApp — gestão de igreja sem planilhas",
+    "Organize pessoas, ministérios, escalas e comunicação em um só lugar. Comece gratuitamente com o ChurchApp.",
+  ogTitle: "ChurchApp | Organize a rotina da sua igreja",
   ogDescription:
-    "Centralize a rotina da sua igreja e deixe pastores, líderes e membros na mesma página.",
+    "Dê clareza para pastores, líderes e membros acompanharem a rotina da igreja.",
   ogType: "website",
   ogImage: () => `${siteUrl.value}/og-banner.png`,
   twitterCard: "summary_large_image",
@@ -113,7 +113,7 @@ useHead(() => ({
             operatingSystem: "Web",
             url: `${siteUrl.value}/comece`,
             description:
-              "Gestão de membros, ministérios, escalas, avisos e conteúdos para igrejas.",
+              "Gestão de pessoas, ministérios, escalas, avisos e conteúdos para igrejas.",
             offers: structuredDataOffers,
           },
         ],
@@ -135,31 +135,31 @@ const featureHighlights = [
   {
     eyebrow: "Pessoas",
     title: "Membros e cargos",
-    description: "Saiba quem está em cada ministério, qual é sua função e quem pode cuidar de cada tarefa.",
+    description: "Encontre pessoas, funções e responsáveis sem procurar em conversas antigas.",
     icon: UsersRound,
   },
   {
     eyebrow: "Organização",
     title: "Ministérios",
-    description: "Separe equipes, lideranças, recursos e responsabilidades por área da igreja.",
+    description: "Deixe cada equipe com contexto, liderança e próximos passos claros.",
     icon: Church,
   },
   {
     eyebrow: "Rotina",
     title: "Escalas",
-    description: "Monte escalas com funções, ensaios, músicas e confirmações em um único fluxo.",
+    description: "Monte a próxima escala, acompanhe confirmações e reduza cobranças manuais.",
     icon: CalendarCheck,
   },
   {
     eyebrow: "Comunicação",
     title: "Avisos e cuidado",
-    description: "Mantenha a comunidade perto com avisos, devocionais, pedidos de oração e acompanhamento pastoral.",
+    description: "Envie o aviso certo e mantenha pedidos, devocionais e cuidado no mesmo lugar.",
     icon: HeartHandshake,
   },
   {
     eyebrow: "Louvor",
     title: "Repertório e cifras",
-    description: "Organize músicas, letras, tons, cifras e materiais para os ensaios.",
+    description: "Deixe letras, tons, cifras e materiais prontos para o ensaio.",
     icon: Music,
   },
   {
@@ -205,7 +205,7 @@ const faqItems = [
   {
     question: "O que posso organizar no ChurchApp?",
     answer:
-      "Você pode centralizar membros, ministérios, cargos, escalas, repertório, avisos, devocionais, pedidos de oração e outros conteúdos da igreja.",
+      "Você pode centralizar pessoas, ministérios, cargos, escalas, repertório, avisos, devocionais, pedidos de oração e outros conteúdos da igreja.",
   },
   {
     question: "Preciso cadastrar todos os membros para começar?",
@@ -257,13 +257,20 @@ const formattedProPrice = computed(() =>
   --landing-line: rgba(103, 78, 63, 0.14);
   --landing-line-strong: rgba(103, 78, 63, 0.26);
   min-height: 100vh;
-  overflow: hidden;
+  overflow: clip;
   background: var(--landing-background);
   color: var(--landing-ink);
 }
 
+.marketing-page :global(a:focus-visible),
+.marketing-page :global(button:focus-visible),
+.marketing-page :global(summary:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--landing-accent) 55%, white);
+  outline-offset: 3px;
+}
+
 :global(.marketing-container) {
-  width: min(1160px, calc(100% - 40px));
+  width: min(1180px, calc(100% - 40px));
   margin-right: auto;
   margin-left: auto;
 }

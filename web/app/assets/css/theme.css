@@ -17,16 +17,16 @@
   --app-color-accent-soft: #c2542c;
   --app-color-accent-muted: #e07a45;
   --app-color-accent-tint: #f7e2d3;
-  --app-color-background: #f3f4f8;
+  --app-color-background: #f4f5f7;
   --app-color-surface: #ffffff;
-  --app-color-surface-soft: #f8fafc;
+  --app-color-surface-soft: #fafaf9;
   --app-color-surface-muted: #f7e2d3;
-  --app-color-border: #e5e7eb;
-  --app-color-border-strong: #d1d5db;
-  --app-color-text: #111827;
-  --app-color-text-soft: #4b5563;
-  --app-color-text-muted: #6b7280;
-  --app-color-border-subtle: #eef2f7;
+  --app-color-border: #dde2e7;
+  --app-color-border-strong: #c4cbd3;
+  --app-color-text: #1f1e1d;
+  --app-color-text-soft: #514c47;
+  --app-color-text-muted: #6f6a64;
+  --app-color-border-subtle: #e7e9ec;
   --app-shadow-sm: 0 1px 3px rgba(17,24,39,0.06), 0 1px 2px rgba(17,24,39,0.04);
   --app-shadow-md: 0 4px 16px rgba(17,24,39,0.08), 0 2px 6px rgba(17,24,39,0.04);
   --app-shadow-lg: 0 12px 32px rgba(17,24,39,0.1), 0 4px 12px rgba(17,24,39,0.06);
@@ -35,7 +35,7 @@
   --app-radius-sm: 8px;
   --app-radius-md: 10px;
   --app-radius-lg: 12px;
-  --app-radius-card: 12px;
+  --app-radius-card: 14px;
   --app-overlay-radius: 16px;
   --app-overlay-sheet-radius: 24px;
   --app-overlay-content-gap: 16px;
@@ -55,17 +55,17 @@
   --app-color-success-tint: #f0fdfa;
 
   /*
-   * Shell (AppBar / BottomNav) — vidro translúcido com blur.
+   * Shell (AppBar / BottomNav) — superfícies sólidas e estáveis.
    * Usa var() direto em vez do padrão :global(.app-theme-dark) .seletor porque
    * esse padrão não estava sendo compilado nesses dois componentes (bug de
    * scoped CSS + :global() quando o elemento raiz herda o data-v do componente
    * pai) — o override dark simplesmente não existia no CSS final, então a
    * AppBar e a BottomNav ficavam sempre com o fundo claro, mesmo no dark mode.
    */
-  --app-color-appbar-bg: rgba(255, 255, 255, 0.88);
-  --app-color-appbar-border: rgba(229, 231, 235, 0.7);
-  --app-color-shell-bg: rgba(255, 255, 255, 0.92);
-  --app-color-shell-border: rgba(229, 231, 235, 0.6);
+  --app-color-appbar-bg: #ffffff;
+  --app-color-appbar-border: #e7e9ec;
+  --app-color-shell-bg: #ffffff;
+  --app-color-shell-border: #e7e9ec;
 
   /* Paleta semântica "warning" (âmbar — pendências, indisponibilidade, alertas leves) */
   --app-color-warning: #b45309;
@@ -568,8 +568,8 @@ body {
 }
 
 .app-theme-light .v-application {
-  background: #f6f7f9;
-  color: #111827;
+  background: var(--app-color-background);
+  color: var(--app-color-text);
 }
 
 .app-theme-dark .v-application {
@@ -589,6 +589,10 @@ body {
   background: var(--app-color-surface) !important;
   border-color: var(--app-color-border) !important;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+.app-theme-dark .auth-promo {
+  background: #0d1117 !important;
 }
 
 .app-theme-dark .auth-icon-circle {
@@ -1221,4 +1225,54 @@ body {
   min-width: 0;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+}
+
+/* ============================================================
+   MARKETING — utilitários compartilhados entre os componentes da landing.
+   Os componentes da landing usam <style scoped>; por isso o acabamento-base
+   dos CTAs precisa existir aqui para funcionar também fora da navbar.
+   ============================================================ */
+.marketing-page .marketing-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: var(--landing-accent, var(--app-color-accent));
+  color: #fffaf4 !important;
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-decoration: none;
+  box-shadow: 0 8px 18px rgba(181, 71, 42, 0.18);
+  transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.marketing-page .marketing-button:hover,
+.marketing-page .marketing-button:focus-visible {
+  background: var(--landing-accent-strong, var(--app-color-accent));
+  color: #fffaf4 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(181, 71, 42, 0.23);
+}
+
+.marketing-page .marketing-button--small {
+  min-height: 40px;
+  padding-inline: 14px;
+  border-radius: 10px;
+  font-size: 0.77rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-page .marketing-button {
+    transition: none;
+  }
+
+  .marketing-page .marketing-button:hover,
+  .marketing-page .marketing-button:focus-visible {
+    transform: none;
+  }
 }
