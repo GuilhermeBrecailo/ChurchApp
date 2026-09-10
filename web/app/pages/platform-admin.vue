@@ -1468,6 +1468,7 @@ import {
 } from "../../composables/useChurchRoles";
 import { usePermissions } from "../../composables/usePermissions";
 import { PLAN_LABELS, type Plan } from "../../composables/usePlan";
+import { compareListText } from "../utils/listOrdering";
 
 const router = useRouter();
 
@@ -1666,7 +1667,8 @@ const platformStatusSummary = computed(() => ({
 const filteredAdminChurches = computed(() => {
   const search = normalizeFilterText(platformSearch.value);
 
-  return adminChurches.value.filter((church) => {
+  return adminChurches.value
+    .filter((church) => {
     const matchesStatus =
       platformStatusFilter.value === "ALL" ||
       (platformStatusFilter.value === "ACTIVE" && church.isActive) ||
@@ -1677,8 +1679,9 @@ const filteredAdminChurches = computed(() => {
         `${church.name} ${church.city || ""} ${church.state || ""} ${church.document || ""}`,
       ).includes(search);
 
-    return matchesStatus && matchesSearch;
-  });
+      return matchesStatus && matchesSearch;
+    })
+    .sort((first, second) => compareListText(first.name, second.name));
 });
 
 const commercialLeadFunnelOptions = [
@@ -1728,7 +1731,11 @@ const commercialLeadTransitions: Record<CommercialLeadStage, CommercialLeadStage
   PAUSED: ["DISCOVERED"],
 };
 
-const filteredCommercialLeads = computed(() => commercialLeads.value);
+const filteredCommercialLeads = computed(() =>
+  [...commercialLeads.value].sort((first, second) =>
+    compareListText(commercialLeadName(first), commercialLeadName(second)),
+  ),
+);
 
 const commercialLeadStageOptionsForSelected = computed(() => {
   const lead = selectedCommercialLead.value;
@@ -1764,12 +1771,16 @@ const selectedChurchAddress = computed(() => {
 });
 
 const visibleChurchUsers = computed(() => {
-  const users = selectedChurch.value?.users || [];
+  const users = [...(selectedChurch.value?.users || [])].sort((first, second) =>
+    compareListText(first.name, second.name),
+  );
   return showAllChurchUsers.value ? users : users.slice(0, churchPreviewLimit);
 });
 
 const visibleChurchDepartments = computed(() => {
-  const departments = selectedChurch.value?.departments || [];
+  const departments = [...(selectedChurch.value?.departments || [])].sort((first, second) =>
+    compareListText(first.name, second.name),
+  );
   return showAllChurchDepartments.value
     ? departments
     : departments.slice(0, churchPreviewLimit);

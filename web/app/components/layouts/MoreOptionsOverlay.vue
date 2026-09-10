@@ -9,7 +9,6 @@
     <v-card class="more-options-card" elevation="0">
       <div class="more-options-header">
         <div>
-          <p class="app-page-kicker mb-1">Navegação</p>
           <h2>Mais opções</h2>
           <p>{{ props.subtitle }}</p>
         </div>
@@ -45,26 +44,36 @@
       </div>
 
       <div v-else class="more-options-list">
-        <button
-          v-for="entry in filteredItems"
-          :key="entry.key"
-          type="button"
-          class="more-options-row"
-          @click="select(entry.route)"
+        <section
+          v-for="group in filteredGroups"
+          :key="group.key"
+          class="more-options-group"
+          :aria-labelledby="`more-options-${group.key}`"
         >
-          <v-avatar size="38" :color="isDark ? entry.bgColorDark : entry.bgColor">
-            <component
-              :is="iconComponents[entry.icon]"
-              size="18"
-              :color="isDark ? entry.iconColorDark : entry.iconColor"
-              aria-hidden="true"
-            />
-          </v-avatar>
-          <span class="more-options-copy">
-            <strong>{{ entry.title }}</strong>
-            <small>{{ entry.description }}</small>
-          </span>
-        </button>
+          <h3 :id="`more-options-${group.key}`">{{ group.label }}</h3>
+          <div class="more-options-group-list">
+            <button
+              v-for="entry in group.items"
+              :key="entry.key"
+              type="button"
+              class="more-options-row"
+              @click="select(entry.route)"
+            >
+              <v-avatar size="38" :color="isDark ? entry.bgColorDark : entry.bgColor">
+                <component
+                  :is="iconComponents[entry.icon]"
+                  size="18"
+                  :color="isDark ? entry.iconColorDark : entry.iconColor"
+                  aria-hidden="true"
+                />
+              </v-avatar>
+              <span class="more-options-copy">
+                <strong>{{ entry.title }}</strong>
+                <small>{{ entry.description }}</small>
+              </span>
+            </button>
+          </div>
+        </section>
       </div>
     </v-card>
   </UtilsResponsiveOverlay>
@@ -91,6 +100,7 @@ import {
 } from "lucide-vue-next";
 import { computed, ref, watch } from "vue";
 import type { RoleNavigationIcon, RoleNavigationItem } from "../../utils/roleNavigation";
+import { compareListText } from "../../utils/listOrdering";
 
 const props = withDefaults(
   defineProps<{
@@ -121,6 +131,59 @@ const filteredItems = computed(() => {
   return props.items.filter((entry) =>
     `${entry.title} ${entry.description}`.toLowerCase().includes(query),
   );
+});
+
+const groupDefinitions = [
+  {
+    key: "routine",
+    label: "Rotina da igreja",
+    keys: new Set([
+      "pastoral",
+      "visits",
+      "people",
+      "cults",
+      "reports",
+      "team",
+      "scale",
+      "ministries",
+      "churchHub",
+    ]),
+  },
+  {
+    key: "content",
+    label: "Conteúdo e cuidado",
+    keys: new Set(["content", "prayer", "publications", "messages"]),
+  },
+  {
+    key: "management",
+    label: "Gestão e administração",
+    keys: new Set(["churchAdmin", "rolesManagement", "settings", "churchProfile", "platformAdmin"]),
+  },
+  {
+    key: "account",
+    label: "Minha conta",
+    keys: new Set(["profile"]),
+  },
+];
+
+const filteredGroups = computed(() => {
+  const knownKeys = new Set(groupDefinitions.flatMap((group) => [...group.keys]));
+  const groups = groupDefinitions.map((group) => ({
+    key: group.key,
+    label: group.label,
+    items: filteredItems.value
+      .filter((entry) => group.keys.has(entry.key))
+      .sort((first, second) => compareListText(first.label, second.label)),
+  }));
+  const otherItems = filteredItems.value
+    .filter((entry) => !knownKeys.has(entry.key))
+    .sort((first, second) => compareListText(first.label, second.label));
+
+  if (otherItems.length) {
+    groups.push({ key: "other", label: "Outros atalhos", items: otherItems });
+  }
+
+  return groups.filter((group) => group.items.length > 0);
 });
 
 const iconComponents: Record<RoleNavigationIcon, unknown> = {
@@ -163,8 +226,9 @@ function select(route: string) {
 .more-options-card {
   display: flex;
   flex-direction: column;
-  height: min(72dvh, 600px);
-  max-height: min(86vh, 760px);
+  height: auto;
+  max-height: min(86svh, 760px);
+  min-height: 0;
   overflow: hidden;
   padding: 16px;
   border-radius: var(--app-overlay-radius) !important;
@@ -214,6 +278,27 @@ function select(route: string) {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  display: grid;
+  gap: 18px;
+  padding: 2px 2px 4px;
+}
+
+.more-options-group {
+  display: grid;
+  gap: 8px;
+}
+
+.more-options-group h3 {
+  margin: 0;
+  color: var(--app-color-text-muted);
+  font-size: 0.69rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.more-options-group-list {
   display: grid;
   gap: 8px;
 }

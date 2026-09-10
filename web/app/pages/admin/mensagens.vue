@@ -53,6 +53,19 @@
           {{ templatesError }}
         </v-alert>
 
+        <v-text-field
+          v-if="messageTemplates.length"
+          v-model="templateSearch"
+          label="Buscar modelo"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="compact"
+          color="primary"
+          hide-details
+          clearable
+          class="mb-4"
+        />
+
         <div v-if="templatesLoading" class="d-flex justify-center pa-6">
           <v-progress-circular indeterminate size="28" color="primary" />
         </div>
@@ -67,9 +80,19 @@
           </p>
         </v-card>
 
+        <v-card
+          v-else-if="filteredMessageTemplates.length === 0"
+          class="rounded-xl pa-6 elevation-1 app-surface d-flex flex-column align-center justify-center border-subtle"
+        >
+          <MessageSquare size="32" color="#9CA3AF" class="mb-3" />
+          <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
+            Nenhum modelo encontrado
+          </p>
+        </v-card>
+
         <div v-else class="church-list d-flex flex-column ga-3">
           <v-card
-            v-for="template in messageTemplates"
+            v-for="template in filteredMessageTemplates"
             :key="template.id"
             class="member-card rounded-xl pa-4 elevation-1 app-surface border-subtle"
             role="button"
@@ -99,7 +122,7 @@
           <v-select
             v-model="sendForm.templateId"
             label="Modelo"
-            :items="messageTemplates"
+            :items="sortedMessageTemplates"
             item-title="name"
             item-value="id"
             variant="outlined"
@@ -125,6 +148,18 @@
             <p class="text-caption text-grey-darken-1 mb-2">
               {{ selectedRecipientIds.length }} selecionado{{ selectedRecipientIds.length === 1 ? "" : "s" }}
             </p>
+            <v-text-field
+              v-if="rosterMembersForSelection.length"
+              v-model="recipientSearch"
+              label="Buscar pessoa"
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+              density="compact"
+              color="primary"
+              hide-details
+              clearable
+              class="mb-3"
+            />
             <div v-if="rosterMembersLoading" class="d-flex justify-center pa-4">
               <v-progress-circular indeterminate size="24" color="primary" />
             </div>
@@ -133,7 +168,7 @@
             </p>
             <div v-else class="recipient-picker-list">
               <div
-                v-for="member in rosterMembersForSelection"
+                v-for="member in visibleRosterMembersForSelection"
                 :key="member.id"
                 class="recipient-picker-row"
                 role="checkbox"
@@ -314,7 +349,7 @@
           <v-select
             :model-value="birthdaySetting?.templateId"
             label="Modelo de mensagem"
-            :items="messageTemplates"
+            :items="sortedMessageTemplates"
             item-title="name"
             item-value="id"
             variant="outlined"
@@ -522,7 +557,7 @@
         <v-select
           v-model="ruleForm.templateId"
           label="Modelo"
-          :items="messageTemplates"
+          :items="sortedMessageTemplates"
           item-title="name"
           item-value="id"
           variant="outlined"
@@ -614,6 +649,7 @@ import {
   type MessageRule,
   type MessageLog,
 } from "../../../composables/useMessages";
+import { compareListText, normalizeListText } from "../../utils/listOrdering";
 
 const router = useRouter();
 
@@ -728,6 +764,19 @@ const formatLogDate = (value: string) =>
 const messageTemplates = ref<MessageTemplate[]>([]);
 const templatesLoading = ref(false);
 const templatesError = ref("");
+const templateSearch = ref("");
+
+const sortedMessageTemplates = computed(() =>
+  [...messageTemplates.value].sort((first, second) => compareListText(first.name, second.name)),
+);
+
+const filteredMessageTemplates = computed(() => {
+  const term = normalizeListText(templateSearch.value);
+  return sortedMessageTemplates.value.filter(
+    (template) =>
+      !term || normalizeListText(`${template.name} ${template.body}`).includes(term),
+  );
+});
 
 const messageRules = ref<MessageRule[]>([]);
 const rulesLoading = ref(false);
@@ -803,7 +852,9 @@ const loadBirthdays = async () => {
   birthdaysError.value = "";
   const { data, error } = await listBirthdays(birthdayRange.value);
   if (error) birthdaysError.value = error;
-  birthdayMembers.value = data ?? [];
+  birthdayMembers.value = [...(data ?? [])].sort((first, second) =>
+    compareListText(first.name, second.name),
+  );
   birthdaysLoading.value = false;
 };
 
@@ -951,12 +1002,28 @@ const { listRosterMembers } = useRoster();
 const rosterMembersForSelection = ref<RosterMember[]>([]);
 const rosterMembersLoading = ref(false);
 const selectedRecipientIds = ref<string[]>([]);
+const recipientSearch = ref("");
+
+const visibleRosterMembersForSelection = computed(() => {
+  const term = normalizeListText(recipientSearch.value);
+  return [...rosterMembersForSelection.value]
+    .filter(
+      (member) =>
+        !term ||
+        normalizeListText(
+          `${member.name} ${member.email ?? ""} ${member.phone ?? ""}`,
+        ).includes(term),
+    )
+    .sort((first, second) => compareListText(first.name, second.name));
+});
 
 const loadRosterForSelection = async () => {
   if (!isChurchWideManager.value) return;
   rosterMembersLoading.value = true;
   const { data } = await listRosterMembers();
-  rosterMembersForSelection.value = data ?? [];
+  rosterMembersForSelection.value = [...(data ?? [])].sort((first, second) =>
+    compareListText(first.name, second.name),
+  );
   rosterMembersLoading.value = false;
 };
 

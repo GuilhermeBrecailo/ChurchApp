@@ -1,5 +1,18 @@
 <template>
   <section>
+    <v-text-field
+      v-if="activityResources.length"
+      v-model="search"
+      label="Buscar atividade"
+      prepend-inner-icon="mdi-magnify"
+      variant="outlined"
+      density="compact"
+      color="primary"
+      hide-details
+      clearable
+      class="mb-4"
+    />
+
     <div class="ministery-section-actions mb-4">
       <PlanLock v-if="canManageDepartment" feature="MINISTRY_RESOURCES">
         <v-btn
@@ -22,9 +35,9 @@
       </p>
     </v-card>
 
-    <div v-else class="ministery-card-grid">
+    <div v-else-if="visibleActivities.length" class="ministery-card-grid">
       <v-card
-        v-for="activity in activityResources"
+        v-for="activity in visibleActivities"
         :key="activity.id"
         class="ministery-content-card app-surface pa-4"
       >
@@ -72,6 +85,16 @@
       </v-card>
     </div>
 
+    <v-card
+      v-else-if="activityResources.length"
+      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
+    >
+      <BookOpen size="32" color="#9CA3AF" class="mb-3" />
+      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
+        Nenhuma atividade encontrada
+      </p>
+    </v-card>
+
     <v-alert
       v-if="resourcesError"
       type="error"
@@ -85,14 +108,27 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from "vue";
 import { BookOpen, FileText, Plus, Trash2 } from "lucide-vue-next";
 import type { DepartmentResource } from "../../../composables/useDepartments";
+import { compareListText, normalizeListText } from "../../utils/listOrdering";
 
-defineProps<{
+const props = defineProps<{
   activityResources: DepartmentResource[];
   resourcesError: string;
   canManageDepartment: boolean;
 }>();
+
+const search = ref("");
+const visibleActivities = computed(() => {
+  const term = normalizeListText(search.value);
+  return props.activityResources
+    .filter((activity) =>
+      !term ||
+      normalizeListText(`${activity.title} ${activity.metadata?.notes ?? ""}`).includes(term),
+    )
+    .sort((first, second) => compareListText(first.title, second.title));
+});
 
 defineEmits<{
   (event: "create"): void;

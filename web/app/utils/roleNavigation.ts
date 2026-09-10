@@ -68,9 +68,9 @@ const navCatalog: Record<string, RoleNavigationItem> = {
   home: homeItem,
   pastoral: {
     key: "pastoral",
-    label: "Pastoral",
-    title: "Painel pastoral",
-    description: "Alertas, visitas e pessoas que precisam de acompanhamento.",
+    label: "Cuidado pastoral",
+    title: "Cuidado pastoral",
+    description: "Veja quem precisa de atenção, visitas e acompanhamento.",
     route: "/pastoral",
     icon: "pastoral",
     matchPrefixes: ["/pastoral"],
@@ -468,7 +468,7 @@ export function getQuickAccessItems(user: RoleNavigationUser | null | undefined)
 
   if (tier === "privileged") {
     return [
-      { ...item("pastoral"), label: "Painel" },
+      { ...item("pastoral"), label: "Cuidado pastoral" },
       item("visits"),
       item("people"),
       item("messages"),
@@ -502,7 +502,7 @@ export function getChurchHubItems(user: RoleNavigationUser | null | undefined) {
 
   if (tier === "privileged") {
     return [
-      { ...item("pastoral"), label: "Painel" },
+      { ...item("pastoral"), label: "Cuidado pastoral" },
       item("people"),
       item("messages"),
       item("cults"),

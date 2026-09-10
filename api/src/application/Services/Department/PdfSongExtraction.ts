@@ -9,7 +9,11 @@ type PdfParse = (
 ) => Promise<{ text: string; numpages: number }>;
 
 // Tipagem minima do pdf.js PageData usada pelo pagerender do pdf-parse.
-type PdfTextItem = { str: string; transform: number[] };
+export type PdfTextItem = {
+  str: string;
+  transform: number[];
+  width?: number;
+};
 type PdfPageData = {
   getTextContent: (options: {
     normalizeWhitespace: boolean;
@@ -35,7 +39,7 @@ const METADATA_LOOKAHEAD_LINES = 12;
 // e o que separa um acorde de uma palavra comum que comece com a mesma
 // letra (ex: "Deus" comeca com D mas nao casa porque sobra "eus").
 const CHORD_TOKEN_RE =
-  /^\(?[A-G][#b]?(?:m|min|maj|dim|aug|sus[24]?|add)?\d{0,2}(?:\(\d{1,2}\))?(?:\/[A-G][#b]?)?\)?$/;
+  /^\(?[A-G](?:#|b)?[mMiajndugsb0-9+#()-]*(?:\/[A-G](?:#|b)?)?\)?$/;
 
 const SECTION_TAG_PREFIX_RE = /^(\[[^\]]*\])\s*(.*)$/;
 
@@ -56,7 +60,7 @@ function isTomLine(line: string): boolean {
 }
 
 function isTuningLine(line: string): boolean {
-  const tokens = line.split(/\s+/).filter(Boolean);
+  const tokens = line.trim().split(/\s+/).filter(Boolean);
   return tokens.length === 6 && tokens.every((token) => /^[A-G](?:#|b)?$/i.test(token));
 }
 
@@ -87,23 +91,180 @@ function isChordLine(line: string): boolean {
   return tokens.every(isChordToken);
 }
 
+const PDF_LINE_Y_TOLERANCE = 1.5;
+const PDF_COLUMN_SPLIT_X = 270;
+const PDF_MIN_COLUMN_ROWS = 2;
+
+type PdfTextRow = {
+  y: number;
+  items: PdfTextItem[];
+};
+
+function estimateTextWidth(item: PdfTextItem, fontSize: number): number {
+  return item.width ?? item.str.length * fontSize * 0.5;
+}
+
+function groupPdfItemsIntoRows(items: PdfTextItem[]): PdfTextRow[] {
+  const rows: PdfTextRow[] = [];
+
+  for (const item of items) {
+    if (!item.str) continue;
+
+    const y = item.transform[5] ?? 0;
+    const row = rows.find((candidate) => Math.abs(candidate.y - y) <= PDF_LINE_Y_TOLERANCE);
+
+    if (row) {
+      row.items.push(item);
+    } else {
+      rows.push({ y, items: [item] });
+    }
+  }
+
+  return rows.sort((left, right) => right.y - left.y);
+}
+
+function hasVisiblePdfText(row: PdfTextRow): boolean {
+  return row.items.some((item) => item.str.trim().length > 0);
+}
+
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+
+  const ordered = [...values].sort((left, right) => left - right);
+  const middle = Math.floor(ordered.length / 2);
+
+  return ordered.length % 2 === 0
+    ? (ordered[middle - 1] + ordered[middle]) / 2
+    : ordered[middle];
+}
+
+function inferPdfCharWidth(items: PdfTextItem[]): number {
+  const singleCharacterWidths = items
+    .filter((item) => item.str.trim().length === 1)
+    .map((item) => {
+      const fontSize = Math.abs(item.transform[0] ?? item.transform[3] ?? 0) || 10;
+      return estimateTextWidth(item, fontSize);
+    })
+    .filter((width) => width > 0);
+
+  if (singleCharacterWidths.length > 0) {
+    return median(singleCharacterWidths);
+  }
+
+  const textWidths = items
+    .filter((item) => item.str.trim().length > 0)
+    .map((item) => {
+      const fontSize = Math.abs(item.transform[0] ?? item.transform[3] ?? 0) || 10;
+      return estimateTextWidth(item, fontSize) / item.str.length;
+    })
+    .filter((width) => width > 0);
+
+  return median(textWidths) || 1;
+}
+
+function getColumnItems(rows: PdfTextRow[], isRightColumn: boolean): PdfTextItem[] {
+  return rows.flatMap((row) =>
+    row.items.filter((item) => {
+      const x = item.transform[4] ?? 0;
+      return isRightColumn ? x >= PDF_COLUMN_SPLIT_X : x < PDF_COLUMN_SPLIT_X;
+    }),
+  );
+}
+
+function getMinimumX(items: PdfTextItem[]): number {
+  return items.length > 0 ? Math.min(...items.map((item) => item.transform[4] ?? 0)) : 0;
+}
+
+function renderPdfRow(
+  items: PdfTextItem[],
+  options?: { baseX?: number; charWidth?: number },
+): string {
+  const orderedItems = items
+    .filter((item) => item.str.length > 0)
+    .sort((left, right) => {
+      const xDelta = (left.transform[4] ?? 0) - (right.transform[4] ?? 0);
+      if (xDelta !== 0) return xDelta;
+
+      const leftIsWhitespace = /^\s+$/.test(left.str);
+      const rightIsWhitespace = /^\s+$/.test(right.str);
+      return Number(leftIsWhitespace) - Number(rightIsWhitespace);
+    });
+
+  const visibleItems = orderedItems.filter((item) => item.str.trim().length > 0);
+  const baseX = options?.baseX ?? getMinimumX(visibleItems);
+  const charWidth = options?.charWidth ?? inferPdfCharWidth(orderedItems);
+  const firstVisibleIndex = orderedItems.findIndex((item) => item.str.trim().length > 0);
+
+  if (firstVisibleIndex === -1) return "";
+
+  const firstVisibleItem = orderedItems[firstVisibleIndex];
+  const firstVisibleX = firstVisibleItem.transform[4] ?? 0;
+  const leadingColumns = Math.max(0, Math.round((firstVisibleX - baseX) / charWidth));
+  let text = " ".repeat(leadingColumns);
+  let previousXEnd: number | undefined;
+
+  for (const item of orderedItems.slice(firstVisibleIndex)) {
+    const value = item.str;
+    const x = item.transform[4] ?? 0;
+    const fontSize = Math.abs(item.transform[0] ?? item.transform[3] ?? 0) || 10;
+
+    if (
+      previousXEnd !== undefined &&
+      x - previousXEnd > Math.max(1.5, fontSize * 0.12) &&
+      !/\s$/.test(text) &&
+      !/^\s/.test(value)
+    ) {
+      const gapColumns = Math.max(1, Math.round((x - previousXEnd) / charWidth));
+      text += " ".repeat(gapColumns);
+    }
+
+    text += value;
+    previousXEnd = Math.max(previousXEnd ?? 0, x + estimateTextWidth(item, fontSize));
+  }
+
+  return text;
+}
+
+function renderPdfColumn(rows: PdfTextRow[], isRightColumn: boolean): string[] {
+  const columnItems = getColumnItems(rows, isRightColumn);
+  const baseX = getMinimumX(columnItems);
+  const charWidth = inferPdfCharWidth(columnItems);
+
+  return rows
+    .map((row) => ({
+      ...row,
+      items: row.items.filter((item) => {
+        const x = item.transform[4] ?? 0;
+        return isRightColumn ? x >= PDF_COLUMN_SPLIT_X : x < PDF_COLUMN_SPLIT_X;
+      }),
+    }))
+    .filter(hasVisiblePdfText)
+    .map((row) => renderPdfRow(row.items, { baseX, charWidth }));
+}
+
+// O pdf.js entrega itens na ordem interna do arquivo, que nem sempre e a
+// ordem visual. Em PDFs do Cifra Club a letra vem primeiro, os acordes depois
+// e paginas longas usam duas colunas. Agrupamos por Y, reconstruimos cada
+// linha por X e so depois juntamos a coluna esquerda com a direita.
+export function renderPdfTextItems(items: PdfTextItem[]): string {
+  const rows = groupPdfItemsIntoRows(items).filter(hasVisiblePdfText);
+  const leftRows = renderPdfColumn(rows, false);
+  const rightRows = renderPdfColumn(rows, true);
+  const hasTwoColumns =
+    leftRows.length >= PDF_MIN_COLUMN_ROWS && rightRows.length >= PDF_MIN_COLUMN_ROWS;
+
+  if (hasTwoColumns) return [...leftRows, ...rightRows].join("\n");
+
+  const baseX = getMinimumX(items);
+  const charWidth = inferPdfCharWidth(items);
+
+  return rows.map((row) => renderPdfRow(row.items, { baseX, charWidth })).join("\n");
+}
+
 function renderPageText(pageData: PdfPageData): Promise<string> {
   return pageData
-    .getTextContent({ normalizeWhitespace: false, disableCombineTextItems: false })
-    .then((textContent) => {
-      let text = "";
-      let lastY: number | undefined;
-      for (const item of textContent.items) {
-        const y = item.transform[5];
-        if (lastY === y || lastY === undefined) {
-          text += item.str;
-        } else {
-          text += `\n${item.str}`;
-        }
-        lastY = y;
-      }
-      return text;
-    });
+    .getTextContent({ normalizeWhitespace: false, disableCombineTextItems: true })
+    .then((textContent) => renderPdfTextItems(textContent.items));
 }
 
 // Extrai o texto de cada pagina do PDF separadamente. Manter as paginas
@@ -189,7 +350,7 @@ function blockToSong(block: string): ExtractedSong | null {
     artist: "",
     key: "",
     lyrics: lyricLines.join("\n").trim(),
-    chords: chordLines.join("\n").trim(),
+    chords: chordLines.join("\n").trimEnd(),
   };
 }
 
@@ -198,6 +359,11 @@ type PageSongMetadata = {
   artist: string;
   key: string;
   footerStartIndex: number;
+  // Layoutos em que o rodape aparece no topo da pagina (ordem visual do PDF)
+  // usam o corpo que vem depois dos metadados, em vez do corpo anterior ao
+  // rodape usado pelos PDFs mesclados antigos.
+  bodyStartIndex?: number;
+  bodyEndIndex?: number;
   // So preenchido no Padrao 2 (PDF mesclado): indice, em `lines`, de onde
   // comeca o bloco de cifra solta que sobra apos "Composicao de:" (o
   // primeiro token dele e o proprio valor do tom). Esse bloco fica fora do
@@ -238,28 +404,47 @@ function splitGluedChordTokens(token: string): string[] | null {
 function expandGluedChords(line: string): string {
   const trimmed = line.trim();
   if (!trimmed) return line;
-  if (SECTION_TAG_PREFIX_RE.test(trimmed)) return line;
 
-  const compact = trimmed.replace(/\s+/g, "");
-  if (compact === "(" || compact === ")" || compact === "()") return line;
+  const leadingWhitespace = line.slice(0, line.length - line.trimStart().length);
 
-  const segments = splitGluedChordTokens(compact);
-  return segments ? segments.join(" ") : line;
+  const sectionMatch = trimmed.match(/^(\[[^\]]*\])(\s*)(.*)$/);
+  if (sectionMatch) {
+    const [, tag, separator, rest] = sectionMatch;
+    if (!rest || !isChordLine(rest)) return line;
+
+    return `${leadingWhitespace}${tag}${separator}${normalizeChordSequence(rest)}`;
+  }
+
+  if (!isChordLine(trimmed)) return line;
+
+  return `${leadingWhitespace}${normalizeChordSequence(trimmed)}`;
+}
+
+function normalizeChordSequence(line: string): string {
+  return line.replace(/\S+/g, (token) => {
+    const segments = splitGluedChordTokens(token);
+    return segments ? segments.join(" ") : token;
+  });
+}
+
+function normalizeReadableLine(line: string): string {
+  return line.replace(/[ \t]+$/g, "");
 }
 
 function normalizeLines(text: string): string[] {
   return text
     .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+    .map(normalizeReadableLine)
+    .filter((line) => line.trim().length > 0);
 }
 
 function looksLikeFooterLine(line: string): boolean {
-  return isMetadataNoiseLine(line) || FOOTER_MARKERS.some((marker) => marker.test(line));
+  const normalized = line.trim();
+  return isMetadataNoiseLine(normalized) || FOOTER_MARKERS.some((marker) => marker.test(normalized));
 }
 
 function findCifraClubMetadataLegacy(lines: string[]): PageSongMetadata | null {
-  const compositionIndex = lines.findIndex((line) => /^Composi[cç][aã]o de:/i.test(line));
+  const compositionIndex = lines.findIndex(isCompositionLine);
   if (compositionIndex < 2) return null;
 
   // Padrao 1: rodape "impresso" classico do Cifra Club - titulo, artista,
@@ -267,12 +452,12 @@ function findCifraClubMetadataLegacy(lines: string[]): PageSongMetadata | null {
   // valor colado na mesma linha.
   const footerWindow = lines.slice(compositionIndex, Math.min(lines.length, compositionIndex + 6));
   const hasTomOrAfinacaoAfter = footerWindow.some(
-    (line) => /^Tom:/i.test(line) || /^Afina[cç][aã]o:/i.test(line),
+    (line) => isTomLine(line) || /^Afina[cç][aã]o:/i.test(line.trim()),
   );
 
   if (hasTomOrAfinacaoAfter) {
-    const tomLine = footerWindow.find((line) => /^Tom:/i.test(line));
-    const key = tomLine ? tomLine.replace(/^Tom:\s*/i, "").trim() : "";
+    const tomLine = footerWindow.find(isTomLine);
+    const key = tomLine ? tomLine.trim().replace(/^Tom:\s*/i, "").trim() : "";
 
     return {
       title: lines[compositionIndex - 2].slice(0, MAX_TITLE_LENGTH).trim(),
@@ -289,7 +474,8 @@ function findCifraClubMetadataLegacy(lines: string[]): PageSongMetadata | null {
   // bloco de cifra solta que vem em seguida). Ex real:
   //   ...letra...\nTom: \nQuebrantado\nVineyard\nComposicao de: Jeremy Riddle\nA\n...
   const bareTomIndex = compositionIndex - 3;
-  const hasBareTomBefore = bareTomIndex >= 0 && /^Tom:\s*$/i.test(lines[bareTomIndex] ?? "");
+  const hasBareTomBefore =
+    bareTomIndex >= 0 && /^Tom:\s*$/i.test((lines[bareTomIndex] ?? "").trim());
 
   if (hasBareTomBefore) {
     const candidateKey = (lines[compositionIndex + 1] ?? "").trim();
@@ -333,7 +519,7 @@ function findCifraClubMetadata(lines: string[]): PageSongMetadata | null {
   let explicitTomKey = "";
   const lookaheadEnd = Math.min(lines.length, compositionIndex + METADATA_LOOKAHEAD_LINES);
   for (let index = compositionIndex + 1; index < lookaheadEnd; index += 1) {
-    const match = lines[index]?.match(/^Tom:\s*(.*)$/i);
+    const match = lines[index]?.trim().match(/^Tom:\s*(.*)$/i);
     if (match) {
       explicitTomKey = match[1]?.trim() ?? "";
       break;
@@ -358,11 +544,36 @@ function findCifraClubMetadata(lines: string[]): PageSongMetadata | null {
   const isMergedLayout = preTitleTomIndex !== -1 && preTitleTomIndex < titleIndex;
   const key = explicitTomKey || (isMergedLayout ? keyAfterComposition : "");
 
+  let bodyStartIndex: number | undefined;
+  let bodyEndIndex: number | undefined;
+  const hasBodyAfterMetadata = lines.slice(compositionIndex + 1).some(
+    (line) => !isMetadataNoiseLine(line) && !FOOTER_MARKERS.some((marker) => marker.test(line.trim())),
+  );
+
+  if (!isMergedLayout && hasBodyAfterMetadata) {
+    bodyStartIndex = compositionIndex + 1;
+    while (
+      bodyStartIndex < lines.length &&
+      isMetadataNoiseLine(lines[bodyStartIndex] ?? "")
+    ) {
+      bodyStartIndex += 1;
+    }
+
+    if (!explicitTomKey && CHORD_TOKEN_RE.test(lines[bodyStartIndex]?.trim() ?? "")) {
+      bodyStartIndex += 1;
+    }
+
+    bodyEndIndex = lines.length;
+  }
+
   return {
     title: title.slice(0, MAX_TITLE_LENGTH),
     artist,
     key,
     footerStartIndex: isMergedLayout ? preTitleTomIndex : titleIndex,
+    ...(bodyStartIndex !== undefined
+      ? { bodyStartIndex, bodyEndIndex }
+      : {}),
     ...(isMergedLayout
       ? {
           chordAppendixStartIndex:
@@ -379,9 +590,11 @@ function cleanPageLyrics(
 ): { lyrics: string; chords: string; metadata: PageSongMetadata | null } {
   const lines = normalizeLines(pageText);
   const metadata = findCifraClubMetadata(lines);
-  const bodyLines = (metadata ? lines.slice(0, metadata.footerStartIndex) : lines).filter(
-    (line) => !looksLikeFooterLine(line),
-  );
+  const bodyStartIndex = metadata?.bodyStartIndex ?? 0;
+  const bodyEndIndex = metadata?.bodyEndIndex ?? metadata?.footerStartIndex ?? lines.length;
+  const bodyLines = lines
+    .slice(bodyStartIndex, bodyEndIndex)
+    .filter((line) => !looksLikeFooterLine(line));
   const { lyricLines, chordLines } = splitLyricsFromChords(bodyLines);
 
   const chordAppendix =
@@ -394,7 +607,7 @@ function cleanPageLyrics(
 
   return {
     lyrics: lyricLines.join("\n").trim(),
-    chords: [...chordLines.map(expandGluedChords), ...chordAppendix].join("\n").trim(),
+    chords: [...chordLines.map(expandGluedChords), ...chordAppendix].join("\n").trimEnd(),
     metadata,
   };
 }
@@ -404,7 +617,7 @@ function pushCurrentSong(songs: ExtractedSong[], current: ExtractedSong | null) 
 
   const title = current.title.trim();
   const lyrics = current.lyrics.trim();
-  const chords = current.chords.trim();
+  const chords = current.chords.trimEnd();
   if (title) songs.push({ ...current, title, lyrics, chords });
 }
 

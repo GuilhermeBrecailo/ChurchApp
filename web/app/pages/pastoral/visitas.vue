@@ -13,7 +13,7 @@
         class="text-none"
         @click="openCreateDialog"
       >
-        <Plus size="16" class="mr-1" /> Nova visita
+        <Plus size="16" class="mr-1" /> Registrar visita
       </v-btn>
     </div>
 
@@ -22,8 +22,19 @@
     </v-alert>
 
     <template v-else>
-      <div class="visit-filters app-surface-muted pa-1 mb-4">
-        <v-btn-toggle v-model="statusFilter" mandatory divided density="comfortable">
+      <div class="visit-filters app-surface-muted pa-3 mb-4">
+        <v-text-field
+          v-model="search"
+          label="Buscar pessoa ou motivo"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="comfortable"
+          color="primary"
+          hide-details
+          clearable
+          class="visit-filter-search"
+        />
+          <v-btn-toggle v-model="statusFilter" mandatory divided density="comfortable" class="visit-status-toggle">
           <v-btn value="ALL" class="text-none">Todas</v-btn>
           <v-btn value="OPEN" class="text-none">Abertas</v-btn>
           <v-btn value="SCHEDULED" class="text-none">Agendadas</v-btn>
@@ -41,7 +52,7 @@
       <div v-else-if="filteredVisits.length === 0" class="visit-empty">
         <HandHeart size="28" />
         <strong>Nenhuma visita encontrada</strong>
-        <span>Crie uma visita quando alguém precisar de acompanhamento.</span>
+        <span>Registre uma visita quando alguém precisar de acompanhamento.</span>
       </div>
 
       <div v-else class="visit-grid">
@@ -105,9 +116,8 @@
       <v-card class="app-surface pa-5" elevation="0">
         <div class="responsive-dialog-header mb-4">
           <div>
-            <p class="app-page-kicker mb-1">Cuidado pastoral</p>
-            <h2 class="text-h6 font-weight-bold mb-0">
-              {{ editingId ? "Editar visita" : "Nova visita" }}
+              <h2 class="text-h6 font-weight-bold mb-0">
+              {{ editingId ? "Editar visita" : "Registrar visita" }}
             </h2>
           </div>
           <v-btn
@@ -127,7 +137,7 @@
             :items="rosterMembers"
             item-title="name"
             item-value="id"
-            label="Pessoa"
+            label="Pessoa que será acompanhada"
             variant="outlined"
             color="primary"
             class="mb-3"
@@ -135,7 +145,7 @@
 
           <v-text-field
             v-model="form.reason"
-            label="Motivo"
+            label="Motivo do acompanhamento"
             variant="outlined"
             color="primary"
             class="mb-3"
@@ -147,7 +157,7 @@
               :items="priorityOptions"
               item-title="label"
               item-value="value"
-              label="Prioridade"
+              label="Prioridade do acompanhamento"
               variant="outlined"
               color="primary"
             />
@@ -156,7 +166,7 @@
               :items="statusOptions"
               item-title="label"
               item-value="value"
-              label="Status"
+              label="Situação"
               variant="outlined"
               color="primary"
             />
@@ -165,7 +175,7 @@
           <v-text-field
             v-model="form.scheduledAt"
             type="datetime-local"
-            label="Data prevista"
+            label="Data e hora previstas"
             variant="outlined"
             color="primary"
             class="mb-3"
@@ -173,7 +183,7 @@
 
           <v-textarea
             v-model="form.notes"
-            label="Observações"
+            label="Anotações sobre o acompanhamento"
             rows="3"
             variant="outlined"
             color="primary"
@@ -187,7 +197,7 @@
           <div class="dialog-actions d-flex justify-end ga-2">
             <v-btn variant="text" class="text-none" @click="dialogOpen = false">Cancelar</v-btn>
             <v-btn type="submit" color="primary" class="text-none" :loading="saving">
-              Salvar
+              Salvar visita
             </v-btn>
           </div>
         </v-form>
@@ -227,6 +237,7 @@ import {
 } from "../../../composables/usePastoral";
 import { usePermissions } from "../../../composables/usePermissions";
 import { useRoster, type RosterMember } from "../../../composables/useRoster";
+import { compareListText, normalizeListText } from "../../utils/listOrdering";
 
 const { canRef } = usePermissions();
 const { listVisits, createVisit, updateVisit, deleteVisit } = usePastoral();
@@ -245,7 +256,9 @@ const dialogOpen = ref(false);
 const editingId = ref<string | null>(null);
 const confirmDeleteId = ref<string | null>(null);
 const statusFilter = ref<PastoralVisitStatus | "ALL">("ALL");
+const search = ref("");
 const queryPrefillHandled = ref(false);
+const queryCreateHandled = ref(false);
 
 const form = reactive({
   rosterMemberId: "",
@@ -271,12 +284,28 @@ const statusOptions = [
 ];
 
 const filteredVisits = computed(() => {
-  if (statusFilter.value === "ALL") return visits.value;
-  return visits.value.filter((visit) => visit.status === statusFilter.value);
+  const term = normalizeListText(search.value);
+  return visits.value
+    .filter((visit) => {
+      const matchesStatus =
+        statusFilter.value === "ALL" || visit.status === statusFilter.value;
+      const matchesSearch =
+        !term ||
+        normalizeListText(
+          `${visit.rosterMember.name} ${visit.reason} ${visit.responsible?.name ?? ""}`,
+        ).includes(term);
+      return matchesStatus && matchesSearch;
+    })
+    .sort(
+      (first, second) =>
+        compareListText(first.rosterMember.name, second.rosterMember.name) ||
+        String(first.scheduledAt ?? "").localeCompare(String(second.scheduledAt ?? "")),
+    );
 });
 const preselectedRosterMemberId = computed(() =>
   typeof route.query.memberId === "string" ? route.query.memberId : "",
 );
+const shouldOpenCreate = computed(() => route.query.new === "1");
 
 function resetForm() {
   editingId.value = null;
@@ -370,6 +399,9 @@ async function loadData() {
   if (!queryPrefillHandled.value && preselectedRosterMemberId.value) {
     queryPrefillHandled.value = true;
     openCreateDialog(preselectedRosterMemberId.value);
+  } else if (!queryCreateHandled.value && shouldOpenCreate.value) {
+    queryCreateHandled.value = true;
+    openCreateDialog();
   }
 }
 
@@ -447,8 +479,21 @@ onMounted(loadData);
 }
 
 .visit-filters {
-  overflow-x: auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
   border-radius: var(--app-radius-card);
+}
+
+.visit-filter-search {
+  flex: 1 1 260px;
+  min-width: min(100%, 220px);
+}
+
+.visit-status-toggle {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .visit-grid {
@@ -459,6 +504,7 @@ onMounted(loadData);
 .visit-card {
   display: grid;
   gap: 14px;
+  border-radius: var(--app-radius-card);
 }
 
 .visit-card-header {
@@ -478,6 +524,10 @@ onMounted(loadData);
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.visit-actions .v-btn {
+  min-height: 44px;
 }
 
 .visit-meta span {
@@ -558,6 +608,10 @@ onMounted(loadData);
 }
 
 @media (max-width: 560px) {
+  .visit-status-toggle {
+    width: 100%;
+  }
+
   .visit-actions .v-btn {
     flex: 1 1 auto;
   }

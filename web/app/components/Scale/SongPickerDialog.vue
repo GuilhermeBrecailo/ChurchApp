@@ -165,8 +165,9 @@ const positionOf = (songId: string) => {
 .song-picker {
   display: flex;
   flex-direction: column;
-  height: min(72dvh, 600px);
-  max-height: min(86vh, 760px);
+  height: auto;
+  max-height: min(86svh, 760px);
+  min-height: 0;
   border-radius: 16px;
   background: var(--app-color-surface);
   overflow: hidden;

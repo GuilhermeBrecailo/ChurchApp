@@ -336,6 +336,7 @@ import {
   type ChurchDepartment,
   type DepartmentSchedule,
 } from "../../../composables/useDepartments";
+import { compareListText } from "../../utils/listOrdering";
 
 const router = useRouter();
 
@@ -437,7 +438,8 @@ const departmentTypeLabel = (value: string) =>
 const filteredDepartments = computed(() => {
   const search = normalizeFilterText(departmentSearch.value);
 
-  return departments.value.filter((department) => {
+  return departments.value
+    .filter((department) => {
     const matchesSearch =
       !search ||
       normalizeFilterText(`${department.name} ${department.leader.name}`)
@@ -446,8 +448,9 @@ const filteredDepartments = computed(() => {
       departmentTypeFilter.value === "ALL" ||
       department.type === departmentTypeFilter.value;
 
-    return matchesSearch && matchesType;
-  });
+      return matchesSearch && matchesType;
+    })
+    .sort((first, second) => compareListText(first.name, second.name));
 });
 
 const loadMembers = async () => {

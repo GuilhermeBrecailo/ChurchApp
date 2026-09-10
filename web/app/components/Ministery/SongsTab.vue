@@ -1,5 +1,18 @@
 <template>
   <section>
+    <v-text-field
+      v-if="songs.length"
+      v-model="search"
+      label="Buscar música"
+      prepend-inner-icon="mdi-magnify"
+      variant="outlined"
+      density="compact"
+      color="primary"
+      hide-details
+      clearable
+      class="mb-4"
+    />
+
     <div class="ministery-section-actions mb-4">
       <v-btn
         v-if="canManageSongs"
@@ -39,9 +52,9 @@
       </v-btn>
     </v-card>
 
-    <div v-else class="ministery-card-grid">
+    <div v-else-if="visibleSongs.length" class="ministery-card-grid">
       <v-card
-        v-for="song in songs"
+        v-for="song in visibleSongs"
         :key="song.id"
         class="ministery-content-card app-surface pa-4 song-click-card"
         role="button"
@@ -209,6 +222,16 @@
       </v-card>
     </div>
 
+    <v-card
+      v-else-if="songs.length"
+      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
+    >
+      <Music size="32" color="#9CA3AF" class="mb-3" />
+      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
+        Nenhuma música encontrada
+      </p>
+    </v-card>
+
     <v-alert
       v-if="songsError"
       type="error"
@@ -222,14 +245,27 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from "vue";
 import { BookOpen, Combine, ExternalLink, FileText, Maximize2, Music, Pencil, Plus, Trash2 } from "lucide-vue-next";
 import type { DepartmentSong } from "../../../composables/useDepartments";
+import { compareListText, normalizeListText } from "../../utils/listOrdering";
 
-defineProps<{
+const props = defineProps<{
   songs: DepartmentSong[];
   songsError: string;
   canManageSongs: boolean;
 }>();
+
+const search = ref("");
+const visibleSongs = computed(() => {
+  const term = normalizeListText(search.value);
+  return props.songs
+    .filter((song) =>
+      !term ||
+      normalizeListText(`${song.title} ${song.metadata?.artist ?? ""}`).includes(term),
+    )
+    .sort((first, second) => compareListText(first.title, second.title));
+});
 
 defineEmits<{
   (event: "create"): void;

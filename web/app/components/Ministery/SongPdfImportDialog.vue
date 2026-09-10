@@ -218,6 +218,8 @@
                 color="primary"
                 auto-grow
                 rows="3"
+                wrap="off"
+                spellcheck="false"
                 hide-details="auto"
                 class="pdf-import-field pdf-import-chords-field"
               />
@@ -334,7 +336,7 @@ watch(isOpen, (open) => {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-height: min(92dvh, 920px);
+  max-height: min(92svh, 920px);
   overflow: hidden;
   border: 1px solid var(--app-color-border-subtle);
   border-radius: var(--app-overlay-radius, 16px);
@@ -626,6 +628,15 @@ watch(isOpen, (open) => {
   background: var(--app-color-surface);
 }
 
+.pdf-import-field :deep(.v-field__outline) {
+  color: var(--app-color-input-border) !important;
+  opacity: 1;
+}
+
+.pdf-import-field :deep(.v-label) {
+  color: var(--app-color-input-label) !important;
+}
+
 .pdf-import-field :deep(.v-field__input) {
   min-height: 46px;
 }
@@ -637,6 +648,10 @@ watch(isOpen, (open) => {
 .pdf-import-chords-field :deep(textarea) {
   font-family: "Courier New", monospace;
   line-height: 1.5;
+  overflow-x: auto;
+  overflow-wrap: normal;
+  white-space: pre;
+  word-break: normal;
 }
 
 .pdf-import-empty {

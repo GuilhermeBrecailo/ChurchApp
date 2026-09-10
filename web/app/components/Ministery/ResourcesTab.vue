@@ -1,5 +1,18 @@
 <template>
   <section>
+    <v-text-field
+      v-if="resourceMaterials.length"
+      v-model="search"
+      label="Buscar recurso"
+      prepend-inner-icon="mdi-magnify"
+      variant="outlined"
+      density="compact"
+      color="primary"
+      hide-details
+      clearable
+      class="mb-4"
+    />
+
     <div class="ministery-section-actions mb-4">
       <PlanLock v-if="canManageSongs" feature="MINISTRY_RESOURCES">
         <v-btn
@@ -22,9 +35,9 @@
       </p>
     </v-card>
 
-    <div v-else class="ministery-card-grid">
+    <div v-else-if="visibleResources.length" class="ministery-card-grid">
       <v-card
-        v-for="resource in resourceMaterials"
+        v-for="resource in visibleResources"
         :key="resource.id"
         class="ministery-content-card app-surface pa-4"
       >
@@ -92,6 +105,16 @@
       </v-card>
     </div>
 
+    <v-card
+      v-else-if="resourceMaterials.length"
+      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
+    >
+      <FileText size="32" color="#9CA3AF" class="mb-3" />
+      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
+        Nenhum recurso encontrado
+      </p>
+    </v-card>
+
     <v-alert
       v-if="resourcesError"
       type="error"
@@ -105,14 +128,27 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from "vue";
 import { FileText, Pencil, Plus, Trash2 } from "lucide-vue-next";
 import type { DepartmentResource } from "../../../composables/useDepartments";
+import { compareListText, normalizeListText } from "../../utils/listOrdering";
 
-defineProps<{
+const props = defineProps<{
   resourceMaterials: DepartmentResource[];
   resourcesError: string;
   canManageSongs: boolean;
 }>();
+
+const search = ref("");
+const visibleResources = computed(() => {
+  const term = normalizeListText(search.value);
+  return props.resourceMaterials
+    .filter((resource) =>
+      !term ||
+      normalizeListText(`${resource.title} ${resource.category}`).includes(term),
+    )
+    .sort((first, second) => compareListText(first.title, second.title));
+});
 
 defineEmits<{
   (event: "create"): void;

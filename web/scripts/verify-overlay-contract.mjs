@@ -109,6 +109,21 @@ const checks = [
     /responsive-overlay--scrollable/,
     theme,
   ],
+  [
+    "ResponsiveOverlay calcula a altura mínima do sheet aberto",
+    /ResizeObserver[\s\S]*responsive-overlay-min-height/,
+    overlay,
+  ],
+  [
+    "ResponsiveOverlay limpa a altura mínima ao fechar",
+    /function handleAfterLeave[\s\S]*resetMobileSheetHeight[\s\S]*emit\("afterLeave"\)/,
+    overlay,
+  ],
+  [
+    "tema deixa bottom sheets dimensionarem pelo conteúdo",
+    /v-bottom-sheet__content[\s\S]*height:\s*auto\s*!important/,
+    theme,
+  ],
   ...directDialogMigrations.flatMap(({ relativePath, content }) => [
     [
       `${relativePath} usa ResponsiveOverlay`,
@@ -145,12 +160,12 @@ const checks = [
   ],
   ...stableFilterOverlaySources.map(({ relativePath, content }) => [
     `${relativePath} preserva altura durante filtros`,
-    /height:\s*min\(72dvh,\s*600px\);/,
+    /height:\s*auto;/,
     content,
   ]),
   [
     "ScaleDetailSheet usa estrutura flexível e altura estável",
-    /display:\s*flex;[\s\S]*?height:\s*min\(92dvh,\s*920px\);/,
+    /display:\s*flex;[\s\S]*?height:\s*min\(92svh,\s*920px\);/,
     scaleDetails,
   ],
   [

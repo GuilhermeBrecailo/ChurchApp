@@ -578,6 +578,17 @@
             <v-btn value="PUBLIC" class="text-none" size="small">Público</v-btn>
             <v-btn value="INTERNAL" class="text-none" size="small">Interno</v-btn>
           </v-btn-toggle>
+          <v-text-field
+            v-model="unifiedSearch"
+            label="Buscar por título"
+            prepend-inner-icon="mdi-magnify"
+            variant="outlined"
+            density="compact"
+            color="primary"
+            hide-details
+            clearable
+            class="unified-search"
+          />
         </div>
 
         <MotionStaggerGroup class="content-admin-list">
@@ -660,6 +671,7 @@ import {
   type Devotional,
 } from "../../../composables/useDevotionals";
 import { usePosts, type ChurchPost } from "../../../composables/usePosts";
+import { compareListText, normalizeListText } from "../../utils/listOrdering";
 
 const router = useRouter();
 
@@ -1264,14 +1276,17 @@ const unifiedContentItems = computed<UnifiedContentItem[]>(() => {
     });
   }
 
-  return items.sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
+  return items.sort((a, b) => compareListText(a.title, b.title));
 });
 
 const unifiedTypeFilter = ref<"ALL" | ContentType>("ALL");
 const unifiedStatusFilter = ref<"ALL" | "PUBLIC" | "INTERNAL">("ALL");
+const unifiedSearch = ref("");
 
 const filteredUnifiedItems = computed(() =>
   unifiedContentItems.value.filter((item) => {
+    const term = normalizeListText(unifiedSearch.value);
+    if (term && !normalizeListText(item.title).includes(term)) return false;
     if (unifiedTypeFilter.value !== "ALL" && item.type !== unifiedTypeFilter.value) return false;
     if (unifiedStatusFilter.value === "PUBLIC" && !item.isPublic) return false;
     if (unifiedStatusFilter.value === "INTERNAL" && item.isPublic) return false;
@@ -1355,6 +1370,11 @@ onMounted(async () => {
 .unified-filter-toggle {
   flex-wrap: wrap;
   height: auto !important;
+}
+
+.unified-search {
+  flex: 1 1 220px;
+  min-width: 220px;
 }
 
 .content-admin-grid {

@@ -10,9 +10,9 @@
           Pessoas com alerta pastoral, visitas abertas ou retorno marcado.
         </p>
       </div>
-      <v-btn to="/pastoral/visitas" color="primary" class="text-none font-weight-bold">
+      <v-btn to="/pastoral/visitas?new=1" color="primary" class="text-none font-weight-bold">
         <HandHeart size="16" class="mr-2" />
-        Nova visita
+        Registrar visita
       </v-btn>
     </header>
 
@@ -29,10 +29,10 @@
       <div class="people-filter app-surface-muted pa-3 mb-4">
         <v-text-field
           v-model="search"
-          label="Buscar pessoa"
+          label="Buscar por nome, telefone ou e-mail"
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
-          density="compact"
+          density="comfortable"
           color="primary"
           hide-details
         />
@@ -61,6 +61,7 @@
           :key="person.id"
           :to="`/pastoral/pessoas/${person.id}`"
           class="person-row app-surface app-interactive-surface"
+          :aria-label="`Abrir acompanhamento de ${person.name}`"
         >
           <v-avatar class="person-avatar" size="42">
             {{ initials(person.name) }}
@@ -78,7 +79,7 @@
               color="amber-darken-3"
               variant="tonal"
             >
-              {{ person.missedOccurrences }} aus.
+              {{ person.missedOccurrences }} ausência{{ person.missedOccurrences === 1 ? "" : "s" }}
             </v-chip>
             <v-chip
               v-if="person.openVisits > 0"
@@ -103,6 +104,7 @@ import { ChevronRight, HandHeart, Users } from "lucide-vue-next";
 import { usePastoral, type PastoralDashboard, type PastoralVisit } from "../../../composables/usePastoral";
 import { usePermissions } from "../../../composables/usePermissions";
 import { getInitials } from "../../utils/initials";
+import { compareListText, normalizeListText } from "../../utils/listOrdering";
 
 type PastoralPerson = {
   id: string;
@@ -154,21 +156,17 @@ const people = computed<PastoralPerson[]>(() => {
     });
   }
 
-  return [...byId.values()].sort((current, next) => {
-    const priority = next.missedOccurrences + next.openVisits - (current.missedOccurrences + current.openVisits);
-    if (priority !== 0) return priority;
-    return current.name.localeCompare(next.name, "pt-BR");
-  });
+  return [...byId.values()].sort((current, next) => compareListText(current.name, next.name));
 });
 
 const filteredPeople = computed(() => {
-  const term = search.value.trim().toLowerCase();
+  const term = normalizeListText(search.value);
   if (!term) return people.value;
 
   return people.value.filter((person) =>
     [person.name, person.email, person.phone]
       .filter(Boolean)
-      .some((value) => value?.toLowerCase().includes(term)),
+      .some((value) => normalizeListText(value).includes(term)),
   );
 });
 
@@ -216,7 +214,7 @@ onMounted(loadPeople);
 }
 
 .people-filter {
-  border-radius: 10px;
+  border-radius: var(--app-radius-card);
 }
 
 .people-list {
@@ -229,7 +227,7 @@ onMounted(loadPeople);
   grid-template-columns: 42px minmax(0, 1fr) auto 18px;
   align-items: center;
   gap: 12px;
-  min-height: 72px;
+  min-height: 78px;
   padding: 12px;
   color: var(--app-color-text);
   text-decoration: none;
@@ -250,9 +248,16 @@ onMounted(loadPeople);
 
 .person-copy strong,
 .person-copy small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+}
+
+.person-copy strong {
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.person-copy small {
+  line-height: 1.35;
 }
 
 .person-copy small,
@@ -266,6 +271,10 @@ onMounted(loadPeople);
   justify-content: flex-end;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+.person-signals .v-chip {
+  min-height: 30px;
 }
 
 .empty-panel {
@@ -288,12 +297,30 @@ onMounted(loadPeople);
   }
 
   .person-row {
-    grid-template-columns: 42px minmax(0, 1fr) 18px;
+    grid-template-columns: 42px minmax(0, 1fr) 20px;
+    grid-template-areas:
+      "avatar copy arrow"
+      "avatar signals arrow";
+    align-items: start;
+  }
+
+  .person-avatar {
+    grid-area: avatar;
+    margin-top: 2px;
+  }
+
+  .person-copy {
+    grid-area: copy;
   }
 
   .person-signals {
-    grid-column: 2 / -1;
+    grid-area: signals;
     justify-content: flex-start;
+  }
+
+  .person-arrow {
+    grid-area: arrow;
+    align-self: center;
   }
 }
 </style>

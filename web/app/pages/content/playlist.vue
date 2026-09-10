@@ -120,6 +120,7 @@ import { ChevronLeft, ChevronRight, ListMusic, Music, Search } from "lucide-vue-
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { usePersonalPlaylist, type PersonalSong } from "../../../composables/usePersonalPlaylist";
+import { compareListText, normalizeListText } from "../../utils/listOrdering";
 
 const router = useRouter();
 const { isDark } = useThemeMode();
@@ -150,9 +151,10 @@ const noteOptions = [
 ];
 
 const filteredSongs = computed(() => {
-  if (!search.value.trim()) return songs.value;
-  const q = search.value.toLowerCase();
-  return songs.value.filter((s) => s.mediaItem.title.toLowerCase().includes(q));
+  const q = normalizeListText(search.value);
+  return songs.value
+    .filter((song) => !q || normalizeListText(song.mediaItem.title).includes(q))
+    .sort((first, second) => compareListText(first.mediaItem.title, second.mediaItem.title));
 });
 
 const openSong = (song: PersonalSong) => {

@@ -620,8 +620,8 @@ onUnmounted(() => {
 .scale-details-sheet {
   display: flex;
   flex-direction: column;
-  height: min(92dvh, 920px);
-  max-height: min(92vh, 920px);
+  height: min(92svh, 920px);
+  max-height: min(92svh, 920px);
   overflow: hidden;
   border-radius: 22px 22px 0 0 !important;
   background: var(--app-color-surface) !important;

@@ -10,7 +10,7 @@
             {{ person?.name || "Pessoa" }}
           </h1>
           <p class="text-body-2 text-grey-darken-1 mb-0">
-            Perfil pastoral, visitas e proximas ações.
+            Acompanhamento, visitas e próximas ações.
           </p>
         </div>
       </div>
@@ -51,6 +51,28 @@
               <p class="text-body-2 text-grey-darken-1 mb-0">
                 {{ contactLabel }}
               </p>
+              <div v-if="person.phone || person.email" class="profile-contact-actions">
+                <v-btn
+                  v-if="person.phone"
+                  :href="`tel:${person.phone}`"
+                  variant="tonal"
+                  color="primary"
+                  size="small"
+                  class="text-none"
+                >
+                  Ligar
+                </v-btn>
+                <v-btn
+                  v-if="person.email"
+                  :href="`mailto:${person.email}`"
+                  variant="text"
+                  color="primary"
+                  size="small"
+                  class="text-none"
+                >
+                  Enviar e-mail
+                </v-btn>
+              </div>
             </div>
             <div class="profile-badges">
               <v-chip
@@ -316,6 +338,13 @@ onMounted(loadProfile);
   flex: 1 1 auto;
 }
 
+.profile-contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .profile-badges {
   display: flex;
   justify-content: flex-end;
@@ -352,7 +381,7 @@ onMounted(loadProfile);
 }
 
 .timeline-panel {
-  border-radius: 10px;
+  border-radius: var(--app-radius-card);
 }
 
 .timeline-list {

@@ -1269,6 +1269,7 @@ import {
 } from "../../../composables/usePermissions";
 import { useRoster, type RosterMember, type RosterStatus } from "../../../composables/useRoster";
 import { getInitials } from "../../utils/initials";
+import { compareListText } from "../../utils/listOrdering";
 
 const router = useRouter();
 const route = useRoute();
@@ -1862,7 +1863,8 @@ const roleFilterOptions = computed(() => [
 const filteredMembers = computed(() => {
   const search = normalizeFilterText(memberSearch.value);
 
-  return members.value.filter((member) => {
+  return members.value
+    .filter((member) => {
     const matchesSearch =
       !search ||
       normalizeFilterText(`${member.name} ${member.email} ${member.phone || ""}`)
@@ -1876,8 +1878,9 @@ const filteredMembers = computed(() => {
       memberRoleFilter.value === "ALL" ||
       (member.roles ?? []).some((role) => role.id === memberRoleFilter.value);
 
-    return matchesSearch && matchesType && matchesRole;
-  });
+      return matchesSearch && matchesType && matchesRole;
+    })
+    .sort((first, second) => compareListText(first.name, second.name));
 });
 
 const rolePermissionModules = (permissions: string[]) =>
@@ -1888,7 +1891,8 @@ const rolePermissionModules = (permissions: string[]) =>
 const filteredChurchRoles = computed(() => {
   const search = normalizeFilterText(roleSearch.value);
 
-  return churchRoles.value.filter((role) => {
+  return churchRoles.value
+    .filter((role) => {
     const matchesSearch =
       !search ||
       normalizeFilterText(`${role.name} ${role.description || ""}`).includes(search);
@@ -1898,8 +1902,9 @@ const filteredChurchRoles = computed(() => {
         (module) => module.key === roleModuleFilter.value,
       );
 
-    return matchesSearch && matchesModule;
-  });
+      return matchesSearch && matchesModule;
+    })
+    .sort((first, second) => compareListText(first.name, second.name));
 });
 
 const loadRoles = async () => {
@@ -2089,13 +2094,15 @@ watch(rosterStatusFilter, loadRoster);
 
 const filteredRosterMembers = computed(() => {
   const term = rosterSearch.value.trim().toLowerCase();
-  if (!term) return rosterMembers.value;
-  return rosterMembers.value.filter(
-    (member) =>
-      member.name.toLowerCase().includes(term) ||
-      member.email?.toLowerCase().includes(term) ||
-      member.phone?.toLowerCase().includes(term),
-  );
+  return rosterMembers.value
+    .filter(
+      (member) =>
+        !term ||
+        member.name.toLowerCase().includes(term) ||
+        member.email?.toLowerCase().includes(term) ||
+        member.phone?.toLowerCase().includes(term),
+    )
+    .sort((first, second) => compareListText(first.name, second.name));
 });
 
 const rosterStatusLabel = (status: RosterStatus) =>

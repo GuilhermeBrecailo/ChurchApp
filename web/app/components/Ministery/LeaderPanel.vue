@@ -83,6 +83,19 @@
         </v-btn>
       </div>
 
+      <v-text-field
+        v-if="departmentMembers.length"
+        v-model="memberSearch"
+        label="Buscar membro do ministério"
+        prepend-inner-icon="mdi-magnify"
+        variant="outlined"
+        density="compact"
+        color="primary"
+        hide-details
+        clearable
+        class="mb-3"
+      />
+
       <v-alert
         v-if="cargoError"
         type="error"
@@ -95,7 +108,7 @@
 
       <div v-if="departmentMembers.length" class="member-cargo-list">
         <div
-          v-for="member in departmentMembers"
+          v-for="member in visibleDepartmentMembers"
           :key="member.id"
           class="member-cargo-item"
         >
@@ -305,11 +318,13 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from "vue";
 import { AlertTriangle, BarChart3, BellRing, Calendar, Send, Trash2, UserPlus } from "lucide-vue-next";
 import type { DepartmentMember, DepartmentSchedule } from "../../../composables/useDepartments";
 import type { MemberRole } from "../../../composables/useChurchRoles";
+import { compareListText, normalizeListText } from "../../utils/listOrdering";
 
-defineProps<{
+const props = defineProps<{
   isDark: boolean;
   leaderMessage: string;
   leaderError: string;
@@ -335,6 +350,17 @@ defineProps<{
   confirmedAssignments: (schedule: DepartmentSchedule) => number;
   notViewedAssignments: (schedule: DepartmentSchedule) => number;
 }>();
+
+const memberSearch = ref("");
+const visibleDepartmentMembers = computed(() => {
+  const term = normalizeListText(memberSearch.value);
+  return [...props.departmentMembers]
+    .filter(
+      (member) =>
+        !term || normalizeListText(`${member.name} ${member.email}`).includes(term),
+    )
+    .sort((first, second) => compareListText(first.name, second.name));
+});
 
 const selectedMemberToAdd = defineModel<string | null>("selectedMemberToAdd");
 

@@ -349,6 +349,7 @@ import {
   useServiceOccurrences,
   type ServiceOccurrenceDetail,
 } from "../../../composables/useServiceOccurrences";
+import { compareListText } from "../../utils/listOrdering";
 
 const route = useRoute();
 const router = useRouter();
@@ -782,16 +783,20 @@ const upcomingSchedules = computed(() => {
 });
 
 const memberOptions = computed(() =>
-  departmentMembers.value.map((member) => ({
-    label: `${member.name} (${member.email})`,
-    value: member.id,
-  })),
+  [...departmentMembers.value]
+    .sort((first, second) => compareListText(first.name, second.name))
+    .map((member) => ({
+      label: `${member.name} (${member.email})`,
+      value: member.id,
+    })),
 );
 
 const membersAvailableToAdd = computed(() =>
-  members.value.filter(
-    (member) => !departmentMembers.value.some((deptMember) => deptMember.id === member.id),
-  ),
+  members.value
+    .filter(
+      (member) => !departmentMembers.value.some((deptMember) => deptMember.id === member.id),
+    )
+    .sort((first, second) => compareListText(first.name, second.name)),
 );
 
 const addMemberOptions = computed(() =>
@@ -802,14 +807,18 @@ const addMemberOptions = computed(() =>
 );
 
 const songOptions = computed(() =>
-  songs.value.map((song) => ({
-    label: song.metadata?.artist ? `${song.title} - ${song.metadata.artist}` : song.title,
-    value: song.id,
-  })),
+  [...songs.value]
+    .sort((first, second) => compareListText(first.title, second.title))
+    .map((song) => ({
+      label: song.metadata?.artist ? `${song.title} - ${song.metadata.artist}` : song.title,
+      value: song.id,
+    })),
 );
 
 const resourceMaterials = computed(() =>
-  resources.value.filter((resource) => resource.category !== "ACTIVITY"),
+  resources.value
+    .filter((resource) => resource.category !== "ACTIVITY")
+    .sort((first, second) => compareListText(first.title, second.title)),
 );
 
 const resourceCategoryOptions = computed(() =>
@@ -820,9 +829,9 @@ const resourceCategoryOptions = computed(() =>
 
 const resourceOptions = computed(() =>
   resourceMaterials.value.map((resource) => ({
-    label: `${resource.title} (${resource.category})`,
-    value: resource.id,
-  })),
+      label: `${resource.title} (${resource.category})`,
+      value: resource.id,
+    })),
 );
 
 const assignmentRoleOptions = computed(
@@ -830,7 +839,9 @@ const assignmentRoleOptions = computed(
 );
 
 const activityResources = computed(() =>
-  resources.value.filter((resource) => resource.category === "ACTIVITY"),
+  resources.value
+    .filter((resource) => resource.category === "ACTIVITY")
+    .sort((first, second) => compareListText(first.title, second.title)),
 );
 
 const selectedSchedule = computed(() =>

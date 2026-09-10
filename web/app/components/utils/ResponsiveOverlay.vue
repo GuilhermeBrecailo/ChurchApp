@@ -7,8 +7,10 @@
     :persistent="props.persistent"
     :scrim="props.scrim"
     :class="[props.mobileClass, overlayClasses]"
+    :data-responsive-overlay-id="overlayId"
+    :style="mobileSheetStyle"
     @update:model-value="emit('update:modelValue', $event)"
-    @after-leave="emit('afterLeave')"
+    @after-leave="handleAfterLeave"
   >
     <slot />
   </v-bottom-sheet>
@@ -24,14 +26,22 @@
     :class="[props.fullscreen ? props.fullscreenClass : undefined, overlayClasses]"
     :fullscreen="props.fullscreen || props.fullscreenDesktop"
     @update:model-value="emit('update:modelValue', $event)"
-    @after-leave="emit('afterLeave')"
+    @after-leave="handleAfterLeave"
   >
     <slot />
   </v-dialog>
 </template>
 
 <script setup lang="ts">
-import { computed, useAttrs } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  useAttrs,
+  useId,
+  watch,
+} from "vue";
 import { useDisplay } from "vuetify";
 
 defineOptions({ inheritAttrs: false });
@@ -80,10 +90,116 @@ const emit = defineEmits<{
 const attrs = useAttrs();
 const { smAndDown } = useDisplay();
 const mobile = computed(() => smAndDown.value);
+const overlayId = useId();
+const mobileSheetMinHeight = ref(0);
+let resizeObserver: ResizeObserver | null = null;
+let mutationObserver: MutationObserver | null = null;
+let measureFrame: number | null = null;
+
+const mobileSheetStyle = computed<Record<string, string> | undefined>(() => {
+  if (!mobileSheetMinHeight.value) return undefined;
+
+  return {
+    "--responsive-overlay-min-height": `${mobileSheetMinHeight.value}px`,
+  };
+});
+
 const overlayClasses = computed(() => [
   "responsive-overlay",
   `responsive-overlay--${props.variant}`,
   props.scrollable ? "responsive-overlay--scrollable" : undefined,
   props.fullscreen ? "responsive-overlay--fullscreen" : undefined,
 ]);
+
+function getMobileSheetContent() {
+  if (!import.meta.client) return null;
+
+  const root = document.querySelector<HTMLElement>(
+    `[data-responsive-overlay-id="${overlayId}"]`,
+  );
+
+  return root?.querySelector<HTMLElement>(".v-bottom-sheet__content") ?? null;
+}
+
+function measureMobileSheet() {
+  measureFrame = null;
+
+  if (!props.modelValue || !mobile.value) return;
+
+  const content = getMobileSheetContent();
+  if (!content) return;
+
+  const measuredHeight = Math.ceil(content.getBoundingClientRect().height);
+  if (measuredHeight > mobileSheetMinHeight.value) {
+    mobileSheetMinHeight.value = measuredHeight;
+  }
+}
+
+function queueMobileSheetMeasure() {
+  if (!import.meta.client || measureFrame !== null) return;
+
+  measureFrame = window.requestAnimationFrame(measureMobileSheet);
+}
+
+function stopMobileSheetMeasurement() {
+  resizeObserver?.disconnect();
+  mutationObserver?.disconnect();
+  resizeObserver = null;
+  mutationObserver = null;
+
+  if (measureFrame !== null && import.meta.client) {
+    window.cancelAnimationFrame(measureFrame);
+    measureFrame = null;
+  }
+}
+
+async function startMobileSheetMeasurement() {
+  stopMobileSheetMeasurement();
+  mobileSheetMinHeight.value = 0;
+
+  if (!import.meta.client || !props.modelValue || !mobile.value) return;
+
+  await nextTick();
+
+  const content = getMobileSheetContent();
+  if (!content) return;
+
+  resizeObserver = new ResizeObserver(queueMobileSheetMeasure);
+  resizeObserver.observe(content);
+
+  mutationObserver = new MutationObserver(queueMobileSheetMeasure);
+  mutationObserver.observe(content, {
+    attributes: true,
+    characterData: true,
+    childList: true,
+    subtree: true,
+  });
+
+  queueMobileSheetMeasure();
+}
+
+function resetMobileSheetHeight() {
+  stopMobileSheetMeasurement();
+  mobileSheetMinHeight.value = 0;
+}
+
+function handleAfterLeave() {
+  resetMobileSheetHeight();
+  emit("afterLeave");
+}
+
+watch(
+  () => [props.modelValue, mobile.value] as const,
+  ([isOpen, isMobile]) => {
+    if (isOpen && isMobile && !props.fullscreen) {
+      void startMobileSheetMeasurement();
+      return;
+    }
+
+    stopMobileSheetMeasurement();
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(resetMobileSheetHeight);
 </script>

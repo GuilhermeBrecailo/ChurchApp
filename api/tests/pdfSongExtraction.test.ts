@@ -1,6 +1,67 @@
-import { extractSongsFromPages } from "../src/application/Services/Department/PdfSongExtraction";
+import {
+  extractSongsFromPages,
+  renderPdfTextItems,
+} from "../src/application/Services/Department/PdfSongExtraction";
 
 describe("extractSongsFromPages", () => {
+  it("reconstroi linhas do PDF preservando espacos entre blocos de texto", () => {
+    const item = (str: string, x: number, y: number, width: number) => ({
+      str,
+      transform: [10, 0, 0, 10, x, y],
+      width,
+    });
+
+    expect(
+      renderPdfTextItems([
+        item("Em7", 40, 500, 20),
+        item("C9/E", 64, 500, 26),
+        item("Água", 40, 486, 24),
+        item("em", 70, 486.4, 12),
+        item("vinho", 88, 486, 28),
+        item("tornou", 122, 486, 34),
+      ]),
+    ).toBe("Em7 C9/E\nÁgua em vinho tornou");
+  });
+
+  it("mantem a posicao horizontal do acorde mesmo quando o PDF nao traz espacos iniciais", () => {
+    const item = (str: string, x: number, y: number, width: number) => ({
+      str,
+      transform: [10, 0, 0, 10, x, y],
+      width,
+    });
+
+    expect(
+      renderPdfTextItems([
+        item("Eu olho para cruz", 28, 80, 90),
+        item("A", 78, 100, 7),
+      ]),
+    ).toBe("       A\nEu olho para cruz");
+  });
+
+  it("reordena acordes espaciais para a linha visual correta antes de anexar a segunda coluna", () => {
+    const item = (str: string, x: number, y: number, width: number) => ({
+      str,
+      transform: [10, 0, 0, 10, x, y],
+      width,
+    });
+
+    const rendered = renderPdfTextItems([
+      item("[Intro]", 28, 100, 42),
+      item("Eu olho para cruz", 28, 80, 90),
+      item("Sem palavras", 303, 100, 70),
+      item("Quebrantado", 303, 80, 70),
+      item("A", 78, 100, 7),
+      item("E", 96, 100, 7),
+    ]);
+
+    expect(rendered.split("\n")).toEqual([
+      "[Intro] A  E",
+      "Eu olho para cruz",
+      "Sem palavras",
+      "Quebrantado",
+    ]);
+  });
+
   it("treats each page as one song (uma musica por pagina)", () => {
     const pages = [
       "Grande e o Senhor\nVerso 1 linha 1\nVerso 1 linha 2",
@@ -319,5 +380,78 @@ describe("extractSongsFromPages", () => {
     expect(songs[0].lyrics).toContain("[Solo]");
     expect(songs[0].lyrics).not.toContain("[Solo] C Dm Am F");
     expect(songs[0].chords).toContain("[Solo] C Dm Am F");
+  });
+
+  it("preserva o espacamento visual das linhas de cifra sem mexer na letra", () => {
+    const page = [
+      "G             C9        Em7",
+      "G7M             A",
+      "Há uma nova canção",
+      "[Intro]    G       C9",
+      "Titulo da Musica",
+      "Banda Exemplo",
+      "Composição de: Compositor",
+      "Tom: G",
+    ].join("\n");
+
+    const [song] = extractSongsFromPages([page]);
+
+    expect(song.chords.split("\n").slice(0, 4)).toEqual([
+      "G             C9        Em7",
+      "G7M             A",
+      "Há uma nova canção",
+      "[Intro]    G       C9",
+    ]);
+    expect(song.lyrics).toBe("Há uma nova canção\n[Intro]");
+  });
+
+  it("preserva a posição horizontal dos acordes entre as frases", () => {
+    const page = [
+      "                    G                         C9",
+      "Há uma nova canção em meus lábios",
+      "                              Em7             D",
+      "É uma que eu ainda estou aprendendo a cantar",
+      "Titulo da Musica",
+      "Banda Exemplo",
+      "Composição de: Compositor",
+      "Tom: G",
+    ].join("\n");
+
+    const [song] = extractSongsFromPages([page]);
+
+    expect(song.chords.split("\n").slice(0, 4)).toEqual([
+      "                    G                         C9",
+      "Há uma nova canção em meus lábios",
+      "                              Em7             D",
+      "É uma que eu ainda estou aprendendo a cantar",
+    ]);
+    expect(song.lyrics).toBe(
+      "Há uma nova canção em meus lábios\nÉ uma que eu ainda estou aprendendo a cantar",
+    );
+  });
+
+  it("extrai letra e cifra quando os metadados aparecem antes do corpo da musica", () => {
+    const page = [
+      "Quebrantado",
+      "Vineyard",
+      "Composição de: Jeremy Riddle",
+      "Tom: A",
+      "[Intro] A E F#m D",
+      "A E F#m D",
+      "[Primeira Parte]",
+      "A",
+      "Eu olho para cruz",
+      "E",
+      "E para cruz eu vou",
+    ].join("\n");
+
+    const [song] = extractSongsFromPages([page]);
+
+    expect(song.title).toBe("Quebrantado");
+    expect(song.key).toBe("A");
+    expect(song.lyrics).toContain("[Intro]");
+    expect(song.lyrics).toContain("Eu olho para cruz");
+    expect(song.chords).toContain("[Intro] A E F#m D");
+    expect(song.chords).toContain("Eu olho para cruz");
   });
 });

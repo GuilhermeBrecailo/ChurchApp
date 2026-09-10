@@ -27,11 +27,24 @@
       {{ errorMessage }}
     </v-alert>
 
+    <v-text-field
+      v-if="!loading && devotionals.length"
+      v-model="search"
+      label="Buscar devocional"
+      prepend-inner-icon="mdi-magnify"
+      variant="outlined"
+      density="compact"
+      color="primary"
+      hide-details
+      clearable
+      class="mb-4"
+    />
+
     <v-skeleton-loader v-if="loading" type="card, card, card" />
 
-    <div v-else-if="devotionals.length" class="devotional-grid">
+    <div v-else-if="filteredDevotionals.length" class="devotional-grid">
       <NuxtLink
-        v-for="devotional in devotionals"
+        v-for="devotional in filteredDevotionals"
         :key="devotional.id"
         :to="`/content/devotionals/${devotional.id}`"
         class="devotional-link"
@@ -62,6 +75,16 @@
         </v-card>
       </NuxtLink>
     </div>
+
+    <v-card
+      v-else-if="devotionals.length"
+      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
+    >
+      <Heart size="34" color="#9CA3AF" class="mb-3" />
+      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
+        Nenhum devocional encontrado
+      </p>
+    </v-card>
 
     <v-card
       v-else
@@ -258,10 +281,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { ChevronLeft, Heart, Plus } from "lucide-vue-next";
 import { useDevotionals, type Devotional } from "../../../../composables/useDevotionals";
 import { usePermissions } from "../../../../composables/usePermissions";
+import { compareListText, normalizeListText } from "../../../utils/listOrdering";
 
 const router = useRouter();
 const { listDevotionals, createDevotional } = useDevotionals();
@@ -270,6 +294,7 @@ const { can } = usePermissions();
 const devotionals = ref<Devotional[]>([]);
 const loading = ref(false);
 const errorMessage = ref("");
+const search = ref("");
 
 const isCreateDialogOpen = ref(false);
 const isSaving = ref(false);
@@ -288,6 +313,16 @@ const createForm = reactive({
 
 // Pastor/admin sempre; demais so com PUBLISH_CONTENT concedido pelo pastor.
 const canPublish = computed(() => can("CONTENT_PUBLISH"));
+
+const filteredDevotionals = computed(() => {
+  const term = normalizeListText(search.value);
+  return devotionals.value
+    .filter((devotional) =>
+      !term ||
+      normalizeListText(`${devotional.title} ${devotional.description ?? ""}`).includes(term),
+    )
+    .sort((first, second) => compareListText(first.title, second.title));
+});
 
 const openCreateDialog = () => {
   createForm.title = "";
