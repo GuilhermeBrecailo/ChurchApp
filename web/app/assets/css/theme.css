@@ -1129,6 +1129,13 @@ body {
     margin: 16px;
   }
 
+  .responsive-overlay--fullscreen .v-overlay__content {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    margin: 0;
+  }
+
   .responsive-overlay .v-bottom-sheet__content {
     margin: 0;
   }

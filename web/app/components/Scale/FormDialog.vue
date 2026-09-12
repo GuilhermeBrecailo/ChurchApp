@@ -15,17 +15,30 @@
             </p>
           </div>
         </div>
-        <v-btn
-          icon
-          variant="text"
-          color="grey-darken-1"
-          size="small"
-          aria-label="Fechar formulário de escala"
-          :disabled="isSaving"
-          @click="handleOpenChange(false)"
-        >
-          <v-icon size="20">mdi-close</v-icon>
-        </v-btn>
+        <div class="responsive-dialog-header-actions">
+          <v-btn
+            v-if="!isEditing && copyableSchedules.length"
+            variant="tonal"
+            color="primary"
+            size="small"
+            class="text-none"
+            :disabled="isSaving"
+            @click="isCopyDialogOpen = true"
+          >
+            <Copy size="16" class="mr-1" /> Copiar escala
+          </v-btn>
+          <v-btn
+            icon
+            variant="text"
+            color="grey-darken-1"
+            size="small"
+            aria-label="Fechar formulário de escala"
+            :disabled="isSaving"
+            @click="handleOpenChange(false)"
+          >
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
       </div>
 
       <v-form autocomplete="off" @submit.prevent="handleSaveSchedule">
@@ -55,7 +68,7 @@
         <v-select
           v-else
           v-model="scheduleForm.serviceTimeId"
-          label="Culto"
+          label="Culto (opcional)"
           :items="serviceTimeOptions"
           item-title="label"
           item-value="value"
@@ -67,6 +80,9 @@
           class="scale-input mb-4"
           :menu-props="scaleSelectMenuProps"
           hide-details="auto"
+          hint="Você pode criar a escala sem vinculá-la a um culto."
+          persistent-hint
+          clearable
           :disabled="isSaving"
         />
 
@@ -368,6 +384,12 @@
       </v-form>
     </v-card>
 
+    <ScaleCopyScheduleDialog
+      v-model="isCopyDialogOpen"
+      :schedules="copyableSchedules"
+      @select="copySchedule"
+    />
+
     <ScaleSongPickerDialog
       v-model="isSongPickerOpen"
       :songs="selectedDepartmentSongs"
@@ -379,13 +401,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { Calendar, ChevronDown, ChevronUp, Plus } from "lucide-vue-next";
+import { Calendar, ChevronDown, ChevronUp, Copy, Plus } from "lucide-vue-next";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import {
   useServiceOccurrences,
   type ServiceOccurrenceDetail,
 } from "../../../composables/useServiceOccurrences";
-import { getScheduleCultSelection } from "../../utils/scaleSchedule";
+import { getScheduleCopySelection, getScheduleCultSelection } from "../../utils/scaleSchedule";
 import { useServiceTimes } from "../../../composables/useServiceTimes";
 import {
   useDepartments,
@@ -401,6 +423,7 @@ const props = defineProps<{
   schedule: DepartmentSchedule | null;
   departments: ChurchDepartment[];
   members: ChurchMember[];
+  schedules: DepartmentSchedule[];
 }>();
 
 const emit = defineEmits<{
@@ -458,6 +481,7 @@ const isEditing = computed(() => Boolean(props.schedule));
 const isSaving = ref(false);
 const isPrefilling = ref(false);
 const saveError = ref("");
+const isCopyDialogOpen = ref(false);
 const isSongPickerOpen = ref(false);
 const volunteerUserId = ref("");
 const volunteerRole = ref("");
@@ -482,6 +506,12 @@ const scheduleForm = reactive({
 const departmentOptions = computed(() =>
   props.departments.map((department) => ({ label: department.name, value: department.id })),
 );
+
+const copyableSchedules = computed(() => {
+  const manageableDepartmentIds = new Set(props.departments.map((department) => department.id));
+
+  return props.schedules.filter((schedule) => manageableDepartmentIds.has(schedule.departmentId));
+});
 
 const departmentRoleOptions: Record<string, string[]> = {
   WORSHIP: ["Ministro", "Cantor(a)", "Guitarra", "Baixo", "Violão", "Bateria", "Cajon", "Teclado"],
@@ -624,30 +654,28 @@ const resetForm = () => {
   linkedCult.value = null;
 };
 
-const prefillForm = async (schedule: DepartmentSchedule) => {
+const prefillForm = async (schedule: DepartmentSchedule, mode: "edit" | "copy" = "edit") => {
   isPrefilling.value = true;
   linkedCult.value = null;
+  const cultSelection = getScheduleCultSelection(schedule);
+  const copySelection = getScheduleCopySelection(schedule);
   scheduleForm.title = schedule.description;
   scheduleForm.date = toDateInputValue(schedule.date);
   scheduleForm.time = toTimeInputValue(schedule.date);
-  const cultSelection = getScheduleCultSelection(schedule);
-  scheduleForm.serviceTimeId = cultSelection.serviceTimeId;
+  scheduleForm.serviceTimeId = copySelection.serviceTimeId;
   scheduleForm.departmentId = schedule.departmentId;
   scheduleForm.rehearsalDate = schedule.rehearsalAt ? toDateInputValue(schedule.rehearsalAt) : "";
   scheduleForm.rehearsalTime = schedule.rehearsalAt ? toTimeInputValue(schedule.rehearsalAt) : "";
   scheduleForm.rehearsalNotes = schedule.rehearsalNotes || "";
   await loadScheduleMediaItems(schedule.departmentId);
-  scheduleForm.songIds =
-    schedule.mediaItems?.filter((item) => item.mediaItem.category === "MUSIC").map((item) => item.mediaItemId) || [];
-  scheduleForm.resourceIds =
-    schedule.mediaItems?.filter((item) => item.mediaItem.category !== "MUSIC").map((item) => item.mediaItemId) || [];
-  scheduleForm.assignments =
-    schedule.assignments?.map((a) => ({ userId: a.userId, name: a.user.name, role: a.role })) || [];
+  scheduleForm.songIds = copySelection.songIds;
+  scheduleForm.resourceIds = copySelection.resourceIds;
+  scheduleForm.assignments = copySelection.assignments;
   volunteerUserId.value = "";
   volunteerRole.value = "";
   saveError.value = "";
 
-  if (cultSelection.occurrenceId) {
+  if (mode === "edit" && cultSelection.occurrenceId) {
     const { data, error } = await getOccurrence(cultSelection.occurrenceId);
 
     if (data) {
@@ -658,6 +686,11 @@ const prefillForm = async (schedule: DepartmentSchedule) => {
   }
 
   isPrefilling.value = false;
+};
+
+const copySchedule = async (schedule: DepartmentSchedule) => {
+  isCopyDialogOpen.value = false;
+  await prefillForm(schedule, "copy");
 };
 
 watch(
@@ -714,22 +747,23 @@ const handleSaveSchedule = async () => {
     return;
   }
 
-  if (!linkedCult.value && !scheduleForm.serviceTimeId) {
-    saveError.value = "Escolha o culto da escala.";
-    return;
-  }
-
   isSaving.value = true;
 
   try {
-    const { data: occurrence, error: occurrenceError } = linkedCult.value
-      ? { data: linkedCult.value, error: null }
-      : await resolveOccurrence(scheduleForm.serviceTimeId, scheduleForm.date);
+    let serviceOccurrenceId = linkedCult.value?.id || null;
 
-    if (occurrenceError || !occurrence) {
-      saveError.value = occurrenceError || "Não foi possível vincular o culto.";
-      isSaving.value = false;
-      return;
+    if (!serviceOccurrenceId && scheduleForm.serviceTimeId) {
+      const { data: occurrence, error: occurrenceError } = await resolveOccurrence(
+        scheduleForm.serviceTimeId,
+        scheduleForm.date,
+      );
+
+      if (occurrenceError || !occurrence) {
+        saveError.value = occurrenceError || "Não foi possível vincular o culto.";
+        return;
+      }
+
+      serviceOccurrenceId = occurrence.id;
     }
 
     const payload = {
@@ -737,7 +771,7 @@ const handleSaveSchedule = async () => {
       date: scheduleForm.date,
       time: scheduleForm.time || undefined,
       departmentId: scheduleForm.departmentId,
-      serviceOccurrenceId: occurrence.id,
+      serviceOccurrenceId: serviceOccurrenceId || undefined,
       rehearsalDate: scheduleForm.rehearsalDate || null,
       rehearsalTime: scheduleForm.rehearsalTime || null,
       rehearsalNotes: scheduleForm.rehearsalNotes || null,
@@ -832,6 +866,14 @@ const handleSaveSchedule = async () => {
   gap: 12px;
 }
 
+.responsive-dialog-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
 .playlist-builder {
   display: grid;
   gap: 10px;
@@ -903,6 +945,13 @@ const handleSaveSchedule = async () => {
 }
 
 @media (max-width: 420px) {
+  .responsive-dialog-header-actions .v-btn:not(.v-btn--icon) {
+    max-width: 148px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .dialog-actions .v-btn {
     flex: 1 1 100%;
   }

@@ -116,6 +116,7 @@
       :schedule="editingSchedule"
       :departments="manageableDepartments"
       :members="members"
+      :schedules="schedules"
       @saved="handleScheduleSaved"
     />
 

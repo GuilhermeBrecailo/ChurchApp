@@ -145,15 +145,23 @@ describe("ChurchDepartmentAdapters - escalas", () => {
       ).rejects.toThrow("Uma ou mais musicas nao pertencem a este ministerio");
     });
 
-    it("rejeita escala sem culto vinculado", async () => {
-      await expect(
-        adapters.createChurchDepartmentSchedule(
-          makeRequest({
-            params: { id: "dept-1" },
-            body: { title: "Culto de Domingo", date: "2026-08-20" },
-          }),
-        ),
-      ).rejects.toThrow("Escolha o culto antes de criar a escala");
+    it("cria escala sem culto vinculado", async () => {
+      mockPrismaClient.schedule.create.mockResolvedValue(scheduleRow({ serviceOccurrenceId: null }));
+
+      const result = await adapters.createChurchDepartmentSchedule(
+        makeRequest({
+          params: { id: "dept-1" },
+          body: { title: "Escala de ensaio", date: "2026-08-20" },
+        }),
+      );
+
+      expect(result.id).toBe("schedule-1");
+      expect(mockPrismaClient.serviceOccurrence.findFirst).not.toHaveBeenCalled();
+      expect(mockPrismaClient.schedule.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ serviceOccurrenceId: null }),
+        }),
+      );
     });
 
     it("cria escala com musicas validadas", async () => {

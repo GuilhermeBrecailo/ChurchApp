@@ -1,5 +1,12 @@
 <template>
-  <UtilsResponsiveOverlay :model-value="modelValue" max-width="560" variant="detail" scrollable @update:model-value="$emit('update:modelValue', $event)">
+  <UtilsResponsiveOverlay
+    :model-value="modelValue"
+    max-width="560"
+    variant="detail"
+    mobile-class="scale-song-picker-sheet"
+    scrollable
+    @update:model-value="$emit('update:modelValue', $event)"
+  >
     <v-card class="song-picker" elevation="0">
       <div class="song-picker-header">
         <div class="min-w-0">
@@ -165,12 +172,27 @@ const positionOf = (songId: string) => {
 .song-picker {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  min-width: 0;
   height: auto;
   max-height: min(86svh, 760px);
   min-height: 0;
   border-radius: 16px;
   background: var(--app-color-surface);
   overflow: hidden;
+}
+
+:global(.scale-song-picker-sheet .v-bottom-sheet__content) {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+}
+
+:global(.scale-song-picker-sheet .v-bottom-sheet__content > .song-picker) {
+  width: 100%;
+  max-width: none;
+  max-height: min(92svh, 760px);
+  border-radius: var(--app-overlay-sheet-radius) var(--app-overlay-sheet-radius) 0 0 !important;
 }
 
 .song-picker-header {

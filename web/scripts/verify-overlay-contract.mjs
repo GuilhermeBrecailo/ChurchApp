@@ -110,6 +110,11 @@ const checks = [
     theme,
   ],
   [
+    "tema remove margens do fullscreen no mobile",
+    /@media\s*\(max-width:\s*600px\)[\s\S]*?\.responsive-overlay--fullscreen\s+\.v-overlay__content\s*\{[\s\S]*?margin:\s*0;/,
+    theme,
+  ],
+  [
     "ResponsiveOverlay calcula a altura mínima do sheet aberto",
     /ResizeObserver[\s\S]*responsive-overlay-min-height/,
     overlay,

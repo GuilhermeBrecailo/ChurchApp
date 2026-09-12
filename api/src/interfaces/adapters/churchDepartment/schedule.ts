@@ -286,16 +286,16 @@ export class ScheduleAdapters {
       throw new DomainError("Data da escala inválida");
     }
 
-    if (!body.serviceOccurrenceId) {
-      throw new DomainError("Escolha o culto antes de criar a escala");
-    }
+    const serviceOccurrenceId = body.serviceOccurrenceId?.trim() || null;
 
-    const occurrence = await $prismaClient.serviceOccurrence.findFirst({
-      where: { id: body.serviceOccurrenceId, crunchId: user.crunchId! },
-      select: { id: true },
-    });
-    if (!occurrence) {
-      throw new DomainError("Culto não encontrado");
+    if (serviceOccurrenceId) {
+      const occurrence = await $prismaClient.serviceOccurrence.findFirst({
+        where: { id: serviceOccurrenceId, crunchId: user.crunchId! },
+        select: { id: true },
+      });
+      if (!occurrence) {
+        throw new DomainError("Culto não encontrado");
+      }
     }
 
     const { songIds, resourceIds, mediaItemIds } = this.getScheduleMediaItemIds(body);
@@ -309,7 +309,7 @@ export class ScheduleAdapters {
         date: scheduleDate,
         description: body.title.trim(),
         departmentId,
-        serviceOccurrenceId: body.serviceOccurrenceId,
+        serviceOccurrenceId,
         rehearsalAt: this.getOptionalDateTime(body.rehearsalDate, body.rehearsalTime),
         rehearsalNotes: body.rehearsalNotes?.trim() || null,
         mediaItems: {
