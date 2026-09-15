@@ -22,24 +22,24 @@ const labels = (items: { label: string }[]) => items.map((item) => item.label);
 const routes = (items: { route: string }[]) => items.map((item) => item.route);
 
 describe("role navigation", () => {
-  it("prioriza cuidado, cultos, relatorios e mais para pastor", () => {
-    const items = getBottomNavigationItems(churchUser({ role: "PASTOR" }));
+	it("prioriza cuidado, cultos, escalas e mais para pastor", () => {
+		const items = getBottomNavigationItems(churchUser({ role: "PASTOR" }));
 
-    assert.deepEqual(labels(items), [
-      "Início",
-      "Pastoral",
-      "Cultos",
-      "Relatórios",
-      "Mais",
-    ]);
-    assert.deepEqual(routes(items), [
-      "/",
-      "/pastoral",
-      "/cultos",
-      "/admin/relatorios",
-      "",
-    ]);
-  });
+		assert.deepEqual(labels(items), [
+			"Início",
+			"Pastoral",
+			"Cultos",
+			"Escalas",
+			"Mais",
+		]);
+		assert.deepEqual(routes(items), [
+			"/",
+			"/pastoral",
+			"/cultos",
+			"/scale",
+			"",
+		]);
+	});
 
   it("mostra execucao delegada para lider com cuidado pastoral", () => {
     const items = getBottomNavigationItems(
@@ -57,17 +57,27 @@ describe("role navigation", () => {
     assert.deepEqual(labels(items), [
       "Início",
       "Ministérios",
-      "Visitas",
-      "Cultos",
-      "Mais",
-    ]);
-    assert.deepEqual(routes(items), [
-      "/",
-      "/ministery",
-      "/pastoral/visitas",
-      "/cultos",
-      "",
-    ]);
+		"Escalas",
+		"Cultos",
+		"Mais",
+	]);
+		assert.deepEqual(routes(items), [
+			"/",
+			"/ministery",
+			"/scale",
+			"/cultos",
+			"",
+		]);
+
+		assert.ok(getMoreNavigationItems(churchUser({
+			roles: [
+				{
+					scope: "CHURCH",
+					departmentId: null,
+					permissions: ["PASTORAL_CARE_MANAGE"],
+				},
+			],
+		})).some((entry) => entry.key === "visits"));
   });
 
   it("mantem membro focado em participacao e perfil", () => {
@@ -116,12 +126,12 @@ describe("role navigation", () => {
     });
 
     assert.deepEqual(labels(getBottomNavigationItems(user)), [
-      "Início",
-      "Pessoas",
-      "Cultos",
-      "Escalas",
-      "Mais",
-    ]);
+		"Início",
+		"Pessoas",
+		"Escalas",
+		"Cultos",
+		"Mais",
+	]);
 
     const moreKeys = getMoreNavigationItems(user).map((entry) => entry.key);
     assert.ok(moreKeys.includes("churchAdmin"));
@@ -142,12 +152,12 @@ describe("role navigation", () => {
     });
 
     assert.deepEqual(labels(getBottomNavigationItems(user)), [
-      "Início",
-      "Conteúdo",
-      "Cultos",
-      "Escalas",
-      "Mais",
-    ]);
+		"Início",
+		"Conteúdo",
+		"Escalas",
+		"Cultos",
+		"Mais",
+	]);
 
     const moreKeys = getMoreNavigationItems(user).map((entry) => entry.key);
     assert.ok(!moreKeys.includes("churchAdmin"));
@@ -155,24 +165,24 @@ describe("role navigation", () => {
     assert.ok(!moreKeys.includes("rolesManagement"));
   });
 
-  it("personaliza acesso rapido do pastor com atalhos pastorais", () => {
-    const items = getQuickAccessItems(churchUser({ role: "PASTOR" }));
+	it("mantem acesso rapido curto e focado no pastor", () => {
+		const items = getQuickAccessItems(churchUser({ role: "PASTOR" }));
 
-    assert.deepEqual(labels(items).slice(0, 5), [
-      "Painel",
-      "Visitas",
-      "Pessoas",
-      "Mensagens",
-      "Relatórios",
-    ]);
-  });
+		assert.deepEqual(labels(items), [
+			"Pastoral",
+			"Escalas",
+			"Cultos",
+			"Pessoas",
+		]);
+		assert.ok(!labels(items).includes("Mais"));
+	});
 
   it("monta hub da igreja com prioridade pastoral para pastor", () => {
     const items = getChurchHubItems(churchUser({ role: "PASTOR" }));
 
-    assert.deepEqual(labels(items).slice(0, 5), [
-      "Painel",
-      "Pessoas",
+		assert.deepEqual(labels(items).slice(0, 5), [
+			"Cuidado pastoral",
+			"Pessoas",
       "Mensagens",
       "Cultos",
       "Relatórios",
@@ -193,7 +203,7 @@ describe("role navigation", () => {
     ]);
   });
 
-  it("pastor com preview de lider ve a navegacao de lider com visitas", () => {
+  it("pastor com preview de lider ve a navegacao principal de lider", () => {
     const items = getBottomNavigationItems(
       churchUser({ role: "PASTOR", navPreviewRole: "LIDER" }),
     );
@@ -201,7 +211,7 @@ describe("role navigation", () => {
     assert.deepEqual(labels(items), [
       "Início",
       "Ministérios",
-      "Visitas",
+      "Escalas",
       "Cultos",
       "Mais",
     ]);
@@ -238,16 +248,19 @@ describe("role navigation", () => {
     assert.deepEqual(
       items.map((entry) => entry.title),
       [
-        "Administração da igreja",
-        "Cargos e permissões",
-        "Configurações",
-        "Conteúdo",
-        "Mensagens",
-        "Meu perfil",
-        "Ministérios",
-        "Pessoas",
-        "Publicações",
-        "Visitas",
+		"Administração da igreja",
+		"Cargos e permissões",
+		"Configurações",
+		"Conteúdo",
+		"Dados da igreja",
+		"Mensagens",
+		"Meu perfil",
+		"Ministérios",
+		"Oração",
+		"Pessoas",
+		"Publicações",
+		"Relatórios",
+		"Visitas",
       ],
     );
   });
@@ -300,9 +313,14 @@ describe("role navigation", () => {
     assert.equal(new Set(keys).size, keys.length, "nao deve ter chaves repetidas");
     assert.ok(keys.includes("messages"));
     assert.ok(keys.includes("rolesManagement"));
-    assert.ok(keys.includes("settings"));
-    assert.ok(keys.includes("people"));
-    assert.ok(keys.includes("profile"));
+		assert.ok(keys.includes("settings"));
+		assert.ok(keys.includes("people"));
+		assert.ok(keys.includes("profile"));
+		assert.ok(keys.includes("content"));
+		assert.ok(keys.includes("prayer"));
+		assert.ok(keys.includes("messages"));
+		assert.ok(keys.includes("ministries"));
+		assert.ok(!keys.includes("churchHub"));
   });
 
   it("monta hub da igreja sem administracao para membro", () => {

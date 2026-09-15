@@ -181,7 +181,7 @@ const handleMoreSelect = (route: string) => {
 }
 
 .custom-btn.v-btn--active .nav-icon {
-  transform: scale(1.18) !important;
+  transform: scale(1.06) !important;
 }
 
 .custom-btn:hover > .v-btn__overlay {

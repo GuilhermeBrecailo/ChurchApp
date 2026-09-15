@@ -59,11 +59,10 @@
               class="more-options-row"
               @click="select(entry.route)"
             >
-              <v-avatar size="38" :color="isDark ? entry.bgColorDark : entry.bgColor">
+              <v-avatar size="38" class="more-options-avatar">
                 <component
                   :is="iconComponents[entry.icon]"
                   size="18"
-                  :color="isDark ? entry.iconColorDark : entry.iconColor"
                   aria-hidden="true"
                 />
               </v-avatar>
@@ -122,7 +121,6 @@ const emit = defineEmits<{
   select: [route: string];
 }>();
 
-const { isDark } = useThemeMode();
 const search = ref("");
 const filteredItems = computed(() => {
   const query = search.value.trim().toLowerCase();
@@ -326,6 +324,12 @@ function select(route: string) {
   border-color: var(--app-color-accent);
   background: var(--app-color-surface-soft);
   outline: none;
+}
+
+.more-options-avatar {
+  flex: 0 0 auto;
+  background: var(--app-color-accent-tint) !important;
+  color: var(--app-color-accent) !important;
 }
 
 .more-options-copy {

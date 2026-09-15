@@ -29,9 +29,14 @@
         <div class="dashboard-grid">
           <main class="dashboard-primary">
             <DashboardPastoralOverviewCard v-if="canSeePastoralDashboard" />
-            <DashboardTodayCard />
-            <DashboardMyNextAssignmentCard />
-            <DashboardNextScheduleCard :schedule="nextSchedule" />
+            <section class="dashboard-routine" aria-labelledby="dashboard-routine-title">
+              <h2 id="dashboard-routine-title" class="dashboard-section-title">
+                Sua rotina
+              </h2>
+              <DashboardTodayCard />
+              <DashboardMyNextAssignmentCard />
+              <DashboardNextScheduleCard :schedule="nextSchedule" />
+            </section>
 
             <v-alert
               v-if="schedulesError"
@@ -47,9 +52,9 @@
           </main>
 
           <aside class="dashboard-secondary">
-            <DashboardDailyVerseCard />
-            <DashboardAnnouncementsSection />
             <DashboardQuickAccess />
+            <DashboardAnnouncementsSection />
+            <DashboardDailyVerseCard />
             <DashboardPrayerPreviewCard />
           </aside>
         </div>
@@ -398,6 +403,24 @@ onMounted(() => {
   min-width: 0;
 }
 
+.dashboard-routine {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.dashboard-section-title {
+  margin: 0;
+  color: var(--app-color-text);
+  font-size: 0.96rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.dashboard-secondary :deep(.quick-access-section h3) {
+  margin-bottom: 8px !important;
+}
+
 .dashboard-primary :deep(.mb-8),
 .dashboard-secondary :deep(.mb-8),
 .dashboard-primary :deep(.mb-6),
@@ -427,7 +450,7 @@ onMounted(() => {
 
 @media (min-width: 960px) {
   .dashboard-grid {
-    grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
+    grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.8fr);
     align-items: start;
   }
 }

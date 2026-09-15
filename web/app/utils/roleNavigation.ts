@@ -68,7 +68,7 @@ const navCatalog: Record<string, RoleNavigationItem> = {
   home: homeItem,
   pastoral: {
     key: "pastoral",
-    label: "Cuidado pastoral",
+    label: "Pastoral",
     title: "Cuidado pastoral",
     description: "Veja quem precisa de atenção, visitas e acompanhamento.",
     route: "/pastoral",
@@ -431,29 +431,23 @@ export function getBottomNavigationItems(user: RoleNavigationUser | null | undef
   const tier = resolveNavTier(user);
 
   if (tier === "privileged") {
-    return [item("home"), item("pastoral"), item("cults"), item("reports"), item("more")];
+    return [item("home"), item("pastoral"), item("cults"), item("scale"), item("more")];
   }
 
   if (tier === "leader") {
     if (isPrivilegedChurchUser(user) && user?.navPreviewRole === "LIDER") {
-      return [item("home"), item("team"), item("visits"), item("cults"), item("more")];
+      return [item("home"), item("team"), item("scale"), item("cults"), item("more")];
     }
 
     if (hasMemberManagementAccess(user)) {
-      return [item("home"), item("people"), item("cults"), item("scale"), item("more")];
+      return [item("home"), item("people"), item("scale"), item("cults"), item("more")];
     }
 
     if (hasContentPublishingAccess(user) && !hasMinistryAccess(user) && !canSeePastoralCareInPreview(user, tier)) {
-      return [item("home"), item("content"), item("cults"), item("scale"), item("more")];
+      return [item("home"), item("content"), item("scale"), item("cults"), item("more")];
     }
 
-    return [
-      item("home"),
-      item("team"),
-      canSeePastoralCareInPreview(user, tier) ? item("visits") : item("scale"),
-      item("cults"),
-      item("more"),
-    ];
+    return [item("home"), item("team"), item("scale"), item("cults"), item("more")];
   }
 
   return [item("home"), item("cults"), item("scale"), item("ministries"), item("more")];
@@ -468,29 +462,31 @@ export function getQuickAccessItems(user: RoleNavigationUser | null | undefined)
 
   if (tier === "privileged") {
     return [
-      { ...item("pastoral"), label: "Cuidado pastoral" },
-      item("visits"),
-      item("people"),
-      item("messages"),
-      item("reports"),
+      item("pastoral"),
+      item("scale"),
       item("cults"),
-      item("prayer"),
-      item("settings"),
+      item("people"),
     ];
   }
 
   if (tier === "leader") {
+    if (hasMemberManagementAccess(user)) {
+      return [item("people"), item("scale"), item("cults"), item("prayer")];
+    }
+
+    if (hasContentPublishingAccess(user) && !hasMinistryAccess(user) && !canSeePastoralCareInPreview(user, tier)) {
+      return [item("content"), item("scale"), item("cults"), item("prayer")];
+    }
+
     return [
       item("team"),
-      ...(canSeePastoralCareInPreview(user, tier) ? [item("visits")] : []),
       item("scale"),
       item("cults"),
       item("prayer"),
-      item("profile"),
     ];
   }
 
-  return [item("cults"), item("scale"), item("ministries"), item("content"), item("prayer"), item("profile")];
+  return [item("cults"), item("scale"), item("ministries"), item("prayer")];
 }
 
 export function getChurchHubItems(user: RoleNavigationUser | null | undefined) {
@@ -527,9 +523,9 @@ export function getChurchHubItems(user: RoleNavigationUser | null | undefined) {
   return [item("cults"), item("scale"), item("ministries"), item("content"), item("prayer")];
 }
 
-// Lista completa (deduplicada) de tudo que o usuario tem acesso, pro card
-// "Mais" do acesso rapido - une bottom nav + quick access + hub em vez de
-// manter uma quarta lista manual que fica desatualizada.
+// Lista completa (deduplicada) de tudo que o usuario tem acesso para o menu
+// "Mais". O hub antigo nao entra aqui: ele era uma camada extra de navegacao
+// que duplicava os atalhos principais.
 export function getAllNavigationItems(user: RoleNavigationUser | null | undefined) {
   const hasChurch = user?.hasChurch === true;
   const isPrivileged = isPrivilegedChurchUser(user);
@@ -537,17 +533,18 @@ export function getAllNavigationItems(user: RoleNavigationUser | null | undefine
     homeItem,
     ...getBottomNavigationItems(user),
     ...getQuickAccessItems(user),
-    ...getChurchHubItems(user),
     ...(canSeeChurchAdminHub(user) ? [item("churchAdmin"), item("settings")] : []),
     // churchProfile (dados de cadastro: nome, endereco, documento) so pode
     // ser editado por quem e de fato pastor/admin (ver canEditChurch em
     // settings.vue) - um lider com apenas hasMemberManagementAccess veria o
     // atalho e cairia num formulario praticamente todo desabilitado.
     ...(hasChurch && isPrivileged ? [item("churchProfile")] : []),
-    ...(hasChurch && isPrivileged ? [item("rolesManagement"), item("publications")] : []),
+    ...(hasChurch && isPrivileged
+      ? [item("rolesManagement"), item("publications"), item("messages"), item("ministries"), item("reports")]
+      : []),
     ...(hasChurch && hasAnyPermission(user, ["PASTORAL_CARE_MANAGE"]) ? [item("pastoral"), item("visits")] : []),
     ...(hasChurch && hasContentPublishingAccess(user) ? [item("content")] : []),
-    ...(hasChurch ? [item("churchHub")] : []),
+    ...(hasChurch ? [item("content"), item("prayer")] : []),
     item("profile"),
     ...(user?.is_admin === true ? [item("platformAdmin")] : []),
   ];
