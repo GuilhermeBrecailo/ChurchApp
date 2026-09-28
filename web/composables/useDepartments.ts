@@ -103,6 +103,7 @@ export interface DepartmentSchedule {
   mediaItems?: {
     id: string;
     mediaItemId: string;
+    observation?: string | null;
     startedByUserId?: string | null;
     startedBy?: { id: string; name: string } | null;
     mediaItem: DepartmentResource | DepartmentSong;
@@ -922,6 +923,21 @@ export const useDepartments = () => {
     );
   };
 
+  const setScheduleMediaItemObservation = async (
+    scheduleId: string,
+    itemId: string,
+    observation: string | null,
+  ): Promise<ApiResponse<{ ok: boolean; observation: string | null }>> => {
+    return await $customFetch<{ ok: boolean; observation: string | null }>(
+      `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}/media-items/${itemId}/observation`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: { observation },
+      },
+    );
+  };
+
   return {
     getDepartments,
     createDepartment,
@@ -962,5 +978,6 @@ export const useDepartments = () => {
     updateSongPreference,
     reorderScheduleMediaItems,
     setScheduleMediaItemLeader,
+    setScheduleMediaItemObservation,
   };
 };

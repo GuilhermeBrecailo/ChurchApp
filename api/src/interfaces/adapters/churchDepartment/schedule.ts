@@ -55,6 +55,7 @@ const scheduleSelect = {
       id: true,
       mediaItemId: true,
       order: true,
+      observation: true,
       startedByUserId: true,
       startedBy: {
         select: {
@@ -996,5 +997,42 @@ export class ScheduleAdapters {
     if (count === 0) throw new DomainError("Musica nao encontrada nessa escala");
 
     return { ok: true };
+  }
+
+  async setScheduleMediaItemObservation(request: FastifyRequest) {
+    const user = await this.context.getCurrentUser(request);
+    const { id, itemId } = request.params as { id?: string; itemId?: string };
+    const body = request.body as { observation?: unknown };
+
+    if (!id || !itemId) throw new DomainError("Escala ou musica nao informada");
+
+    const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    await this.context.assertDepartmentPermission(
+      user,
+      schedule.departmentId,
+      "SCHEDULE_EDIT",
+      "Apenas pastores, admins ou cargos com permissao podem editar escalas deste ministerio",
+    );
+
+    if (body.observation !== undefined && body.observation !== null && typeof body.observation !== "string") {
+      throw new DomainError("Observacao invalida");
+    }
+
+    const observation = typeof body.observation === "string"
+      ? body.observation.trim() || null
+      : null;
+
+    if (observation && observation.length > 500) {
+      throw new DomainError("A observacao deve ter no maximo 500 caracteres");
+    }
+
+    const { count } = await $prismaClient.scheduleMediaItem.updateMany({
+      where: { id: itemId, scheduleId: id },
+      data: { observation },
+    });
+
+    if (count === 0) throw new DomainError("Musica nao encontrada nessa escala");
+
+    return { ok: true, observation };
   }
 }

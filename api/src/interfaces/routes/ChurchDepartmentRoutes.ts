@@ -127,6 +127,11 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
     controllerHandler(adapters.setScheduleMediaItemLeader.bind(adapters)),
   );
 
+  app.patch(
+    "/api/church/schedules/:id/media-items/:itemId/observation",
+    controllerHandler(adapters.setScheduleMediaItemObservation.bind(adapters)),
+  );
+
   app.get(
     "/api/church/departments/:id/resources",
     controllerHandler(adapters.getChurchDepartmentResources.bind(adapters)),

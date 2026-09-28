@@ -796,6 +796,9 @@ model ScheduleMediaItem {
     startedByUserId String?
     startedBy       User?   @relation(fields: [startedByUserId], references: [id], onDelete: SetNull)
 
+    // Observacao especifica desta musica nesta escala, sem alterar o repertorio.
+    observation String?
+
     @@unique([scheduleId, mediaItemId])
 }
 

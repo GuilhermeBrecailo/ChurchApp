@@ -294,6 +294,7 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
         category: item.mediaItem.category,
         url: item.mediaItem.url,
         metadata: item.mediaItem.metadata,
+        observation: item.observation,
         startedByUserId: item.startedByUserId,
         startedByName: item.startedBy?.name,
       })) || [],

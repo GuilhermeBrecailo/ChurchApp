@@ -488,4 +488,24 @@ describe("ChurchDepartmentAdapters - escalas", () => {
       expect(mockPrismaClient.$transaction).toHaveBeenCalled();
     });
   });
+
+  describe("setScheduleMediaItemObservation", () => {
+    it("salva a observacao da musica na escala", async () => {
+      mockPrismaClient.schedule.findFirst.mockResolvedValue(scheduleRow());
+      mockPrismaClient.scheduleMediaItem.updateMany.mockResolvedValue({ count: 1 });
+
+      const result = await adapters.setScheduleMediaItemObservation(
+        makeRequest({
+          params: { id: "schedule-1", itemId: "item-1" },
+          body: { observation: "  Começar somente com teclado  " },
+        }),
+      );
+
+      expect(result).toEqual({ ok: true, observation: "Começar somente com teclado" });
+      expect(mockPrismaClient.scheduleMediaItem.updateMany).toHaveBeenCalledWith({
+        where: { id: "item-1", scheduleId: "schedule-1" },
+        data: { observation: "Começar somente com teclado" },
+      });
+    });
+  });
 });

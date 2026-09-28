@@ -35,6 +35,7 @@ export type ScheduleEvent = {
     category: string;
     url?: string;
     metadata?: DepartmentSong["metadata"] | DepartmentResource["metadata"];
+    observation?: string | null;
     startedByUserId?: string | null;
     startedByName?: string | null;
   }[];

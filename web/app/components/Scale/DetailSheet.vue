@@ -313,6 +313,70 @@
                   >
                     Começa: {{ song.startedByName }}
                   </v-chip>
+
+                  <div class="scale-song-observation" @click.stop>
+                    <div v-if="song.observation" class="scale-song-observation-preview">
+                      <MessageSquareText size="15" />
+                      <span>{{ song.observation }}</span>
+                    </div>
+
+                    <v-btn
+                      v-if="localEvent.canManage"
+                      variant="text"
+                      size="small"
+                      class="scale-song-observation-trigger text-none"
+                      :color="song.observation ? 'grey-darken-1' : 'primary'"
+                      @click.stop="startObservationEdit(song)"
+                    >
+                      <MessageSquareText size="15" class="mr-1" />
+                      {{ song.observation ? "Editar observação" : "Adicionar observação" }}
+                    </v-btn>
+
+                    <div
+                      v-if="editingObservationItemId === song.scheduleMediaItemId"
+                      class="scale-song-observation-editor"
+                    >
+                      <v-textarea
+                        v-model="observationDraft"
+                        label="Observação desta música"
+                        placeholder="Ex.: começar somente com teclado"
+                        variant="outlined"
+                        density="compact"
+                        rows="2"
+                        auto-grow
+                        maxlength="500"
+                        counter
+                        hide-details="auto"
+                        autofocus
+                        :error-messages="observationError"
+                        @click.stop
+                      />
+                      <div class="scale-song-observation-actions">
+                        <span class="text-caption text-grey-darken-1">Visível para a equipe da escala</span>
+                        <div class="d-flex align-center ga-1">
+                          <v-btn
+                            variant="text"
+                            size="small"
+                            class="text-none"
+                            :disabled="isSavingObservation"
+                            @click.stop="cancelObservationEdit"
+                          >
+                            <X size="15" class="mr-1" /> Cancelar
+                          </v-btn>
+                          <v-btn
+                            color="primary"
+                            variant="tonal"
+                            size="small"
+                            class="text-none"
+                            :loading="isSavingObservation"
+                            @click.stop="saveObservation(song)"
+                          >
+                            <Save size="15" class="mr-1" /> Salvar
+                          </v-btn>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div v-if="localEvent.canManage" class="scale-song-order-btns">
@@ -400,12 +464,15 @@ import {
   Eye,
   FileText,
   GripVertical,
+  MessageSquareText,
   Music,
   Pencil,
   Play,
+  Save,
   Trash2,
   UserPlus,
   Users,
+  X,
 } from "lucide-vue-next";
 import { useDepartments } from "../../../composables/useDepartments";
 import type { ScheduleEvent } from "./types";
@@ -428,7 +495,11 @@ const emit = defineEmits<{
   (event: "reload-needed"): void;
 }>();
 
-const { reorderScheduleMediaItems, setScheduleMediaItemLeader } = useDepartments();
+const {
+  reorderScheduleMediaItems,
+  setScheduleMediaItemLeader,
+  setScheduleMediaItemObservation,
+} = useDepartments();
 
 const localEvent = ref<ScheduleEvent | null>(null);
 
@@ -448,6 +519,10 @@ const playlistMode = ref<"lyrics" | "chords">("lyrics");
 const playlistIndex = ref(0);
 const draggedSongId = ref("");
 const isSavingSongOrder = ref(false);
+const editingObservationItemId = ref("");
+const observationDraft = ref("");
+const observationError = ref("");
+const isSavingObservation = ref(false);
 let songDragPointerId: number | null = null;
 let songDragHandle: HTMLElement | null = null;
 
@@ -528,6 +603,47 @@ const setSongLeader = async (
 
   const { error } = await setScheduleMediaItemLeader(eventId, song.scheduleMediaItemId, startedByUserId);
   if (error) emit("reload-needed");
+};
+
+const startObservationEdit = (song: ScheduleEvent["mediaItems"][number]) => {
+  editingObservationItemId.value = song.scheduleMediaItemId;
+  observationDraft.value = song.observation || "";
+  observationError.value = "";
+};
+
+const cancelObservationEdit = () => {
+  editingObservationItemId.value = "";
+  observationDraft.value = "";
+  observationError.value = "";
+};
+
+const saveObservation = async (song: ScheduleEvent["mediaItems"][number]) => {
+  if (!localEvent.value || isSavingObservation.value) return;
+
+  observationError.value = "";
+  isSavingObservation.value = true;
+
+  const { data, error } = await setScheduleMediaItemObservation(
+    localEvent.value.id,
+    song.scheduleMediaItemId,
+    observationDraft.value,
+  );
+
+  if (error || !data) {
+    observationError.value = error || "Não foi possível salvar a observação.";
+  } else {
+    localEvent.value = {
+      ...localEvent.value,
+      mediaItems: localEvent.value.mediaItems.map((item) =>
+        item.scheduleMediaItemId === song.scheduleMediaItemId
+          ? { ...item, observation: data.observation }
+          : item,
+      ),
+    };
+    cancelObservationEdit();
+  }
+
+  isSavingObservation.value = false;
 };
 
 const reorderSongsLocally = (fromId: string, toId: string) => {
@@ -915,6 +1031,52 @@ onUnmounted(() => {
 
 .scale-song-leader-chip {
   margin-top: 8px;
+}
+
+.scale-song-observation {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.scale-song-observation-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--app-color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.scale-song-observation-preview svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--app-color-accent);
+}
+
+.scale-song-observation-trigger {
+  justify-self: start;
+  min-height: 28px;
+  padding-inline: 4px !important;
+  font-size: 0.78rem;
+}
+
+.scale-song-observation-editor {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--app-color-accent) 24%, var(--app-color-border));
+  border-radius: var(--app-radius-md);
+  background: var(--app-color-surface);
+}
+
+.scale-song-observation-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .scale-song-index {

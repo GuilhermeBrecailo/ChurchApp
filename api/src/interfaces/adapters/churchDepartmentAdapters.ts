@@ -118,6 +118,10 @@ export class ChurchDepartmentAdapters {
     return this.schedule.setScheduleMediaItemLeader(request);
   }
 
+  async setScheduleMediaItemObservation(request: FastifyRequest) {
+    return this.schedule.setScheduleMediaItemObservation(request);
+  }
+
   // Musica / preferencia / import
   async importCifraClubSong(request: FastifyRequest) {
     return this.song.importCifraClubSong(request);
