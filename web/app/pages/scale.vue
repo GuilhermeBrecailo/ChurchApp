@@ -101,6 +101,7 @@
       v-model="isScheduleDetailsOpen"
       :event="selectedDetailEvent"
       :department-name="selectedDetailDepartmentName"
+      :holyrics-connected="holyricsConnected"
       @edit="openEditFromDetails"
       @delete="openDeleteFromDetails"
       @manage-volunteers="openAssignmentsFromDetails"
@@ -154,6 +155,7 @@ import {
   type DepartmentSchedule,
 } from "../../composables/useDepartments";
 import { useMembers, type ChurchMember } from "../../composables/useMembers";
+import { useHolyrics } from "../../composables/useHolyrics";
 import type { ScheduleEvent } from "../components/Scale/types";
 import { getInitials } from "../utils/initials";
 
@@ -164,6 +166,7 @@ const {
   updateMyScheduleAssignment,
 } = useDepartments();
 const { getMembers } = useMembers();
+const { getHolyricsStatus } = useHolyrics();
 const { user } = useAuth();
 const { isDark } = useThemeMode();
 const accentColor = computed(() => (isDark.value ? "#f0975a" : "#B5472A"));
@@ -185,6 +188,7 @@ const pendingDeleteSchedule = ref<ScheduleEvent | null>(null);
 const selectedDetailEvent = ref<ScheduleEvent | null>(null);
 const isDeclineDialogOpen = ref(false);
 const pendingDeclineEvent = ref<ScheduleEvent | null>(null);
+const holyricsConnected = ref(false);
 
 const filters = computed(() => ["Todos", ...departments.value.map((department) => department.name)]);
 
@@ -543,8 +547,13 @@ const handleVisibilityChange = () => {
   }
 };
 
+const loadHolyricsStatus = async () => {
+  const { data } = await getHolyricsStatus();
+  holyricsConnected.value = data?.connected ?? false;
+};
+
 onMounted(async () => {
-  await Promise.all([loadDepartments(), loadSchedules(), loadMembers()]);
+  await Promise.all([loadDepartments(), loadSchedules(), loadMembers(), loadHolyricsStatus()]);
   await focusScheduleFromRoute();
   document.addEventListener("visibilitychange", handleVisibilityChange);
 });

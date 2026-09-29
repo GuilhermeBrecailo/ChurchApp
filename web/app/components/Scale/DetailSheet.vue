@@ -219,11 +219,47 @@
             <v-btn color="primary" class="text-none font-weight-bold" @click="openPlaylistSequence(0)">
               <Play size="16" class="mr-1" /> Tocar sequência
             </v-btn>
+            <v-btn
+              v-if="holyricsConnected && localEvent.canManage"
+              color="primary"
+              variant="tonal"
+              class="text-none font-weight-bold"
+              :loading="isSyncingHolyrics"
+              @click="handleSyncToHolyrics"
+            >
+              <MonitorPlay size="16" class="mr-1" /> Enviar para Holyrics
+            </v-btn>
             <v-btn-toggle v-model="playlistMode" density="compact" mandatory class="song-instrument-toggle">
               <v-btn value="lyrics" size="small" class="text-none">Letra</v-btn>
               <v-btn value="chords" size="small" class="text-none">Cifra</v-btn>
             </v-btn-toggle>
           </div>
+
+          <v-alert
+            v-if="holyricsSyncError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            {{ holyricsSyncError }}
+          </v-alert>
+
+          <v-alert
+            v-if="holyricsSyncResult"
+            type="success"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            <div class="font-weight-bold mb-1">
+              {{ holyricsSyncResult.added.length }} música(s) enviada(s) para a playlist atual do Holyrics.
+            </div>
+            <div v-if="holyricsSyncResult.notFound.length" class="text-body-2">
+              {{ holyricsSyncResult.notFound.length }} não enviada(s):
+              {{ holyricsSyncResult.notFound.map((item) => item.title).join(", ") }}.
+            </div>
+          </v-alert>
 
           <div class="scale-song-list">
             <article
@@ -465,6 +501,7 @@ import {
   FileText,
   GripVertical,
   MessageSquareText,
+  MonitorPlay,
   Music,
   Pencil,
   Play,
@@ -475,12 +512,14 @@ import {
   X,
 } from "lucide-vue-next";
 import { useDepartments } from "../../../composables/useDepartments";
+import { useHolyrics, type HolyricsSyncResult } from "../../../composables/useHolyrics";
 import type { ScheduleEvent } from "./types";
 
 const props = defineProps<{
   modelValue: boolean;
   event: ScheduleEvent | null;
   departmentName: string;
+  holyricsConnected: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -500,13 +539,19 @@ const {
   setScheduleMediaItemLeader,
   setScheduleMediaItemObservation,
 } = useDepartments();
+const { syncScheduleToHolyrics } = useHolyrics();
 
 const localEvent = ref<ScheduleEvent | null>(null);
+const isSyncingHolyrics = ref(false);
+const holyricsSyncError = ref("");
+const holyricsSyncResult = ref<HolyricsSyncResult | null>(null);
 
 watch(
   () => props.event,
   (event) => {
     localEvent.value = event ? { ...event, mediaItems: [...event.mediaItems] } : null;
+    holyricsSyncError.value = "";
+    holyricsSyncResult.value = null;
   },
   { immediate: true },
 );
@@ -525,6 +570,24 @@ const observationError = ref("");
 const isSavingObservation = ref(false);
 let songDragPointerId: number | null = null;
 let songDragHandle: HTMLElement | null = null;
+
+const handleSyncToHolyrics = async () => {
+  const scheduleId = localEvent.value?.id;
+  if (!scheduleId) return;
+
+  isSyncingHolyrics.value = true;
+  holyricsSyncError.value = "";
+  holyricsSyncResult.value = null;
+  const { data, error } = await syncScheduleToHolyrics(scheduleId);
+  isSyncingHolyrics.value = false;
+
+  if (error || !data) {
+    holyricsSyncError.value = error || "Não foi possível enviar a escala para o Holyrics.";
+    return;
+  }
+
+  holyricsSyncResult.value = data;
+};
 
 const isKeyboardAssignment = computed(
   () =>

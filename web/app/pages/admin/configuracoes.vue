@@ -190,6 +190,111 @@
       <div v-if="isChurchWideManager" class="mt-6">
         <div class="section-heading mb-4">
           <div>
+            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Integrações</h2>
+            <p class="text-caption text-grey-darken-1 mb-0">Conecte os serviços usados durante o culto</p>
+          </div>
+        </div>
+
+        <v-card class="invite-code-card rounded-xl pa-5 elevation-1 border-subtle">
+          <div class="d-flex align-center gap-3 mb-4">
+            <v-avatar size="40" :color="avatarBgIndigo">
+              <MonitorPlay size="20" :color="accentColor" />
+            </v-avatar>
+            <div>
+              <p class="font-weight-bold mb-0" style="font-size:0.9rem;">
+                {{ holyricsConnected ? "Holyrics conectado" : "Conectar Holyrics" }}
+              </p>
+              <p class="text-caption text-grey-darken-1 mb-0">
+                {{ holyricsConnected ? "As músicas da escala podem ser enviadas para a playlist atual" : "Envie as músicas da escala para a playlist atual do culto" }}
+              </p>
+            </div>
+          </div>
+
+          <div v-if="holyricsStatusLoading" class="d-flex justify-center pa-4">
+            <v-progress-circular indeterminate size="28" color="primary" />
+          </div>
+
+          <template v-else>
+            <v-alert
+              v-if="holyricsError"
+              type="error"
+              variant="tonal"
+              density="compact"
+              class="mb-4"
+            >
+              {{ holyricsError }}
+            </v-alert>
+
+            <template v-if="!holyricsConnected">
+              <p class="text-body-2 text-grey-darken-1 mb-4">
+                Use a API key e o token gerados pelo servidor oficial do Holyrics. A conexão é validada antes de ser salva.
+                <a
+                  href="https://github.com/holyrics/API-Server"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary font-weight-bold"
+                >
+                  Ver instruções do Holyrics
+                </a>
+              </p>
+
+              <div class="d-grid gap-3 mb-4" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                <v-text-field
+                  v-model="holyricsApiKey"
+                  label="API key"
+                  type="password"
+                  autocomplete="off"
+                  variant="outlined"
+                  density="comfortable"
+                  hide-details="auto"
+                  :disabled="isConnectingHolyrics"
+                />
+                <v-text-field
+                  v-model="holyricsToken"
+                  label="Token"
+                  type="password"
+                  autocomplete="off"
+                  variant="outlined"
+                  density="comfortable"
+                  hide-details="auto"
+                  :disabled="isConnectingHolyrics"
+                />
+              </div>
+
+              <v-btn
+                color="primary"
+                variant="flat"
+                size="small"
+                class="text-none font-weight-bold"
+                :loading="isConnectingHolyrics"
+                @click="handleConnectHolyrics"
+              >
+                <MonitorPlay size="15" class="mr-1" /> Salvar conexão
+              </v-btn>
+            </template>
+
+            <template v-else>
+              <v-alert type="info" variant="tonal" density="compact" class="mb-4">
+                O envio usa a playlist que estiver selecionada no Holyrics no momento da sincronização.
+              </v-alert>
+              <v-btn
+                color="red-darken-2"
+                variant="tonal"
+                size="small"
+                class="text-none"
+                :loading="isDisconnectingHolyrics"
+                @click="handleDisconnectHolyrics"
+              >
+                Desconectar Holyrics
+              </v-btn>
+            </template>
+          </template>
+        </v-card>
+      </div>
+
+      <div v-if="isChurchWideManager" class="mt-6">
+        <div class="section-heading mb-4">
+          <div>
             <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Pré-visualizar navegação</h2>
             <p class="text-caption text-grey-darken-1 mb-0">
               Veja o menu como um membro ou líder veria, sem perder seus acessos de pastor/admin
@@ -669,6 +774,7 @@ import {
   CheckCircle2,
   Lock,
   UserCheck,
+  MonitorPlay,
 } from "lucide-vue-next";
 import { useAuth } from "../../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
@@ -677,6 +783,7 @@ import { useChurchInvite } from "../../../composables/useChurchInvite";
 import { useChurch } from "../../../composables/useChurch";
 import { useServiceTimes, type ServiceTime } from "../../../composables/useServiceTimes";
 import { useWhatsApp } from "../../../composables/useWhatsApp";
+import { useHolyrics } from "../../../composables/useHolyrics";
 import { FONT_OPTIONS } from "../../../composables/useChurchAppearance";
 import { useChurchPlan, PLAN_LABELS, PLAN_FEATURE_LABELS, type PlanFeature } from "../../../composables/usePlan";
 
@@ -783,6 +890,7 @@ const handleCopyInviteLink = () => {
 };
 
 const { getWhatsAppStatus, connectWhatsApp, disconnectWhatsApp } = useWhatsApp();
+const { getHolyricsStatus, connectHolyrics, disconnectHolyrics } = useHolyrics();
 
 const whatsappConnected = ref(false);
 const whatsappStatusLoading = ref(false);
@@ -792,6 +900,14 @@ const isConnectingWhatsApp = ref(false);
 const isDisconnectingWhatsApp = ref(false);
 const whatsappError = ref("");
 let whatsappPollTimer: ReturnType<typeof setInterval> | null = null;
+
+const holyricsConnected = ref(false);
+const holyricsStatusLoading = ref(false);
+const isConnectingHolyrics = ref(false);
+const isDisconnectingHolyrics = ref(false);
+const holyricsApiKey = ref("");
+const holyricsToken = ref("");
+const holyricsError = ref("");
 
 const loadWhatsAppStatus = async () => {
   if (!isChurchWideManager.value) return;
@@ -857,6 +973,53 @@ const handleDisconnectWhatsApp = async () => {
   }
 
   whatsappConnected.value = false;
+};
+
+const loadHolyricsStatus = async () => {
+  if (!isChurchWideManager.value) return;
+  holyricsStatusLoading.value = true;
+  const { data, error } = await getHolyricsStatus();
+  holyricsConnected.value = data?.connected ?? false;
+  if (error) holyricsError.value = error;
+  holyricsStatusLoading.value = false;
+};
+
+const handleConnectHolyrics = async () => {
+  const apiKey = holyricsApiKey.value.trim();
+  const token = holyricsToken.value.trim();
+
+  if (!apiKey || !token) {
+    holyricsError.value = "Informe a API key e o token do Holyrics.";
+    return;
+  }
+
+  isConnectingHolyrics.value = true;
+  holyricsError.value = "";
+  const { data, error } = await connectHolyrics({ apiKey, token });
+  isConnectingHolyrics.value = false;
+
+  if (error || !data?.connected) {
+    holyricsError.value = error || "Não foi possível validar a conexão com o Holyrics.";
+    return;
+  }
+
+  holyricsConnected.value = true;
+  holyricsApiKey.value = "";
+  holyricsToken.value = "";
+};
+
+const handleDisconnectHolyrics = async () => {
+  isDisconnectingHolyrics.value = true;
+  holyricsError.value = "";
+  const { error } = await disconnectHolyrics();
+  isDisconnectingHolyrics.value = false;
+
+  if (error) {
+    holyricsError.value = error;
+    return;
+  }
+
+  holyricsConnected.value = false;
 };
 
 onUnmounted(() => {
@@ -1105,6 +1268,7 @@ onMounted(async () => {
     canAccessChurchAdmin.value ? loadServiceTimes() : Promise.resolve(),
     loadInviteCode(),
     loadWhatsAppStatus(),
+    loadHolyricsStatus(),
   ]);
 });
 </script>

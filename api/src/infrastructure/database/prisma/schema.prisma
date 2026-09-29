@@ -19,6 +19,12 @@ model Crunch {
     // Chave de uma fonte curada (ver FONT_OPTIONS no front). Nula usa a fonte
     // padrao (Fraunces/Inter) ja carregada pela pagina.
     fontFamily String?
+
+    // Credenciais opcionais da API Server do Holyrics, configuradas por
+    // igreja. Nunca sao devolvidas ao frontend; a integracao usa apenas no
+    // backend para validar e enviar repertorios.
+    holyricsApiKey String?
+    holyricsToken  String?
     isActive   Boolean  @default(true)
     createdAt  DateTime @default(now())
 
