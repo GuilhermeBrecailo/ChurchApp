@@ -158,12 +158,6 @@ const goToRoute = (route: string) => {
   color: var(--app-color-text-muted);
 }
 
-@media (min-width: 720px) {
-  .quick-access-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .quick-access-item {
     transition: none;

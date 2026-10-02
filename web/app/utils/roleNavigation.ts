@@ -250,9 +250,9 @@ const navCatalog: Record<string, RoleNavigationItem> = {
   },
   settings: {
     key: "settings",
-    label: "Config.",
-    title: "Configurações",
-    description: "Página pública, horários, WhatsApp e convite.",
+    label: "Integrações",
+    title: "Integrações e página pública",
+    description: "Holyrics, WhatsApp, convites, horários e presença online.",
     route: "/admin/configuracoes",
     icon: "cog",
     matchPrefixes: ["/admin/configuracoes"],
@@ -263,8 +263,8 @@ const navCatalog: Record<string, RoleNavigationItem> = {
   },
   churchProfile: {
     key: "churchProfile",
-    label: "Dados",
-    title: "Dados da igreja",
+    label: "Cadastro",
+    title: "Cadastro da igreja",
     description: "Nome, endereço, documento e plano da igreja.",
     route: "/settings",
     icon: "church",

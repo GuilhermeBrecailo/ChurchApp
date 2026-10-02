@@ -43,6 +43,15 @@
         >
           Voltar
         </v-btn>
+        <v-btn
+          variant="text"
+          color="grey-darken-1"
+          class="text-none onboarding-skip"
+          aria-label="Pular guia de apresentação"
+          @click="finish"
+        >
+          Pular guia
+        </v-btn>
         <v-spacer />
         <v-btn
           v-if="!isLast"

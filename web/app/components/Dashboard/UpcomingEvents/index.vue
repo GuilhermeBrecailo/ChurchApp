@@ -4,7 +4,7 @@
   <section v-if="eventsList.length > 0" class="upcoming-section">
     <div class="d-flex align-center mb-3">
       <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
-        Próximos Cultos
+        {{ title }}
       </h3>
     </div>
 
@@ -16,9 +16,9 @@
       size="small"
       block
       class="text-none rounded-lg mb-3"
-      to="/cultos"
+      :to="linkTo"
     >
-      Ver próximos cultos
+      {{ linkLabel }}
     </v-btn>
 
     <div class="d-flex flex-column gap-3">
@@ -65,7 +65,14 @@ const { isDark } = useThemeMode();
 
 const props = defineProps<{
   schedules?: DepartmentSchedule[];
+  title?: string;
+  linkLabel?: string;
+  linkTo?: string;
 }>();
+
+const title = computed(() => props.title || "Próximas escalas");
+const linkLabel = computed(() => props.linkLabel || "Ver escalas");
+const linkTo = computed(() => props.linkTo || "/scale");
 
 const eventsList = computed(() =>
   (props.schedules || []).slice(0, 5).map((schedule) => {

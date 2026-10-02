@@ -249,10 +249,10 @@ describe("role navigation", () => {
       items.map((entry) => entry.title),
       [
 		"Administração da igreja",
+		"Cadastro da igreja",
 		"Cargos e permissões",
-		"Configurações",
 		"Conteúdo",
-		"Dados da igreja",
+		"Integrações e página pública",
 		"Mensagens",
 		"Meu perfil",
 		"Ministérios",

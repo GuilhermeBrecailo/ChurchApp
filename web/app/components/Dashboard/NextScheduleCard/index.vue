@@ -50,10 +50,10 @@
         </v-avatar>
         <div style="min-width: 0">
           <p class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
-            Nenhuma escala cadastrada
+            Nenhuma escala futura
           </p>
           <p class="text-caption text-grey-darken-1 mb-0">
-            Crie uma escala para começar a montar as equipes.
+            Consulte o histórico ou abra as escalas para organizar as próximas equipes.
           </p>
         </div>
       </div>

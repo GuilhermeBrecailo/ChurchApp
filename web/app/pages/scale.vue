@@ -4,7 +4,7 @@
       <div class="min-w-0">
         <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">Escalas</h1>
         <p class="text-body-2 text-grey-darken-1 mb-0">
-          Confira os próximos cultos e eventos
+          {{ schedulePeriod === "upcoming" ? "Acompanhe as próximas escalas" : "Consulte as escalas que já aconteceram" }}
         </p>
       </div>
       <div class="scale-header-actions">
@@ -22,6 +22,17 @@
     </div>
 
     <div class="filter-strip mb-8">
+      <v-btn-toggle
+        v-model="schedulePeriod"
+        mandatory
+        color="primary"
+        variant="outlined"
+        class="schedule-period-toggle mb-3"
+        aria-label="Período das escalas"
+      >
+        <v-btn value="upcoming" class="text-none">Próximas</v-btn>
+        <v-btn value="history" class="text-none">Histórico</v-btn>
+      </v-btn-toggle>
       <div class="filter-scroll hide-scrollbar">
         <v-chip
           v-for="filter in filters"
@@ -88,8 +99,20 @@
       >
         <Calendar size="32" :color="isDark ? '#484f58' : '#9CA3AF'" class="mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-          Nenhuma escala encontrada
+          {{ schedulePeriod === "history" ? "Nenhuma escala no histórico" : "Nenhuma escala futura" }}
         </p>
+        <p v-if="schedulePeriod === 'upcoming'" class="text-caption text-grey-darken-1 text-center mt-2">
+          Crie uma escala para organizar a próxima equipe.
+        </p>
+        <v-btn
+          v-if="schedulePeriod === 'upcoming' && canCreateChurchSchedule"
+          color="primary"
+          variant="tonal"
+          class="text-none mt-3"
+          @click="openNewScheduleDialog"
+        >
+          Criar escala
+        </v-btn>
       </v-card>
 
       <v-alert v-if="schedulesError" type="error" variant="tonal" density="compact" class="mt-4">
@@ -145,7 +168,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { Calendar, Clock, EyeOff, Plus, Repeat2 } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
@@ -158,6 +181,7 @@ import { useMembers, type ChurchMember } from "../../composables/useMembers";
 import { useHolyrics } from "../../composables/useHolyrics";
 import type { ScheduleEvent } from "../components/Scale/types";
 import { getInitials } from "../utils/initials";
+import { splitSchedulesByDate } from "../utils/dashboardSchedules";
 
 const {
   getDepartments,
@@ -173,6 +197,9 @@ const accentColor = computed(() => (isDark.value ? "#f0975a" : "#B5472A"));
 const route = useRoute();
 
 const activeFilter = ref("Todos");
+const schedulePeriod = ref<"upcoming" | "history">(
+  route.query.period === "history" ? "history" : "upcoming",
+);
 const departments = ref<ChurchDepartment[]>([]);
 const schedules = ref<DepartmentSchedule[]>([]);
 const isLoadingSchedules = ref(true);
@@ -191,6 +218,13 @@ const pendingDeclineEvent = ref<ScheduleEvent | null>(null);
 const holyricsConnected = ref(false);
 
 const filters = computed(() => ["Todos", ...departments.value.map((department) => department.name)]);
+
+watch(
+  () => route.query.period,
+  (period) => {
+    schedulePeriod.value = period === "history" ? "history" : "upcoming";
+  },
+);
 
 const isChurchWideManager = computed(
   () =>
@@ -318,10 +352,12 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
 };
 
 const filteredSchedules = computed(() => {
+  const datedSchedules = splitSchedulesByDate(schedules.value);
+  const periodSchedules = datedSchedules[schedulePeriod.value];
   const visibleSchedules =
     activeFilter.value === "Todos"
-      ? schedules.value
-      : schedules.value.filter((schedule) => schedule.department?.name === activeFilter.value);
+      ? periodSchedules
+      : periodSchedules.filter((schedule) => schedule.department?.name === activeFilter.value);
 
   const groups = visibleSchedules.reduce<Record<string, ScheduleEvent[]>>((acc, schedule) => {
     const category = schedule.department?.name || "Sem ministério";

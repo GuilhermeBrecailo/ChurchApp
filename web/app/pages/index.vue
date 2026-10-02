@@ -28,7 +28,6 @@
       <template v-else>
         <div class="dashboard-grid">
           <main class="dashboard-primary">
-            <DashboardPastoralOverviewCard v-if="canSeePastoralDashboard" />
             <section class="dashboard-routine" aria-labelledby="dashboard-routine-title">
               <h2 id="dashboard-routine-title" class="dashboard-section-title">
                 Sua rotina
@@ -37,6 +36,7 @@
               <DashboardMyNextAssignmentCard />
               <DashboardNextScheduleCard :schedule="nextSchedule" />
             </section>
+            <DashboardPastoralOverviewCard v-if="canSeePastoralDashboard" />
 
             <v-alert
               v-if="schedulesError"
@@ -48,7 +48,14 @@
               {{ schedulesError }}
             </v-alert>
 
-            <DashboardUpcomingEvents :schedules="upcomingSchedules" />
+            <DashboardUpcomingEvents :schedules="upcomingSchedules" title="Próximas escalas" />
+            <DashboardUpcomingEvents
+              v-if="upcomingSchedules.length === 0 && recentSchedules.length > 0"
+              :schedules="recentSchedules"
+              title="Escalas recentes"
+              link-label="Ver histórico"
+              link-to="/scale?period=history"
+            />
           </main>
 
           <aside class="dashboard-secondary">
@@ -230,6 +237,7 @@ import {
 } from "../../composables/useDepartments";
 import { useMembers } from "../../composables/useMembers";
 import { usePermissions } from "../../composables/usePermissions";
+import { splitSchedulesByDate } from "../utils/dashboardSchedules";
 
 const router = useRouter();
 const { user, fetchMe } = useAuth();
@@ -311,27 +319,9 @@ const handleCreateChurch = async () => {
   await router.replace("/");
 };
 
-const upcomingSchedules = computed(() => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStart = today.getTime();
-
-  const futureSchedules = schedules.value
-    .filter((schedule) => new Date(schedule.date).getTime() >= todayStart)
-    .sort(
-      (current, next) =>
-        new Date(current.date).getTime() - new Date(next.date).getTime(),
-    );
-
-  if (futureSchedules.length > 0) {
-    return futureSchedules;
-  }
-
-  return [...schedules.value].sort(
-    (current, next) =>
-      new Date(next.date).getTime() - new Date(current.date).getTime(),
-  );
-});
+const scheduleSections = computed(() => splitSchedulesByDate(schedules.value));
+const upcomingSchedules = computed(() => scheduleSections.value.upcoming);
+const recentSchedules = computed(() => scheduleSections.value.recent.slice(0, 5));
 
 const nextSchedule = computed(() => upcomingSchedules.value[0] || null);
 

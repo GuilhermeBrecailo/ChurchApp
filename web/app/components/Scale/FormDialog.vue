@@ -8,16 +8,16 @@
           </v-avatar>
           <div class="min-w-0">
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              {{ isEditing ? "Editar escala" : "Nova escala" }}
+              {{ isSongPickerOpen ? "Adicionar músicas" : isEditing ? "Editar escala" : "Nova escala" }}
             </h2>
             <p class="text-body-2 text-grey-darken-1 mb-0">
-              Cadastre uma escala para um ministério.
+              {{ isSongPickerOpen ? "Escolha as músicas e conclua para voltar à escala." : "Cadastre uma escala para um ministério." }}
             </p>
           </div>
         </div>
         <div class="responsive-dialog-header-actions">
           <v-btn
-            v-if="!isEditing && copyableSchedules.length"
+            v-if="!isSongPickerOpen && !isEditing && copyableSchedules.length"
             variant="tonal"
             color="primary"
             size="small"
@@ -32,16 +32,24 @@
             variant="text"
             color="grey-darken-1"
             size="small"
-            aria-label="Fechar formulário de escala"
+            :aria-label="isSongPickerOpen ? 'Voltar para a escala' : 'Fechar formulário de escala'"
             :disabled="isSaving"
-            @click="handleOpenChange(false)"
+            @click="isSongPickerOpen ? (isSongPickerOpen = false) : handleOpenChange(false)"
           >
-            <v-icon size="20">mdi-close</v-icon>
+            <v-icon size="20">{{ isSongPickerOpen ? "mdi-arrow-left" : "mdi-close" }}</v-icon>
           </v-btn>
         </div>
       </div>
 
-      <v-form autocomplete="off" @submit.prevent="handleSaveSchedule">
+      <ScaleSongPickerPanel
+        v-if="isSongPickerOpen"
+        :songs="selectedDepartmentSongs"
+        :selected-ids="scheduleForm.songIds"
+        @toggle="toggleFormSong"
+        @close="isSongPickerOpen = false"
+      />
+
+      <v-form v-else autocomplete="off" @submit.prevent="handleSaveSchedule">
         <v-text-field
           v-model="scheduleForm.title"
           label="Título"
@@ -390,12 +398,6 @@
       @select="copySchedule"
     />
 
-    <ScaleSongPickerDialog
-      v-model="isSongPickerOpen"
-      :songs="selectedDepartmentSongs"
-      :selected-ids="scheduleForm.songIds"
-      @toggle="toggleFormSong"
-    />
   </UtilsResponsiveOverlay>
 </template>
 
