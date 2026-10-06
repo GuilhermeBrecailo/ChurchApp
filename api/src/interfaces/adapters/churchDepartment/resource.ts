@@ -92,7 +92,10 @@ export class ResourceAdapters {
       throw new DomainError("Ministério não informado");
     }
 
-    await this.context.getDepartmentFromCurrentChurch(id, user.crunchId!);
+    const department = await this.context.getDepartmentFromCurrentChurch(
+      id,
+      user.crunchId!,
+    );
 
     return await $prismaClient.mediaItem.findMany({
       where: {
@@ -100,6 +103,7 @@ export class ResourceAdapters {
         NOT: {
           category: "MUSIC",
         },
+        ...(department.type === "KIDS" ? { category: { not: "ACTIVITY" } } : {}),
       },
       orderBy: {
         title: "asc",

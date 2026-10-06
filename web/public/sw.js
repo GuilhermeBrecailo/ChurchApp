@@ -94,7 +94,7 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("push", (event) => {
   let payload = {
-    title: "AppChurch",
+    title: "ChurchApp",
     body: "Você recebeu uma nova notificação.",
     url: "/user",
   };

@@ -35,6 +35,15 @@
             <p class="text-caption text-grey-darken-1 mb-0">
               {{ formatScheduleDate(schedule.date) }}
             </p>
+            <v-chip
+              v-if="schedule.isCommunionService"
+              size="x-small"
+              color="deep-purple-darken-1"
+              variant="tonal"
+              class="mt-2"
+            >
+              Santa Ceia
+            </v-chip>
           </div>
           <v-chip size="small" color="primary" variant="tonal">
             {{ schedule.assignments?.length || 0 }} voluntários
@@ -73,8 +82,34 @@
             <span class="schedule-assignment-role">
               {{ assignment.role }}
             </span>
+            <div v-if="departmentType === 'DEACONATE'" class="schedule-assignment-status">
+              <v-chip
+                size="x-small"
+                variant="tonal"
+                :color="assignment.confirmationStatus === 'CONFIRMED' ? 'teal-darken-2' : assignment.confirmationStatus === 'DECLINED' ? 'red-darken-2' : 'grey'"
+              >
+                {{ assignment.confirmationStatus === "CONFIRMED" ? "Confirmou" : assignment.confirmationStatus === "DECLINED" ? "Não pode" : "Confirmação pendente" }}
+              </v-chip>
+              <v-chip
+                size="x-small"
+                variant="tonal"
+                :color="assignment.attendanceStatus === 'PRESENT' ? 'teal-darken-2' : assignment.attendanceStatus === 'ABSENT' ? 'red-darken-2' : 'grey'"
+              >
+                {{ assignment.attendanceStatus === "PRESENT" ? "Presente" : assignment.attendanceStatus === "ABSENT" ? "Ausente" : "Presença pendente" }}
+              </v-chip>
+            </div>
           </div>
         </div>
+
+        <MinisteryDiaconateChecklist
+          v-if="departmentType === 'DEACONATE' && canAccessDiaconateChecklist"
+          :schedule="schedule"
+          :source-schedules="schedules"
+          :members="members"
+          :can-manage="canManageSchedules"
+          :can-access="canAccessDiaconateChecklist"
+          :can-mark="canAccessDiaconateChecklist"
+        />
 
         <div v-if="canManageSchedules" class="ministery-card-actions mt-3">
           <v-btn
@@ -148,6 +183,9 @@ defineProps<{
   showAllSchedules: boolean;
   schedulesError: string;
   canManageSchedules: boolean;
+  departmentType: string;
+  canAccessDiaconateChecklist: boolean;
+  members: { id: string; name: string; email?: string }[];
   formatScheduleDate: (value: string) => string;
 }>();
 
@@ -217,6 +255,12 @@ defineEmits<{
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.schedule-assignment-status {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 .schedule-assignment-name {
   color: #1f2937;

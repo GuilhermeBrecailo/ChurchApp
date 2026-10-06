@@ -76,6 +76,7 @@ export interface DepartmentSchedule {
   description: string;
   rehearsalAt?: string | null;
   rehearsalNotes?: string | null;
+  isCommunionService?: boolean;
   createdAt?: string;
   departmentId: string;
   department?: {
@@ -110,6 +111,28 @@ export interface DepartmentSchedule {
   }[];
   serviceOccurrenceId?: string | null;
   serviceOccurrence?: { id: string; serviceTimeId: string | null } | null;
+}
+
+export interface ScheduleAssignmentConflict {
+  userId: string;
+  userName: string;
+  departmentName: string;
+  role: string;
+  scheduleId: string;
+  scheduleDescription: string;
+}
+
+export interface DepartmentScheduleChecklistItem {
+  id: string;
+  title: string;
+  assigneeId?: string | null;
+  assignee?: { id: string; name: string } | null;
+  dueAt?: string | null;
+  isComplete: boolean;
+  completedAt?: string | null;
+  isApplicable: boolean;
+  templateKey?: string | null;
+  order: number;
 }
 
 export interface DepartmentResource {
@@ -234,6 +257,7 @@ interface CreateDepartmentScheduleDTO {
   rehearsalTime?: string | null;
   rehearsalNotes?: string | null;
   serviceOccurrenceId?: string;
+  isCommunionService?: boolean;
 }
 
 interface UpdateDepartmentScheduleDTO {
@@ -247,7 +271,8 @@ interface UpdateDepartmentScheduleDTO {
   rehearsalDate?: string | null;
   rehearsalTime?: string | null;
   rehearsalNotes?: string | null;
-  serviceOccurrenceId?: string;
+  serviceOccurrenceId?: string | null;
+  isCommunionService?: boolean;
 }
 
 interface CreateDepartmentResourceDTO {
@@ -322,6 +347,7 @@ interface UpdateDepartmentSongDTO {
 
 interface UpdateScheduleAssignmentsDTO {
   assignments: {
+    id?: string;
     userId: string;
     role: string;
   }[];
@@ -334,6 +360,19 @@ interface UpdateMyScheduleAssignmentDTO {
 
 interface UpdateScheduleAssignmentAttendanceDTO {
   attendanceStatus: "PENDING" | "PRESENT" | "ABSENT";
+}
+
+interface CreateScheduleChecklistItemDTO {
+  title: string;
+  assigneeId?: string | null;
+  dueAt?: string | null;
+}
+
+interface UpdateScheduleChecklistItemDTO {
+  title?: string;
+  assigneeId?: string | null;
+  dueAt?: string | null;
+  isComplete?: boolean;
 }
 
 interface SendScheduleReminderResponse {
@@ -615,6 +654,70 @@ export const useDepartments = () => {
         headers: authHeaders(),
         body: payload,
       },
+    );
+  };
+
+  const getScheduleAssignmentConflicts = async (
+    scheduleId: string,
+    userIds: string[],
+  ): Promise<ApiResponse<ScheduleAssignmentConflict[]>> => {
+    return await $customFetch<ScheduleAssignmentConflict[]>(
+      `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}/assignment-conflicts`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+        body: { userIds },
+      },
+    );
+  };
+
+  const getScheduleChecklist = async (
+    scheduleId: string,
+  ): Promise<ApiResponse<DepartmentScheduleChecklistItem[]>> => {
+    return await $customFetch<DepartmentScheduleChecklistItem[]>(
+      `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}/checklist`,
+      { method: "GET", headers: authHeaders() },
+    );
+  };
+
+  const createScheduleChecklistItem = async (
+    scheduleId: string,
+    payload: CreateScheduleChecklistItemDTO,
+  ): Promise<ApiResponse<DepartmentScheduleChecklistItem>> => {
+    return await $customFetch<DepartmentScheduleChecklistItem>(
+      `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}/checklist`,
+      { method: "POST", headers: authHeaders(), body: payload },
+    );
+  };
+
+  const updateScheduleChecklistItem = async (
+    scheduleId: string,
+    itemId: string,
+    payload: UpdateScheduleChecklistItemDTO,
+  ): Promise<ApiResponse<DepartmentScheduleChecklistItem>> => {
+    return await $customFetch<DepartmentScheduleChecklistItem>(
+      `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}/checklist/${itemId}`,
+      { method: "PATCH", headers: authHeaders(), body: payload },
+    );
+  };
+
+  const deleteScheduleChecklistItem = async (
+    scheduleId: string,
+    itemId: string,
+  ): Promise<ApiResponse<{ id: string }>> => {
+    return await $customFetch<{ id: string }>(
+      `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}/checklist/${itemId}`,
+      { method: "DELETE", headers: authOnlyHeaders() },
+    );
+  };
+
+  const copyScheduleChecklistItems = async (
+    scheduleId: string,
+    sourceScheduleId: string,
+  ): Promise<ApiResponse<{ count: number }>> => {
+    return await $customFetch<{ count: number }>(
+      `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}/checklist/copy`,
+      { method: "POST", headers: authHeaders(), body: { sourceScheduleId } },
     );
   };
 
@@ -958,6 +1061,12 @@ export const useDepartments = () => {
     updateChurchSchedule,
     deleteChurchSchedule,
     updateScheduleAssignments,
+    getScheduleAssignmentConflicts,
+    getScheduleChecklist,
+    createScheduleChecklistItem,
+    updateScheduleChecklistItem,
+    deleteScheduleChecklistItem,
+    copyScheduleChecklistItems,
     updateMyScheduleAssignment,
     sendScheduleReminder,
     updateScheduleAssignmentAttendance,

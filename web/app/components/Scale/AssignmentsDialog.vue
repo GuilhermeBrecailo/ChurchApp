@@ -71,10 +71,41 @@
         <Plus size="18" class="mr-1" /> Adicionar voluntário
       </v-btn>
 
+      <v-alert
+        v-if="assignmentConflictCheckError"
+        type="warning"
+        variant="tonal"
+        density="compact"
+        class="mb-4"
+      >
+        Não foi possível conferir outras responsabilidades neste culto. Você ainda pode salvar a escala.
+      </v-alert>
+      <v-alert
+        v-else-if="assignmentConflicts.length"
+        type="warning"
+        variant="tonal"
+        density="comfortable"
+        class="mb-4"
+      >
+        <div class="font-weight-bold mb-1">
+          Há pessoas com outra responsabilidade neste mesmo culto. É apenas um aviso; a escala pode ser salva.
+        </div>
+        <div
+          v-for="conflict in assignmentConflicts"
+          :key="`${conflict.scheduleId}:${conflict.userId}:${conflict.role}`"
+          class="text-body-2"
+        >
+          {{ formatScheduleAssignmentConflict(conflict) }}
+        </div>
+      </v-alert>
+      <div v-else-if="isCheckingAssignmentConflicts" class="text-caption text-medium-emphasis mb-3">
+        Conferindo outras responsabilidades neste culto…
+      </div>
+
       <div v-if="draftAssignments.length" class="d-flex flex-column gap-2 mb-4">
         <v-card
           v-for="assignment in draftAssignments"
-          :key="assignment.userId"
+          :key="assignment.draftId"
           class="app-surface-muted rounded-lg pa-3"
           elevation="0"
         >
@@ -147,9 +178,9 @@
               variant="text"
               color="grey-darken-1"
               size="small"
-              :aria-label="`Remover ${assignment.name} da escala`"
+              :aria-label="`Remover ${assignment.name} da função ${assignment.role}`"
               :disabled="isSaving"
-              @click="removeDraftAssignment(assignment.userId)"
+              @click="removeDraftAssignment(assignment.draftId)"
             >
               <v-icon size="18">mdi-close</v-icon>
             </v-btn>
@@ -205,7 +236,17 @@
 import { computed, reactive, ref, watch } from "vue";
 import { Plus, UserPlus } from "lucide-vue-next";
 import { useThemeMode } from "../../../composables/useThemeMode";
-import { useDepartments, type ChurchDepartment, type DepartmentSchedule } from "../../../composables/useDepartments";
+import {
+  formatScheduleAssignmentConflict,
+  getDepartmentAssignmentRoleOptions,
+  getScheduleAssignmentKey,
+} from "../../utils/scaleSchedule";
+import {
+  useDepartments,
+  type ChurchDepartment,
+  type DepartmentSchedule,
+  type ScheduleAssignmentConflict,
+} from "../../../composables/useDepartments";
 import type { ChurchMember } from "../../../composables/useMembers";
 
 const props = defineProps<{
@@ -222,7 +263,11 @@ const emit = defineEmits<{
   (event: "assignment-updated", assignment: NonNullable<DepartmentSchedule["assignments"]>[number]): void;
 }>();
 
-const { updateScheduleAssignments, updateScheduleAssignmentAttendance } = useDepartments();
+const {
+  updateScheduleAssignments,
+  updateScheduleAssignmentAttendance,
+  getScheduleAssignmentConflicts,
+} = useDepartments();
 const { isDark } = useThemeMode();
 const scaleSelectMenuProps = {
   attach: "body",
@@ -234,6 +279,11 @@ const avatarBgColor = computed(() => (isDark.value ? "rgba(240,151,90,0.16)" : "
 
 const isSaving = ref(false);
 const assignmentsError = ref("");
+const assignmentConflicts = ref<ScheduleAssignmentConflict[]>([]);
+const assignmentConflictCheckError = ref("");
+const isCheckingAssignmentConflicts = ref(false);
+const conflictRequestVersion = ref(0);
+const checkedConflictKey = ref("");
 
 const assignmentForm = reactive({
   userId: "",
@@ -241,6 +291,7 @@ const assignmentForm = reactive({
 });
 
 type DraftAssignment = {
+  draftId: string;
   userId: string;
   assignmentId?: string;
   name: string;
@@ -253,18 +304,12 @@ type DraftAssignment = {
 
 const draftAssignments = ref<DraftAssignment[]>([]);
 
-const departmentRoleOptions: Record<string, string[]> = {
-  WORSHIP: ["Ministro", "Cantor(a)", "Guitarra", "Baixo", "Violão", "Bateria", "Cajon", "Teclado"],
-  MUSIC: ["Ministro", "Cantor(a)", "Guitarra", "Baixo", "Violão", "Bateria", "Cajon", "Teclado"],
-  MEDIA: ["Mídia", "Mesa de som", "Luzes"],
-};
-
 const selectedDepartment = computed(() =>
   props.departments.find((department) => department.id === props.schedule?.departmentId),
 );
 
 const assignmentRoleOptions = computed(
-  () => departmentRoleOptions[selectedDepartment.value?.type || ""] || ["Voluntário"],
+  () => getDepartmentAssignmentRoleOptions(selectedDepartment.value?.type),
 );
 
 const memberOptions = computed(() =>
@@ -327,15 +372,48 @@ const getAssignmentWarning = (userId: string) => {
     return "Indisponível";
   }
 
-  const hasConflict = props.allSchedules.some((otherSchedule) => {
-    if (otherSchedule.id === schedule.id) return false;
-    if (toDateInputValue(otherSchedule.date) !== selectedDate) return false;
-
-    return otherSchedule.assignments?.some((assignment) => assignment.userId === userId);
-  });
-
-  return hasConflict ? "Conflito" : "";
+  return "";
 };
+
+const conflictKey = computed(() => {
+  const userIds = [...new Set(draftAssignments.value.map((item) => item.userId))].sort();
+  return props.schedule?.id ? `${props.schedule.id}:${userIds.join(",")}` : "";
+});
+
+const loadAssignmentConflicts = async () => {
+  const scheduleId = props.schedule?.id;
+  const userIds = [...new Set(draftAssignments.value.map((item) => item.userId))].sort();
+  const requestKey = conflictKey.value;
+  const version = ++conflictRequestVersion.value;
+  assignmentConflicts.value = [];
+  assignmentConflictCheckError.value = "";
+
+  if (!props.modelValue || !scheduleId || !userIds.length || !props.schedule?.serviceOccurrenceId) {
+    checkedConflictKey.value = requestKey;
+    isCheckingAssignmentConflicts.value = false;
+    return;
+  }
+
+  isCheckingAssignmentConflicts.value = true;
+  try {
+    const { data, error } = await getScheduleAssignmentConflicts(scheduleId, userIds);
+    if (version !== conflictRequestVersion.value) return;
+    checkedConflictKey.value = requestKey;
+    assignmentConflictCheckError.value = error || "";
+    assignmentConflicts.value = data || [];
+  } catch {
+    if (version !== conflictRequestVersion.value) return;
+    checkedConflictKey.value = requestKey;
+    assignmentConflictCheckError.value = "Falha temporária na verificação.";
+  } finally {
+    if (version === conflictRequestVersion.value) isCheckingAssignmentConflicts.value = false;
+  }
+};
+
+watch(conflictKey, () => {
+  checkedConflictKey.value = "";
+  void loadAssignmentConflicts();
+});
 
 const resetForm = () => {
   assignmentsError.value = "";
@@ -344,6 +422,7 @@ const resetForm = () => {
 
   draftAssignments.value =
     props.schedule?.assignments?.map((assignment) => ({
+      draftId: crypto.randomUUID(),
       assignmentId: assignment.id,
       userId: assignment.userId,
       name: assignment.user.name,
@@ -364,6 +443,11 @@ watch(
 
 const handleOpenChange = (value: boolean) => {
   if (!value) {
+    conflictRequestVersion.value += 1;
+    assignmentConflicts.value = [];
+    assignmentConflictCheckError.value = "";
+    isCheckingAssignmentConflicts.value = false;
+    checkedConflictKey.value = "";
     draftAssignments.value = [];
     assignmentsError.value = "";
     assignmentForm.userId = "";
@@ -380,20 +464,24 @@ const addDraftAssignment = () => {
     return;
   }
 
-  if (draftAssignments.value.some((item) => item.userId === assignmentForm.userId)) {
-    assignmentsError.value = "Esse voluntário já está nesta escala.";
-    return;
-  }
-
   const member = props.members.find((item) => item.id === assignmentForm.userId);
   if (!member) return;
+  const role = assignmentForm.role.trim() || "Voluntário";
+
+  if (draftAssignments.value.some((item) =>
+    getScheduleAssignmentKey(item.userId, item.role) === getScheduleAssignmentKey(member.id, role)
+  )) {
+    assignmentsError.value = `Essa pessoa já está escalada para a função ${role}.`;
+    return;
+  }
 
   draftAssignments.value = [
     ...draftAssignments.value,
     {
+      draftId: crypto.randomUUID(),
       userId: member.id,
       name: member.name,
-      role: assignmentForm.role.trim() || "Voluntário",
+      role,
       viewedAt: null,
       confirmationStatus: "PENDING",
       attendanceStatus: "PENDING",
@@ -404,8 +492,8 @@ const addDraftAssignment = () => {
   assignmentForm.role = "";
 };
 
-const removeDraftAssignment = (userId: string) => {
-  draftAssignments.value = draftAssignments.value.filter((assignment) => assignment.userId !== userId);
+const removeDraftAssignment = (draftId: string) => {
+  draftAssignments.value = draftAssignments.value.filter((assignment) => assignment.draftId !== draftId);
 };
 
 const markAttendance = async (
@@ -445,11 +533,17 @@ const saveAssignments = async () => {
     return;
   }
 
+  if (checkedConflictKey.value !== conflictKey.value) {
+    await loadAssignmentConflicts();
+    if (assignmentConflicts.value.length > 0) return;
+  }
+
   isSaving.value = true;
 
   try {
     const { data, error } = await updateScheduleAssignments(props.schedule.id, {
       assignments: draftAssignments.value.map((assignment) => ({
+        ...(assignment.assignmentId ? { id: assignment.assignmentId } : {}),
         userId: assignment.userId,
         role: assignment.role,
       })),

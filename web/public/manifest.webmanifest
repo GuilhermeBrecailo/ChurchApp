@@ -1,6 +1,6 @@
 {
-  "name": "AppChurch",
-  "short_name": "AppChurch",
+  "name": "ChurchApp",
+  "short_name": "ChurchApp",
   "description": "Gestão de igrejas, ministérios e escalas.",
   "start_url": "/",
   "scope": "/",

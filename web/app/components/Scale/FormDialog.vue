@@ -72,14 +72,26 @@
               {{ linkedCultLabel }}
             </p>
           </div>
+          <v-btn
+            icon
+            variant="text"
+            color="primary"
+            size="small"
+            aria-label="Remover culto vinculado à escala"
+            :disabled="isSaving"
+            @click="clearCultSelection"
+          >
+            <v-icon size="18">mdi-close</v-icon>
+          </v-btn>
         </div>
         <v-select
           v-else
-          v-model="scheduleForm.serviceTimeId"
+          v-model="cultOptionValue"
           label="Culto (opcional)"
-          :items="serviceTimeOptions"
+          :items="cultOptions"
           item-title="label"
           item-value="value"
+          @update:model-value="handleCultSelection"
           prepend-inner-icon="mdi-church"
           variant="outlined"
           density="comfortable"
@@ -93,6 +105,9 @@
           clearable
           :disabled="isSaving"
         />
+        <v-alert v-if="cultOptionsError" type="warning" variant="tonal" density="compact" class="mb-4">
+          {{ cultOptionsError }}
+        </v-alert>
 
         <div class="scale-field-grid mb-4">
           <v-text-field
@@ -136,6 +151,23 @@
           hide-details="auto"
           :disabled="isSaving"
         />
+
+        <v-switch
+          v-if="selectedDepartmentType === 'DEACONATE'"
+          v-model="scheduleForm.isCommunionService"
+          label="Este culto terá Santa Ceia"
+          color="primary"
+          inset
+          hide-details
+          class="mb-4"
+          :disabled="isSaving"
+        >
+          <template #details>
+            <span class="text-caption text-medium-emphasis">
+              Adiciona a preparação ao checklist desta escala.
+            </span>
+          </template>
+        </v-switch>
 
         <div class="scale-field-grid mb-4">
           <v-text-field
@@ -341,7 +373,7 @@
           <div v-if="scheduleForm.assignments.length" class="d-flex flex-column gap-2">
             <div
               v-for="volunteer in scheduleForm.assignments"
-              :key="volunteer.userId"
+              :key="volunteer.draftId"
               class="schedule-form-volunteer-row"
             >
               <div class="min-w-0">
@@ -355,9 +387,9 @@
                 variant="text"
                 color="grey-darken-1"
                 size="small"
-                :aria-label="`Remover ${volunteer.name} da escala`"
+                :aria-label="`Remover ${volunteer.name} da função ${volunteer.role}`"
                 :disabled="isSaving"
-                @click="removeFormVolunteer(volunteer.userId)"
+                @click="removeFormVolunteer(volunteer.draftId)"
               >
                 <v-icon size="18">mdi-close</v-icon>
               </v-btn>
@@ -402,15 +434,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { Calendar, ChevronDown, ChevronUp, Copy, Plus } from "lucide-vue-next";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import {
   useServiceOccurrences,
   type ServiceOccurrenceDetail,
+  type UpcomingOccurrence,
 } from "../../../composables/useServiceOccurrences";
-import { getScheduleCopySelection, getScheduleCultSelection } from "../../utils/scaleSchedule";
-import { useServiceTimes } from "../../../composables/useServiceTimes";
+import {
+  getScheduleCopySelection,
+  getScheduleAssignmentKey,
+  getScheduleCultOptions,
+  getScheduleCultResolution,
+  getDepartmentAssignmentRoleOptions,
+  type ScheduleCultOption,
+} from "../../utils/scaleSchedule";
 import {
   useDepartments,
   type ChurchDepartment,
@@ -440,21 +479,7 @@ const {
   getDepartmentResources,
   getDepartmentSongs,
 } = useDepartments();
-const { resolveOccurrence, getOccurrence } = useServiceOccurrences();
-const { serviceTimes, loadServiceTimes } = useServiceTimes();
-
-onMounted(() => {
-  if (!serviceTimes.value.length) loadServiceTimes();
-});
-
-const serviceTimeOptions = computed(() =>
-  serviceTimes.value
-    .filter((serviceTime) => serviceTime.isActive)
-    .map((serviceTime) => ({
-      label: `${serviceTime.label} · ${serviceTime.time}`,
-      value: serviceTime.id,
-    })),
-);
+const { resolveOccurrence, getOccurrence, listOccurrences } = useServiceOccurrences();
 
 const { isDark } = useThemeMode();
 const scaleSelectMenuProps = {
@@ -465,9 +490,19 @@ const scaleSelectMenuProps = {
 const accentColor = computed(() => (isDark.value ? "#f0975a" : "#B5472A"));
 const avatarBgColor = computed(() => (isDark.value ? "rgba(240,151,90,0.16)" : "#F7E2D3"));
 const linkedCult = ref<ServiceOccurrenceDetail | null>(null);
+const linkedCultId = ref("");
+const linkedCultDate = ref("");
+const linkedCultTime = ref("");
+const cultOptionValue = ref("");
+const upcomingOccurrences = ref<UpcomingOccurrence[]>([]);
+const cultOptionsError = ref("");
+const cultOptions = computed(() => getScheduleCultOptions(upcomingOccurrences.value));
+const selectedCultOption = computed<ScheduleCultOption | null>(
+  () => cultOptions.value.find((option) => option.value === cultOptionValue.value) ?? null,
+);
 
 const linkedCultLabel = computed(() => {
-  if (!linkedCult.value) return "";
+  if (!linkedCult.value) return linkedCultId.value ? "Culto vinculado a esta escala" : "";
 
   const title = linkedCult.value.title || linkedCult.value.serviceTime?.label || "Culto";
   const time = linkedCult.value.time || linkedCult.value.serviceTime?.time;
@@ -502,7 +537,14 @@ const scheduleForm = reactive({
   rehearsalNotes: "",
   songIds: [] as string[],
   resourceIds: [] as string[],
-  assignments: [] as { userId: string; name: string; role: string }[],
+  isCommunionService: false,
+  assignments: [] as {
+    draftId: string;
+    assignmentId?: string;
+    userId: string;
+    name: string;
+    role: string;
+  }[],
 });
 
 const departmentOptions = computed(() =>
@@ -515,15 +557,14 @@ const copyableSchedules = computed(() => {
   return props.schedules.filter((schedule) => manageableDepartmentIds.has(schedule.departmentId));
 });
 
-const departmentRoleOptions: Record<string, string[]> = {
-  WORSHIP: ["Ministro", "Cantor(a)", "Guitarra", "Baixo", "Violão", "Bateria", "Cajon", "Teclado"],
-  MUSIC: ["Ministro", "Cantor(a)", "Guitarra", "Baixo", "Violão", "Bateria", "Cajon", "Teclado"],
-  MEDIA: ["Mídia", "Mesa de som", "Luzes"],
-};
-
+const selectedDepartmentType = computed(
+  () => props.departments.find((department) => department.id === scheduleForm.departmentId)?.type,
+);
+watch(selectedDepartmentType, (type) => {
+  if (type !== "DEACONATE") scheduleForm.isCommunionService = false;
+});
 const scheduleFormAssignmentRoleOptions = computed(() => {
-  const dept = props.departments.find((d) => d.id === scheduleForm.departmentId);
-  return departmentRoleOptions[dept?.type || ""] || ["Voluntário"];
+  return getDepartmentAssignmentRoleOptions(selectedDepartmentType.value);
 });
 
 const memberOptions = computed(() =>
@@ -578,22 +619,31 @@ const moveFormSong = (index: number, direction: -1 | 1) => {
 
 const addFormVolunteer = () => {
   if (!volunteerUserId.value) return;
-  if (scheduleForm.assignments.some((a) => a.userId === volunteerUserId.value)) return;
-
   const member = props.members.find((m) => m.id === volunteerUserId.value);
   if (!member) return;
+  const role = volunteerRole.value.trim() || "Voluntário";
+
+  if (scheduleForm.assignments.some((assignment) =>
+    getScheduleAssignmentKey(assignment.userId, assignment.role) ===
+      getScheduleAssignmentKey(member.id, role)
+  )) {
+    saveError.value = `Essa pessoa já está escalada para a função ${role}.`;
+    return;
+  }
 
   scheduleForm.assignments.push({
+    draftId: crypto.randomUUID(),
     userId: member.id,
     name: member.name,
-    role: volunteerRole.value.trim() || "Voluntário",
+    role,
   });
+  saveError.value = "";
   volunteerUserId.value = "";
   volunteerRole.value = "";
 };
 
-const removeFormVolunteer = (userId: string) => {
-  scheduleForm.assignments = scheduleForm.assignments.filter((a) => a.userId !== userId);
+const removeFormVolunteer = (draftId: string) => {
+  scheduleForm.assignments = scheduleForm.assignments.filter((assignment) => assignment.draftId !== draftId);
 };
 
 const toDateInputValue = (value: string) => {
@@ -643,47 +693,126 @@ const resetForm = () => {
   scheduleForm.date = "";
   scheduleForm.time = "";
   scheduleForm.serviceTimeId = "";
+  cultOptionValue.value = "";
   scheduleForm.departmentId = "";
   scheduleForm.rehearsalDate = "";
   scheduleForm.rehearsalTime = "";
   scheduleForm.rehearsalNotes = "";
   scheduleForm.songIds = [];
   scheduleForm.resourceIds = [];
+  scheduleForm.isCommunionService = false;
   scheduleForm.assignments = [];
   volunteerUserId.value = "";
   volunteerRole.value = "";
   saveError.value = "";
   linkedCult.value = null;
+  linkedCultId.value = "";
+  linkedCultDate.value = "";
+  linkedCultTime.value = "";
+};
+
+const clearCultSelection = () => {
+  cultOptionValue.value = "";
+  scheduleForm.serviceTimeId = "";
+  linkedCult.value = null;
+  linkedCultId.value = "";
+  linkedCultDate.value = "";
+  linkedCultTime.value = "";
+};
+
+const handleCultSelection = async (value: string | null) => {
+  cultOptionValue.value = value ?? "";
+  linkedCult.value = null;
+  linkedCultId.value = "";
+  linkedCultDate.value = "";
+  linkedCultTime.value = "";
+  scheduleForm.serviceTimeId = "";
+
+  const option = selectedCultOption.value;
+  if (!option) return;
+
+  scheduleForm.date = option.date;
+  scheduleForm.time = option.time;
+  scheduleForm.serviceTimeId = option.serviceTimeId;
+
+  if (!option.occurrenceId) return;
+
+  linkedCultId.value = option.occurrenceId;
+  linkedCultDate.value = option.date;
+  linkedCultTime.value = option.time;
+  const { data } = await getOccurrence(option.occurrenceId);
+  if (data && linkedCultId.value === option.occurrenceId) linkedCult.value = data;
+};
+
+const loadCultOptions = async () => {
+  const { data, error } = await listOccurrences(180);
+
+  if (error || !data) {
+    upcomingOccurrences.value = [];
+    cultOptionsError.value = "Não foi possível carregar os cultos. Você ainda pode criar a escala sem vínculo.";
+    return;
+  }
+
+  upcomingOccurrences.value = data.upcoming ?? [];
+  cultOptionsError.value = "";
 };
 
 const prefillForm = async (schedule: DepartmentSchedule, mode: "edit" | "copy" = "edit") => {
   isPrefilling.value = true;
   linkedCult.value = null;
-  const cultSelection = getScheduleCultSelection(schedule);
+  linkedCultId.value = "";
+  linkedCultDate.value = "";
+  linkedCultTime.value = "";
+  cultOptionValue.value = "";
   const copySelection = getScheduleCopySelection(schedule);
   scheduleForm.title = schedule.description;
   scheduleForm.date = toDateInputValue(schedule.date);
   scheduleForm.time = toTimeInputValue(schedule.date);
   scheduleForm.serviceTimeId = copySelection.serviceTimeId;
   scheduleForm.departmentId = schedule.departmentId;
+  scheduleForm.isCommunionService = copySelection.isCommunionService;
   scheduleForm.rehearsalDate = schedule.rehearsalAt ? toDateInputValue(schedule.rehearsalAt) : "";
   scheduleForm.rehearsalTime = schedule.rehearsalAt ? toTimeInputValue(schedule.rehearsalAt) : "";
   scheduleForm.rehearsalNotes = schedule.rehearsalNotes || "";
   await loadScheduleMediaItems(schedule.departmentId);
   scheduleForm.songIds = copySelection.songIds;
   scheduleForm.resourceIds = copySelection.resourceIds;
-  scheduleForm.assignments = copySelection.assignments;
+  scheduleForm.assignments = mode === "edit"
+    ? (schedule.assignments ?? []).map((assignment) => ({
+        draftId: crypto.randomUUID(),
+        assignmentId: assignment.id,
+        userId: assignment.userId,
+        name: assignment.user.name,
+        role: assignment.role,
+      }))
+    : copySelection.assignments.map((assignment) => ({
+        ...assignment,
+        draftId: crypto.randomUUID(),
+      }));
   volunteerUserId.value = "";
   volunteerRole.value = "";
   saveError.value = "";
 
-  if (mode === "edit" && cultSelection.occurrenceId) {
-    const { data, error } = await getOccurrence(cultSelection.occurrenceId);
+  if (mode === "edit" && schedule.serviceOccurrenceId) {
+    linkedCultId.value = schedule.serviceOccurrenceId;
+    linkedCultDate.value = scheduleForm.date;
+    linkedCultTime.value = scheduleForm.time;
+    const { data, error } = await getOccurrence(schedule.serviceOccurrenceId);
 
     if (data) {
       linkedCult.value = data;
+      scheduleForm.serviceTimeId = data.serviceTimeId ?? "";
     } else {
       saveError.value = error || "Não foi possível carregar o culto vinculado a esta escala.";
+    }
+  } else if (mode === "copy" && scheduleForm.serviceTimeId) {
+    const option = cultOptions.value.find(
+      (item) => item.serviceTimeId === scheduleForm.serviceTimeId && item.date === scheduleForm.date,
+    );
+    if (option) {
+      cultOptionValue.value = option.value;
+    } else {
+      scheduleForm.serviceTimeId = "";
     }
   }
 
@@ -701,6 +830,7 @@ watch(
     if (!open) return;
 
     resetForm();
+    await loadCultOptions();
 
     if (props.schedule) {
       await prefillForm(props.schedule);
@@ -723,6 +853,21 @@ watch(
       scheduleForm.songIds = [];
       scheduleForm.resourceIds = [];
     }
+  },
+);
+
+watch(
+  () => [scheduleForm.date, scheduleForm.time] as const,
+  ([date, time]) => {
+    if (isPrefilling.value) return;
+
+    const option = selectedCultOption.value;
+    const selectedOptionChanged = Boolean(option && (option.date !== date || option.time !== time));
+    const linkedCultChanged = Boolean(
+      linkedCultId.value && (linkedCultDate.value !== date || linkedCultTime.value !== time),
+    );
+
+    if (selectedOptionChanged || linkedCultChanged) clearCultSelection();
   },
 );
 
@@ -752,12 +897,15 @@ const handleSaveSchedule = async () => {
   isSaving.value = true;
 
   try {
-    let serviceOccurrenceId = linkedCult.value?.id || null;
+    let serviceOccurrenceId = linkedCultId.value || undefined;
+    const cultResolution = getScheduleCultResolution(selectedCultOption.value, scheduleForm.date);
 
-    if (!serviceOccurrenceId && scheduleForm.serviceTimeId) {
+    if (!serviceOccurrenceId && cultResolution.kind === "existing") {
+      serviceOccurrenceId = cultResolution.occurrenceId;
+    } else if (!serviceOccurrenceId && cultResolution.kind === "resolve") {
       const { data: occurrence, error: occurrenceError } = await resolveOccurrence(
-        scheduleForm.serviceTimeId,
-        scheduleForm.date,
+        cultResolution.serviceTimeId,
+        cultResolution.date,
       );
 
       if (occurrenceError || !occurrence) {
@@ -773,17 +921,25 @@ const handleSaveSchedule = async () => {
       date: scheduleForm.date,
       time: scheduleForm.time || undefined,
       departmentId: scheduleForm.departmentId,
-      serviceOccurrenceId: serviceOccurrenceId || undefined,
       rehearsalDate: scheduleForm.rehearsalDate || null,
       rehearsalTime: scheduleForm.rehearsalTime || null,
       rehearsalNotes: scheduleForm.rehearsalNotes || null,
       songIds: scheduleForm.songIds,
       resourceIds: scheduleForm.resourceIds,
+      ...(selectedDepartmentType.value === "DEACONATE"
+        ? { isCommunionService: scheduleForm.isCommunionService }
+        : {}),
     };
 
     const { data, error } = props.schedule
-      ? await updateChurchSchedule(props.schedule.id, payload)
-      : await createChurchSchedule(payload);
+      ? await updateChurchSchedule(props.schedule.id, {
+          ...payload,
+          serviceOccurrenceId: serviceOccurrenceId ?? null,
+        })
+      : await createChurchSchedule({
+          ...payload,
+          ...(serviceOccurrenceId ? { serviceOccurrenceId } : {}),
+        });
 
     if (error || !data) {
       saveError.value = error || "Não foi possível criar a escala.";
@@ -797,7 +953,11 @@ const handleSaveSchedule = async () => {
 
     if (hasAssignments || !isCreating) {
       const { data: scheduleWithAssignments } = await updateScheduleAssignments(data.id, {
-        assignments: scheduleForm.assignments.map((a) => ({ userId: a.userId, role: a.role })),
+        assignments: scheduleForm.assignments.map((assignment) => ({
+          ...(assignment.assignmentId ? { id: assignment.assignmentId } : {}),
+          userId: assignment.userId,
+          role: assignment.role,
+        })),
       });
       if (scheduleWithAssignments) {
         finalSchedule = scheduleWithAssignments;

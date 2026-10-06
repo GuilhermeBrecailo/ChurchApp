@@ -1,10 +1,13 @@
 import { FastifyRequest } from "fastify/types/request";
+import { FastifyReply } from "fastify";
 import { DepartmentContext } from "./churchDepartment/context";
 import { DepartmentCore } from "./churchDepartment/department";
 import { TaskAdapters } from "./churchDepartment/task";
 import { ScheduleAdapters } from "./churchDepartment/schedule";
 import { SongAdapters } from "./churchDepartment/song";
 import { ResourceAdapters } from "./churchDepartment/resource";
+import { MinistryChildrenAdapters } from "./churchDepartment/children";
+import { ScheduleChecklistAdapters } from "./churchDepartment/scheduleChecklist";
 
 // Facade fino: a logica de fato mora em ./churchDepartment/* (um arquivo por
 // area - department, task, schedule, song, resource - todos compartilhando
@@ -18,6 +21,8 @@ export class ChurchDepartmentAdapters {
   private schedule = new ScheduleAdapters(this.context);
   private song = new SongAdapters(this.context);
   private resource = new ResourceAdapters(this.context);
+  private children = new MinistryChildrenAdapters(this.context);
+  private scheduleChecklist = new ScheduleChecklistAdapters(this.context);
 
   // Ministerio / membro
   async getChurchDepartments(request: FastifyRequest) {
@@ -102,6 +107,10 @@ export class ChurchDepartmentAdapters {
     return this.schedule.updateChurchScheduleAssignments(request);
   }
 
+  async getChurchScheduleAssignmentConflicts(request: FastifyRequest) {
+    return this.schedule.getChurchScheduleAssignmentConflicts(request);
+  }
+
   async updateMyChurchScheduleAssignment(request: FastifyRequest) {
     return this.schedule.updateMyChurchScheduleAssignment(request);
   }
@@ -120,6 +129,27 @@ export class ChurchDepartmentAdapters {
 
   async setScheduleMediaItemObservation(request: FastifyRequest) {
     return this.schedule.setScheduleMediaItemObservation(request);
+  }
+
+  // Checklist contextualizado por escala do Diaconato.
+  async getChurchScheduleChecklist(request: FastifyRequest) {
+    return this.scheduleChecklist.getChurchScheduleChecklist(request);
+  }
+
+  async createChurchScheduleChecklistItem(request: FastifyRequest) {
+    return this.scheduleChecklist.createChurchScheduleChecklistItem(request);
+  }
+
+  async updateChurchScheduleChecklistItem(request: FastifyRequest) {
+    return this.scheduleChecklist.updateChurchScheduleChecklistItem(request);
+  }
+
+  async deleteChurchScheduleChecklistItem(request: FastifyRequest) {
+    return this.scheduleChecklist.deleteChurchScheduleChecklistItem(request);
+  }
+
+  async copyChurchScheduleChecklistItems(request: FastifyRequest) {
+    return this.scheduleChecklist.copyChurchScheduleChecklistItems(request);
   }
 
   // Musica / preferencia / import
@@ -186,5 +216,41 @@ export class ChurchDepartmentAdapters {
 
   async deleteChurchDepartmentResource(request: FastifyRequest) {
     return this.resource.deleteChurchDepartmentResource(request);
+  }
+
+  // Ministério Infantil: crianças, responsáveis, chamada e materiais.
+  async getMinistryChildren(request: FastifyRequest) {
+    return this.children.getMinistryChildren(request);
+  }
+
+  async createMinistryChild(request: FastifyRequest) {
+    return this.children.createMinistryChild(request);
+  }
+
+  async updateMinistryChild(request: FastifyRequest) {
+    return this.children.updateMinistryChild(request);
+  }
+
+  async getMinistryChildSessions(request: FastifyRequest) {
+    return this.children.getMinistryChildSessions(request);
+  }
+
+  async createMinistryChildSession(request: FastifyRequest) {
+    return this.children.createMinistryChildSession(request);
+  }
+
+  async updateMinistryChildAttendance(request: FastifyRequest) {
+    return this.children.updateMinistryChildAttendance(request);
+  }
+
+  async getMinistryChildMaterials(request: FastifyRequest) {
+    return this.children.getMinistryChildMaterials(request);
+  }
+
+  async streamMinistryChildMaterialPdf(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ) {
+    return this.children.streamMinistryChildMaterialPdf(request, reply);
   }
 }

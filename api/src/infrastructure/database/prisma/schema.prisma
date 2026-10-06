@@ -289,6 +289,7 @@ model User {
     churchMemberships ChurchMembership[]
     ledDepartments Department[]         @relation("Leader")
     assignments    ScheduleAssignment[]
+    assignedChecklistItems ScheduleChecklistItem[] @relation("ScheduleChecklistAssignee")
     departmentTasks DepartmentTask[]
     departmentMemberships UserDepartmentMembership[]
     unavailableDates UserUnavailableDate[]
@@ -368,6 +369,8 @@ model RosterMember {
     messageLogRecipients MessageLogRecipient[]
     serviceAttendances   ServiceOccurrenceAttendee[]
     pastoralVisits       PastoralVisit[]
+    ministryChildProfiles MinistryChildProfile[] @relation("MinistryChildRosterMember")
+    ministryChildGuardians MinistryChildGuardian[] @relation("MinistryChildGuardianRosterMember")
 
     @@index([crunchId])
     @@index([crunchId, status])
@@ -674,6 +677,8 @@ model Department {
     tasks      DepartmentTask[]
     members    UserDepartmentMembership[]
     roles      ChurchRole[]
+    ministryChildren MinistryChildProfile[]
+    ministryChildSessions MinistryChildSession[]
 }
 
 model UserDepartmentMembership {
@@ -767,12 +772,77 @@ model UserBibleNote {
     @@unique([userId, bookAbbrev, chapter])
 }
 
+model MinistryChildProfile {
+    id        String   @id @default(uuid())
+    groupName String?
+    isActive  Boolean  @default(true)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    departmentId String
+    department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+    rosterMemberId String
+    rosterMember   RosterMember @relation("MinistryChildRosterMember", fields: [rosterMemberId], references: [id], onDelete: Cascade)
+
+    guardians   MinistryChildGuardian[]
+    attendances MinistryChildAttendance[]
+
+    @@unique([departmentId, rosterMemberId])
+    @@index([departmentId, isActive])
+}
+
+model MinistryChildGuardian {
+    id        String   @id @default(uuid())
+    createdAt DateTime @default(now())
+
+    childProfileId String
+    childProfile   MinistryChildProfile @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+
+    guardianRosterMemberId String
+    guardianRosterMember   RosterMember @relation("MinistryChildGuardianRosterMember", fields: [guardianRosterMemberId], references: [id], onDelete: Cascade)
+
+    @@unique([childProfileId, guardianRosterMemberId])
+    @@index([guardianRosterMemberId])
+}
+
+model MinistryChildSession {
+    id        String   @id @default(uuid())
+    date      DateTime
+    groupName String?
+    createdAt DateTime @default(now())
+
+    departmentId String
+    department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+    attendances MinistryChildAttendance[]
+
+    @@index([departmentId, date])
+}
+
+model MinistryChildAttendance {
+    id        String   @id @default(uuid())
+    status    String   @default("PENDING")
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    sessionId String
+    session   MinistryChildSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+    childProfileId String
+    childProfile   MinistryChildProfile @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+
+    @@unique([sessionId, childProfileId])
+    @@index([childProfileId])
+}
+
 model Schedule {
     id          String   @id @default(uuid())
     date        DateTime
     description String
     rehearsalAt DateTime?
     rehearsalNotes String?
+    isCommunionService Boolean @default(false)
     createdAt   DateTime @default(now())
 
     departmentId String
@@ -780,9 +850,34 @@ model Schedule {
 
     assignments ScheduleAssignment[]
     mediaItems  ScheduleMediaItem[]
+    checklistItems ScheduleChecklistItem[]
 
     serviceOccurrenceId String?
     serviceOccurrence   ServiceOccurrence? @relation(fields: [serviceOccurrenceId], references: [id], onDelete: SetNull)
+}
+
+model ScheduleChecklistItem {
+    id          String   @id @default(uuid())
+    title       String
+    dueAt       DateTime?
+    isComplete  Boolean  @default(false)
+    completedAt DateTime?
+    isApplicable Boolean @default(true)
+    templateKey String?
+    order       Int      @default(0)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    scheduleId String
+    schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+    assigneeId String?
+    assignee   User? @relation("ScheduleChecklistAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+    @@unique([scheduleId, templateKey])
+    @@index([scheduleId, order])
+    @@index([assigneeId])
+    @@index([dueAt])
 }
 
 model ScheduleMediaItem {

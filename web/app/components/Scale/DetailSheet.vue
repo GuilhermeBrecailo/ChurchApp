@@ -327,7 +327,7 @@
                       </v-list-item>
                       <v-list-item
                         v-for="volunteer in localEvent.volunteers"
-                        :key="volunteer.userId"
+                        :key="`${volunteer.userId}:${volunteer.role}`"
                         :active="volunteer.userId === song.startedByUserId"
                         @click="setSongLeader(song, volunteer.userId)"
                       >

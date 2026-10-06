@@ -59,6 +59,34 @@ export class DepartmentCore {
     });
   }
 
+  private async ensureLeaderMembership(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    departmentId: string,
+  ) {
+    const primaryElsewhere = await tx.userDepartmentMembership.findFirst({
+      where: {
+        userId,
+        departmentId: { not: departmentId },
+        isPrimary: true,
+      },
+      select: { id: true },
+    });
+
+    await tx.userDepartmentMembership.upsert({
+      where: {
+        userId_departmentId: { userId, departmentId },
+      },
+      update: {},
+      create: {
+        id: crypto.randomUUID(),
+        userId,
+        departmentId,
+        isPrimary: !primaryElsewhere,
+      },
+    });
+  }
+
   async createChurchDepartment(request: FastifyRequest) {
     const user = await this.context.getCurrentUser(request);
     const body = request.body as {
@@ -90,17 +118,26 @@ export class DepartmentCore {
       throw new DomainError("Líder não encontrado nesta igreja");
     }
 
-    const department = await $prismaClient.department.create({
-      data: {
-        id: crypto.randomUUID(),
-        name: body.name.trim(),
-        type: body.type || "OTHER",
-        modules: parseDepartmentModulesInput(body.modules, throwDomainError) ?? [...DEPARTMENT_MODULES],
-        leaderId: leader.id,
-        crunchId: user.crunchId!,
-        isActive: true,
-      },
-      select: departmentSelect,
+    const department = await $prismaClient.$transaction(async (tx) => {
+      const createdDepartment = await tx.department.create({
+        data: {
+          id: crypto.randomUUID(),
+          name: body.name!.trim(),
+          type: body.type || "OTHER",
+          modules: parseDepartmentModulesInput(body.modules, throwDomainError) ?? [...DEPARTMENT_MODULES],
+          leaderId: leader.id,
+          crunchId: user.crunchId!,
+          isActive: true,
+        },
+        select: departmentSelect,
+      });
+
+      await this.ensureLeaderMembership(tx, leader.id, createdDepartment.id);
+
+      return (await tx.department.findUnique({
+        where: { id: createdDepartment.id },
+        select: departmentSelect,
+      })) ?? createdDepartment;
     });
 
     return this.context.mapDepartment(department);
@@ -116,12 +153,25 @@ export class DepartmentCore {
 
     const department = await this.context.getDepartmentFromCurrentChurch(id, user.crunchId!);
     const capabilities = this.context.departmentCapabilities(user, department);
+    const membership = await $prismaClient.userDepartmentMembership.findUnique({
+      where: {
+        userId_departmentId: {
+          userId: user.id,
+          departmentId: id,
+        },
+      },
+      select: { id: true },
+    });
 
     return {
       ...department,
       modules: normalizeDepartmentModules(department.modules),
       canManageSchedule: capabilities.canManageSchedule,
       canManageSongs: capabilities.canManageSongs,
+      isMember:
+        this.context.isChurchWideManager(user) ||
+        department.leaderId === user.id ||
+        Boolean(membership),
     };
   }
 
@@ -191,13 +241,26 @@ export class DepartmentCore {
       };
     }
 
-    const department = await $prismaClient.department.update({
-      where: {
-        id,
-      },
-      data,
-      select: departmentSelect,
-    });
+    const department = body.leaderId !== undefined
+      ? await $prismaClient.$transaction(async (tx) => {
+          const updatedDepartment = await tx.department.update({
+            where: { id },
+            data,
+            select: departmentSelect,
+          });
+
+          await this.ensureLeaderMembership(tx, body.leaderId!, id);
+
+          return (await tx.department.findUnique({
+            where: { id },
+            select: departmentSelect,
+          })) ?? updatedDepartment;
+        })
+      : await $prismaClient.department.update({
+          where: { id },
+          data,
+          select: departmentSelect,
+        });
 
     return this.context.mapDepartment(department);
   }

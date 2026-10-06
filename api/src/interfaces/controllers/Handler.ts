@@ -13,6 +13,10 @@ export const controllerHandler = (controllerFn: ControllerFn) => {
     try {
       const result = await controllerFn(request, reply);
 
+      if (reply.sent) {
+        return result;
+      }
+
       return reply.code(200).send({ data: result, status: 200 });
     } catch (err) {
       if (err instanceof DomainError) {

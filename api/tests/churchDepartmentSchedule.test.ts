@@ -232,6 +232,28 @@ describe("ChurchDepartmentAdapters - escalas", () => {
         ),
       ).rejects.toThrow("Titulo da escala e obrigatorio");
     });
+
+    it("desvincula o culto quando a edicao recebe serviceOccurrenceId nulo", async () => {
+      mockPrismaClient.schedule.findFirst
+        .mockResolvedValueOnce(scheduleRow({ serviceOccurrenceId: "occ-1" }))
+        .mockResolvedValueOnce(scheduleRow({ serviceOccurrenceId: null }));
+      mockPrismaClient.schedule.update.mockResolvedValue(
+        scheduleRow({ serviceOccurrenceId: null }),
+      );
+
+      await adapters.updateChurchSchedule(
+        makeRequest({
+          params: { id: "schedule-1" },
+          body: { serviceOccurrenceId: null },
+        }),
+      );
+
+      expect(mockPrismaClient.schedule.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ serviceOccurrence: { disconnect: true } }),
+        }),
+      );
+    });
   });
 
   describe("sendChurchScheduleReminder", () => {
@@ -266,7 +288,20 @@ describe("ChurchDepartmentAdapters - escalas", () => {
   });
 
   describe("updateChurchScheduleAssignments", () => {
-    it("rejeita voluntario repetido", async () => {
+    const prepareAssignmentSave = (
+      previousAssignments: Record<string, unknown>[],
+      updatedAssignments: Record<string, unknown>[],
+    ) => {
+      mockPrismaClient.schedule.findFirst
+        .mockResolvedValueOnce(scheduleRow({ assignments: previousAssignments }))
+        .mockResolvedValueOnce(scheduleRow({ assignments: updatedAssignments }));
+      mockPrismaClient.user.findMany.mockResolvedValue([{ id: "vol-1" }]);
+      mockPrismaClient.scheduleAssignment.findMany.mockResolvedValue(previousAssignments);
+      mockPrismaClient.$transaction.mockResolvedValue(undefined);
+      mockSendToUsers.mockResolvedValue(undefined);
+    };
+
+    it("rejeita a mesma pessoa e função após normalizar espaços e caixa", async () => {
       mockPrismaClient.schedule.findFirst.mockResolvedValue(scheduleRow());
 
       await expect(
@@ -275,13 +310,156 @@ describe("ChurchDepartmentAdapters - escalas", () => {
             params: { id: "schedule-1" },
             body: {
               assignments: [
-                { userId: "vol-1", role: "Vocal" },
-                { userId: "vol-1", role: "Violao" },
+                { userId: "vol-1", role: "Teclado" },
+                { userId: "vol-1", role: " teclado " },
               ],
             },
           }),
         ),
-      ).rejects.toThrow("Não é possível repetir o mesmo voluntário na escala");
+      ).rejects.toThrow("Não é possível repetir a mesma função para a mesma pessoa nesta escala");
+    });
+
+    it("aceita a mesma pessoa em funções diferentes e envia uma notificação", async () => {
+      prepareAssignmentSave([], [
+        { id: "new-teclado", userId: "vol-1", role: "Teclado" },
+        { id: "new-vocal", userId: "vol-1", role: "Vocal" },
+      ]);
+
+      await adapters.updateChurchScheduleAssignments(
+        makeRequest({
+          params: { id: "schedule-1" },
+          body: {
+            assignments: [
+              { userId: "vol-1", role: "Teclado" },
+              { userId: "vol-1", role: "Vocal" },
+            ],
+          },
+        }),
+      );
+
+      expect(mockPrismaClient.scheduleAssignment.create).toHaveBeenCalledTimes(2);
+      expect(mockSendToUsers).toHaveBeenCalledTimes(1);
+      expect(mockSendToUsers).toHaveBeenCalledWith(
+        ["vol-1"],
+        expect.objectContaining({ body: expect.stringContaining("como Teclado") }),
+      );
+    });
+
+    it("remove uma função pela identidade da linha e mantém confirmação e presença da outra", async () => {
+      const confirmedAt = new Date("2026-08-01T18:00:00.000Z");
+      const attendedAt = new Date("2026-08-20T19:00:00.000Z");
+      const remainingAssignment = {
+        id: "assign-teclado",
+        userId: "vol-1",
+        role: "Teclado",
+        confirmationStatus: "CONFIRMED",
+        confirmedAt,
+        attendanceStatus: "PRESENT",
+        attendedAt,
+      };
+      prepareAssignmentSave(
+        [
+          remainingAssignment,
+          {
+            id: "assign-vocal",
+            userId: "vol-1",
+            role: "Vocal",
+            confirmationStatus: "PENDING",
+            attendanceStatus: "PENDING",
+          },
+        ],
+        [remainingAssignment],
+      );
+
+      const result = await adapters.updateChurchScheduleAssignments(
+        makeRequest({
+          params: { id: "schedule-1" },
+          body: { assignments: [{ id: "assign-teclado", userId: "vol-1", role: "Teclado" }] },
+        }),
+      );
+
+      expect(mockPrismaClient.scheduleAssignment.deleteMany).toHaveBeenCalledWith({
+        where: { scheduleId: "schedule-1", id: { notIn: ["assign-teclado"] } },
+      });
+      expect(mockPrismaClient.scheduleAssignment.update).toHaveBeenCalledWith({
+        where: { id: "assign-teclado" },
+        data: { role: "Teclado" },
+      });
+      expect(result.assignments[0]).toMatchObject({
+        id: "assign-teclado",
+        confirmationStatus: "CONFIRMED",
+        confirmedAt,
+        attendanceStatus: "PRESENT",
+        attendedAt,
+      });
+    });
+
+    it("rejeita ID de atribuição que não pertence à escala", async () => {
+      mockPrismaClient.schedule.findFirst.mockResolvedValue(scheduleRow());
+      mockPrismaClient.scheduleAssignment.findMany.mockResolvedValue([
+        { id: "assign-current", userId: "vol-1", role: "Teclado" },
+      ]);
+
+      await expect(
+        adapters.updateChurchScheduleAssignments(
+          makeRequest({
+            params: { id: "schedule-1" },
+            body: { assignments: [{ id: "assign-other-scale", userId: "vol-1", role: "Teclado" }] },
+          }),
+        ),
+      ).rejects.toThrow("Atribuição inválida para esta escala");
+    });
+
+    it("reaproveita linhas sem ID pela combinação normalizada de pessoa e função", async () => {
+      prepareAssignmentSave(
+        [
+          { id: "assign-teclado", userId: "vol-1", role: "Teclado" },
+          { id: "assign-vocal", userId: "vol-1", role: "Vocal" },
+        ],
+        [
+          { id: "assign-vocal", userId: "vol-1", role: "Vocal" },
+          { id: "assign-teclado", userId: "vol-1", role: "Teclado" },
+        ],
+      );
+
+      await adapters.updateChurchScheduleAssignments(
+        makeRequest({
+          params: { id: "schedule-1" },
+          body: {
+            assignments: [
+              { userId: "vol-1", role: " vocal " },
+              { userId: "vol-1", role: "TECLADO" },
+            ],
+          },
+        }),
+      );
+
+      expect(mockPrismaClient.scheduleAssignment.update).toHaveBeenCalledTimes(2);
+      expect(mockPrismaClient.scheduleAssignment.update).toHaveBeenNthCalledWith(1, {
+        where: { id: "assign-vocal" },
+        data: { role: "vocal" },
+      });
+      expect(mockPrismaClient.scheduleAssignment.update).toHaveBeenNthCalledWith(2, {
+        where: { id: "assign-teclado" },
+        data: { role: "TECLADO" },
+      });
+    });
+
+    it("permite a pessoa em escala de outro ministério na mesma data", async () => {
+      prepareAssignmentSave([], [{ id: "new-teclado", userId: "vol-1", role: "Teclado" }]);
+
+      await expect(
+        adapters.updateChurchScheduleAssignments(
+          makeRequest({
+            params: { id: "schedule-1" },
+            body: { assignments: [{ userId: "vol-1", role: "Teclado" }] },
+          }),
+        ),
+      ).resolves.toMatchObject({ id: "schedule-1" });
+
+      expect(mockPrismaClient.scheduleAssignment.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ userId: "vol-1" }) }),
+      );
     });
 
     it("rejeita voluntario que nao pertence a esta igreja", async () => {
@@ -306,8 +484,8 @@ describe("ChurchDepartmentAdapters - escalas", () => {
         );
       mockPrismaClient.user.findMany.mockResolvedValue([{ id: "vol-1" }, { id: "vol-2" }]);
       mockPrismaClient.scheduleAssignment.findMany.mockResolvedValue([
-        { id: "assign-old-1", userId: "vol-1" },
-        { id: "assign-old-2", userId: "vol-3" },
+        { id: "assign-old-1", userId: "vol-1", role: "Vocal" },
+        { id: "assign-old-2", userId: "vol-3", role: "Baixo" },
       ]);
       mockPrismaClient.$transaction.mockResolvedValue(undefined);
 

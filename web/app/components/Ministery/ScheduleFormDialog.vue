@@ -42,14 +42,29 @@
               {{ lockedCultLabel }}
             </p>
           </div>
+          <v-btn
+            icon
+            variant="text"
+            color="primary"
+            size="small"
+            aria-label="Remover culto vinculado à escala"
+            :disabled="isCreatingSchedule"
+            @click="$emit('clear-cult')"
+          >
+            <v-icon size="18">mdi-close</v-icon>
+          </v-btn>
         </div>
         <v-select
           v-else
-          v-model="scheduleForm.serviceTimeId"
-          label="Culto"
-          :items="serviceTimeOptions"
+          v-model="scheduleForm.cultOptionValue"
+          label="Culto (opcional)"
+          :items="cultOptions"
           item-title="label"
           item-value="value"
+          clearable
+          hint="Você pode criar a escala sem vinculá-la a um culto."
+          persistent-hint
+          @update:model-value="$emit('cult-change', $event)"
           prepend-inner-icon="mdi-church"
           variant="outlined"
           density="comfortable"
@@ -59,6 +74,26 @@
           hide-details="auto"
           :disabled="isCreatingSchedule"
         />
+        <v-alert v-if="cultOptionsError" type="warning" variant="tonal" density="compact" class="mb-4">
+          {{ cultOptionsError }}
+        </v-alert>
+
+        <v-switch
+          v-if="isDeaconateDepartment"
+          v-model="scheduleForm.isCommunionService"
+          label="Este culto terá Santa Ceia"
+          color="primary"
+          inset
+          hide-details
+          class="mb-4"
+          :disabled="isCreatingSchedule"
+        >
+          <template #details>
+            <span class="text-caption text-medium-emphasis">
+              Inclui automaticamente a preparação da Santa Ceia no checklist desta escala.
+            </span>
+          </template>
+        </v-switch>
 
         <div class="ministery-field-grid mb-4">
           <v-text-field
@@ -235,15 +270,19 @@ const props = defineProps<{
     date: string;
     time: string;
     serviceTimeId: string;
+    cultOptionValue: string;
     rehearsalDate: string;
     rehearsalTime: string;
     rehearsalNotes: string;
     songIds: string[];
     resourceIds: string[];
+    isCommunionService: boolean;
   };
+  isDeaconateDepartment: boolean;
   songOptions: { label: string; value: string }[];
   resourceOptions: { label: string; value: string }[];
-  serviceTimeOptions: { label: string; value: string }[];
+  cultOptions: { label: string; value: string; date: string; time: string; serviceTimeId: string; occurrenceId: string }[];
+  cultOptionsError: string;
   lockedCultLabel?: string;
   createScheduleError: string;
   isCreatingSchedule: boolean;
@@ -252,6 +291,8 @@ const props = defineProps<{
 defineEmits<{
   (event: "close"): void;
   (event: "submit"): void;
+  (event: "cult-change", value: string | null): void;
+  (event: "clear-cult"): void;
 }>();
 
 const isSongPickerOpen = ref(false);

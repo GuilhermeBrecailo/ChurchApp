@@ -4,7 +4,7 @@ const mockPrismaClient = {
   department: { findFirst: jest.fn() },
   schedule: { findMany: jest.fn() },
   mediaItem: { findMany: jest.fn() },
-  userDepartmentMembership: { findMany: jest.fn() },
+  userDepartmentMembership: { findMany: jest.fn(), findUnique: jest.fn() },
   userSongPreference: { findMany: jest.fn() },
 };
 
@@ -72,6 +72,7 @@ describe("ChurchDepartmentAdapters - leituras", () => {
     });
     mockPrismaClient.crunch.findUnique.mockResolvedValue({ id: "church-1" });
     mockPrismaClient.department.findFirst.mockResolvedValue(departmentRow);
+    mockPrismaClient.userDepartmentMembership.findUnique.mockResolvedValue(null);
   });
 
   it("getChurchDepartmentById devolve capacidades de gestao do pastor", async () => {

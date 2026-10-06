@@ -355,6 +355,7 @@ const departmentTypes = [
   { label: "Recepção", value: "RECEPTION" },
   { label: "Mídia", value: "MEDIA" },
   { label: "Intercessão", value: "INTERCESSION" },
+  { label: "Diaconato", value: "DEACONATE" },
   { label: "Outro", value: "OTHER" },
 ];
 const departmentTypeLabel = (value: string) =>

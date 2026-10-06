@@ -6,6 +6,10 @@ import { DomainError } from "../../../domain/value-objects/utils/DomainError";
 import { pushNotificationService } from "../../../infrastructure/notifications/PushNotificationService";
 import { CurrentUser } from "./types";
 import { DepartmentContext } from "./context";
+import {
+  COMMUNION_CHECKLIST_DEFAULT,
+  DEACONATE_CHECKLIST_DEFAULTS,
+} from "./scheduleChecklist";
 
 const scheduleSelect = {
   id: true,
@@ -13,6 +17,7 @@ const scheduleSelect = {
   description: true,
   rehearsalAt: true,
   rehearsalNotes: true,
+  isCommunionService: true,
   createdAt: true,
   departmentId: true,
   serviceOccurrenceId: true,
@@ -261,7 +266,8 @@ export class ScheduleAdapters {
       rehearsalDate?: string | null;
       rehearsalTime?: string | null;
       rehearsalNotes?: string | null;
-      serviceOccurrenceId?: string;
+      serviceOccurrenceId?: string | null;
+      isCommunionService?: boolean;
     };
 
     if (!body.title?.trim()) {
@@ -272,7 +278,7 @@ export class ScheduleAdapters {
       throw new DomainError("Data da escala é obrigatória");
     }
 
-    await this.context.assertDepartmentPermission(
+    const department = await this.context.assertDepartmentPermission(
       user,
       departmentId,
       "SCHEDULE_CREATE",
@@ -301,6 +307,21 @@ export class ScheduleAdapters {
 
     const { songIds, resourceIds, mediaItemIds } = this.getScheduleMediaItemIds(body);
 
+    const isDeaconateDepartment = department.type === "DEACONATE";
+    const isCommunionService = isDeaconateDepartment && body.isCommunionService === true;
+    const checklistDefaults = isDeaconateDepartment
+      ? [
+          ...DEACONATE_CHECKLIST_DEFAULTS,
+          ...(isCommunionService ? [COMMUNION_CHECKLIST_DEFAULT] : []),
+        ].map((item) => ({
+          id: crypto.randomUUID(),
+          ...item,
+          isComplete: false,
+          completedAt: null,
+          isApplicable: true,
+        }))
+      : [];
+
     await this.assertMediaItemsFromDepartment(songIds, departmentId, "MUSIC");
     await this.assertMediaItemsFromDepartment(resourceIds, departmentId, "RESOURCE");
 
@@ -313,6 +334,7 @@ export class ScheduleAdapters {
         serviceOccurrenceId,
         rehearsalAt: this.getOptionalDateTime(body.rehearsalDate, body.rehearsalTime),
         rehearsalNotes: body.rehearsalNotes?.trim() || null,
+        ...(isDeaconateDepartment ? { isCommunionService } : {}),
         mediaItems: {
           create: mediaItemIds.map((mediaItemId, index) => ({
             id: crypto.randomUUID(),
@@ -320,6 +342,9 @@ export class ScheduleAdapters {
             order: index,
           })),
         },
+        ...(checklistDefaults.length > 0
+          ? { checklistItems: { create: checklistDefaults } }
+          : {}),
       },
       select: scheduleSelect,
     });
@@ -341,7 +366,8 @@ export class ScheduleAdapters {
       rehearsalDate?: string | null;
       rehearsalTime?: string | null;
       rehearsalNotes?: string | null;
-      serviceOccurrenceId?: string;
+      serviceOccurrenceId?: string | null;
+      isCommunionService?: boolean;
     };
 
     if (!id) {
@@ -411,6 +437,15 @@ export class ScheduleAdapters {
       data.rehearsalNotes = body.rehearsalNotes?.trim() || null;
     }
 
+    if (body.isCommunionService !== undefined && typeof body.isCommunionService !== "boolean") {
+      throw new DomainError("Marcador de Santa Ceia inválido");
+    }
+
+    if (body.isCommunionService !== undefined && schedule.department.type === "DEACONATE") {
+      (data as Prisma.ScheduleUpdateInput & { isCommunionService?: boolean }).isCommunionService =
+        body.isCommunionService;
+    }
+
     if (body.serviceOccurrenceId !== undefined) {
       data.serviceOccurrence = body.serviceOccurrenceId
         ? { connect: { id: body.serviceOccurrenceId } }
@@ -462,6 +497,37 @@ export class ScheduleAdapters {
         },
         data,
       });
+    }
+
+    if (body.isCommunionService !== undefined && schedule.department.type === "DEACONATE") {
+      const checklistDb = $prismaClient as any;
+      if (body.isCommunionService) {
+        await checklistDb.scheduleChecklistItem.upsert({
+          where: {
+            scheduleId_templateKey: {
+              scheduleId: id,
+              templateKey: COMMUNION_CHECKLIST_DEFAULT.templateKey,
+            },
+          },
+          create: {
+            id: crypto.randomUUID(),
+            scheduleId: id,
+            ...COMMUNION_CHECKLIST_DEFAULT,
+            isComplete: false,
+            completedAt: null,
+            isApplicable: true,
+          },
+          update: { isApplicable: true },
+        });
+      } else {
+        await checklistDb.scheduleChecklistItem.updateMany({
+          where: {
+            scheduleId: id,
+            templateKey: COMMUNION_CHECKLIST_DEFAULT.templateKey,
+          },
+          data: { isApplicable: false },
+        });
+      }
     }
 
     const updatedSchedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
@@ -576,6 +642,7 @@ export class ScheduleAdapters {
     const { id } = request.params as { id?: string };
     const body = request.body as {
       assignments?: {
+        id?: string;
         userId?: string;
         role?: string;
       }[];
@@ -601,18 +668,29 @@ export class ScheduleAdapters {
 
     const normalizedAssignments = assignments
       .map((assignment) => ({
+        id: assignment.id?.trim() || undefined,
         userId: assignment.userId?.trim(),
         role: assignment.role?.trim() || "Voluntário",
       }))
-      .filter((assignment): assignment is { userId: string; role: string } =>
-        Boolean(assignment.userId),
+      .filter(
+        (
+          assignment,
+        ): assignment is { id: string | undefined; userId: string; role: string } =>
+          Boolean(assignment.userId),
       );
 
-    const uniqueUserIds = [...new Set(normalizedAssignments.map((item) => item.userId))];
+    const normalizeRole = (role: string) => role.trim().toLowerCase();
+    const assignmentKeys = normalizedAssignments.map((assignment) =>
+      JSON.stringify([assignment.userId, normalizeRole(assignment.role)]),
+    );
 
-    if (uniqueUserIds.length !== normalizedAssignments.length) {
-      throw new DomainError("Não é possível repetir o mesmo voluntário na escala");
+    if (new Set(assignmentKeys).size !== normalizedAssignments.length) {
+      throw new DomainError(
+        "Não é possível repetir a mesma função para a mesma pessoa nesta escala",
+      );
     }
+
+    const uniqueUserIds = [...new Set(normalizedAssignments.map((item) => item.userId))];
 
     if (uniqueUserIds.length > 0) {
       const users = await $prismaClient.user.findMany({
@@ -639,36 +717,76 @@ export class ScheduleAdapters {
       select: {
         id: true,
         userId: true,
+        role: true,
       },
     });
-    const previousAssignmentByUserId = new Map(
-      previousAssignments.map((assignment) => [assignment.userId, assignment]),
+
+    const previousAssignmentById = new Map(
+      previousAssignments.map((assignment) => [assignment.id, assignment]),
     );
+    const usedAssignmentIds = new Set<string>();
+
+    for (const assignment of normalizedAssignments) {
+      if (!assignment.id) continue;
+
+      const previousAssignment = previousAssignmentById.get(assignment.id);
+      if (!previousAssignment || previousAssignment.userId !== assignment.userId) {
+        throw new DomainError("Atribuição inválida para esta escala");
+      }
+      if (usedAssignmentIds.has(assignment.id)) {
+        throw new DomainError("A atribuição foi informada mais de uma vez");
+      }
+
+      usedAssignmentIds.add(assignment.id);
+    }
+
+    const previousAssignmentsByKey = new Map<string, typeof previousAssignments>();
+    for (const assignment of previousAssignments) {
+      const key = JSON.stringify([assignment.userId, normalizeRole(assignment.role)]);
+      const matchingAssignments = previousAssignmentsByKey.get(key) ?? [];
+      matchingAssignments.push(assignment);
+      previousAssignmentsByKey.set(key, matchingAssignments);
+    }
+
+    const assignmentsWithIds = normalizedAssignments.map((assignment) => {
+      if (assignment.id) return { ...assignment, assignmentId: assignment.id };
+
+      const key = JSON.stringify([assignment.userId, normalizeRole(assignment.role)]);
+      const previousAssignment = previousAssignmentsByKey
+        .get(key)
+        ?.find((candidate) => !usedAssignmentIds.has(candidate.id));
+
+      if (!previousAssignment) return { ...assignment, assignmentId: undefined };
+
+      usedAssignmentIds.add(previousAssignment.id);
+      return { ...assignment, assignmentId: previousAssignment.id };
+    });
+
     const previousUserIds = new Set(
       previousAssignments.map((assignment) => assignment.userId),
     );
+    const currentUserIds = [...new Set(normalizedAssignments.map((assignment) => assignment.userId))];
     const newlyAssignedUserIds = uniqueUserIds.filter(
       (userId) => !previousUserIds.has(userId),
     );
+    const retainedAssignmentIds = assignmentsWithIds
+      .map((assignment) => assignment.assignmentId)
+      .filter((assignmentId): assignmentId is string => Boolean(assignmentId));
 
     await $prismaClient.$transaction([
       $prismaClient.scheduleAssignment.deleteMany({
         where: {
           scheduleId: id,
-          userId: uniqueUserIds.length
-            ? {
-                notIn: uniqueUserIds,
-              }
-            : undefined,
+          ...(retainedAssignmentIds.length
+            ? { id: { notIn: retainedAssignmentIds } }
+            : {}),
         },
       }),
-      ...normalizedAssignments.map((assignment) => {
-        const previousAssignment = previousAssignmentByUserId.get(assignment.userId);
-
-        if (previousAssignment) {
+      ...assignmentsWithIds.map((assignment) => {
+        if (assignment.assignmentId) {
           return $prismaClient.scheduleAssignment.update({
             where: {
-              id: previousAssignment.id,
+              id: assignment.assignmentId,
             },
             data: {
               role: assignment.role,
@@ -693,12 +811,8 @@ export class ScheduleAdapters {
     // abaixo - o resto de quem ja estava e continua (nao entrou nem saiu)
     // precisa saber que o time da escala mudou, e quem foi removido precisa
     // saber que nao esta mais nela (senao so descobre chegando no dia).
-    const removedUserIds = [...previousUserIds].filter(
-      (userId) => !uniqueUserIds.includes(userId),
-    );
-    const unchangedUserIds = uniqueUserIds.filter(
-      (userId) => previousUserIds.has(userId) && !newlyAssignedUserIds.includes(userId),
-    );
+    const removedUserIds = [...previousUserIds].filter((userId) => !currentUserIds.includes(userId));
+    const unchangedUserIds = currentUserIds.filter((userId) => previousUserIds.has(userId));
 
     await Promise.all([
       ...newlyAssignedUserIds.map((userId) => {
@@ -734,6 +848,65 @@ export class ScheduleAdapters {
     ]);
 
     return updatedSchedule;
+  }
+
+  async getChurchScheduleAssignmentConflicts(request: FastifyRequest) {
+    const user = await this.context.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+    const body = request.body as { userIds?: unknown };
+    if (!id) throw new DomainError("Escala não informada");
+
+    const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    await this.context.assertDepartmentPermission(
+      user,
+      schedule.departmentId,
+      "SCHEDULE_EDIT",
+      "Apenas pastores, admins ou cargos com permissao podem editar escalas deste ministerio",
+    );
+
+    if (!Array.isArray(body.userIds)) throw new DomainError("Lista de pessoas inválida");
+    const userIds = [...new Set(
+      body.userIds
+        .filter((userId): userId is string => typeof userId === "string")
+        .map((userId) => userId.trim())
+        .filter(Boolean),
+    )].slice(0, 100);
+
+    if (userIds.length === 0 || !schedule.serviceOccurrenceId) return [];
+
+    const conflicts = await $prismaClient.scheduleAssignment.findMany({
+      where: {
+        userId: { in: userIds },
+        scheduleId: { not: id },
+        schedule: {
+          serviceOccurrenceId: schedule.serviceOccurrenceId,
+          departmentId: { not: schedule.departmentId },
+          department: { crunchId: user.crunchId! },
+        },
+      },
+      orderBy: [{ user: { name: "asc" } }, { schedule: { date: "asc" } }],
+      select: {
+        userId: true,
+        role: true,
+        user: { select: { id: true, name: true } },
+        schedule: {
+          select: {
+            id: true,
+            description: true,
+            department: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    return conflicts.map((conflict) => ({
+      userId: conflict.userId,
+      userName: conflict.user.name,
+      departmentName: conflict.schedule.department.name,
+      role: conflict.role,
+      scheduleId: conflict.schedule.id,
+      scheduleDescription: conflict.schedule.description,
+    }));
   }
 
   async updateMyChurchScheduleAssignment(request: FastifyRequest) {

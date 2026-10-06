@@ -12,6 +12,7 @@ const mockPrismaClient = {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
     create: jest.fn(),
+    upsert: jest.fn(),
     deleteMany: jest.fn(),
   },
   $transaction: jest.fn(),
@@ -127,18 +128,89 @@ describe("ChurchDepartmentAdapters - ministerio", () => {
   });
 
   describe("createChurchDepartment", () => {
-    it("cria ministerio quando o usuario e pastor", async () => {
+    it("cria ministerio e associa lider como membro principal na mesma transacao", async () => {
+      const tx = {
+        department: {
+          create: jest.fn().mockResolvedValue(departmentRow),
+          findUnique: jest.fn().mockResolvedValue(departmentRow),
+        },
+        userDepartmentMembership: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          upsert: jest.fn().mockResolvedValue({ id: "membership-leader" }),
+        },
+      };
+      mockPrismaClient.$transaction.mockImplementation(async (callback) => callback(tx));
+      mockPrismaClient.department.create.mockResolvedValue(departmentRow);
       mockPrismaClient.user.findUnique
         .mockResolvedValueOnce({ id: "user-1", crunchId: "church-1", role: "PASTOR" })
         .mockResolvedValueOnce({ id: "leader-1", crunchId: "church-1" });
-      mockPrismaClient.department.create.mockResolvedValue(departmentRow);
 
       const result = await adapters.createChurchDepartment(
         makeRequest({ body: { name: "Louvor", leaderId: "leader-1" } }),
       );
 
       expect(result.id).toBe("dept-1");
-      expect(mockPrismaClient.department.create).toHaveBeenCalled();
+      expect(mockPrismaClient.$transaction).toHaveBeenCalled();
+      expect(tx.department.create).toHaveBeenCalled();
+      expect(tx.userDepartmentMembership.upsert).toHaveBeenCalledWith({
+        where: { userId_departmentId: { userId: "leader-1", departmentId: "dept-1" } },
+        update: {},
+        create: expect.objectContaining({
+          userId: "leader-1",
+          departmentId: "dept-1",
+          isPrimary: true,
+        }),
+      });
+    });
+
+    it("associa lider como membro secundario se ja tiver outro ministerio principal", async () => {
+      const tx = {
+        department: {
+          create: jest.fn().mockResolvedValue(departmentRow),
+          findUnique: jest.fn().mockResolvedValue(departmentRow),
+        },
+        userDepartmentMembership: {
+          findFirst: jest.fn().mockResolvedValue({ id: "primary-elsewhere" }),
+          upsert: jest.fn().mockResolvedValue({ id: "membership-leader" }),
+        },
+      };
+      mockPrismaClient.$transaction.mockImplementation(async (callback) => callback(tx));
+      mockPrismaClient.department.create.mockResolvedValue(departmentRow);
+      mockPrismaClient.user.findUnique
+        .mockResolvedValueOnce({ id: "user-1", crunchId: "church-1", role: "PASTOR" })
+        .mockResolvedValueOnce({ id: "leader-1", crunchId: "church-1" });
+
+      await adapters.createChurchDepartment(
+        makeRequest({ body: { name: "Louvor", leaderId: "leader-1" } }),
+      );
+
+      expect(tx.userDepartmentMembership.upsert).toHaveBeenCalledWith(expect.objectContaining({
+        create: expect.objectContaining({ isPrimary: false }),
+      }));
+    });
+
+    it("aborta a criacao se nao conseguir persistir o vinculo do lider", async () => {
+      const tx = {
+        department: {
+          create: jest.fn().mockResolvedValue(departmentRow),
+          findUnique: jest.fn().mockResolvedValue(departmentRow),
+        },
+        userDepartmentMembership: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          upsert: jest.fn().mockRejectedValue(new Error("membership write failed")),
+        },
+      };
+      mockPrismaClient.$transaction.mockImplementation(async (callback) => callback(tx));
+      mockPrismaClient.department.create.mockResolvedValue(departmentRow);
+      mockPrismaClient.user.findUnique
+        .mockResolvedValueOnce({ id: "user-1", crunchId: "church-1", role: "PASTOR" })
+        .mockResolvedValueOnce({ id: "leader-1", crunchId: "church-1" });
+
+      await expect(
+        adapters.createChurchDepartment(
+          makeRequest({ body: { name: "Louvor", leaderId: "leader-1" } }),
+        ),
+      ).rejects.toThrow("membership write failed");
     });
 
     it("bloqueia membro comum de criar ministerio", async () => {
@@ -219,6 +291,43 @@ describe("ChurchDepartmentAdapters - ministerio", () => {
       );
 
       expect(result.name).toBe("Novo nome");
+    });
+
+    it("associa o novo lider sem remover o lider anterior e preserva membership existente", async () => {
+      const tx = {
+        department: {
+          update: jest.fn().mockResolvedValue({
+            ...departmentRow,
+            leaderId: "leader-2",
+            leader: { id: "leader-2", name: "Novo lider", email: "novo@igreja.com" },
+          }),
+          findUnique: jest.fn().mockResolvedValue({
+            ...departmentRow,
+            leaderId: "leader-2",
+            leader: { id: "leader-2", name: "Novo lider", email: "novo@igreja.com" },
+          }),
+        },
+        userDepartmentMembership: {
+          findFirst: jest.fn().mockResolvedValue({ id: "primary-elsewhere" }),
+          upsert: jest.fn().mockResolvedValue({ id: "existing-membership", isPrimary: false }),
+          deleteMany: jest.fn(),
+        },
+      };
+      mockPrismaClient.$transaction.mockImplementation(async (callback) => callback(tx));
+      mockPrismaClient.department.update.mockResolvedValue(departmentRow);
+      mockPrismaClient.user.findFirst.mockResolvedValue({ id: "leader-2", crunchId: "church-1" });
+
+      const result = await adapters.updateChurchDepartment(
+        makeRequest({ params: { id: "dept-1" }, body: { leaderId: "leader-2" } }),
+      );
+
+      expect(result.leaderId).toBe("leader-2");
+      expect(tx.userDepartmentMembership.upsert).toHaveBeenCalledWith({
+        where: { userId_departmentId: { userId: "leader-2", departmentId: "dept-1" } },
+        update: {},
+        create: expect.objectContaining({ isPrimary: false }),
+      });
+      expect(tx.userDepartmentMembership.deleteMany).not.toHaveBeenCalled();
     });
   });
 

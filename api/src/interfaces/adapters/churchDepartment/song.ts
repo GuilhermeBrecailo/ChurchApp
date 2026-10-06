@@ -59,7 +59,9 @@ export class SongAdapters {
     });
 
     if (existing) {
-      throw new DomainError("Ja existe uma musica com esse nome neste ministerio");
+      throw new DomainError(
+        `Já existe uma música com o nome "${title.trim()}" neste ministério.`,
+      );
     }
   }
 

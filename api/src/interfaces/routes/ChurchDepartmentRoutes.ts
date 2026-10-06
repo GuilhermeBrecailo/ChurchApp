@@ -46,6 +46,46 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
   );
 
   app.get(
+    "/api/church/departments/:id/children",
+    controllerHandler(adapters.getMinistryChildren.bind(adapters)),
+  );
+
+  app.post(
+    "/api/church/departments/:id/children",
+    controllerHandler(adapters.createMinistryChild.bind(adapters)),
+  );
+
+  app.patch(
+    "/api/church/departments/:departmentId/children/:childId",
+    controllerHandler(adapters.updateMinistryChild.bind(adapters)),
+  );
+
+  app.get(
+    "/api/church/departments/:id/children/sessions",
+    controllerHandler(adapters.getMinistryChildSessions.bind(adapters)),
+  );
+
+  app.post(
+    "/api/church/departments/:id/children/sessions",
+    controllerHandler(adapters.createMinistryChildSession.bind(adapters)),
+  );
+
+  app.patch(
+    "/api/church/departments/:departmentId/children/sessions/:sessionId/attendance/:childId",
+    controllerHandler(adapters.updateMinistryChildAttendance.bind(adapters)),
+  );
+
+  app.get(
+    "/api/church/departments/:id/children/materials",
+    controllerHandler(adapters.getMinistryChildMaterials.bind(adapters)),
+  );
+
+  app.get(
+    "/api/church/departments/:departmentId/children/materials/:resourceId/pdf",
+    controllerHandler(adapters.streamMinistryChildMaterialPdf.bind(adapters)),
+  );
+
+  app.get(
     "/api/church/departments/:id/tasks",
     controllerHandler(adapters.getChurchDepartmentTasks.bind(adapters)),
   );
@@ -90,6 +130,31 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
     controllerHandler(adapters.updateChurchSchedule.bind(adapters)),
   );
 
+  app.get(
+    "/api/church/schedules/:id/checklist",
+    controllerHandler(adapters.getChurchScheduleChecklist.bind(adapters)),
+  );
+
+  app.post(
+    "/api/church/schedules/:id/checklist",
+    controllerHandler(adapters.createChurchScheduleChecklistItem.bind(adapters)),
+  );
+
+  app.post(
+    "/api/church/schedules/:id/checklist/copy",
+    controllerHandler(adapters.copyChurchScheduleChecklistItems.bind(adapters)),
+  );
+
+  app.patch(
+    "/api/church/schedules/:id/checklist/:itemId",
+    controllerHandler(adapters.updateChurchScheduleChecklistItem.bind(adapters)),
+  );
+
+  app.delete(
+    "/api/church/schedules/:id/checklist/:itemId",
+    controllerHandler(adapters.deleteChurchScheduleChecklistItem.bind(adapters)),
+  );
+
   app.delete(
     "/api/church/schedules/:id",
     controllerHandler(adapters.deleteChurchSchedule.bind(adapters)),
@@ -98,6 +163,11 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
   app.patch(
     "/api/church/schedules/:id/assignments",
     controllerHandler(adapters.updateChurchScheduleAssignments.bind(adapters)),
+  );
+
+  app.post(
+    "/api/church/schedules/:id/assignment-conflicts",
+    controllerHandler(adapters.getChurchScheduleAssignmentConflicts.bind(adapters)),
   );
 
   app.post(

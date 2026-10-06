@@ -282,6 +282,46 @@ export class DepartmentContext {
     );
   }
 
+  async assertCanViewChildren(user: CurrentUser, departmentId: string) {
+    const department = await this.getDepartmentFromCurrentChurch(
+      departmentId,
+      user.crunchId!,
+    );
+
+    if (department.type !== "KIDS") {
+      throw new DomainError("Este recurso está disponível apenas no Ministério Infantil");
+    }
+
+    if (
+      this.isChurchWideManager(user) ||
+      department.leaderId === user.id ||
+      hasPermission(user, "MINISTRY_MANAGE", {
+        departmentId,
+        isDepartmentLeader: false,
+      })
+    ) {
+      return department;
+    }
+
+    const membership = await $prismaClient.userDepartmentMembership.findUnique({
+      where: {
+        userId_departmentId: {
+          userId: user.id,
+          departmentId,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!membership) {
+      throw new DomainError(
+        "Apenas a equipe do Ministério Infantil pode acessar crianças, responsáveis e chamadas",
+      );
+    }
+
+    return department;
+  }
+
   async assertCanSendScheduleNotifications(user: CurrentUser, departmentId: string) {
     return await this.assertDepartmentPermission(
       user,

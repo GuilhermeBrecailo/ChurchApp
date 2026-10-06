@@ -117,6 +117,9 @@
         :visible-schedules="visibleSchedules"
         :schedules-error="schedulesError"
         :can-manage-schedules="canManageSchedules"
+        :department-type="department.type"
+        :can-access-diaconate-checklist="canAccessDiaconateChecklist"
+        :members="members"
         :format-schedule-date="formatScheduleDate"
         @create="openScheduleCreateDialog"
         @open-media="openScheduleMediaItem"
@@ -161,10 +164,26 @@
       <MinisteryClassesTab
         v-if="activeTab === 'classes'"
         :activity-resources="activityResources"
-        :resources-error="resourcesError"
+        :resources-error="classesError"
         :can-manage-department="canManageDepartment"
+        :is-kids-department="department.type === 'KIDS'"
         @create="isActivityDialogOpen = true"
         @delete="handleDeleteResource"
+        @preview="openChildMaterialPreview"
+      />
+
+      <MinisteryChildrenTab
+        v-if="activeTab === 'children' && canAccessChildren"
+        :children="ministryChildren"
+        :sessions="ministryChildSessions"
+        :loading="isLoadingChildren"
+        :is-creating-session="isCreatingChildrenSession"
+        :error="childrenMinistryError"
+        :can-manage="canManageDepartment"
+        @create-child="openCreateChildDialog"
+        @edit-child="openEditChildDialog"
+        @create-session="createChildrenSession"
+        @open-attendance="openChildrenAttendance"
       />
     </template>
 
@@ -173,14 +192,18 @@
       :is-dark="isDark"
       :editing-schedule-id="editingScheduleId"
       :schedule-form="scheduleForm"
+      :is-deaconate-department="department.type === 'DEACONATE'"
       :song-options="songOptions"
       :resource-options="resourceOptions"
-      :service-time-options="serviceTimeOptions"
+      :cult-options="cultOptions"
+      :cult-options-error="cultOptionsError"
       :locked-cult-label="linkedCultLabel"
       :create-schedule-error="createScheduleError"
       :is-creating-schedule="isCreatingSchedule"
       @close="closeScheduleDialog"
       @submit="handleSaveSchedule"
+      @cult-change="handleScheduleCultChange"
+      @clear-cult="clearScheduleCult"
     />
 
     <MinisteryResourceFormDialog
@@ -269,6 +292,29 @@
       @submit="handleSaveActivity"
     />
 
+    <MinisteryChildFormDialog
+      v-model="isChildFormOpen"
+      :child="editingMinistryChild"
+      :saving="isSavingMinistryChild"
+      :error="childFormError"
+      @save="saveMinistryChild"
+    />
+
+    <MinisteryChildrenAttendanceDialog
+      v-model="isChildrenAttendanceDialogOpen"
+      :session="selectedMinistryChildSession"
+      :error="childrenAttendanceError"
+      :saving-child-id="savingAttendanceChildId"
+      :saving-status="savingAttendanceStatus"
+      @mark-attendance="markChildAttendance"
+    />
+
+    <MinisteryDepartmentPdfPreviewDialog
+      v-model="isChildPdfPreviewOpen"
+      :material="selectedChildMaterial"
+      :load-pdf="getChildMaterialPdf"
+    />
+
     <MinisteryAssignmentsDialog
       v-model="isAssignmentsDialogOpen"
       :is-dark="isDark"
@@ -280,6 +326,9 @@
       :draft-assignments="draftAssignments"
       :unavailable-member-ids="unavailableMemberIds"
       :assignments-error="assignmentsError"
+      :assignment-conflicts="assignmentConflicts"
+      :assignment-conflict-check-error="assignmentConflictCheckError"
+      :is-checking-assignment-conflicts="isCheckingAssignmentConflicts"
       :response-status-color="responseStatusColor"
       :response-status-label="responseStatusLabel"
       :attendance-status-label="attendanceStatusLabel"
@@ -315,10 +364,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import {
   AlertTriangle,
   ArrowLeft,
+  Baby,
   BarChart3,
   BookOpen,
   Calendar,
@@ -339,17 +389,36 @@ import {
   type DepartmentSong,
   type DepartmentTask,
   type PdfSongSuggestion,
+  type ScheduleAssignmentConflict,
 } from "../../../composables/useDepartments";
+import {
+  useChildrenMinistry,
+  type CreateMinistryChildPayload,
+  type CreateMinistryChildSessionPayload,
+  type MinistryChildAttendanceAnswer,
+  type MinistryChildMaterial,
+  type MinistryChildProfile,
+  type MinistryChildSession,
+  type UpdateMinistryChildPayload,
+} from "../../../composables/useChildrenMinistry";
 import { useAuth } from "../../../composables/useAuth";
 import { useMembers, type ChurchMember } from "../../../composables/useMembers";
 import { useChurchRoles, type ChurchRole, type MemberRole } from "../../../composables/useChurchRoles";
 import { usePermissions } from "../../../composables/usePermissions";
-import { useServiceTimes } from "../../../composables/useServiceTimes";
 import {
   useServiceOccurrences,
   type ServiceOccurrenceDetail,
+  type UpcomingOccurrence,
 } from "../../../composables/useServiceOccurrences";
 import { compareListText } from "../../utils/listOrdering";
+import { duplicateSongTitleMessage } from "../../utils/songMessages";
+import {
+  getScheduleAssignmentKey,
+  getScheduleCultOptions,
+  getScheduleCultResolution,
+  getDepartmentAssignmentRoleOptions,
+  type ScheduleCultOption,
+} from "../../utils/scaleSchedule";
 
 const route = useRoute();
 const router = useRouter();
@@ -382,28 +451,45 @@ const {
   getSongPreference,
   updateSongPreference,
   updateScheduleAssignments,
+  getScheduleAssignmentConflicts,
   sendScheduleReminder,
   updateScheduleAssignmentAttendance,
   addDepartmentMember,
   removeDepartmentMember,
 } = useDepartments();
 const { getMembers } = useMembers();
+const {
+  getChildren: getMinistryChildren,
+  createChild: createMinistryChild,
+  updateChild: updateMinistryChild,
+  getSessions: getMinistryChildSessions,
+  createSession: createMinistryChildSession,
+  updateAttendance: updateMinistryChildAttendance,
+  getMaterials: getMinistryChildMaterials,
+  getMaterialPdf: getChildMaterialPdf,
+} = useChildrenMinistry();
 const { getRoles, addMemberRole, removeMemberRole } = useChurchRoles();
-const { serviceTimes, loadServiceTimes } = useServiceTimes();
-const { resolveOccurrence, getOccurrence } = useServiceOccurrences();
+const { resolveOccurrence, getOccurrence, listOccurrences } = useServiceOccurrences();
+const upcomingOccurrences = ref<UpcomingOccurrence[]>([]);
+const cultOptionsError = ref("");
+const cultOptions = computed(() => getScheduleCultOptions(upcomingOccurrences.value));
+
+const loadCultOptions = async () => {
+  const { data, error } = await listOccurrences(180);
+
+  if (error || !data) {
+    upcomingOccurrences.value = [];
+    cultOptionsError.value = "Não foi possível carregar os cultos. Você ainda pode criar a escala sem vínculo.";
+    return;
+  }
+
+  upcomingOccurrences.value = data.upcoming ?? [];
+  cultOptionsError.value = "";
+};
 
 onMounted(() => {
-  if (!serviceTimes.value.length) loadServiceTimes();
+  void loadCultOptions();
 });
-
-const serviceTimeOptions = computed(() =>
-  serviceTimes.value
-    .filter((serviceTime) => serviceTime.isActive)
-    .map((serviceTime) => ({
-      label: `${serviceTime.label} · ${serviceTime.time}`,
-      value: serviceTime.id,
-    })),
-);
 
 // Cargos de ministerio deste departamento, para o lider delegar aos membros.
 const churchRolesList = ref<ChurchRole[]>([]);
@@ -482,11 +568,18 @@ const department = ref<ChurchDepartment | null>(null);
 const tasks = ref<DepartmentTask[]>([]);
 const schedules = ref<DepartmentSchedule[]>([]);
 const linkedCult = ref<ServiceOccurrenceDetail | null>(null);
+const linkedCultId = ref("");
+const linkedCultDate = ref("");
+const linkedCultTime = ref("");
+const isPrefillingSchedule = ref(false);
 const showAllSchedules = ref(false);
 const visibleSchedules = computed(() =>
   showAllSchedules.value ? schedules.value : schedules.value.slice(0, 1),
 );
 const resources = ref<DepartmentResource[]>([]);
+const ministryChildren = ref<MinistryChildProfile[]>([]);
+const ministryChildSessions = ref<MinistryChildSession[]>([]);
+const childMaterials = ref<MinistryChildMaterial[]>([]);
 const songs = ref<DepartmentSong[]>([]);
 const members = ref<ChurchMember[]>([]);
 const departmentMembers = ref<DepartmentMember[]>([]);
@@ -494,6 +587,10 @@ const departmentError = ref("");
 const tasksError = ref("");
 const schedulesError = ref("");
 const resourcesError = ref("");
+const childrenMinistryError = ref("");
+const childrenMaterialsError = ref("");
+const childrenAttendanceError = ref("");
+const childFormError = ref("");
 const songsError = ref("");
 const createTaskError = ref("");
 const createScheduleError = ref("");
@@ -502,6 +599,11 @@ const createSongError = ref("");
 const createActivityError = ref("");
 const songPreferenceError = ref("");
 const assignmentsError = ref("");
+const assignmentConflicts = ref<ScheduleAssignmentConflict[]>([]);
+const assignmentConflictCheckError = ref("");
+const isCheckingAssignmentConflicts = ref(false);
+const assignmentConflictRequestVersion = ref(0);
+const checkedAssignmentConflictKey = ref("");
 const leaderError = ref("");
 const leaderMessage = ref("");
 const addMemberError = ref("");
@@ -521,6 +623,9 @@ const pdfImportError = ref("");
 const isExtractingPdfSongs = ref(false);
 const isConfirmingPdfImport = ref(false);
 const isActivityDialogOpen = ref(false);
+const isChildFormOpen = ref(false);
+const isChildrenAttendanceDialogOpen = ref(false);
+const isChildPdfPreviewOpen = ref(false);
 const isSongViewerOpen = ref(false);
 const isAssignmentsDialogOpen = ref(false);
 const isCreatingTask = ref(false);
@@ -532,6 +637,11 @@ const isCreatingMix = ref(false);
 const createMixError = ref("");
 const isImportingCifraClubSong = ref(false);
 const isCreatingActivity = ref(false);
+const isLoadingChildren = ref(false);
+const isSavingMinistryChild = ref(false);
+const isCreatingChildrenSession = ref(false);
+const savingAttendanceChildId = ref("");
+const savingAttendanceStatus = ref<MinistryChildAttendanceAnswer | "">("");
 const isLoadingSongPreference = ref(false);
 const isSavingSongPreference = ref(false);
 const isSavingAssignments = ref(false);
@@ -543,6 +653,9 @@ const editingScheduleId = ref("");
 const editingResourceId = ref("");
 const editingSongId = ref("");
 const selectedSong = ref<DepartmentSong | null>(null);
+const editingMinistryChild = ref<MinistryChildProfile | null>(null);
+const selectedMinistryChildSessionId = ref("");
+const selectedChildMaterialId = ref("");
 const songViewerTab = ref<"lyrics" | "chords">("lyrics");
 const lastPersonalKey = ref("");
 const lastSongFormKey = ref("");
@@ -583,6 +696,10 @@ const canManageSchedules = computed(
   () =>
     isChurchWideManager.value || department.value?.canManageSchedule === true,
 );
+const canAccessDiaconateChecklist = computed(
+  () => department.value?.type === "DEACONATE" &&
+    (department.value.isMember === true || canManageSchedules.value),
+);
 const canManageSongs = computed(
   () => isChurchWideManager.value || department.value?.canManageSongs === true,
 );
@@ -605,15 +722,17 @@ const scheduleForm = reactive({
   date: "",
   time: "",
   serviceTimeId: "",
+  cultOptionValue: "",
   rehearsalDate: "",
   rehearsalTime: "",
   rehearsalNotes: "",
   songIds: [] as string[],
   resourceIds: [] as string[],
+  isCommunionService: false,
 });
 
 const linkedCultLabel = computed(() => {
-  if (!linkedCult.value) return "";
+  if (!linkedCult.value) return linkedCultId.value ? "Culto vinculado a esta escala" : "";
   const title = linkedCult.value.title || linkedCult.value.serviceTime?.label || "Culto";
   const time = linkedCult.value.time || linkedCult.value.serviceTime?.time;
   const date = new Intl.DateTimeFormat("pt-BR", {
@@ -623,6 +742,59 @@ const linkedCultLabel = computed(() => {
 
   return [title, date, time].filter(Boolean).join(" · ");
 });
+
+const selectedCultOption = computed<ScheduleCultOption | null>(
+  () => cultOptions.value.find((option) => option.value === scheduleForm.cultOptionValue) ?? null,
+);
+const canAccessChildren = computed(
+  () =>
+    department.value?.type === "KIDS" &&
+    (department.value.isMember === true || canManageDepartment.value),
+);
+
+const clearScheduleCult = () => {
+  scheduleForm.cultOptionValue = "";
+  scheduleForm.serviceTimeId = "";
+  linkedCult.value = null;
+  linkedCultId.value = "";
+  linkedCultDate.value = "";
+  linkedCultTime.value = "";
+};
+
+const handleScheduleCultChange = async (value: string | null) => {
+  clearScheduleCult();
+
+  const option = cultOptions.value.find((item) => item.value === (value ?? ""));
+  if (!option) return;
+
+  scheduleForm.cultOptionValue = option.value;
+  scheduleForm.date = option.date;
+  scheduleForm.time = option.time;
+  scheduleForm.serviceTimeId = option.serviceTimeId;
+
+  if (!option.occurrenceId) return;
+
+  linkedCultId.value = option.occurrenceId;
+  linkedCultDate.value = option.date;
+  linkedCultTime.value = option.time;
+  const { data } = await getOccurrence(option.occurrenceId);
+  if (data && linkedCultId.value === option.occurrenceId) linkedCult.value = data;
+};
+
+watch(
+  () => [scheduleForm.date, scheduleForm.time] as const,
+  ([date, time]) => {
+    if (isPrefillingSchedule.value) return;
+
+    const option = selectedCultOption.value;
+    const selectedOptionChanged = Boolean(option && (option.date !== date || option.time !== time));
+    const linkedCultChanged = Boolean(
+      linkedCultId.value && (linkedCultDate.value !== date || linkedCultTime.value !== time),
+    );
+
+    if (selectedOptionChanged || linkedCultChanged) clearScheduleCult();
+  },
+);
 
 const resourceForm = reactive({
   title: "",
@@ -679,6 +851,7 @@ const assignmentForm = reactive({
 
 const draftAssignments = ref<
   {
+    draftId: string;
     assignmentId?: string;
     userId: string;
     name: string;
@@ -696,6 +869,7 @@ const departmentTypes = [
   { label: "Recepção", value: "RECEPTION" },
   { label: "Sonoplastia", value: "MEDIA" },
   { label: "Intercessão", value: "INTERCESSION" },
+  { label: "Diaconato", value: "DEACONATE" },
   { label: "Outro", value: "OTHER" },
 ];
 
@@ -706,30 +880,6 @@ const priorityOptions = [
 ];
 
 const songCategoryOptions = ["Louvor", "Adoração", "Hino", "Especial"];
-const departmentRoleOptions: Record<string, string[]> = {
-  WORSHIP: [
-    "Ministro",
-    "Cantor(a)",
-    "Guitarra",
-    "Baixo",
-    "Violão",
-    "Bateria",
-    "Cajon",
-    "Teclado",
-  ],
-  MUSIC: [
-    "Ministro",
-    "Cantor(a)",
-    "Guitarra",
-    "Baixo",
-    "Violão",
-    "Bateria",
-    "Cajon",
-    "Teclado",
-  ],
-  MEDIA: ["Mídia", "Mesa de som", "Luzes"],
-};
-
 // Ministerio antigo (modules vazio) mantem tudo ligado - a migracao nao fez
 // backfill de proposito.
 const departmentModules = computed(
@@ -763,6 +913,10 @@ const tabs = computed(() => {
 
   if (hasModule("CLASSES")) {
     items.push({ label: "Aulas", value: "classes", icon: BookOpen });
+  }
+
+  if (canAccessChildren.value) {
+    items.push({ label: "Crianças", value: "children", icon: Baby });
   }
 
   return items;
@@ -835,18 +989,84 @@ const resourceOptions = computed(() =>
 );
 
 const assignmentRoleOptions = computed(
-  () => departmentRoleOptions[department.value?.type || ""] || ["Voluntário"],
+  () => getDepartmentAssignmentRoleOptions(department.value?.type),
 );
 
-const activityResources = computed(() =>
-  resources.value
+const activityResources = computed<DepartmentResource[]>(() => {
+  if (department.value?.type === "KIDS") {
+    return childMaterials.value.map((material) => ({
+      id: material.id,
+      title: material.title,
+      url: "",
+      category: "ACTIVITY",
+      metadata: material.notes ? { notes: material.notes } : null,
+      departmentId: department.value!.id,
+    }));
+  }
+
+  return resources.value
     .filter((resource) => resource.category === "ACTIVITY")
-    .sort((first, second) => compareListText(first.title, second.title)),
+    .sort((first, second) => compareListText(first.title, second.title));
+});
+
+const classesError = computed(() =>
+  department.value?.type === "KIDS" ? childrenMaterialsError.value : resourcesError.value,
+);
+
+const selectedMinistryChildSession = computed(
+  () => ministryChildSessions.value.find(
+    (session) => session.id === selectedMinistryChildSessionId.value,
+  ) ?? null,
+);
+
+const selectedChildMaterial = computed(
+  () => childMaterials.value.find((material) => material.id === selectedChildMaterialId.value) ?? null,
 );
 
 const selectedSchedule = computed(() =>
   schedules.value.find((schedule) => schedule.id === selectedScheduleId.value),
 );
+const assignmentConflictKey = computed(() => {
+  const userIds = [...new Set(draftAssignments.value.map((item) => item.userId))].sort();
+  return selectedScheduleId.value ? `${selectedScheduleId.value}:${userIds.join(",")}` : "";
+});
+
+const loadAssignmentConflicts = async () => {
+  const scheduleId = selectedScheduleId.value;
+  const userIds = [...new Set(draftAssignments.value.map((item) => item.userId))].sort();
+  const requestKey = assignmentConflictKey.value;
+  const requestVersion = ++assignmentConflictRequestVersion.value;
+
+  assignmentConflicts.value = [];
+  assignmentConflictCheckError.value = "";
+  if (!scheduleId || !userIds.length || !selectedSchedule.value?.serviceOccurrenceId) {
+    checkedAssignmentConflictKey.value = requestKey;
+    isCheckingAssignmentConflicts.value = false;
+    return;
+  }
+
+  isCheckingAssignmentConflicts.value = true;
+  try {
+    const { data, error } = await getScheduleAssignmentConflicts(scheduleId, userIds);
+    if (requestVersion !== assignmentConflictRequestVersion.value) return;
+    checkedAssignmentConflictKey.value = requestKey;
+    assignmentConflictCheckError.value = error || "";
+    assignmentConflicts.value = data || [];
+  } catch {
+    if (requestVersion !== assignmentConflictRequestVersion.value) return;
+    checkedAssignmentConflictKey.value = requestKey;
+    assignmentConflictCheckError.value = "Falha temporária na verificação.";
+  } finally {
+    if (requestVersion === assignmentConflictRequestVersion.value) {
+      isCheckingAssignmentConflicts.value = false;
+    }
+  }
+};
+
+watch(assignmentConflictKey, () => {
+  checkedAssignmentConflictKey.value = "";
+  void loadAssignmentConflicts();
+});
 
 const unavailableMemberIds = computed(() => {
   if (!selectedSchedule.value?.date) return new Set<string>();
@@ -1159,12 +1379,17 @@ const loadLinkedCultScheduleDraft = async () => {
     return;
   }
 
-  linkedCult.value = data;
   resetScheduleForm();
+  isPrefillingSchedule.value = true;
+  linkedCult.value = data;
+  linkedCultId.value = data.id;
   scheduleForm.title = `Escala - ${data.title || data.serviceTime?.label || "Culto"}`;
   scheduleForm.date = data.date.slice(0, 10);
   scheduleForm.time = data.time || data.serviceTime?.time || "";
   scheduleForm.serviceTimeId = data.serviceTimeId ?? "";
+  linkedCultDate.value = scheduleForm.date;
+  linkedCultTime.value = scheduleForm.time;
+  isPrefillingSchedule.value = false;
   createScheduleError.value = "";
   isScheduleDialogOpen.value = true;
 };
@@ -1180,6 +1405,49 @@ const loadResources = async () => {
   }
 
   resources.value = data ?? [];
+};
+
+const loadChildrenMinistry = async () => {
+  if (!canAccessChildren.value) return;
+  isLoadingChildren.value = true;
+  childrenMinistryError.value = "";
+  childrenMaterialsError.value = "";
+
+  try {
+    const [childrenResponse, sessionsResponse, materialsResponse] = await Promise.all([
+      getMinistryChildren(departmentId),
+      getMinistryChildSessions(departmentId),
+      getMinistryChildMaterials(departmentId),
+    ]);
+
+    if (childrenResponse.error || sessionsResponse.error) {
+      childrenMinistryError.value =
+        childrenResponse.error || sessionsResponse.error || "Não foi possível carregar crianças e chamadas.";
+    }
+    ministryChildren.value = childrenResponse.data ?? [];
+    ministryChildSessions.value = sessionsResponse.data ?? [];
+    if (!selectedMinistryChildSessionId.value && ministryChildSessions.value.length) {
+      selectedMinistryChildSessionId.value = ministryChildSessions.value[0].id;
+    }
+
+    if (materialsResponse.error) {
+      childrenMaterialsError.value = materialsResponse.error;
+    }
+    childMaterials.value = materialsResponse.data ?? [];
+  } finally {
+    isLoadingChildren.value = false;
+  }
+};
+
+const loadChildMaterials = async () => {
+  if (!canAccessChildren.value) return;
+  childrenMaterialsError.value = "";
+  const { data, error } = await getMinistryChildMaterials(departmentId);
+  if (error) {
+    childrenMaterialsError.value = error;
+    return;
+  }
+  childMaterials.value = data ?? [];
 };
 
 const loadSongs = async () => {
@@ -1314,12 +1582,18 @@ const resetScheduleForm = () => {
   scheduleForm.date = "";
   scheduleForm.time = "";
   scheduleForm.serviceTimeId = "";
+  scheduleForm.cultOptionValue = "";
   scheduleForm.rehearsalDate = "";
   scheduleForm.rehearsalTime = "";
   scheduleForm.rehearsalNotes = "";
   scheduleForm.songIds = [];
   scheduleForm.resourceIds = [];
+  scheduleForm.isCommunionService = false;
   editingScheduleId.value = "";
+  linkedCult.value = null;
+  linkedCultId.value = "";
+  linkedCultDate.value = "";
+  linkedCultTime.value = "";
 };
 
 const clearLinkedCultQuery = () => {
@@ -1334,12 +1608,10 @@ const closeScheduleDialog = () => {
   isScheduleDialogOpen.value = false;
   createScheduleError.value = "";
   resetScheduleForm();
-  linkedCult.value = null;
   clearLinkedCultQuery();
 };
 
 const openScheduleCreateDialog = () => {
-  linkedCult.value = null;
   clearLinkedCultQuery();
   resetScheduleForm();
   createScheduleError.value = "";
@@ -1620,13 +1892,25 @@ const toTimeInputValue = (value: string) => {
 };
 
 const openScheduleEditDialog = async (schedule: DepartmentSchedule) => {
+  isPrefillingSchedule.value = true;
   linkedCult.value = null;
+  linkedCultId.value = schedule.serviceOccurrenceId ?? "";
   createScheduleError.value = "";
   editingScheduleId.value = schedule.id;
   scheduleForm.title = schedule.description;
   scheduleForm.date = toDateInputValue(schedule.date);
   scheduleForm.time = toTimeInputValue(schedule.date);
   scheduleForm.serviceTimeId = schedule.serviceOccurrence?.serviceTimeId ?? "";
+  linkedCultDate.value = linkedCultId.value ? scheduleForm.date : "";
+  linkedCultTime.value = linkedCultId.value ? scheduleForm.time : "";
+  const matchingCultOption = linkedCultId.value
+    ? cultOptions.value.find(
+        (option) =>
+          option.occurrenceId === linkedCultId.value ||
+          (option.serviceTimeId === scheduleForm.serviceTimeId && option.date === scheduleForm.date),
+      )
+    : undefined;
+  scheduleForm.cultOptionValue = matchingCultOption?.value ?? "";
   scheduleForm.rehearsalDate = schedule.rehearsalAt
     ? toDateInputValue(schedule.rehearsalAt)
     : "";
@@ -1634,6 +1918,7 @@ const openScheduleEditDialog = async (schedule: DepartmentSchedule) => {
     ? toTimeInputValue(schedule.rehearsalAt)
     : "";
   scheduleForm.rehearsalNotes = schedule.rehearsalNotes || "";
+  scheduleForm.isCommunionService = schedule.isCommunionService === true;
   scheduleForm.songIds =
     schedule.mediaItems
       ?.filter((item) => item.mediaItem.category === "MUSIC")
@@ -1643,18 +1928,128 @@ const openScheduleEditDialog = async (schedule: DepartmentSchedule) => {
       ?.filter((item) => item.mediaItem.category !== "MUSIC")
       .map((item) => item.mediaItemId) || [];
 
-  if (schedule.serviceOccurrenceId && !schedule.serviceOccurrence?.serviceTimeId) {
+  if (schedule.serviceOccurrenceId) {
     const { data, error } = await getOccurrence(schedule.serviceOccurrenceId);
 
     if (data) {
       linkedCult.value = data;
+      scheduleForm.serviceTimeId = data.serviceTimeId ?? "";
     } else {
       createScheduleError.value =
         error || "Não foi possível carregar o culto vinculado a esta escala.";
     }
   }
 
+  isPrefillingSchedule.value = false;
   isScheduleDialogOpen.value = true;
+};
+
+const openCreateChildDialog = () => {
+  editingMinistryChild.value = null;
+  childFormError.value = "";
+  isChildFormOpen.value = true;
+};
+
+const openEditChildDialog = (child: MinistryChildProfile) => {
+  editingMinistryChild.value = child;
+  childFormError.value = "";
+  isChildFormOpen.value = true;
+};
+
+const saveMinistryChild = async (
+  payload: CreateMinistryChildPayload | UpdateMinistryChildPayload,
+) => {
+  if (!canManageDepartment.value) return;
+  childFormError.value = "";
+  isSavingMinistryChild.value = true;
+  try {
+    const response = editingMinistryChild.value
+      ? await updateMinistryChild(
+          departmentId,
+          editingMinistryChild.value.id,
+          payload as UpdateMinistryChildPayload,
+        )
+      : await createMinistryChild(departmentId, payload as CreateMinistryChildPayload);
+
+    if (response.error || !response.data) {
+      childFormError.value = response.error || "Não foi possível salvar o cadastro.";
+      return;
+    }
+
+    isChildFormOpen.value = false;
+    editingMinistryChild.value = null;
+    await loadChildrenMinistry();
+  } finally {
+    isSavingMinistryChild.value = false;
+  }
+};
+
+const createChildrenSession = async (payload: CreateMinistryChildSessionPayload) => {
+  if (!canManageDepartment.value) return;
+  childrenMinistryError.value = "";
+  isCreatingChildrenSession.value = true;
+  try {
+    const { data, error } = await createMinistryChildSession(departmentId, payload);
+    if (error || !data) {
+      childrenMinistryError.value = error || "Não foi possível abrir a chamada.";
+      return;
+    }
+    ministryChildSessions.value = [data, ...ministryChildSessions.value];
+    selectedMinistryChildSessionId.value = data.id;
+    childrenAttendanceError.value = "";
+    isChildrenAttendanceDialogOpen.value = true;
+  } finally {
+    isCreatingChildrenSession.value = false;
+  }
+};
+
+const openChildrenAttendance = (session: MinistryChildSession) => {
+  selectedMinistryChildSessionId.value = session.id;
+  childrenAttendanceError.value = "";
+  isChildrenAttendanceDialogOpen.value = true;
+};
+
+const markChildAttendance = async (
+  childId: string,
+  status: MinistryChildAttendanceAnswer,
+) => {
+  const sessionId = selectedMinistryChildSessionId.value;
+  if (!sessionId || !canAccessChildren.value) return;
+  childrenAttendanceError.value = "";
+  savingAttendanceChildId.value = childId;
+  savingAttendanceStatus.value = status;
+  try {
+    const { data, error } = await updateMinistryChildAttendance(
+      departmentId,
+      sessionId,
+      childId,
+      status,
+    );
+    if (error || !data) {
+      childrenAttendanceError.value = error || "Não foi possível atualizar a chamada.";
+      return;
+    }
+    ministryChildSessions.value = ministryChildSessions.value.map((session) =>
+      session.id !== sessionId
+        ? session
+        : {
+            ...session,
+            attendances: session.attendances.map((attendance) =>
+              attendance.childProfile.id === childId
+                ? { ...attendance, id: data.id, status: data.status }
+                : attendance,
+            ),
+          },
+    );
+  } finally {
+    savingAttendanceChildId.value = "";
+    savingAttendanceStatus.value = "";
+  }
+};
+
+const openChildMaterialPreview = (resourceId: string) => {
+  selectedChildMaterialId.value = resourceId;
+  isChildPdfPreviewOpen.value = true;
 };
 
 const handleSaveSchedule = async () => {
@@ -1671,48 +2066,49 @@ const handleSaveSchedule = async () => {
     return;
   }
 
-  if (!linkedCult.value && !scheduleForm.serviceTimeId) {
-    createScheduleError.value = "Escolha o culto da escala.";
-    return;
-  }
-
   isCreatingSchedule.value = true;
 
   try {
-    const occurrenceResult = linkedCult.value
-      ? { data: linkedCult.value, error: null }
-      : await resolveOccurrence(scheduleForm.serviceTimeId, scheduleForm.date);
+    let serviceOccurrenceId = linkedCultId.value || undefined;
+    const cultResolution = getScheduleCultResolution(selectedCultOption.value, scheduleForm.date);
 
-    const { data: occurrence, error: occurrenceError } = occurrenceResult;
+    if (!serviceOccurrenceId && cultResolution.kind === "existing") {
+      serviceOccurrenceId = cultResolution.occurrenceId;
+    } else if (!serviceOccurrenceId && cultResolution.kind === "resolve") {
+      const { data: occurrence, error: occurrenceError } = await resolveOccurrence(
+        cultResolution.serviceTimeId,
+        cultResolution.date,
+      );
 
-    if (occurrenceError || !occurrence) {
-      createScheduleError.value = occurrenceError || "Não foi possível vincular o culto.";
-      isCreatingSchedule.value = false;
-      return;
+      if (occurrenceError || !occurrence) {
+        createScheduleError.value = occurrenceError || "Não foi possível vincular o culto.";
+        return;
+      }
+
+      serviceOccurrenceId = occurrence.id;
     }
 
+    const schedulePayload = {
+      title,
+      date: scheduleForm.date,
+      time: scheduleForm.time || undefined,
+      rehearsalDate: scheduleForm.rehearsalDate || null,
+      rehearsalTime: scheduleForm.rehearsalTime || null,
+      rehearsalNotes: scheduleForm.rehearsalNotes || null,
+      songIds: scheduleForm.songIds,
+      resourceIds: scheduleForm.resourceIds,
+      ...(department.value?.type === "DEACONATE"
+        ? { isCommunionService: scheduleForm.isCommunionService }
+        : {}),
+    };
     const { data, error } = editingScheduleId.value
       ? await updateChurchSchedule(editingScheduleId.value, {
-          title,
-          date: scheduleForm.date,
-          time: scheduleForm.time || undefined,
-          serviceOccurrenceId: occurrence.id,
-          rehearsalDate: scheduleForm.rehearsalDate || null,
-          rehearsalTime: scheduleForm.rehearsalTime || null,
-          rehearsalNotes: scheduleForm.rehearsalNotes || null,
-          songIds: scheduleForm.songIds,
-          resourceIds: scheduleForm.resourceIds,
+          ...schedulePayload,
+          serviceOccurrenceId: serviceOccurrenceId ?? null,
         })
       : await createDepartmentSchedule(departmentId, {
-          title,
-          date: scheduleForm.date,
-          time: scheduleForm.time || undefined,
-          serviceOccurrenceId: occurrence.id,
-          rehearsalDate: scheduleForm.rehearsalDate || null,
-          rehearsalTime: scheduleForm.rehearsalTime || null,
-          rehearsalNotes: scheduleForm.rehearsalNotes || null,
-          songIds: scheduleForm.songIds,
-          resourceIds: scheduleForm.resourceIds,
+          ...schedulePayload,
+          ...(serviceOccurrenceId ? { serviceOccurrenceId } : {}),
         });
 
     if (error || !data) {
@@ -1965,7 +2361,7 @@ const handleSaveSong = async () => {
   );
 
   if (isDuplicateTitle) {
-    createSongError.value = "Já existe uma música com esse nome neste ministério.";
+    createSongError.value = duplicateSongTitleMessage(title);
     return;
   }
 
@@ -2108,6 +2504,7 @@ const handleSaveActivity = async () => {
     resources.value = [...resources.value, data].sort((current, next) =>
       current.title.localeCompare(next.title),
     );
+    if (department.value?.type === "KIDS") await loadChildMaterials();
     closeActivityDialog();
   } catch (error: any) {
     createActivityError.value = error?.message || "Não foi possível salvar a atividade.";
@@ -2236,6 +2633,7 @@ const openAssignmentsDialog = (schedule: DepartmentSchedule) => {
   assignmentForm.role = "";
   draftAssignments.value =
     schedule.assignments?.map((assignment) => ({
+      draftId: crypto.randomUUID(),
       assignmentId: assignment.id,
       userId: assignment.userId,
       name: assignment.user.name,
@@ -2249,6 +2647,11 @@ const openAssignmentsDialog = (schedule: DepartmentSchedule) => {
 
 const closeAssignmentsDialog = () => {
   isAssignmentsDialogOpen.value = false;
+  assignmentConflictRequestVersion.value += 1;
+  assignmentConflicts.value = [];
+  assignmentConflictCheckError.value = "";
+  isCheckingAssignmentConflicts.value = false;
+  checkedAssignmentConflictKey.value = "";
   selectedScheduleId.value = "";
   assignmentsError.value = "";
   assignmentForm.userId = "";
@@ -2264,20 +2667,24 @@ const addDraftAssignment = () => {
     return;
   }
 
-  if (draftAssignments.value.some((item) => item.userId === assignmentForm.userId)) {
-    assignmentsError.value = "Esse voluntário já está nesta escala.";
-    return;
-  }
-
   const member = members.value.find((item) => item.id === assignmentForm.userId);
   if (!member) return;
+  const role = assignmentForm.role.trim() || "Voluntário";
+
+  if (draftAssignments.value.some((item) =>
+    getScheduleAssignmentKey(item.userId, item.role) === getScheduleAssignmentKey(member.id, role)
+  )) {
+    assignmentsError.value = `Essa pessoa já está escalada para a função ${role}.`;
+    return;
+  }
 
   draftAssignments.value = [
     ...draftAssignments.value,
     {
+      draftId: crypto.randomUUID(),
       userId: member.id,
       name: member.name,
-      role: assignmentForm.role.trim() || "Voluntário",
+      role,
       viewedAt: null,
       confirmationStatus: "PENDING",
       attendanceStatus: "PENDING",
@@ -2287,9 +2694,9 @@ const addDraftAssignment = () => {
   assignmentForm.role = "";
 };
 
-const removeDraftAssignment = (userId: string) => {
+const removeDraftAssignment = (draftId: string) => {
   draftAssignments.value = draftAssignments.value.filter(
-    (assignment) => assignment.userId !== userId,
+    (assignment) => assignment.draftId !== draftId,
   );
 };
 
@@ -2347,9 +2754,25 @@ const markAttendance = async (
 const saveAssignments = async () => {
   assignmentsError.value = "";
 
+  const assignmentKeys = draftAssignments.value.map((assignment) =>
+    getScheduleAssignmentKey(assignment.userId, assignment.role)
+  );
+  if (new Set(assignmentKeys).size !== assignmentKeys.length) {
+    assignmentsError.value = "Remova ou altere a função duplicada antes de salvar.";
+    return;
+  }
+
   if (!selectedScheduleId.value) {
     assignmentsError.value = "Escala não encontrada.";
     return;
+  }
+
+  if (checkedAssignmentConflictKey.value !== assignmentConflictKey.value) {
+    await loadAssignmentConflicts();
+    if (assignmentConflicts.value.length > 0) {
+      // Dá oportunidade para a liderança revisar o aviso antes do segundo clique.
+      return;
+    }
   }
 
   isSavingAssignments.value = true;
@@ -2359,6 +2782,7 @@ const saveAssignments = async () => {
       selectedScheduleId.value,
       {
         assignments: draftAssignments.value.map((assignment) => ({
+          ...(assignment.assignmentId ? { id: assignment.assignmentId } : {}),
           userId: assignment.userId,
           role: assignment.role,
         })),
@@ -2416,6 +2840,7 @@ onMounted(async () => {
     loadMinistryRoles(),
   ]);
   await loadLinkedCultScheduleDraft();
+  if (canAccessChildren.value) await loadChildrenMinistry();
 });
 </script>
 

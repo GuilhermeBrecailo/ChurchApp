@@ -61,6 +61,10 @@ await server.register(multipart, {
   },
 });
 
+// Registra a proteção antes do plugin estático, para que downloads em
+// /uploads/church/... também passem pela verificação de departamento.
+await server.register(TenantHandler);
+
 await server.register(fastifyStatic, {
   root: uploadsRoot,
   prefix: "/uploads/",
@@ -73,8 +77,6 @@ await server.register(fastifyStatic, {
 server.get("/status", async () => {
   return { success: true };
 });
-
-await server.register(TenantHandler);
 await server.register(AuthRoutes, { prefix: "/" });
 await server.register(UserRoutes, { prefix: "/" });
 await server.register(ChurchDepartmentRoutes, { prefix: "/" });

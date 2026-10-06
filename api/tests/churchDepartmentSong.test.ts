@@ -118,9 +118,27 @@ describe("ChurchDepartmentAdapters - musicas", () => {
 
       await expect(
         adapters.createChurchDepartmentSong(
-          makeRequest({ params: { id: "dept-1" }, body: { title: "Grande e o Senhor" } }),
+          makeRequest({ params: { id: "dept-1" }, body: { title: "  Grande e o Senhor  " } }),
         ),
-      ).rejects.toThrow("Ja existe uma musica com esse nome neste ministerio");
+      ).rejects.toThrow('Já existe uma música com o nome "Grande e o Senhor" neste ministério.');
+    });
+
+    it("compara titulo duplicado sem diferenciar caixa e preserva o titulo trimado na mensagem", async () => {
+      mockPrismaClient.mediaItem.findFirst.mockResolvedValue({ id: "song-existing" });
+
+      await expect(
+        adapters.createChurchDepartmentSong(
+          makeRequest({ params: { id: "dept-1" }, body: { title: "  GRANDE E O SENHOR  " } }),
+        ),
+      ).rejects.toThrow('Já existe uma música com o nome "GRANDE E O SENHOR" neste ministério.');
+
+      expect(mockPrismaClient.mediaItem.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            title: { equals: "GRANDE E O SENHOR", mode: "insensitive" },
+          }),
+        }),
+      );
     });
 
     it("rejeita tom invalido", async () => {
@@ -222,7 +240,7 @@ describe("ChurchDepartmentAdapters - musicas", () => {
             },
           }),
         ),
-      ).rejects.toThrow("Ja existe uma musica com esse nome neste ministerio");
+      ).rejects.toThrow('Já existe uma música com o nome "Grande e o Senhor" neste ministério.');
     });
 
     it("cria o mix juntando letra/cifra, ignorando campo ausente nos dois lados", async () => {
@@ -289,7 +307,30 @@ describe("ChurchDepartmentAdapters - musicas", () => {
             body: { title: "Nome ja usado" },
           }),
         ),
-      ).rejects.toThrow("Ja existe uma musica com esse nome neste ministerio");
+      ).rejects.toThrow('Já existe uma música com o nome "Nome ja usado" neste ministério.');
+    });
+
+    it("permite salvar o titulo atual sem tratar a propria musica como duplicada", async () => {
+      mockPrismaClient.mediaItem.findFirst
+        .mockResolvedValueOnce(songRow)
+        .mockResolvedValueOnce(null);
+      mockPrismaClient.mediaItem.update.mockResolvedValue(songRow);
+
+      await expect(
+        adapters.updateChurchDepartmentSong(
+          makeRequest({
+            params: { departmentId: "dept-1", songId: "song-1" },
+            body: { title: "Grande e o Senhor" },
+          }),
+        ),
+      ).resolves.toEqual(songRow);
+
+      expect(mockPrismaClient.mediaItem.findFirst).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          where: expect.objectContaining({ id: { not: "song-1" } }),
+        }),
+      );
     });
   });
 
@@ -596,7 +637,7 @@ describe("ChurchDepartmentAdapters - musicas", () => {
             body: { songs: [{ title: "Grande e o Senhor" }] },
           }),
         ),
-      ).rejects.toThrow("Ja existe uma musica com esse nome neste ministerio");
+      ).rejects.toThrow('Já existe uma música com o nome "Grande e o Senhor" neste ministério.');
 
       expect(mockPrismaClient.$transaction).not.toHaveBeenCalled();
     });

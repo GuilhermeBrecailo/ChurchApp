@@ -31,6 +31,39 @@
         escala.
       </v-alert>
 
+      <v-alert
+        v-if="assignmentConflictCheckError"
+        type="warning"
+        variant="tonal"
+        density="compact"
+        class="mb-4"
+      >
+        Não foi possível conferir outras responsabilidades neste culto. Você ainda pode salvar a escala.
+      </v-alert>
+
+      <v-alert
+        v-else-if="assignmentConflicts.length"
+        type="warning"
+        variant="tonal"
+        density="comfortable"
+        class="mb-4"
+      >
+        <div class="font-weight-bold mb-1">
+          Há pessoas com outra responsabilidade neste mesmo culto. Isso é apenas um aviso; você pode continuar e salvar.
+        </div>
+        <div
+          v-for="conflict in assignmentConflicts"
+          :key="`${conflict.scheduleId}:${conflict.userId}:${conflict.role}`"
+          class="text-body-2"
+        >
+          {{ formatScheduleAssignmentConflict(conflict) }}
+        </div>
+      </v-alert>
+
+      <div v-else-if="isCheckingAssignmentConflicts" class="text-caption text-medium-emphasis mb-3">
+        Conferindo outras responsabilidades neste culto…
+      </div>
+
       <div class="ministery-field-grid mb-4">
         <v-select
           v-model="assignmentForm.userId"
@@ -77,7 +110,7 @@
       <div v-if="draftAssignments.length" class="d-flex flex-column ga-2 mb-4">
         <v-card
           v-for="assignment in draftAssignments"
-          :key="assignment.userId"
+          :key="assignment.draftId"
           class="app-surface-muted rounded-lg pa-3"
           elevation="0"
         >
@@ -156,9 +189,9 @@
                 variant="text"
                 color="grey-darken-1"
                 size="small"
-                :aria-label="`Remover ${assignment.name} da escala`"
+                :aria-label="`Remover ${assignment.name} da função ${assignment.role}`"
                 :disabled="isSavingAssignments"
-                @click="$emit('remove-draft-assignment', assignment.userId)"
+                @click="$emit('remove-draft-assignment', assignment.draftId)"
               >
                 <v-icon size="18">mdi-close</v-icon>
               </v-btn>
@@ -214,8 +247,11 @@
 <script setup lang="ts">
 import { AlertTriangle, Plus, UserPlus } from "lucide-vue-next";
 import type { DepartmentSchedule } from "../../../composables/useDepartments";
+import type { ScheduleAssignmentConflict } from "../../../composables/useDepartments";
+import { formatScheduleAssignmentConflict } from "../../utils/scaleSchedule";
 
 type DraftAssignment = {
+  draftId: string;
   assignmentId?: string;
   userId: string;
   name: string;
@@ -237,6 +273,9 @@ defineProps<{
   draftAssignments: DraftAssignment[];
   unavailableMemberIds: Set<string>;
   assignmentsError: string;
+  assignmentConflicts: ScheduleAssignmentConflict[];
+  assignmentConflictCheckError: string;
+  isCheckingAssignmentConflicts: boolean;
   responseStatusColor: (status?: string) => string;
   responseStatusLabel: (status?: string) => string;
   attendanceStatusLabel: (status?: string) => string;
@@ -246,7 +285,7 @@ defineEmits<{
   (event: "close"): void;
   (event: "save"): void;
   (event: "add-draft-assignment"): void;
-  (event: "remove-draft-assignment", userId: string): void;
+  (event: "remove-draft-assignment", draftId: string): void;
   (event: "mark-attendance", assignment: DraftAssignment, status: "PRESENT" | "ABSENT"): void;
 }>();
 </script>

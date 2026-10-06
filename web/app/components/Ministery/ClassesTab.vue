@@ -60,6 +60,17 @@
 
         <div class="ministery-card-actions mt-3">
           <v-btn
+            v-if="isKidsDepartment"
+            variant="tonal"
+            color="primary"
+            size="small"
+            class="text-none"
+            @click="$emit('preview', activity.id)"
+          >
+            <FileText size="16" class="mr-2" /> Pré-visualizar PDF
+          </v-btn>
+          <v-btn
+            v-else
             :href="activity.url"
             target="_blank"
             rel="noopener noreferrer"
@@ -117,6 +128,7 @@ const props = defineProps<{
   activityResources: DepartmentResource[];
   resourcesError: string;
   canManageDepartment: boolean;
+  isKidsDepartment?: boolean;
 }>();
 
 const search = ref("");
@@ -133,6 +145,7 @@ const visibleActivities = computed(() => {
 defineEmits<{
   (event: "create"): void;
   (event: "delete", activity: DepartmentResource): void;
+  (event: "preview", resourceId: string): void;
 }>();
 </script>
 
