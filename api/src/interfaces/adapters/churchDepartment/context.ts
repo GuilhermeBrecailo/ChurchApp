@@ -1,10 +1,12 @@
 import { FastifyRequest } from "fastify/types/request";
+import { Prisma } from "@prisma/client";
 import { $prismaClient } from "../../../../config/database";
 import { DomainError } from "../../../domain/value-objects/utils/DomainError";
 import { resolveActiveChurchContext } from "../../utils/churchContext";
 import { hasPermission } from "../../../application/Services/Auth/AuthorizationService";
 import { PermissionKey } from "../../../domain/permissions";
 import { normalizeDepartmentModules } from "../../../application/Services/Department/DepartmentModules";
+import { resolveDepartmentScheduleConfig } from "../../../application/Services/Department/DepartmentScheduleConfig";
 import { AuthPayload, CurrentUser, DepartmentWithStats } from "./types";
 
 export const departmentSelect = {
@@ -13,6 +15,7 @@ export const departmentSelect = {
   type: true,
   isActive: true,
   modules: true,
+  scheduleConfig: true,
   leaderId: true,
   leader: {
     select: {
@@ -33,7 +36,7 @@ export const departmentSelect = {
       category: true,
     },
   },
-};
+} satisfies Prisma.DepartmentSelect;
 
 export const resourceSelect = {
   id: true,
@@ -138,6 +141,10 @@ export class DepartmentContext {
       type: department.type,
       isActive: department.isActive,
       modules: normalizeDepartmentModules(department.modules),
+      scheduleConfig: resolveDepartmentScheduleConfig(
+        department.scheduleConfig ?? null,
+        department.type,
+      ),
       leaderId: department.leaderId,
       leader: department.leader,
       canManageSchedule: options?.canManageSchedule,

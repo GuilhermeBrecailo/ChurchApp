@@ -4,8 +4,9 @@ import { $prismaClient } from "../../../../config/database";
 import { DomainError } from "../../../domain/value-objects/utils/DomainError";
 import { CurrentUser } from "./types";
 import { DepartmentContext } from "./context";
+import type { DepartmentScheduleConfig } from "../../../application/Services/Department/DepartmentScheduleConfig";
 
-const db = $prismaClient as any;
+const db = $prismaClient;
 
 export const DEACONATE_CHECKLIST_DEFAULTS = [
   { templateKey: "TEAM_CONFIRMATION", title: "Confirmar equipe e escala", order: 0 },
@@ -17,6 +18,29 @@ export const COMMUNION_CHECKLIST_DEFAULT = {
   title: "Preparar a Santa Ceia",
   order: 2,
 } as const;
+
+export function createScheduleChecklistSnapshot(
+  config: DepartmentScheduleConfig,
+  isCommunionService: boolean,
+) {
+  if (!config.fields.checklist) return [];
+
+  const templates = [
+    ...config.checklistItems,
+    ...(isCommunionService && config.communion.enabled
+      ? config.communion.checklistItems
+      : []),
+  ];
+
+  return templates.map((item, index) => ({
+    id: crypto.randomUUID(),
+    ...item,
+    order: index,
+    isComplete: false,
+    completedAt: null,
+    isApplicable: true,
+  }));
+}
 
 type ChecklistSchedule = {
   id: string;

@@ -79,7 +79,7 @@
         </v-alert>
 
         <v-switch
-          v-if="isDeaconateDepartment"
+          v-if="scheduleFormDefinition.communionEnabled"
           v-model="scheduleForm.isCommunionService"
           label="Este culto terá Santa Ceia"
           color="primary"
@@ -90,7 +90,7 @@
         >
           <template #details>
             <span class="text-caption text-medium-emphasis">
-              Inclui automaticamente a preparação da Santa Ceia no checklist desta escala.
+              Inclui as funções e tarefas configuradas para esta ocasião.
             </span>
           </template>
         </v-switch>
@@ -122,7 +122,21 @@
           />
         </div>
 
-        <div class="ministery-field-grid mb-4">
+        <v-text-field
+          v-if="scheduleFormDefinition.visibleFields.arrival"
+          v-model="scheduleForm.arrivalTime"
+          label="Horário de chegada"
+          type="time"
+          variant="outlined"
+          density="comfortable"
+          color="primary"
+          bg-color="white"
+          class="ministery-input mb-4"
+          hide-details="auto"
+          :disabled="isCreatingSchedule"
+        />
+
+        <div v-if="scheduleFormDefinition.visibleFields.rehearsal" class="ministery-field-grid mb-4">
           <v-text-field
             v-model="scheduleForm.rehearsalDate"
             label="Data do ensaio"
@@ -150,6 +164,7 @@
         </div>
 
         <v-text-field
+          v-if="scheduleFormDefinition.visibleFields.rehearsal"
           v-model="scheduleForm.rehearsalNotes"
           label="Observações do ensaio"
           prepend-inner-icon="mdi-text"
@@ -162,7 +177,7 @@
           :disabled="isCreatingSchedule"
         />
 
-        <div v-if="songOptions.length" class="mb-4">
+        <div v-if="scheduleFormDefinition.visibleFields.songs && songOptions.length" class="mb-4">
           <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">
             Músicas
           </p>
@@ -202,7 +217,7 @@
         />
 
         <v-select
-          v-if="resourceOptions.length"
+          v-if="scheduleFormDefinition.visibleFields.materials && resourceOptions.length"
           v-model="scheduleForm.resourceIds"
           label="Recursos"
           :items="resourceOptions"
@@ -220,6 +235,116 @@
           closable-chips
           :disabled="isCreatingSchedule"
         />
+
+        <section
+          v-if="scheduleFormDefinition.visibleFields.roles || scheduleForm.assignments.length"
+          class="schedule-role-section mb-4"
+          aria-labelledby="ministry-schedule-roles-heading"
+        >
+          <div class="schedule-role-heading">
+            <p id="ministry-schedule-roles-heading" class="text-caption font-weight-bold text-grey-darken-1 mb-0">
+              Funções e responsáveis
+            </p>
+          <p class="text-caption text-grey-darken-1 mb-0">
+              Escolha alguém para cada função mantida ou remova as que não serão usadas.
+            </p>
+          </div>
+
+          <v-alert
+            v-if="assignmentError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            {{ assignmentError }}
+          </v-alert>
+
+          <v-alert
+            v-if="scheduleForm.assignments.some((assignment) => !assignment.userId) && !memberOptions.length"
+            type="info"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            Adicione pessoas a este ministério para atribuir as funções da escala.
+          </v-alert>
+
+          <div class="schedule-role-list">
+            <div
+              v-for="assignment in scheduleForm.assignments"
+              :key="assignment.draftId"
+              class="schedule-role-row"
+            >
+              <v-combobox
+                v-model="assignment.role"
+                label="Função"
+                :items="scheduleFormDefinition.roles"
+                variant="outlined"
+                density="comfortable"
+                color="primary"
+                bg-color="white"
+                class="ministery-input"
+                hide-details="auto"
+                :disabled="isCreatingSchedule"
+              />
+              <v-select
+                :model-value="assignment.userId || null"
+                label="Responsável"
+                :items="memberOptions"
+                item-title="label"
+                item-value="value"
+                variant="outlined"
+                density="comfortable"
+                color="primary"
+                bg-color="white"
+                class="ministery-input"
+                hide-details="auto"
+                :disabled="isCreatingSchedule || !memberOptions.length"
+                @update:model-value="setAssignmentVolunteer(assignment.draftId, $event)"
+              />
+              <v-btn
+                icon
+                variant="text"
+                color="grey-darken-1"
+                size="small"
+                :aria-label="`Remover função ${assignment.role || 'sem nome'}`"
+                :disabled="isCreatingSchedule"
+                @click="removeAssignment(assignment.draftId)"
+              >
+                <v-icon size="18">mdi-close</v-icon>
+              </v-btn>
+            </div>
+          </div>
+
+          <v-btn
+            v-if="scheduleFormDefinition.visibleFields.roles"
+            variant="tonal"
+            color="primary"
+            size="small"
+            class="text-none mt-3"
+            :disabled="isCreatingSchedule || scheduleForm.assignments.length >= 40"
+            @click="addAssignmentRole"
+          >
+            <v-icon size="16" class="mr-1">mdi-plus</v-icon> Adicionar função
+          </v-btn>
+        </section>
+
+        <section
+          v-if="scheduleFormDefinition.visibleFields.checklist && scheduleFormDefinition.checklistItems.length"
+          class="schedule-checklist-preview mb-4"
+          aria-label="Tarefas previstas para o culto"
+        >
+          <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">Tarefas deste culto</p>
+          <ul>
+            <li v-for="item in scheduleFormDefinition.checklistItems" :key="item.templateKey">
+              {{ item.title }}
+            </li>
+          </ul>
+          <p class="text-caption text-grey-darken-1 mb-0">
+            Essas tarefas serão copiadas para o checklist desta escala.
+          </p>
+        </section>
 
         <v-alert
           v-if="createScheduleError"
@@ -259,6 +384,9 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { Calendar } from "lucide-vue-next";
+import { resolveDepartmentScheduleConfig, type DepartmentScheduleConfig } from "../../utils/departmentScheduleConfig";
+import { getScheduleFormDefinition } from "../../utils/scheduleFormConfig";
+import { getScheduleAssignmentKey } from "../../utils/scaleSchedule";
 
 const isOpen = defineModel<boolean>({ required: true });
 
@@ -269,6 +397,7 @@ const props = defineProps<{
     title: string;
     date: string;
     time: string;
+    arrivalTime: string;
     serviceTimeId: string;
     cultOptionValue: string;
     rehearsalDate: string;
@@ -277,8 +406,18 @@ const props = defineProps<{
     songIds: string[];
     resourceIds: string[];
     isCommunionService: boolean;
+    assignments: {
+      draftId: string;
+      assignmentId?: string;
+      userId: string;
+      name: string;
+      role: string;
+      isCommunionRole?: boolean;
+    }[];
   };
-  isDeaconateDepartment: boolean;
+  departmentType: string;
+  scheduleConfig: DepartmentScheduleConfig | null;
+  memberOptions: { label: string; value: string }[];
   songOptions: { label: string; value: string }[];
   resourceOptions: { label: string; value: string }[];
   cultOptions: { label: string; value: string; date: string; time: string; serviceTimeId: string; occurrenceId: string }[];
@@ -296,6 +435,13 @@ defineEmits<{
 }>();
 
 const isSongPickerOpen = ref(false);
+const assignmentError = ref("");
+const scheduleConfig = computed(() =>
+  resolveDepartmentScheduleConfig(props.scheduleConfig, props.departmentType),
+);
+const scheduleFormDefinition = computed(() =>
+  getScheduleFormDefinition(scheduleConfig.value, props.scheduleForm.isCommunionService),
+);
 
 const selectedSongOptions = computed(() =>
   props.songOptions.filter((song) => props.scheduleForm.songIds.includes(song.value)),
@@ -308,6 +454,44 @@ function toggleSong(songId: string) {
   } else {
     props.scheduleForm.songIds.splice(index, 1);
   }
+}
+
+function setAssignmentVolunteer(draftId: string, userId: string | null) {
+  const assignment = props.scheduleForm.assignments.find((item) => item.draftId === draftId);
+  if (!assignment) return;
+  const member = props.memberOptions.find((item) => item.value === userId);
+
+  if (member && props.scheduleForm.assignments.some((item) =>
+    item.draftId !== draftId && item.userId &&
+    getScheduleAssignmentKey(item.userId, item.role) ===
+      getScheduleAssignmentKey(member.value, assignment.role)
+  )) {
+    assignmentError.value = `Essa pessoa já está escalada para a função ${assignment.role}.`;
+    return;
+  }
+
+  assignment.userId = member?.value ?? "";
+  assignment.name = member?.label.split(" (")[0] ?? "";
+  assignmentError.value = "";
+}
+
+function addAssignmentRole() {
+  props.scheduleForm.assignments.push({
+    draftId: crypto.randomUUID(),
+    userId: "",
+    name: "",
+    role: "Nova função",
+  });
+  assignmentError.value = "";
+}
+
+function removeAssignment(draftId: string) {
+  props.scheduleForm.assignments.splice(
+    0,
+    props.scheduleForm.assignments.length,
+    ...props.scheduleForm.assignments.filter((item) => item.draftId !== draftId),
+  );
+  assignmentError.value = "";
 }
 </script>
 
@@ -355,6 +539,33 @@ function toggleSong(songId: string) {
   gap: 6px;
   flex: 1 1 auto;
 }
+.schedule-role-heading {
+  display: grid;
+  gap: 0.2rem;
+  margin-bottom: 0.65rem;
+}
+.schedule-role-list {
+  display: grid;
+  gap: 0.75rem;
+}
+.schedule-role-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.schedule-checklist-preview {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 0.75rem;
+}
+.schedule-checklist-preview ul {
+  margin: 0.35rem 0;
+  padding-left: 1.2rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -367,6 +578,14 @@ function toggleSong(songId: string) {
 @media (min-width: 560px) {
   .ministery-field-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 559px) {
+  .schedule-role-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .schedule-role-row > :first-child {
+    grid-column: 1 / -1;
   }
 }
 @media (max-width: 420px) {

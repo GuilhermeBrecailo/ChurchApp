@@ -1,0 +1,1 @@
+ALTER TABLE "Schedule" ADD COLUMN "arrivalAt" TIMESTAMP(3);

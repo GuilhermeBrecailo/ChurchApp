@@ -2,6 +2,7 @@ import type { CustomFetch } from "../types/nuxt";
 import type { ApiResponse } from "./useTypes";
 import { useNuxtApp, useRuntimeConfig } from "#app";
 import { useAuth } from "./useAuth";
+import type { DepartmentScheduleConfig } from "../app/utils/departmentScheduleConfig";
 
 export const DEPARTMENT_MODULE_OPTIONS = [
   { value: "SCHEDULES", label: "Escalas" },
@@ -18,6 +19,7 @@ export interface ChurchDepartment {
   isActive: boolean;
   /** Módulos ativos. Vazio/ausente = ministério antigo, tudo habilitado. */
   modules?: string[];
+  scheduleConfig?: DepartmentScheduleConfig | null;
   leaderId: string;
   canManageSchedule?: boolean;
   canManageSongs?: boolean;
@@ -74,6 +76,7 @@ export interface DepartmentSchedule {
   id: string;
   date: string;
   description: string;
+  arrivalAt?: string | null;
   rehearsalAt?: string | null;
   rehearsalNotes?: string | null;
   isCommunionService?: boolean;
@@ -219,6 +222,7 @@ interface CreateDepartmentDTO {
   leaderId: string;
   type: string;
   modules?: string[];
+  scheduleConfig?: DepartmentScheduleConfig;
 }
 
 interface UpdateDepartmentDTO {
@@ -227,6 +231,7 @@ interface UpdateDepartmentDTO {
   type?: string;
   isActive?: boolean;
   modules?: string[];
+  scheduleConfig?: DepartmentScheduleConfig;
 }
 
 interface CreateDepartmentTaskDTO {
@@ -256,6 +261,7 @@ interface CreateDepartmentScheduleDTO {
   rehearsalDate?: string | null;
   rehearsalTime?: string | null;
   rehearsalNotes?: string | null;
+  arrivalTime?: string | null;
   serviceOccurrenceId?: string;
   isCommunionService?: boolean;
 }
@@ -271,6 +277,7 @@ interface UpdateDepartmentScheduleDTO {
   rehearsalDate?: string | null;
   rehearsalTime?: string | null;
   rehearsalNotes?: string | null;
+  arrivalTime?: string | null;
   serviceOccurrenceId?: string | null;
   isCommunionService?: boolean;
 }

@@ -192,7 +192,9 @@
       :is-dark="isDark"
       :editing-schedule-id="editingScheduleId"
       :schedule-form="scheduleForm"
-      :is-deaconate-department="department.type === 'DEACONATE'"
+      :department-type="department.type"
+      :schedule-config="department.scheduleConfig ?? null"
+      :member-options="memberOptions"
       :song-options="songOptions"
       :resource-options="resourceOptions"
       :cult-options="cultOptions"
@@ -419,6 +421,13 @@ import {
   getDepartmentAssignmentRoleOptions,
   type ScheduleCultOption,
 } from "../../utils/scaleSchedule";
+import {
+  createScheduleRoleDrafts,
+  getScheduleFormDefinition,
+  isCommunionScheduleRole,
+  validateScheduleRoleDrafts,
+} from "../../utils/scheduleFormConfig";
+import { resolveDepartmentScheduleConfig } from "../../utils/departmentScheduleConfig";
 
 const route = useRoute();
 const router = useRouter();
@@ -721,6 +730,7 @@ const scheduleForm = reactive({
   title: "",
   date: "",
   time: "",
+  arrivalTime: "",
   serviceTimeId: "",
   cultOptionValue: "",
   rehearsalDate: "",
@@ -729,6 +739,14 @@ const scheduleForm = reactive({
   songIds: [] as string[],
   resourceIds: [] as string[],
   isCommunionService: false,
+  assignments: [] as {
+    draftId: string;
+    assignmentId?: string;
+    userId: string;
+    name: string;
+    role: string;
+    isCommunionRole?: boolean;
+  }[],
 });
 
 const linkedCultLabel = computed(() => {
@@ -745,6 +763,46 @@ const linkedCultLabel = computed(() => {
 
 const selectedCultOption = computed<ScheduleCultOption | null>(
   () => cultOptions.value.find((option) => option.value === scheduleForm.cultOptionValue) ?? null,
+);
+const scheduleConfig = computed(() =>
+  resolveDepartmentScheduleConfig(
+    department.value?.scheduleConfig,
+    department.value?.type ?? "OTHER",
+  ),
+);
+const scheduleFormDefinition = computed(() =>
+  getScheduleFormDefinition(scheduleConfig.value, scheduleForm.isCommunionService),
+);
+
+const toScheduleRoleDrafts = (isCommunionService: boolean) =>
+  createScheduleRoleDrafts(scheduleConfig.value, isCommunionService).map((draft) => ({
+    ...draft,
+    draftId: crypto.randomUUID(),
+    name: "",
+  }));
+
+const appendMissingScheduleRoleDrafts = (isCommunionService: boolean) => {
+  const existingRoles = new Set(
+    scheduleForm.assignments.map((item) => item.role.trim().toLocaleLowerCase("pt-BR")),
+  );
+  scheduleForm.assignments.push(...toScheduleRoleDrafts(isCommunionService).filter(
+    (draft) => !existingRoles.has(draft.role.trim().toLocaleLowerCase("pt-BR")),
+  ));
+};
+
+watch(
+  () => scheduleForm.isCommunionService,
+  (isCommunionService) => {
+    if (isPrefillingSchedule.value || !scheduleConfig.value.communion.enabled) return;
+    if (isCommunionService) {
+      appendMissingScheduleRoleDrafts(true);
+    } else {
+      scheduleForm.assignments = scheduleForm.assignments.filter(
+        (assignment) => !assignment.isCommunionRole,
+      );
+    }
+  },
+  { flush: "sync" },
 );
 const canAccessChildren = computed(
   () =>
@@ -1581,6 +1639,7 @@ const resetScheduleForm = () => {
   scheduleForm.title = "";
   scheduleForm.date = "";
   scheduleForm.time = "";
+  scheduleForm.arrivalTime = "";
   scheduleForm.serviceTimeId = "";
   scheduleForm.cultOptionValue = "";
   scheduleForm.rehearsalDate = "";
@@ -1589,6 +1648,7 @@ const resetScheduleForm = () => {
   scheduleForm.songIds = [];
   scheduleForm.resourceIds = [];
   scheduleForm.isCommunionService = false;
+  scheduleForm.assignments = [];
   editingScheduleId.value = "";
   linkedCult.value = null;
   linkedCultId.value = "";
@@ -1614,6 +1674,7 @@ const closeScheduleDialog = () => {
 const openScheduleCreateDialog = () => {
   clearLinkedCultQuery();
   resetScheduleForm();
+  scheduleForm.assignments = toScheduleRoleDrafts(false);
   createScheduleError.value = "";
   isScheduleDialogOpen.value = true;
 };
@@ -1900,6 +1961,9 @@ const openScheduleEditDialog = async (schedule: DepartmentSchedule) => {
   scheduleForm.title = schedule.description;
   scheduleForm.date = toDateInputValue(schedule.date);
   scheduleForm.time = toTimeInputValue(schedule.date);
+  scheduleForm.arrivalTime = schedule.arrivalAt
+    ? toTimeInputValue(schedule.arrivalAt)
+    : "";
   scheduleForm.serviceTimeId = schedule.serviceOccurrence?.serviceTimeId ?? "";
   linkedCultDate.value = linkedCultId.value ? scheduleForm.date : "";
   linkedCultTime.value = linkedCultId.value ? scheduleForm.time : "";
@@ -1927,6 +1991,16 @@ const openScheduleEditDialog = async (schedule: DepartmentSchedule) => {
     schedule.mediaItems
       ?.filter((item) => item.mediaItem.category !== "MUSIC")
       .map((item) => item.mediaItemId) || [];
+  scheduleForm.assignments = (schedule.assignments ?? []).map((assignment) => ({
+    draftId: crypto.randomUUID(),
+    assignmentId: assignment.id,
+    userId: assignment.userId,
+    name: assignment.user.name,
+    role: assignment.role,
+    isCommunionRole: schedule.isCommunionService
+      ? isCommunionScheduleRole(scheduleConfig.value, assignment.role)
+      : false,
+  }));
 
   if (schedule.serviceOccurrenceId) {
     const { data, error } = await getOccurrence(schedule.serviceOccurrenceId);
@@ -2066,6 +2140,12 @@ const handleSaveSchedule = async () => {
     return;
   }
 
+  const missingRoles = validateScheduleRoleDrafts(scheduleForm.assignments);
+  if (missingRoles.length) {
+    createScheduleError.value = `Escolha um responsável ou remova estas funções: ${missingRoles.join(", ")}.`;
+    return;
+  }
+
   isCreatingSchedule.value = true;
 
   try {
@@ -2092,12 +2172,23 @@ const handleSaveSchedule = async () => {
       title,
       date: scheduleForm.date,
       time: scheduleForm.time || undefined,
-      rehearsalDate: scheduleForm.rehearsalDate || null,
-      rehearsalTime: scheduleForm.rehearsalTime || null,
-      rehearsalNotes: scheduleForm.rehearsalNotes || null,
-      songIds: scheduleForm.songIds,
-      resourceIds: scheduleForm.resourceIds,
-      ...(department.value?.type === "DEACONATE"
+      ...(scheduleFormDefinition.value.visibleFields.arrival
+        ? { arrivalTime: scheduleForm.arrivalTime || null }
+        : {}),
+      ...(scheduleFormDefinition.value.visibleFields.rehearsal
+        ? {
+            rehearsalDate: scheduleForm.rehearsalDate || null,
+            rehearsalTime: scheduleForm.rehearsalTime || null,
+            rehearsalNotes: scheduleForm.rehearsalNotes || null,
+          }
+        : {}),
+      ...(scheduleFormDefinition.value.visibleFields.songs
+        ? { songIds: scheduleForm.songIds }
+        : {}),
+      ...(scheduleFormDefinition.value.visibleFields.materials
+        ? { resourceIds: scheduleForm.resourceIds }
+        : {}),
+      ...(scheduleFormDefinition.value.communionEnabled
         ? { isCommunionService: scheduleForm.isCommunionService }
         : {}),
     };
@@ -2116,12 +2207,35 @@ const handleSaveSchedule = async () => {
       return;
     }
 
+    const assignmentsWithPeople = scheduleForm.assignments.filter((assignment) => assignment.userId);
+    let savedSchedule = data;
+    if (assignmentsWithPeople.length || editingScheduleId.value) {
+      const { data: scheduleWithAssignments, error: assignmentError } =
+        await updateScheduleAssignments(data.id, {
+          assignments: assignmentsWithPeople.map((assignment) => ({
+            ...(assignment.assignmentId ? { id: assignment.assignmentId } : {}),
+            userId: assignment.userId,
+            role: assignment.role,
+          })),
+        });
+
+      if (assignmentError || !scheduleWithAssignments) {
+        createScheduleError.value = assignmentError || "Não foi possível salvar as funções desta escala.";
+        if (!editingScheduleId.value) {
+          editingScheduleId.value = data.id;
+          schedules.value = [data, ...schedules.value];
+        }
+        return;
+      }
+      savedSchedule = scheduleWithAssignments;
+    }
+
     schedules.value = editingScheduleId.value
       ? [
-          data,
-          ...schedules.value.filter((schedule) => schedule.id !== data.id),
+          savedSchedule,
+          ...schedules.value.filter((schedule) => schedule.id !== savedSchedule.id),
         ]
-      : [data, ...schedules.value];
+      : [savedSchedule, ...schedules.value];
     closeScheduleDialog();
   } finally {
     isCreatingSchedule.value = false;

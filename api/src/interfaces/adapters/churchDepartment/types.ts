@@ -33,6 +33,7 @@ export type DepartmentWithStats = {
   type: string;
   isActive: boolean;
   modules: string[];
+  scheduleConfig?: Prisma.JsonValue | null;
   leaderId: string;
   leader: {
     id: string;

@@ -26,6 +26,12 @@ function getAuthUserId(request: FastifyRequest) {
 
 const AUDIENCES = ["VISITOR", "MEMBER", "ALL"] as const;
 const audienceSchema = z.enum(AUDIENCES);
+const TEMPLATE_SUGGESTION_KEYS = [
+  "visitor_welcome",
+  "post_service_thanks",
+  "service_notice",
+  "birthday",
+] as const;
 
 // SELECTED e uma audiencia so de envio manual (nao entra em MessageRule -
 // ver design.md da change messaging-targeting-and-scheduling, "Non-Goals").
@@ -34,6 +40,7 @@ const sendNowAudienceSchema = z.enum([...AUDIENCES, "SELECTED"]);
 const templateCreateSchema = z.object({
   name: z.string().trim().min(1, "Nome é obrigatório"),
   body: z.string().trim().min(1, "Mensagem é obrigatória"),
+  suggestionKey: z.enum(TEMPLATE_SUGGESTION_KEYS).optional(),
 });
 const templateUpdateSchema = templateCreateSchema.partial();
 
@@ -227,6 +234,24 @@ export class MessageAdapters {
     const user = await this.getCurrentUser(request);
     this.assertCanManageMessages(user);
     const body = templateCreateSchema.parse(request.body);
+
+    if (body.suggestionKey) {
+      return $prismaClient.messageTemplate.upsert({
+        where: {
+          crunchId_suggestionKey: {
+            crunchId: user.crunchId,
+            suggestionKey: body.suggestionKey,
+          },
+        },
+        create: {
+          crunchId: user.crunchId,
+          suggestionKey: body.suggestionKey,
+          name: body.name,
+          body: body.body,
+        },
+        update: {},
+      });
+    }
 
     return $prismaClient.messageTemplate.create({
       data: { crunchId: user.crunchId, name: body.name, body: body.body },

@@ -164,6 +164,70 @@ describe("ChurchDepartmentAdapters - escalas", () => {
       );
     });
 
+    it("salva o horário de chegada na data local da escala", async () => {
+      const expectedArrivalAt = new Date("2026-08-20T17:30:00.000");
+      mockPrismaClient.schedule.create.mockResolvedValue(
+        scheduleRow({ arrivalAt: expectedArrivalAt }),
+      );
+
+      const result = await adapters.createChurchDepartmentSchedule(
+        makeRequest({
+          params: { id: "dept-1" },
+          body: {
+            title: "Culto de domingo",
+            date: "2026-08-20",
+            time: "19:00",
+            arrivalTime: "17:30",
+          },
+        }),
+      );
+
+      expect(mockPrismaClient.schedule.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ arrivalAt: expectedArrivalAt }),
+        }),
+      );
+      expect((result as unknown as { arrivalAt: Date | null }).arrivalAt).toEqual(
+        expectedArrivalAt,
+      );
+    });
+
+    it.each(["25:10", "9:30", "12:60", "amanhã"])(
+      "rejeita horário de chegada inválido: %s",
+      async (arrivalTime) => {
+        await expect(
+          adapters.createChurchDepartmentSchedule(
+            makeRequest({
+              params: { id: "dept-1" },
+              body: {
+                title: "Culto",
+                date: "2026-08-20",
+                arrivalTime,
+              },
+            }),
+          ),
+        ).rejects.toThrow("Horário de chegada inválido");
+      },
+    );
+
+    it("limpa o horário de chegada ao receber nulo na edição", async () => {
+      mockPrismaClient.schedule.findFirst
+        .mockResolvedValueOnce(scheduleRow({ arrivalAt: new Date("2026-08-20T17:30:00.000") }))
+        .mockResolvedValueOnce(scheduleRow({ arrivalAt: null }));
+      mockPrismaClient.schedule.update.mockResolvedValue(scheduleRow({ arrivalAt: null }));
+
+      await adapters.updateChurchSchedule(
+        makeRequest({
+          params: { id: "schedule-1" },
+          body: { arrivalTime: null },
+        }),
+      );
+
+      expect(mockPrismaClient.schedule.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ arrivalAt: null }) }),
+      );
+    });
+
     it("cria escala com musicas validadas", async () => {
       mockPrismaClient.mediaItem.findMany.mockResolvedValue([{ id: "song-1" }]);
       mockPrismaClient.serviceOccurrence.findFirst.mockResolvedValue({ id: "occ-1" });
@@ -206,6 +270,28 @@ describe("ChurchDepartmentAdapters - escalas", () => {
   });
 
   describe("updateChurchSchedule", () => {
+    it("atualiza chegada usando a nova data local da escala", async () => {
+      mockPrismaClient.schedule.findFirst
+        .mockResolvedValueOnce(scheduleRow())
+        .mockResolvedValueOnce(scheduleRow());
+      mockPrismaClient.schedule.update.mockResolvedValue(scheduleRow());
+
+      await adapters.updateChurchSchedule(
+        makeRequest({
+          params: { id: "schedule-1" },
+          body: { date: "2026-08-21", arrivalTime: "18:05" },
+        }),
+      );
+
+      expect(mockPrismaClient.schedule.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            arrivalAt: new Date("2026-08-21T18:05:00.000"),
+          }),
+        }),
+      );
+    });
+
     it("notifica voluntarios ja atribuidos quando a escala muda", async () => {
       const schedule = scheduleRow({ assignments: [{ userId: "vol-1" }] });
       mockPrismaClient.schedule.findFirst

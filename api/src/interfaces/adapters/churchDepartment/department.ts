@@ -9,6 +9,10 @@ import {
   normalizeDepartmentModules,
   parseDepartmentModules as parseDepartmentModulesInput,
 } from "../../../application/Services/Department/DepartmentModules";
+import {
+  parseDepartmentScheduleConfig,
+  resolveDepartmentScheduleConfig,
+} from "../../../application/Services/Department/DepartmentScheduleConfig";
 import { DepartmentContext, departmentSelect } from "./context";
 import { throwDomainError } from "./types";
 
@@ -94,6 +98,7 @@ export class DepartmentCore {
       leaderId?: string;
       type?: string;
       modules?: unknown;
+      scheduleConfig?: unknown;
     };
 
     if (!this.context.isChurchWideManager(user)) {
@@ -107,6 +112,11 @@ export class DepartmentCore {
     if (!body.leaderId) {
       throw new DomainError("Líder do ministério é obrigatório");
     }
+
+    const departmentType = body.type?.trim() || "OTHER";
+    const scheduleConfig = body.scheduleConfig === undefined
+      ? resolveDepartmentScheduleConfig(null, departmentType)
+      : parseDepartmentScheduleConfig(body.scheduleConfig);
 
     const leader = await $prismaClient.user.findUnique({
       where: {
@@ -123,8 +133,9 @@ export class DepartmentCore {
         data: {
           id: crypto.randomUUID(),
           name: body.name!.trim(),
-          type: body.type || "OTHER",
+          type: departmentType,
           modules: parseDepartmentModulesInput(body.modules, throwDomainError) ?? [...DEPARTMENT_MODULES],
+          scheduleConfig: scheduleConfig as unknown as Prisma.InputJsonValue,
           leaderId: leader.id,
           crunchId: user.crunchId!,
           isActive: true,
@@ -184,6 +195,7 @@ export class DepartmentCore {
       type?: string;
       isActive?: boolean;
       modules?: unknown;
+      scheduleConfig?: unknown;
     };
 
     if (!id) {
@@ -239,6 +251,12 @@ export class DepartmentCore {
           id: body.leaderId,
         },
       };
+    }
+
+    if (body.scheduleConfig !== undefined) {
+      data.scheduleConfig = parseDepartmentScheduleConfig(
+        body.scheduleConfig,
+      ) as unknown as Prisma.InputJsonValue;
     }
 
     const department = body.leaderId !== undefined

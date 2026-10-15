@@ -74,6 +74,21 @@ const departmentRow = {
   mediaItems: [{ category: "MUSIC" }],
 };
 
+const customScheduleConfig = {
+  version: 1,
+  fields: {
+    arrival: true,
+    rehearsal: false,
+    songs: false,
+    materials: true,
+    roles: true,
+    checklist: true,
+  },
+  roles: ["Recepção personalizada"],
+  checklistItems: [{ templateKey: "CUSTOM_WELCOME", title: "Preparar recepção" }],
+  communion: { enabled: false, roles: [], checklistItems: [] },
+};
+
 describe("ChurchDepartmentAdapters - ministerio", () => {
   let adapters: ChurchDepartmentAdapters;
 
@@ -128,6 +143,52 @@ describe("ChurchDepartmentAdapters - ministerio", () => {
   });
 
   describe("createChurchDepartment", () => {
+    it("persists the tenant's schedule configuration when creating a ministry", async () => {
+      const createdDepartment = { ...departmentRow, scheduleConfig: customScheduleConfig };
+      const tx = {
+        department: {
+          create: jest.fn().mockResolvedValue(createdDepartment),
+          findUnique: jest.fn().mockResolvedValue(createdDepartment),
+        },
+        userDepartmentMembership: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          upsert: jest.fn().mockResolvedValue({ id: "membership-leader" }),
+        },
+      };
+      mockPrismaClient.$transaction.mockImplementation(async (callback) => callback(tx));
+      mockPrismaClient.user.findUnique
+        .mockResolvedValueOnce({ id: "user-1", crunchId: "church-1", role: "PASTOR" })
+        .mockResolvedValueOnce({ id: "leader-1", crunchId: "church-1" });
+
+      const result = await adapters.createChurchDepartment(makeRequest({
+        body: {
+          name: "Recepção",
+          leaderId: "leader-1",
+          type: "RECEPTION",
+          scheduleConfig: customScheduleConfig,
+        },
+      }));
+
+      expect(tx.department.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ scheduleConfig: customScheduleConfig }),
+      }));
+      expect((result as unknown as { scheduleConfig?: unknown }).scheduleConfig).toEqual(customScheduleConfig);
+    });
+
+    it("rejects malformed schedule configuration before creating the ministry", async () => {
+      await expect(adapters.createChurchDepartment(makeRequest({
+        body: {
+          name: "Recepção",
+          leaderId: "leader-1",
+          type: "RECEPTION",
+          scheduleConfig: { version: 2 },
+        },
+      }))).rejects.toThrow("Configuração de escala inválida");
+
+      expect(mockPrismaClient.department.create).not.toHaveBeenCalled();
+      expect(mockPrismaClient.$transaction).not.toHaveBeenCalled();
+    });
+
     it("cria ministerio e associa lider como membro principal na mesma transacao", async () => {
       const tx = {
         department: {
@@ -152,6 +213,15 @@ describe("ChurchDepartmentAdapters - ministerio", () => {
       expect(result.id).toBe("dept-1");
       expect(mockPrismaClient.$transaction).toHaveBeenCalled();
       expect(tx.department.create).toHaveBeenCalled();
+      expect(tx.department.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({
+          scheduleConfig: expect.objectContaining({
+            version: 1,
+            roles: ["Voluntário"],
+            communion: { enabled: false, roles: [], checklistItems: [] },
+          }),
+        }),
+      }));
       expect(tx.userDepartmentMembership.upsert).toHaveBeenCalledWith({
         where: { userId_departmentId: { userId: "leader-1", departmentId: "dept-1" } },
         update: {},
@@ -247,6 +317,61 @@ describe("ChurchDepartmentAdapters - ministerio", () => {
   });
 
   describe("updateChurchDepartment", () => {
+    it("persists a validated schedule configuration when updating a ministry", async () => {
+      mockPrismaClient.department.update.mockResolvedValue({
+        ...departmentRow,
+        scheduleConfig: customScheduleConfig,
+      });
+
+      const result = await adapters.updateChurchDepartment(makeRequest({
+        params: { id: "dept-1" },
+        body: { scheduleConfig: customScheduleConfig },
+      }));
+
+      expect(mockPrismaClient.department.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: "dept-1" },
+        data: expect.objectContaining({ scheduleConfig: customScheduleConfig }),
+      }));
+      expect((result as unknown as { scheduleConfig?: unknown }).scheduleConfig).toEqual(customScheduleConfig);
+    });
+
+    it("resolves legacy defaults on read without writing the department", async () => {
+      const result = await adapters.getChurchDepartmentById(
+        makeRequest({ params: { id: "dept-1" } }),
+      );
+
+      expect((result as unknown as { scheduleConfig?: unknown }).scheduleConfig).toEqual({
+        version: 1,
+        fields: {
+          arrival: false,
+          rehearsal: true,
+          songs: true,
+          materials: true,
+          roles: true,
+          checklist: false,
+        },
+        roles: ["Ministro", "Cantor(a)", "Guitarra", "Baixo", "Violão", "Bateria", "Cajon", "Teclado"],
+        checklistItems: [],
+        communion: { enabled: false, roles: [], checklistItems: [] },
+      });
+      expect(mockPrismaClient.department.update).not.toHaveBeenCalled();
+      expect(mockPrismaClient.department.create).not.toHaveBeenCalled();
+    });
+
+    it("does not read or update a ministry belonging to another tenant", async () => {
+      mockPrismaClient.department.findFirst.mockResolvedValue(null);
+
+      await expect(adapters.updateChurchDepartment(makeRequest({
+        params: { id: "other-church-dept" },
+        body: { scheduleConfig: customScheduleConfig },
+      }))).rejects.toThrow("Ministério não encontrado nesta igreja");
+
+      expect(mockPrismaClient.department.update).not.toHaveBeenCalled();
+      expect(mockPrismaClient.department.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: "other-church-dept", crunchId: "church-1" },
+      }));
+    });
+
     it("membro comum sem cargo nao pode editar ministerio", async () => {
       mockPrismaClient.user.findUnique.mockResolvedValue({
         id: "user-1",

@@ -49,8 +49,66 @@
           </v-btn>
         </div>
 
+        <section class="message-suggestions mb-6" aria-labelledby="message-suggestions-title">
+          <div class="section-heading mb-3">
+            <div>
+              <h2 id="message-suggestions-title" class="text-subtitle-1 font-weight-bold mb-1">
+                Modelos sugeridos
+              </h2>
+              <p class="text-body-2 text-grey-darken-1 mb-0">
+                Escolha um ponto de partida e personalize antes de salvar. Nada é enviado ao selecionar.
+              </p>
+            </div>
+          </div>
+
+          <p v-if="templatesLoading" class="text-caption text-grey-darken-1 mb-2" role="status">
+            Conferindo modelos salvos…
+          </p>
+
+          <div class="message-suggestion-list app-surface" role="list">
+            <div
+              v-for="suggestion in templateSuggestions"
+              :key="suggestion.key"
+              class="message-suggestion-row"
+              role="listitem"
+            >
+              <div class="message-suggestion-copy">
+                <h3 class="text-body-1 font-weight-bold mb-1">{{ suggestion.name }}</h3>
+                <p class="text-body-2 text-grey-darken-1 mb-0">{{ suggestion.description }}</p>
+              </div>
+              <div class="message-suggestion-actions">
+                <v-chip
+                  v-if="suggestion.savedTemplate"
+                  color="success"
+                  variant="tonal"
+                  size="small"
+                  aria-label="Sugestão já salva nesta igreja"
+                >
+                  Salvo
+                </v-chip>
+                <v-btn
+                  color="primary"
+                  :variant="suggestion.savedTemplate ? 'tonal' : 'flat'"
+                  class="text-none"
+                  size="small"
+                  :disabled="templatesLoading || Boolean(templatesError)"
+                  :aria-label="suggestion.savedTemplate ? `Editar ${suggestion.name}` : `Usar ${suggestion.name}`"
+                  @click="openSuggestedTemplate(suggestion)"
+                >
+                  {{ suggestion.actionLabel }}
+                </v-btn>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <v-alert v-if="templatesError" type="error" variant="tonal" density="compact" class="mb-4">
-          {{ templatesError }}
+          <div class="d-flex align-center justify-space-between flex-wrap ga-2">
+            <span>{{ templatesError }}</span>
+            <v-btn variant="text" color="red-darken-2" size="small" class="text-none" @click="loadMessageTemplates">
+              Tentar novamente
+            </v-btn>
+          </div>
         </v-alert>
 
         <v-text-field
@@ -76,7 +134,7 @@
         >
           <MessageSquare size="32" color="#9CA3AF" class="mb-3" />
           <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-            Nenhum modelo criado ainda
+            Nenhum modelo salvo ainda. Escolha uma sugestão acima ou crie um modelo personalizado.
           </p>
         </v-card>
 
@@ -459,6 +517,16 @@
           </v-btn>
         </div>
 
+        <v-alert
+          v-if="templateFormSuggestionKey"
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          Salvar não envia a mensagem nem ativa uma regra automática.
+        </v-alert>
+
         <v-text-field
           v-model="templateForm.name"
           label="Nome do modelo"
@@ -650,6 +718,13 @@ import {
   type MessageLog,
 } from "../../../composables/useMessages";
 import { compareListText, normalizeListText } from "../../utils/listOrdering";
+import {
+  getSuggestedTemplateAction,
+  getSuggestedTemplateActionLabel,
+  MESSAGE_TEMPLATE_SUGGESTIONS,
+  type MessageTemplateSuggestion,
+  type MessageTemplateSuggestionKey,
+} from "../../utils/messageTemplateSuggestions";
 
 const router = useRouter();
 
@@ -768,6 +843,17 @@ const templateSearch = ref("");
 
 const sortedMessageTemplates = computed(() =>
   [...messageTemplates.value].sort((first, second) => compareListText(first.name, second.name)),
+);
+
+const templateSuggestions = computed(() =>
+  MESSAGE_TEMPLATE_SUGGESTIONS.map((suggestion) => {
+    const action = getSuggestedTemplateAction(suggestion, messageTemplates.value);
+    return {
+      ...suggestion,
+      savedTemplate: action.type === "EDIT" ? action.template : null,
+      actionLabel: getSuggestedTemplateActionLabel(action),
+    };
+  }),
 );
 
 const filteredMessageTemplates = computed(() => {
@@ -928,22 +1014,39 @@ const isTemplateDialogOpen = ref(false);
 const editingTemplateId = ref("");
 const isSavingTemplate = ref(false);
 const templateFormError = ref("");
+const templateFormSuggestionKey = ref<MessageTemplateSuggestionKey | null>(null);
 const templateForm = reactive({ name: "", body: "" });
 
 const resetTemplateForm = () => {
   templateForm.name = "";
   templateForm.body = "";
+  templateFormSuggestionKey.value = null;
   templateFormError.value = "";
 };
 
-const openCreateTemplateDialog = () => {
+const openCreateTemplateDialog = (suggestion?: MessageTemplateSuggestion) => {
   editingTemplateId.value = "";
   resetTemplateForm();
+  if (suggestion) {
+    templateForm.name = suggestion.name;
+    templateForm.body = suggestion.body;
+    templateFormSuggestionKey.value = suggestion.key;
+  }
   isTemplateDialogOpen.value = true;
+};
+
+const openSuggestedTemplate = (suggestion: MessageTemplateSuggestion) => {
+  const action = getSuggestedTemplateAction(suggestion, messageTemplates.value);
+  if (action.type === "CREATE") {
+    openCreateTemplateDialog(action.suggestion);
+    return;
+  }
+  openEditTemplateDialog(action.template);
 };
 
 const openEditTemplateDialog = (template: MessageTemplate) => {
   editingTemplateId.value = template.id;
+  templateFormSuggestionKey.value = null;
   templateForm.name = template.name;
   templateForm.body = template.body;
   templateFormError.value = "";
@@ -959,7 +1062,13 @@ const handleSaveTemplate = async () => {
   isSavingTemplate.value = true;
   templateFormError.value = "";
 
-  const payload = { name: templateForm.name, body: templateForm.body };
+  const payload = {
+    name: templateForm.name,
+    body: templateForm.body,
+    ...(templateFormSuggestionKey.value
+      ? { suggestionKey: templateFormSuggestionKey.value }
+      : {}),
+  };
   const { error } = editingTemplateId.value
     ? await updateMessageTemplate(editingTemplateId.value, payload)
     : await createMessageTemplate(payload);
@@ -1300,6 +1409,43 @@ onMounted(async () => {
   overflow: hidden;
 }
 
+.message-suggestion-list {
+  overflow: hidden;
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: 12px;
+  padding: 0 16px;
+}
+
+.message-suggestion-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 14px 0;
+}
+
+.message-suggestion-row + .message-suggestion-row {
+  border-top: 1px solid var(--app-color-border-subtle);
+}
+
+.message-suggestion-copy {
+  min-width: 0;
+}
+
+.message-suggestion-copy h3,
+.message-suggestion-copy p {
+  overflow-wrap: anywhere;
+}
+
+.message-suggestion-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
 .member-card:active {
   transform: scale(0.99);
 }
@@ -1338,6 +1484,22 @@ onMounted(async () => {
 
   .member-badges :deep(.v-chip) {
     max-width: 100%;
+  }
+
+  .message-suggestion-list {
+    padding: 0 12px;
+  }
+
+  .message-suggestion-row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    padding: 14px 0;
+  }
+
+  .message-suggestion-actions {
+    justify-content: space-between;
+    width: 100%;
   }
 }
 </style>

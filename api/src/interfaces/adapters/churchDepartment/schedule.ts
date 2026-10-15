@@ -6,15 +6,14 @@ import { DomainError } from "../../../domain/value-objects/utils/DomainError";
 import { pushNotificationService } from "../../../infrastructure/notifications/PushNotificationService";
 import { CurrentUser } from "./types";
 import { DepartmentContext } from "./context";
-import {
-  COMMUNION_CHECKLIST_DEFAULT,
-  DEACONATE_CHECKLIST_DEFAULTS,
-} from "./scheduleChecklist";
+import { createScheduleChecklistSnapshot } from "./scheduleChecklist";
+import { resolveDepartmentScheduleConfig } from "../../../application/Services/Department/DepartmentScheduleConfig";
 
 const scheduleSelect = {
   id: true,
   date: true,
   description: true,
+  arrivalAt: true,
   rehearsalAt: true,
   rehearsalNotes: true,
   isCommunionService: true,
@@ -30,6 +29,7 @@ const scheduleSelect = {
       name: true,
       type: true,
       leaderId: true,
+      scheduleConfig: true,
     },
   },
   assignments: {
@@ -192,6 +192,27 @@ export class ScheduleAdapters {
     return parsedDate;
   }
 
+  private getArrivalDateTime(date: string, time: unknown) {
+    if (typeof time !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+      throw new DomainError("Horário de chegada inválido");
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new DomainError("Data da escala inválida");
+    }
+
+    const parsedDate = new Date(`${date}T${time}:00.000`);
+    if (
+      Number.isNaN(parsedDate.getTime()) ||
+      this.toLocalDatePart(parsedDate) !== date ||
+      this.toLocalTimePart(parsedDate) !== time
+    ) {
+      throw new DomainError("Horário de chegada inválido");
+    }
+
+    return parsedDate;
+  }
+
   async getChurchDepartmentSchedules(request: FastifyRequest) {
     const user = await this.context.getCurrentUser(request);
     const { id } = request.params as { id?: string };
@@ -266,6 +287,7 @@ export class ScheduleAdapters {
       rehearsalDate?: string | null;
       rehearsalTime?: string | null;
       rehearsalNotes?: string | null;
+      arrivalTime?: string | null;
       serviceOccurrenceId?: string | null;
       isCommunionService?: boolean;
     };
@@ -307,20 +329,28 @@ export class ScheduleAdapters {
 
     const { songIds, resourceIds, mediaItemIds } = this.getScheduleMediaItemIds(body);
 
-    const isDeaconateDepartment = department.type === "DEACONATE";
-    const isCommunionService = isDeaconateDepartment && body.isCommunionService === true;
-    const checklistDefaults = isDeaconateDepartment
-      ? [
-          ...DEACONATE_CHECKLIST_DEFAULTS,
-          ...(isCommunionService ? [COMMUNION_CHECKLIST_DEFAULT] : []),
-        ].map((item) => ({
-          id: crypto.randomUUID(),
-          ...item,
-          isComplete: false,
-          completedAt: null,
-          isApplicable: true,
-        }))
-      : [];
+    if (
+      body.arrivalTime !== undefined &&
+      body.arrivalTime !== null &&
+      typeof body.arrivalTime !== "string"
+    ) {
+      throw new DomainError("Horário de chegada inválido");
+    }
+
+    if (body.isCommunionService !== undefined && typeof body.isCommunionService !== "boolean") {
+      throw new DomainError("Marcador de Santa Ceia inválido");
+    }
+
+    const scheduleConfig = resolveDepartmentScheduleConfig(
+      department.scheduleConfig,
+      department.type,
+    );
+    const isCommunionService =
+      scheduleConfig.communion.enabled && body.isCommunionService === true;
+    const checklistDefaults = createScheduleChecklistSnapshot(
+      scheduleConfig,
+      isCommunionService,
+    );
 
     await this.assertMediaItemsFromDepartment(songIds, departmentId, "MUSIC");
     await this.assertMediaItemsFromDepartment(resourceIds, departmentId, "RESOURCE");
@@ -330,11 +360,14 @@ export class ScheduleAdapters {
         id: crypto.randomUUID(),
         date: scheduleDate,
         description: body.title.trim(),
+        arrivalAt: body.arrivalTime
+          ? this.getArrivalDateTime(body.date, body.arrivalTime)
+          : null,
         departmentId,
         serviceOccurrenceId,
         rehearsalAt: this.getOptionalDateTime(body.rehearsalDate, body.rehearsalTime),
         rehearsalNotes: body.rehearsalNotes?.trim() || null,
-        ...(isDeaconateDepartment ? { isCommunionService } : {}),
+        isCommunionService,
         mediaItems: {
           create: mediaItemIds.map((mediaItemId, index) => ({
             id: crypto.randomUUID(),
@@ -366,6 +399,7 @@ export class ScheduleAdapters {
       rehearsalDate?: string | null;
       rehearsalTime?: string | null;
       rehearsalNotes?: string | null;
+      arrivalTime?: string | null;
       serviceOccurrenceId?: string | null;
       isCommunionService?: boolean;
     };
@@ -418,6 +452,15 @@ export class ScheduleAdapters {
       data.date = scheduleDate;
     }
 
+    if (body.arrivalTime !== undefined) {
+      if (body.arrivalTime === null) {
+        data.arrivalAt = null;
+      } else {
+        const datePart = body.date ?? this.toLocalDatePart(schedule.date);
+        data.arrivalAt = this.getArrivalDateTime(datePart, body.arrivalTime);
+      }
+    }
+
     if (body.departmentId !== undefined) {
       data.department = {
         connect: {
@@ -441,9 +484,14 @@ export class ScheduleAdapters {
       throw new DomainError("Marcador de Santa Ceia inválido");
     }
 
-    if (body.isCommunionService !== undefined && schedule.department.type === "DEACONATE") {
+    if (body.isCommunionService !== undefined) {
+      const config = resolveDepartmentScheduleConfig(
+        schedule.department.scheduleConfig,
+        schedule.department.type,
+      );
+      const isCommunionService = config.communion.enabled && body.isCommunionService;
       (data as Prisma.ScheduleUpdateInput & { isCommunionService?: boolean }).isCommunionService =
-        body.isCommunionService;
+        isCommunionService;
     }
 
     if (body.serviceOccurrenceId !== undefined) {
@@ -499,32 +547,39 @@ export class ScheduleAdapters {
       });
     }
 
-    if (body.isCommunionService !== undefined && schedule.department.type === "DEACONATE") {
-      const checklistDb = $prismaClient as any;
-      if (body.isCommunionService) {
-        await checklistDb.scheduleChecklistItem.upsert({
-          where: {
-            scheduleId_templateKey: {
-              scheduleId: id,
-              templateKey: COMMUNION_CHECKLIST_DEFAULT.templateKey,
+    if (
+      body.isCommunionService !== undefined &&
+      schedule.isCommunionService !== body.isCommunionService
+    ) {
+      const checklistDb = $prismaClient;
+      const config = resolveDepartmentScheduleConfig(
+        schedule.department.scheduleConfig,
+        schedule.department.type,
+      );
+      const communionItems = config.communion.enabled
+        ? config.communion.checklistItems
+        : [];
+      if (body.isCommunionService && config.communion.enabled) {
+        for (const [index, item] of communionItems.entries()) {
+          await checklistDb.scheduleChecklistItem.upsert({
+            where: {
+              scheduleId_templateKey: { scheduleId: id, templateKey: item.templateKey },
             },
-          },
-          create: {
-            id: crypto.randomUUID(),
-            scheduleId: id,
-            ...COMMUNION_CHECKLIST_DEFAULT,
-            isComplete: false,
-            completedAt: null,
-            isApplicable: true,
-          },
-          update: { isApplicable: true },
-        });
-      } else {
+            create: {
+              id: crypto.randomUUID(),
+              scheduleId: id,
+              ...item,
+              order: config.checklistItems.length + index,
+              isComplete: false,
+              completedAt: null,
+              isApplicable: true,
+            },
+            update: { isApplicable: true },
+          });
+        }
+      } else if (communionItems.length > 0) {
         await checklistDb.scheduleChecklistItem.updateMany({
-          where: {
-            scheduleId: id,
-            templateKey: COMMUNION_CHECKLIST_DEFAULT.templateKey,
-          },
+          where: { scheduleId: id, templateKey: { in: communionItems.map((item) => item.templateKey) } },
           data: { isApplicable: false },
         });
       }

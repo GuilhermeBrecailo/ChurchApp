@@ -6,7 +6,26 @@ import {
   getScheduleCultOptions,
   getScheduleCultResolution,
   getScheduleAssignmentKey,
-} from "../app/utils/scaleSchedule";
+  getSchedulePeriodSchedules,
+} from "../app/utils/scaleSchedule.ts";
+
+describe("período da tela de escalas", () => {
+  it("seleciona o grupo recente ao abrir o histórico", () => {
+    const groups = {
+      upcoming: [{ id: "future" }],
+      recent: [{ id: "past" }],
+    };
+
+    assert.deepEqual(
+      getSchedulePeriodSchedules(groups, "history").map(({ id }) => id),
+      ["past"],
+    );
+    assert.deepEqual(
+      getSchedulePeriodSchedules(groups, "upcoming").map(({ id }) => id),
+      ["future"],
+    );
+  });
+});
 
 describe("seleção do culto na edição da escala", () => {
   it("preserva o culto manual já vinculado pela ocorrência", () => {

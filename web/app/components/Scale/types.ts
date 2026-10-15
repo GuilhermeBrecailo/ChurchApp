@@ -5,6 +5,7 @@ export type ScheduleEvent = {
   title: string;
   date: string;
   time: string;
+  arrivalAt?: string | null;
   rehearsalLabel?: string;
   rehearsalNotes?: string | null;
   volunteerCount: number;

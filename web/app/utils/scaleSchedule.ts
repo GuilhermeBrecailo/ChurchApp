@@ -18,6 +18,15 @@ export type ScheduleCultResolution =
   | { kind: "existing"; occurrenceId: string }
   | { kind: "resolve"; serviceTimeId: string; date: string };
 
+export type ScheduleListPeriod = "upcoming" | "history";
+
+export function getSchedulePeriodSchedules<T>(
+  schedulesByDate: { upcoming: T[]; recent: T[] },
+  period: ScheduleListPeriod,
+): T[] {
+  return period === "history" ? schedulesByDate.recent : schedulesByDate.upcoming;
+}
+
 export function getScheduleCultOptions(upcoming: UpcomingOccurrence[]): ScheduleCultOption[] {
   return upcoming.flatMap((occurrence) => {
     const date = occurrence.date?.slice(0, 10) ?? "";

@@ -177,7 +177,7 @@
           />
 
           <v-select
-            v-model="departmentForm.type"
+            :model-value="getDepartmentTypeOptionValue(departmentForm.type)"
             label="Tipo"
             :items="departmentTypes"
             item-title="label"
@@ -189,6 +189,7 @@
             class="admin-input mb-4"
             hide-details="auto"
             :disabled="isCreatingDepartment"
+            @update:model-value="handleDepartmentTypeChange"
           />
 
           <v-select
@@ -203,6 +204,12 @@
             color="primary"
             class="admin-input mb-4"
             hide-details="auto"
+            :disabled="isCreatingDepartment"
+          />
+
+          <MinisteryDepartmentScheduleConfigFields
+            v-model="departmentScheduleConfig"
+            :department-type="departmentForm.type"
             :disabled="isCreatingDepartment"
           />
 
@@ -324,7 +331,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Building, ChevronLeft, UserCheck } from "lucide-vue-next";
 import { useAuth } from "../../../composables/useAuth";
@@ -337,6 +344,14 @@ import {
   type DepartmentSchedule,
 } from "../../../composables/useDepartments";
 import { compareListText } from "../../utils/listOrdering";
+import {
+  DEPARTMENT_TYPE_OPTIONS,
+  departmentTypeLabel,
+  departmentTypeMatchesFilter,
+  getDepartmentTypeOptionValue,
+  getDepartmentSchedulePreset,
+  resolveDepartmentScheduleConfig,
+} from "../../utils/departmentScheduleConfig";
 
 const router = useRouter();
 
@@ -404,6 +419,7 @@ const departmentForm = reactive({
   type: "OTHER",
   leaderId: "",
 });
+const departmentScheduleConfig = ref(getDepartmentSchedulePreset("OTHER"));
 
 const normalizeFilterText = (value?: string | null) =>
   (value || "")
@@ -419,21 +435,22 @@ const leaderOptions = computed(() =>
   })),
 );
 
-const departmentTypes = [
-  { label: "Louvor", value: "WORSHIP" },
-  { label: "Louvor", value: "MUSIC" },
-  { label: "Crianças", value: "KIDS" },
-  { label: "Recepção", value: "RECEPTION" },
-  { label: "Mídia", value: "MEDIA" },
-  { label: "Intercessão", value: "INTERCESSION" },
-  { label: "Outro", value: "OTHER" },
-];
+const departmentTypes = DEPARTMENT_TYPE_OPTIONS;
+const handleDepartmentTypeChange = (value: string | null) => {
+  if (value) departmentForm.type = value;
+};
 const departmentFilterOptions = computed(() => [
   { label: "Todos", value: "ALL" },
   ...departmentTypes,
 ]);
-const departmentTypeLabel = (value: string) =>
-  departmentTypes.find((type) => type.value === value)?.label || "Outro";
+watch(
+  () => departmentForm.type,
+  (type) => {
+    if (!editingDepartmentId.value) {
+      departmentScheduleConfig.value = getDepartmentSchedulePreset(type);
+    }
+  },
+);
 
 const filteredDepartments = computed(() => {
   const search = normalizeFilterText(departmentSearch.value);
@@ -445,8 +462,7 @@ const filteredDepartments = computed(() => {
       normalizeFilterText(`${department.name} ${department.leader.name}`)
         .includes(search);
     const matchesType =
-      departmentTypeFilter.value === "ALL" ||
-      department.type === departmentTypeFilter.value;
+      departmentTypeMatchesFilter(department.type, departmentTypeFilter.value);
 
       return matchesSearch && matchesType;
     })
@@ -498,6 +514,7 @@ const resetDepartmentForm = () => {
   departmentForm.name = "";
   departmentForm.type = "OTHER";
   departmentForm.leaderId = "";
+  departmentScheduleConfig.value = getDepartmentSchedulePreset("OTHER");
   editingDepartmentId.value = "";
 };
 
@@ -524,11 +541,13 @@ const handleCreateDepartment = async () => {
           name,
           type: departmentForm.type,
           leaderId: departmentForm.leaderId,
+          scheduleConfig: departmentScheduleConfig.value,
         })
       : await createDepartment({
           name,
           type: departmentForm.type,
           leaderId: departmentForm.leaderId,
+          scheduleConfig: departmentScheduleConfig.value,
         });
 
     if (error || !data) {
@@ -556,6 +575,10 @@ const openDepartmentEditDialog = (department: ChurchDepartment) => {
   departmentForm.name = department.name;
   departmentForm.type = department.type;
   departmentForm.leaderId = department.leaderId;
+  departmentScheduleConfig.value = resolveDepartmentScheduleConfig(
+    department.scheduleConfig,
+    department.type,
+  );
   createDepartmentError.value = "";
   isDepartmentDialogOpen.value = true;
 };

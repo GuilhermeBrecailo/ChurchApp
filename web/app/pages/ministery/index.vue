@@ -230,6 +230,12 @@
             :disabled="isCreatingDepartment"
           />
 
+          <MinisteryDepartmentScheduleConfigFields
+            v-model="departmentForm.scheduleConfig"
+            :department-type="departmentForm.type"
+            :disabled="isCreatingDepartment"
+          />
+
           <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">
             Módulos ativos
           </p>
@@ -304,7 +310,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { Building, List, Plus, Trash2, BarChart3 } from "lucide-vue-next";
 import {
   useDepartments,
@@ -313,6 +319,11 @@ import {
 } from "../../../composables/useDepartments";
 import { useMembers, type ChurchMember } from "../../../composables/useMembers";
 import { useAuth } from "../../../composables/useAuth";
+import {
+  DEPARTMENT_TYPE_OPTIONS,
+  departmentTypeLabel,
+  getDepartmentSchedulePreset,
+} from "../../utils/departmentScheduleConfig";
 
 const router = useRouter();
 const { user } = useAuth();
@@ -340,6 +351,7 @@ const departmentForm = reactive({
   name: "",
   type: "OTHER",
   leaderId: "",
+  scheduleConfig: getDepartmentSchedulePreset("OTHER"),
   modules: DEPARTMENT_MODULE_OPTIONS.map((module) => module.value),
 });
 
@@ -349,17 +361,13 @@ const toggleModule = (module: string) => {
     : [...departmentForm.modules, module];
 };
 
-const departmentTypes = [
-  { label: "Louvor", value: "WORSHIP" },
-  { label: "Crianças", value: "KIDS" },
-  { label: "Recepção", value: "RECEPTION" },
-  { label: "Mídia", value: "MEDIA" },
-  { label: "Intercessão", value: "INTERCESSION" },
-  { label: "Diaconato", value: "DEACONATE" },
-  { label: "Outro", value: "OTHER" },
-];
-const departmentTypeLabel = (value: string) =>
-  departmentTypes.find((type) => type.value === value)?.label || "Outro";
+const departmentTypes = DEPARTMENT_TYPE_OPTIONS;
+watch(
+  () => departmentForm.type,
+  (type) => {
+    departmentForm.scheduleConfig = getDepartmentSchedulePreset(type);
+  },
+);
 
 const isChurchWideManager = computed(
   () =>
@@ -440,6 +448,7 @@ const resetDepartmentForm = () => {
   departmentForm.name = "";
   departmentForm.type = "OTHER";
   departmentForm.leaderId = "";
+  departmentForm.scheduleConfig = getDepartmentSchedulePreset("OTHER");
   departmentForm.modules = DEPARTMENT_MODULE_OPTIONS.map(
     (module) => module.value,
   );
@@ -473,6 +482,7 @@ const handleCreateDepartment = async () => {
       name,
       type: departmentForm.type,
       leaderId: departmentForm.leaderId,
+      scheduleConfig: departmentForm.scheduleConfig,
       modules: [...departmentForm.modules],
     });
 

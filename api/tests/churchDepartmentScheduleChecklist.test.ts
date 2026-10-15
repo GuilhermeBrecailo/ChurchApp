@@ -163,6 +163,130 @@ describe("checklist por escala do Diaconato", () => {
     }));
   });
 
+  it("cria checklist a partir do modelo personalizado do ministério", async () => {
+    mockPrismaClient.department.findFirst.mockResolvedValue({
+      ...deaconate,
+      scheduleConfig: {
+        version: 1,
+        fields: {
+          arrival: true,
+          rehearsal: false,
+          songs: false,
+          materials: false,
+          roles: true,
+          checklist: true,
+        },
+        roles: ["Recepção"],
+        checklistItems: [{ templateKey: "CHECK_SOUND", title: "Conferir som" }],
+        communion: {
+          enabled: false,
+          roles: [],
+          checklistItems: [{ templateKey: "SET_TABLE", title: "Preparar mesa" }],
+        },
+      },
+    });
+    mockPrismaClient.schedule.create.mockResolvedValue(schedule);
+
+    await adapters.createChurchDepartmentSchedule(makeRequest({
+      params: { id: "dept-1" },
+      body: { title: "Culto de domingo", date: "2026-10-11" },
+    }));
+
+    expect(mockPrismaClient.schedule.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        checklistItems: {
+          create: [expect.objectContaining({
+            templateKey: "CHECK_SOUND",
+            title: "Conferir som",
+          })],
+        },
+      }),
+    }));
+    expect(mockPrismaClient.scheduleChecklistItem.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("não cria itens de Santa Ceia quando o modelo não habilitou essa opção", async () => {
+    mockPrismaClient.department.findFirst.mockResolvedValue({
+      ...deaconate,
+      scheduleConfig: {
+        version: 1,
+        fields: {
+          arrival: true,
+          rehearsal: false,
+          songs: false,
+          materials: false,
+          roles: true,
+          checklist: true,
+        },
+        roles: ["Recepção"],
+        checklistItems: [{ templateKey: "CHECK_SOUND", title: "Conferir som" }],
+        communion: {
+          enabled: false,
+          roles: [],
+          checklistItems: [{ templateKey: "SET_TABLE", title: "Preparar mesa" }],
+        },
+      },
+    });
+    mockPrismaClient.schedule.create.mockResolvedValue(schedule);
+
+    await adapters.createChurchDepartmentSchedule(makeRequest({
+      params: { id: "dept-1" },
+      body: {
+        title: "Culto de Santa Ceia",
+        date: "2026-10-11",
+        isCommunionService: true,
+      },
+    }));
+
+    const createData = mockPrismaClient.schedule.create.mock.calls[0][0].data;
+    expect(createData.checklistItems.create).toEqual([
+      expect.objectContaining({ templateKey: "CHECK_SOUND" }),
+    ]);
+    expect(createData.checklistItems.create).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ templateKey: "SET_TABLE" })]),
+    );
+  });
+
+  it("usa somente as tarefas configuradas para Santa Ceia", async () => {
+    mockPrismaClient.department.findFirst.mockResolvedValue({
+      ...deaconate,
+      scheduleConfig: {
+        version: 1,
+        fields: {
+          arrival: true,
+          rehearsal: false,
+          songs: false,
+          materials: false,
+          roles: true,
+          checklist: true,
+        },
+        roles: ["Recepção"],
+        checklistItems: [{ templateKey: "CHECK_SOUND", title: "Conferir som" }],
+        communion: {
+          enabled: true,
+          roles: [],
+          checklistItems: [{ templateKey: "SET_TABLE", title: "Preparar mesa especial" }],
+        },
+      },
+    });
+    mockPrismaClient.schedule.create.mockResolvedValue(schedule);
+
+    await adapters.createChurchDepartmentSchedule(makeRequest({
+      params: { id: "dept-1" },
+      body: {
+        title: "Culto de Santa Ceia",
+        date: "2026-10-11",
+        isCommunionService: true,
+      },
+    }));
+
+    const createData = mockPrismaClient.schedule.create.mock.calls[0][0].data;
+    expect(createData.checklistItems.create).toEqual(expect.arrayContaining([
+      expect.objectContaining({ templateKey: "CHECK_SOUND", title: "Conferir som" }),
+      expect.objectContaining({ templateKey: "SET_TABLE", title: "Preparar mesa especial" }),
+    ]));
+  });
+
   it("desmarca Santa Ceia sem apagar nem reiniciar o item concluído", async () => {
     mockPrismaClient.scheduleChecklistItem.updateMany.mockResolvedValue({ count: 1 });
     mockPrismaClient.schedule.update.mockResolvedValue({ ...schedule, isCommunionService: false });
@@ -173,7 +297,10 @@ describe("checklist por escala do Diaconato", () => {
     }));
 
     expect(mockPrismaClient.scheduleChecklistItem.updateMany).toHaveBeenCalledWith({
-      where: { scheduleId: "schedule-1", templateKey: "COMMUNION_PREPARATION" },
+      where: {
+        scheduleId: "schedule-1",
+        templateKey: { in: ["COMMUNION_PREPARATION"] },
+      },
       data: { isApplicable: false },
     });
     expect(mockPrismaClient.scheduleChecklistItem.delete).not.toHaveBeenCalled();

@@ -182,6 +182,7 @@ import { useHolyrics } from "../../composables/useHolyrics";
 import type { ScheduleEvent } from "../components/Scale/types";
 import { getInitials } from "../utils/initials";
 import { splitSchedulesByDate } from "../utils/dashboardSchedules";
+import { getSchedulePeriodSchedules } from "../utils/scaleSchedule";
 
 const {
   getDepartments,
@@ -353,7 +354,7 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
 
 const filteredSchedules = computed(() => {
   const datedSchedules = splitSchedulesByDate(schedules.value);
-  const periodSchedules = datedSchedules[schedulePeriod.value];
+  const periodSchedules = getSchedulePeriodSchedules(datedSchedules, schedulePeriod.value);
   const visibleSchedules =
     activeFilter.value === "Todos"
       ? periodSchedules

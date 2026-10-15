@@ -665,6 +665,7 @@ model Department {
     // Vazio nos registros ja existentes e tratado como "todos habilitados",
     // pra nao apagar aba de ministerio nenhum na migracao.
     modules  String[] @default([])
+    scheduleConfig Json?
 
     crunchId String
     crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
@@ -840,6 +841,7 @@ model Schedule {
     id          String   @id @default(uuid())
     date        DateTime
     description String
+    arrivalAt DateTime?
     rehearsalAt DateTime?
     rehearsalNotes String?
     isCommunionService Boolean @default(false)
@@ -981,6 +983,7 @@ model MessageTemplate {
     id        String   @id @default(uuid())
     name      String
     body      String
+    suggestionKey String?
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
@@ -992,6 +995,7 @@ model MessageTemplate {
     birthdaySettings BirthdayMessageSetting[]
 
     @@index([crunchId])
+    @@unique([crunchId, suggestionKey])
 }
 
 // Regra de envio automatico recorrente, ligada a um ServiceTime ja

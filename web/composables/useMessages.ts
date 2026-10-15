@@ -1,5 +1,6 @@
 import type { CustomFetch } from "../types/nuxt";
 import type { ApiResponse } from "./useTypes";
+import type { MessageTemplateSuggestionKey } from "../app/utils/messageTemplateSuggestions";
 import { useNuxtApp, useRuntimeConfig } from "#app";
 import { useAuth } from "./useAuth";
 
@@ -12,6 +13,7 @@ export interface MessageTemplate {
   id: string;
   name: string;
   body: string;
+  suggestionKey?: MessageTemplateSuggestionKey | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -19,6 +21,7 @@ export interface MessageTemplate {
 export interface MessageTemplateFormDTO {
   name: string;
   body: string;
+  suggestionKey?: MessageTemplateSuggestionKey;
 }
 
 export interface MessageRule {

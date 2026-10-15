@@ -1,17 +1,29 @@
 <template>
-  <UtilsResponsiveOverlay :model-value="modelValue" max-width="520" variant="form" scrollable @update:model-value="handleOpenChange">
-    <v-card class="rounded-xl pa-6" elevation="0">
+  <UtilsResponsiveOverlay
+    :model-value="modelValue"
+    max-width="520"
+    variant="form"
+    :scrollable="!isSongPickerOpen"
+    @update:model-value="handleOpenChange"
+  >
+    <v-card
+      class="rounded-xl pa-6"
+      :class="{ 'scale-song-picker-dialog': isSongPickerOpen }"
+      elevation="0"
+    >
       <div class="responsive-dialog-header mb-5">
         <div class="d-flex align-center min-w-0">
           <v-avatar :color="avatarBgColor" size="44" class="mr-3">
             <Calendar size="20" :color="accentColor" />
           </v-avatar>
           <div class="min-w-0">
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+            <h2 id="scale-form-title" class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
               {{ isSongPickerOpen ? "Adicionar músicas" : isEditing ? "Editar escala" : "Nova escala" }}
             </h2>
             <p class="text-body-2 text-grey-darken-1 mb-0">
-              {{ isSongPickerOpen ? "Escolha as músicas e conclua para voltar à escala." : "Cadastre uma escala para um ministério." }}
+              {{ isSongPickerOpen
+                ? `${scheduleForm.songIds.length} selecionada${scheduleForm.songIds.length === 1 ? "" : "s"} · ${selectedDepartmentSongs.length} no repertório`
+                : "Cadastre uma escala para um ministério." }}
             </p>
           </div>
         </div>
@@ -46,7 +58,6 @@
         :songs="selectedDepartmentSongs"
         :selected-ids="scheduleForm.songIds"
         @toggle="toggleFormSong"
-        @close="isSongPickerOpen = false"
       />
 
       <v-form v-else autocomplete="off" @submit.prevent="handleSaveSchedule">
@@ -136,6 +147,20 @@
           />
         </div>
 
+        <v-text-field
+          v-if="scheduleFormDefinition.visibleFields.arrival"
+          v-model="scheduleForm.arrivalTime"
+          label="Horário de chegada"
+          type="time"
+          variant="outlined"
+          density="comfortable"
+          color="primary"
+          :bg-color="isDark ? 'transparent' : 'white'"
+          class="scale-input mb-4"
+          hide-details="auto"
+          :disabled="isSaving"
+        />
+
         <v-select
           v-model="scheduleForm.departmentId"
           label="Ministério"
@@ -153,7 +178,7 @@
         />
 
         <v-switch
-          v-if="selectedDepartmentType === 'DEACONATE'"
+          v-if="scheduleFormDefinition.communionEnabled"
           v-model="scheduleForm.isCommunionService"
           label="Este culto terá Santa Ceia"
           color="primary"
@@ -164,12 +189,12 @@
         >
           <template #details>
             <span class="text-caption text-medium-emphasis">
-              Adiciona a preparação ao checklist desta escala.
+              Inclui as funções e tarefas configuradas para esta ocasião.
             </span>
           </template>
         </v-switch>
 
-        <div class="scale-field-grid mb-4">
+        <div v-if="scheduleFormDefinition.visibleFields.rehearsal" class="scale-field-grid mb-4">
           <v-text-field
             v-model="scheduleForm.rehearsalDate"
             label="Data do ensaio"
@@ -197,6 +222,7 @@
         </div>
 
         <v-text-field
+          v-if="scheduleFormDefinition.visibleFields.rehearsal"
           v-model="scheduleForm.rehearsalNotes"
           label="Observações do ensaio"
           prepend-inner-icon="mdi-text"
@@ -209,7 +235,7 @@
           :disabled="isSaving"
         />
 
-        <div class="playlist-builder mb-4">
+        <div v-if="scheduleFormDefinition.visibleFields.songs" class="playlist-builder mb-4">
           <div class="playlist-builder-header">
             <p class="text-caption font-weight-bold text-grey-darken-1 mb-0">
               Playlist da escala
@@ -291,7 +317,7 @@
         </div>
 
         <v-select
-          v-if="resourceOptions.length"
+          v-if="scheduleFormDefinition.visibleFields.materials && resourceOptions.length"
           v-model="scheduleForm.resourceIds"
           label="Recursos"
           :items="resourceOptions"
@@ -311,91 +337,106 @@
           :disabled="isSaving"
         />
 
-        <div v-if="memberOptions.length" class="mb-4">
-          <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">
-            Voluntários
-          </p>
+        <section
+          v-if="scheduleFormDefinition.visibleFields.roles || scheduleForm.assignments.length"
+          class="schedule-form-role-section mb-4"
+          aria-labelledby="schedule-role-heading"
+        >
+          <div class="schedule-form-section-heading">
+            <p id="schedule-role-heading" class="text-caption font-weight-bold text-grey-darken-1 mb-0">
+              Funções e responsáveis
+            </p>
+            <p class="text-caption text-grey-darken-1 mb-0">
+              Escolha alguém para cada função mantida ou remova as que não serão usadas.
+            </p>
+          </div>
 
           <v-alert
-            v-if="!scheduleForm.departmentId"
+            v-if="scheduleForm.assignments.some((assignment) => !assignment.userId) && !memberOptions.length"
             type="info"
             variant="tonal"
             density="compact"
-            class="mb-3"
           >
-            Selecione um ministério para adicionar voluntários.
+            Cadastre pessoas neste ministério para atribuir as funções desta escala.
           </v-alert>
 
-          <div class="scale-field-grid mb-2">
-            <v-select
-              v-model="volunteerUserId"
-              label="Voluntário"
-              :items="memberOptions"
-              item-title="label"
-              item-value="value"
-              prepend-inner-icon="mdi-account-outline"
-              variant="outlined"
-              density="comfortable"
-              color="primary"
-              :bg-color="isDark ? 'transparent' : 'white'"
-              class="scale-input"
-              :menu-props="scaleSelectMenuProps"
-              hide-details="auto"
-              :disabled="isSaving || !scheduleForm.departmentId"
-            />
-            <v-combobox
-              v-model="volunteerRole"
-              label="Função"
-              :items="scheduleFormAssignmentRoleOptions"
-              placeholder="ex: Teclado"
-              variant="outlined"
-              density="comfortable"
-              color="primary"
-              :bg-color="isDark ? 'transparent' : 'white'"
-              class="scale-input"
-              :menu-props="scaleSelectMenuProps"
-              hide-details="auto"
-              :disabled="isSaving || !scheduleForm.departmentId"
-            />
-          </div>
-
-          <v-btn
-            variant="tonal"
-            :color="accentColor"
-            size="small"
-            class="text-none mb-3"
-            :disabled="isSaving || !scheduleForm.departmentId || !volunteerUserId"
-            @click="addFormVolunteer"
-          >
-            <Plus size="16" class="mr-1" /> Adicionar voluntário
-          </v-btn>
-
-          <div v-if="scheduleForm.assignments.length" class="d-flex flex-column gap-2">
+          <div class="d-flex flex-column gap-3">
             <div
-              v-for="volunteer in scheduleForm.assignments"
-              :key="volunteer.draftId"
-              class="schedule-form-volunteer-row"
+              v-for="assignment in scheduleForm.assignments"
+              :key="assignment.draftId"
+              class="schedule-form-role-row"
             >
-              <div class="min-w-0">
-                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
-                  {{ volunteer.name }}
-                </p>
-                <p class="text-caption text-grey-darken-1 mb-0">{{ volunteer.role }}</p>
-              </div>
+              <v-combobox
+                v-model="assignment.role"
+                label="Função"
+                :items="scheduleFormAssignmentRoleOptions"
+                variant="outlined"
+                density="comfortable"
+                color="primary"
+                :bg-color="isDark ? 'transparent' : 'white'"
+                class="scale-input"
+                :menu-props="scaleSelectMenuProps"
+                hide-details="auto"
+                :disabled="isSaving"
+              />
+              <v-select
+                :model-value="assignment.userId || null"
+                label="Responsável"
+                :items="memberOptions"
+                item-title="label"
+                item-value="value"
+                variant="outlined"
+                density="comfortable"
+                color="primary"
+                :bg-color="isDark ? 'transparent' : 'white'"
+                class="scale-input"
+                :menu-props="scaleSelectMenuProps"
+                hide-details="auto"
+                :disabled="isSaving || !memberOptions.length"
+                @update:model-value="setFormVolunteer(assignment.draftId, $event)"
+              />
               <v-btn
                 icon
                 variant="text"
                 color="grey-darken-1"
                 size="small"
-                :aria-label="`Remover ${volunteer.name} da função ${volunteer.role}`"
+                :aria-label="`Remover função ${assignment.role || 'sem nome'}`"
                 :disabled="isSaving"
-                @click="removeFormVolunteer(volunteer.draftId)"
+                @click="removeFormVolunteer(assignment.draftId)"
               >
                 <v-icon size="18">mdi-close</v-icon>
               </v-btn>
             </div>
           </div>
-        </div>
+
+          <v-btn
+            v-if="scheduleFormDefinition.visibleFields.roles"
+            variant="tonal"
+            :color="accentColor"
+            size="small"
+            class="text-none mt-3"
+            :disabled="isSaving || scheduleForm.assignments.length >= 40"
+            @click="addFormRole"
+          >
+            <Plus size="16" class="mr-1" /> Adicionar função
+          </v-btn>
+        </section>
+
+        <section
+          v-if="scheduleFormDefinition.visibleFields.checklist && scheduleFormDefinition.checklistItems.length"
+          class="schedule-form-checklist mb-4"
+          aria-label="Tarefas previstas para o culto"
+        >
+          <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">Tarefas deste culto</p>
+          <ul>
+            <li v-for="item in scheduleFormDefinition.checklistItems" :key="item.templateKey">
+              {{ item.title }}
+            </li>
+          </ul>
+          <p class="text-caption text-grey-darken-1 mb-0">
+            Essas tarefas serão copiadas para o checklist desta escala.
+          </p>
+        </section>
 
         <v-alert v-if="saveError" type="error" variant="tonal" density="compact" class="mb-4">
           {{ saveError }}
@@ -447,9 +488,15 @@ import {
   getScheduleAssignmentKey,
   getScheduleCultOptions,
   getScheduleCultResolution,
-  getDepartmentAssignmentRoleOptions,
   type ScheduleCultOption,
 } from "../../utils/scaleSchedule";
+import {
+  createScheduleRoleDrafts,
+  getScheduleFormDefinition,
+  isCommunionScheduleRole,
+  validateScheduleRoleDrafts,
+} from "../../utils/scheduleFormConfig";
+import { resolveDepartmentScheduleConfig } from "../../utils/departmentScheduleConfig";
 import {
   useDepartments,
   type ChurchDepartment,
@@ -514,14 +561,13 @@ const linkedCultLabel = computed(() => {
   return [title, date, time].filter(Boolean).join(" · ");
 });
 
-const isEditing = computed(() => Boolean(props.schedule));
+const pendingCreatedSchedule = ref<DepartmentSchedule | null>(null);
+const isEditing = computed(() => Boolean(props.schedule || pendingCreatedSchedule.value));
 const isSaving = ref(false);
 const isPrefilling = ref(false);
 const saveError = ref("");
 const isCopyDialogOpen = ref(false);
 const isSongPickerOpen = ref(false);
-const volunteerUserId = ref("");
-const volunteerRole = ref("");
 
 const resourcesByDepartment = ref<Record<string, DepartmentResource[]>>({});
 const songsByDepartment = ref<Record<string, DepartmentSong[]>>({});
@@ -530,6 +576,7 @@ const scheduleForm = reactive({
   title: "",
   date: "",
   time: "",
+  arrivalTime: "",
   serviceTimeId: "",
   departmentId: "",
   rehearsalDate: "",
@@ -544,6 +591,7 @@ const scheduleForm = reactive({
     userId: string;
     name: string;
     role: string;
+    isCommunionRole?: boolean;
   }[],
 });
 
@@ -557,15 +605,19 @@ const copyableSchedules = computed(() => {
   return props.schedules.filter((schedule) => manageableDepartmentIds.has(schedule.departmentId));
 });
 
-const selectedDepartmentType = computed(
-  () => props.departments.find((department) => department.id === scheduleForm.departmentId)?.type,
+const selectedDepartment = computed(
+  () => props.departments.find((department) => department.id === scheduleForm.departmentId),
 );
-watch(selectedDepartmentType, (type) => {
-  if (type !== "DEACONATE") scheduleForm.isCommunionService = false;
-});
-const scheduleFormAssignmentRoleOptions = computed(() => {
-  return getDepartmentAssignmentRoleOptions(selectedDepartmentType.value);
-});
+const selectedDepartmentConfig = computed(() =>
+  resolveDepartmentScheduleConfig(
+    selectedDepartment.value?.scheduleConfig,
+    selectedDepartment.value?.type ?? "OTHER",
+  ),
+);
+const scheduleFormDefinition = computed(() =>
+  getScheduleFormDefinition(selectedDepartmentConfig.value, scheduleForm.isCommunionService),
+);
+const scheduleFormAssignmentRoleOptions = computed(() => scheduleFormDefinition.value.roles);
 
 const memberOptions = computed(() =>
   props.members.map((member) => ({
@@ -617,34 +669,71 @@ const moveFormSong = (index: number, direction: -1 | 1) => {
   scheduleForm.songIds = reordered;
 };
 
-const addFormVolunteer = () => {
-  if (!volunteerUserId.value) return;
-  const member = props.members.find((m) => m.id === volunteerUserId.value);
-  if (!member) return;
-  const role = volunteerRole.value.trim() || "Voluntário";
+const addFormRole = () => {
+  scheduleForm.assignments.push({
+    draftId: crypto.randomUUID(),
+    userId: "",
+    name: "",
+    role: "Nova função",
+  });
+  saveError.value = "";
+};
 
-  if (scheduleForm.assignments.some((assignment) =>
-    getScheduleAssignmentKey(assignment.userId, assignment.role) ===
-      getScheduleAssignmentKey(member.id, role)
+const setFormVolunteer = (draftId: string, userId: string | null) => {
+  const assignment = scheduleForm.assignments.find((item) => item.draftId === draftId);
+  if (!assignment) return;
+
+  const member = props.members.find((item) => item.id === userId);
+  if (member && scheduleForm.assignments.some((item) =>
+    item.draftId !== draftId && item.userId &&
+    getScheduleAssignmentKey(item.userId, item.role) ===
+      getScheduleAssignmentKey(member.id, assignment.role)
   )) {
-    saveError.value = `Essa pessoa já está escalada para a função ${role}.`;
+    saveError.value = `Essa pessoa já está escalada para a função ${assignment.role}.`;
     return;
   }
 
-  scheduleForm.assignments.push({
-    draftId: crypto.randomUUID(),
-    userId: member.id,
-    name: member.name,
-    role,
-  });
+  assignment.userId = member?.id ?? "";
+  assignment.name = member?.name ?? "";
   saveError.value = "";
-  volunteerUserId.value = "";
-  volunteerRole.value = "";
 };
 
 const removeFormVolunteer = (draftId: string) => {
   scheduleForm.assignments = scheduleForm.assignments.filter((assignment) => assignment.draftId !== draftId);
+  saveError.value = "";
 };
+
+const toRoleDrafts = (isCommunionService: boolean) =>
+  createScheduleRoleDrafts(selectedDepartmentConfig.value, isCommunionService).map((draft) => ({
+    ...draft,
+    draftId: crypto.randomUUID(),
+    name: "",
+  }));
+
+const appendMissingRoleDrafts = (isCommunionService: boolean) => {
+  const existingRoles = new Set(
+    scheduleForm.assignments.map((item) => item.role.trim().toLocaleLowerCase("pt-BR")),
+  );
+  const missing = toRoleDrafts(isCommunionService).filter(
+    (draft) => !existingRoles.has(draft.role.trim().toLocaleLowerCase("pt-BR")),
+  );
+  scheduleForm.assignments.push(...missing);
+};
+
+watch(
+  () => scheduleForm.isCommunionService,
+  (isCommunionService) => {
+    if (isPrefilling.value || !selectedDepartmentConfig.value.communion.enabled) return;
+    if (isCommunionService) {
+      appendMissingRoleDrafts(true);
+    } else {
+      scheduleForm.assignments = scheduleForm.assignments.filter(
+        (assignment) => !assignment.isCommunionRole,
+      );
+    }
+  },
+  { flush: "sync" },
+);
 
 const toDateInputValue = (value: string) => {
   const date = new Date(value);
@@ -692,6 +781,7 @@ const resetForm = () => {
   scheduleForm.title = "";
   scheduleForm.date = "";
   scheduleForm.time = "";
+  scheduleForm.arrivalTime = "";
   scheduleForm.serviceTimeId = "";
   cultOptionValue.value = "";
   scheduleForm.departmentId = "";
@@ -702,8 +792,7 @@ const resetForm = () => {
   scheduleForm.resourceIds = [];
   scheduleForm.isCommunionService = false;
   scheduleForm.assignments = [];
-  volunteerUserId.value = "";
-  volunteerRole.value = "";
+  pendingCreatedSchedule.value = null;
   saveError.value = "";
   linkedCult.value = null;
   linkedCultId.value = "";
@@ -768,6 +857,9 @@ const prefillForm = async (schedule: DepartmentSchedule, mode: "edit" | "copy" =
   scheduleForm.title = schedule.description;
   scheduleForm.date = toDateInputValue(schedule.date);
   scheduleForm.time = toTimeInputValue(schedule.date);
+  scheduleForm.arrivalTime = schedule.arrivalAt
+    ? toTimeInputValue(schedule.arrivalAt)
+    : "";
   scheduleForm.serviceTimeId = copySelection.serviceTimeId;
   scheduleForm.departmentId = schedule.departmentId;
   scheduleForm.isCommunionService = copySelection.isCommunionService;
@@ -784,13 +876,18 @@ const prefillForm = async (schedule: DepartmentSchedule, mode: "edit" | "copy" =
         userId: assignment.userId,
         name: assignment.user.name,
         role: assignment.role,
+        isCommunionRole: schedule.isCommunionService
+          ? isCommunionScheduleRole(selectedDepartmentConfig.value, assignment.role)
+          : false,
       }))
     : copySelection.assignments.map((assignment) => ({
         ...assignment,
         draftId: crypto.randomUUID(),
+        isCommunionRole: scheduleForm.isCommunionService
+          ? isCommunionScheduleRole(selectedDepartmentConfig.value, assignment.role)
+          : false,
       }));
-  volunteerUserId.value = "";
-  volunteerRole.value = "";
+  if (mode === "copy") appendMissingRoleDrafts(scheduleForm.isCommunionService);
   saveError.value = "";
 
   if (mode === "edit" && schedule.serviceOccurrenceId) {
@@ -852,8 +949,11 @@ watch(
     if (departmentId !== previousDepartmentId) {
       scheduleForm.songIds = [];
       scheduleForm.resourceIds = [];
+      scheduleForm.isCommunionService = false;
+      if (!props.schedule) scheduleForm.assignments = departmentId ? toRoleDrafts(false) : [];
     }
   },
+  { flush: "sync" },
 );
 
 watch(
@@ -894,6 +994,12 @@ const handleSaveSchedule = async () => {
     return;
   }
 
+  const missingRoles = validateScheduleRoleDrafts(scheduleForm.assignments);
+  if (missingRoles.length) {
+    saveError.value = `Escolha um responsável ou remova estas funções: ${missingRoles.join(", ")}.`;
+    return;
+  }
+
   isSaving.value = true;
 
   try {
@@ -921,18 +1027,30 @@ const handleSaveSchedule = async () => {
       date: scheduleForm.date,
       time: scheduleForm.time || undefined,
       departmentId: scheduleForm.departmentId,
-      rehearsalDate: scheduleForm.rehearsalDate || null,
-      rehearsalTime: scheduleForm.rehearsalTime || null,
-      rehearsalNotes: scheduleForm.rehearsalNotes || null,
-      songIds: scheduleForm.songIds,
-      resourceIds: scheduleForm.resourceIds,
-      ...(selectedDepartmentType.value === "DEACONATE"
+      ...(scheduleFormDefinition.value.visibleFields.arrival
+        ? { arrivalTime: scheduleForm.arrivalTime || null }
+        : {}),
+      ...(scheduleFormDefinition.value.visibleFields.rehearsal
+        ? {
+            rehearsalDate: scheduleForm.rehearsalDate || null,
+            rehearsalTime: scheduleForm.rehearsalTime || null,
+            rehearsalNotes: scheduleForm.rehearsalNotes || null,
+          }
+        : {}),
+      ...(scheduleFormDefinition.value.visibleFields.songs
+        ? { songIds: scheduleForm.songIds }
+        : {}),
+      ...(scheduleFormDefinition.value.visibleFields.materials
+        ? { resourceIds: scheduleForm.resourceIds }
+        : {}),
+      ...(scheduleFormDefinition.value.communionEnabled
         ? { isCommunionService: scheduleForm.isCommunionService }
         : {}),
     };
 
-    const { data, error } = props.schedule
-      ? await updateChurchSchedule(props.schedule.id, {
+    const existingSchedule = props.schedule ?? pendingCreatedSchedule.value;
+    const { data, error } = existingSchedule
+      ? await updateChurchSchedule(existingSchedule.id, {
           ...payload,
           serviceOccurrenceId: serviceOccurrenceId ?? null,
         })
@@ -948,22 +1066,27 @@ const handleSaveSchedule = async () => {
 
     let finalSchedule = data;
 
-    const isCreating = !props.schedule;
-    const hasAssignments = scheduleForm.assignments.length > 0;
+    const isCreating = !existingSchedule;
+    const assignmentsWithPeople = scheduleForm.assignments.filter((assignment) => assignment.userId);
+    const hasAssignments = assignmentsWithPeople.length > 0;
 
     if (hasAssignments || !isCreating) {
-      const { data: scheduleWithAssignments } = await updateScheduleAssignments(data.id, {
-        assignments: scheduleForm.assignments.map((assignment) => ({
+      const { data: scheduleWithAssignments, error: assignmentError } = await updateScheduleAssignments(data.id, {
+        assignments: assignmentsWithPeople.map((assignment) => ({
           ...(assignment.assignmentId ? { id: assignment.assignmentId } : {}),
           userId: assignment.userId,
           role: assignment.role,
         })),
       });
-      if (scheduleWithAssignments) {
-        finalSchedule = scheduleWithAssignments;
+      if (assignmentError || !scheduleWithAssignments) {
+        if (isCreating) pendingCreatedSchedule.value = data;
+        saveError.value = assignmentError || "Não foi possível salvar as funções desta escala.";
+        return;
       }
+      finalSchedule = scheduleWithAssignments;
     }
 
+    pendingCreatedSchedule.value = null;
     emit("saved", finalSchedule);
     emit("update:modelValue", false);
   } finally {
@@ -973,15 +1096,40 @@ const handleSaveSchedule = async () => {
 </script>
 
 <style scoped>
-.schedule-form-volunteer-row {
+.scale-song-picker-dialog {
   display: flex;
+  flex-direction: column;
+  max-height: min(82svh, 760px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.schedule-form-section-heading {
+  display: grid;
+  gap: 0.2rem;
+  margin-bottom: 0.65rem;
+}
+
+.schedule-form-role-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border: 1px solid #f3f4f6;
-  border-radius: 8px;
-  background: #fafafa;
-  padding: 10px 12px;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.schedule-form-checklist {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--app-color-border);
+  border-radius: 0.75rem;
+}
+
+.schedule-form-checklist ul {
+  margin: 0.35rem 0;
+  padding-left: 1.2rem;
+  color: var(--app-color-text);
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
 
 .scale-input :deep(.v-field) {
@@ -1125,6 +1273,21 @@ const handleSaveSchedule = async () => {
   .playlist-builder-actions {
     grid-column: 1 / -1;
     justify-content: flex-end;
+  }
+
+  .schedule-form-role-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .schedule-form-role-row > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .scale-song-picker-dialog {
+    max-height: calc(92svh - 16px);
+    padding: 16px !important;
   }
 }
 </style>

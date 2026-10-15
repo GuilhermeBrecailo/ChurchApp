@@ -2,6 +2,7 @@ const mockPrismaClient = {
   messageTemplate: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
+    upsert: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
@@ -49,12 +50,16 @@ function fakeToken(userId: string) {
 
 function makeRequest(
   role: string,
-  overrides: { params?: Record<string, string>; body?: Record<string, unknown> } = {},
+  overrides: {
+    params?: Record<string, string>;
+    body?: Record<string, unknown>;
+    activeChurchId?: string;
+  } = {},
 ): FastifyRequest {
   return {
     headers: { authorization: `Bearer ${fakeToken("user-1")}` },
     churchContext: {
-      activeChurchId: "church-1",
+      activeChurchId: overrides.activeChurchId ?? "church-1",
       role,
       roles: [],
     },
@@ -100,6 +105,161 @@ describe("MessageAdapters - privilege gate (7.4)", () => {
     // Nada de leitura/escrita no banco deve acontecer antes do gate.
     expect(mockPrismaClient.messageTemplate.findMany).not.toHaveBeenCalled();
     expect(mockPrismaClient.messageRule.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("MessageAdapters - suggested template copies", () => {
+  let adapters: MessageAdapters;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    adapters = new MessageAdapters();
+  });
+
+  it("creates the first suggested template as a tenant-scoped copy", async () => {
+    const saved = {
+      id: "template-visitor",
+      crunchId: "church-1",
+      suggestionKey: "visitor_welcome",
+      name: "Boas-vindas a visitantes",
+      body: "Olá {nome}, seja bem-vindo!",
+    };
+    mockPrismaClient.messageTemplate.upsert.mockResolvedValue(saved);
+
+    const result = await adapters.createTemplate(
+      makeRequest("PASTOR", {
+        body: {
+          suggestionKey: "visitor_welcome",
+          name: "Boas-vindas a visitantes",
+          body: "Olá {nome}, seja bem-vindo!",
+        },
+      }),
+    );
+
+    expect(result).toEqual(saved);
+    expect(mockPrismaClient.messageTemplate.upsert).toHaveBeenCalledWith({
+      where: {
+        crunchId_suggestionKey: {
+          crunchId: "church-1",
+          suggestionKey: "visitor_welcome",
+        },
+      },
+      create: {
+        crunchId: "church-1",
+        suggestionKey: "visitor_welcome",
+        name: "Boas-vindas a visitantes",
+        body: "Olá {nome}, seja bem-vindo!",
+      },
+      update: {},
+    });
+  });
+
+  it("returns an existing edited copy without overwriting its name or body", async () => {
+    const edited = {
+      id: "template-service",
+      crunchId: "church-1",
+      suggestionKey: "service_notice",
+      name: "Aviso especial de domingo",
+      body: "Conteúdo revisado pela igreja.",
+    };
+    mockPrismaClient.messageTemplate.upsert.mockResolvedValue(edited);
+
+    const result = await adapters.createTemplate(
+      makeRequest("ADMIN", {
+        body: {
+          suggestionKey: "service_notice",
+          name: "Aviso de culto",
+          body: "Texto inicial do catálogo.",
+        },
+      }),
+    );
+
+    expect(result).toEqual(edited);
+    expect(mockPrismaClient.messageTemplate.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ update: {} }),
+    );
+  });
+
+  it("rejects unknown suggestion keys before touching the database", async () => {
+    await expect(
+      adapters.createTemplate(
+        makeRequest("PASTOR", {
+          body: { suggestionKey: "unknown", name: "Modelo", body: "Texto" },
+        }),
+      ),
+    ).rejects.toThrow();
+
+    expect(mockPrismaClient.messageTemplate.upsert).not.toHaveBeenCalled();
+    expect(mockPrismaClient.messageTemplate.create).not.toHaveBeenCalled();
+  });
+
+  it("uses the active church in the stable key lookup, isolating copies by tenant", async () => {
+    const tenantCopy = {
+      id: "template-church-2",
+      crunchId: "church-2",
+      suggestionKey: "birthday",
+      name: "Aniversário da igreja 2",
+      body: "Feliz aniversário!",
+    };
+    mockPrismaClient.messageTemplate.upsert.mockResolvedValue(tenantCopy);
+
+    const result = await adapters.createTemplate(
+      makeRequest("PASTOR", {
+        activeChurchId: "church-2",
+        body: { suggestionKey: "birthday", name: "Aniversário", body: "Parabéns, {nome}!" },
+      }),
+    );
+
+    expect(result).toEqual(tenantCopy);
+    expect(mockPrismaClient.messageTemplate.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          crunchId_suggestionKey: { crunchId: "church-2", suggestionKey: "birthday" },
+        },
+        create: expect.objectContaining({ crunchId: "church-2" }),
+      }),
+    );
+  });
+
+  it("keeps legacy create, update and delete keyless and tenant-owned", async () => {
+    mockPrismaClient.messageTemplate.create.mockResolvedValue({
+      id: "legacy-template",
+      crunchId: "church-1",
+      name: "Manual",
+      body: "Mensagem manual",
+    });
+    mockPrismaClient.messageTemplate.findUnique.mockResolvedValue({
+      id: "legacy-template",
+      crunchId: "church-1",
+      name: "Manual",
+      body: "Mensagem manual",
+    });
+    mockPrismaClient.messageTemplate.update.mockResolvedValue({ id: "legacy-template" });
+
+    await adapters.createTemplate(
+      makeRequest("PASTOR", { body: { name: "Manual", body: "Mensagem manual" } }),
+    );
+    await adapters.updateTemplate(
+      makeRequest("PASTOR", {
+        params: { id: "legacy-template" },
+        body: { name: "Manual editado" },
+      }),
+    );
+    await adapters.deleteTemplate(
+      makeRequest("PASTOR", { params: { id: "legacy-template" } }),
+    );
+
+    expect(mockPrismaClient.messageTemplate.create).toHaveBeenCalledWith({
+      data: { crunchId: "church-1", name: "Manual", body: "Mensagem manual" },
+    });
+    expect(mockPrismaClient.messageTemplate.update).toHaveBeenCalledWith({
+      where: { id: "legacy-template" },
+      data: { name: "Manual editado" },
+    });
+    expect(mockPrismaClient.messageTemplate.delete).toHaveBeenCalledWith({
+      where: { id: "legacy-template" },
+    });
+    expect(mockPrismaClient.messageTemplate.upsert).not.toHaveBeenCalled();
   });
 });
 

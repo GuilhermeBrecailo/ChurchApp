@@ -1,26 +1,5 @@
 <template>
-  <section class="song-picker" aria-labelledby="song-picker-title">
-    <div class="song-picker-header">
-      <div class="min-w-0">
-        <h2 id="song-picker-title" class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
-          Escolher músicas
-        </h2>
-        <p class="text-caption text-grey-darken-1 mb-0">
-          {{ selectedIds.length }} na playlist · {{ songs.length }} no repertório
-        </p>
-      </div>
-      <v-btn
-        icon
-        variant="text"
-        color="grey-darken-1"
-        size="small"
-        aria-label="Voltar para a escala"
-        @click="$emit('close')"
-      >
-        <v-icon size="20">mdi-arrow-left</v-icon>
-      </v-btn>
-    </div>
-
+  <section class="song-picker" aria-labelledby="scale-form-title">
     <v-text-field
       v-model="search"
       label="Buscar por título ou artista"
@@ -99,7 +78,6 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
-  close: [];
   toggle: [songId: string];
 }>();
 
@@ -127,36 +105,26 @@ const positionOf = (songId: string) => {
 .song-picker {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   width: 100%;
   min-width: 0;
-  max-height: min(68svh, 560px);
   min-height: 0;
   overflow: hidden;
-  border-radius: 12px;
-  background: var(--app-color-surface);
-}
-
-.song-picker-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px 8px;
 }
 
 .song-picker-search {
-  margin: 0 14px 8px;
+  flex: 0 0 auto;
+  margin: 0 0 8px;
 }
 
 .song-picker-list {
   flex: 1 1 auto;
-  min-height: 120px;
-  max-height: min(46svh, 360px);
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 2px 14px 10px;
+  padding: 2px 2px 10px;
 }
 
 .song-picker-item {
@@ -178,6 +146,11 @@ const positionOf = (songId: string) => {
 .song-picker-item-selected {
   border-color: var(--app-color-accent, #b5472a);
   background: var(--app-color-accent-tint, #f7e2d3);
+}
+
+.song-picker-item:focus-visible {
+  outline: 2px solid var(--app-color-accent, #b5472a);
+  outline-offset: 2px;
 }
 
 .song-picker-check {
@@ -228,7 +201,8 @@ const positionOf = (songId: string) => {
 }
 
 .song-picker-footer {
-  padding: 10px 14px 12px;
+  flex: 0 0 auto;
+  padding: 10px 0 0;
   border-top: 1px solid var(--app-color-border);
 }
 </style>
