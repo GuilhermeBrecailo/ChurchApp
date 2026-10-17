@@ -1,15 +1,21 @@
 const mockPrismaClient = {
-  user: { findUnique: jest.fn(), update: jest.fn() },
+  user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
   crunch: { update: jest.fn() },
   churchMembership: { findMany: jest.fn().mockResolvedValue([]) },
 };
+
+const mockKeycloakCreateUser = jest.fn();
+const mockKeycloakDeleteUser = jest.fn();
 
 jest.mock("../config/database", () => ({
   $prismaClient: mockPrismaClient,
 }));
 
 jest.mock("../src/infrastructure/identity/KeycloakProvider", () => ({
-  KeycloakProvider: jest.fn().mockImplementation(() => ({})),
+  KeycloakProvider: jest.fn().mockImplementation(() => ({
+    createUser: mockKeycloakCreateUser,
+    deleteUser: mockKeycloakDeleteUser,
+  })),
 }));
 
 const mockMkdir = jest.fn().mockResolvedValue(undefined);
@@ -91,6 +97,56 @@ describe("UserAdapters.updateOwnChurch plan gate", () => {
     await adapters.updateOwnChurch(request);
 
     expect(mockPrismaClient.crunch.update).toHaveBeenCalled();
+  });
+});
+
+describe("UserAdapters.createPastor validation", () => {
+  let adapters: UserAdapters;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    adapters = new UserAdapters();
+    mockPrismaClient.user.findUnique.mockResolvedValue(null);
+    mockKeycloakCreateUser.mockResolvedValue("keycloak-user-1");
+    mockKeycloakDeleteUser.mockResolvedValue(undefined);
+  });
+
+  it("rejects an invalid email before contacting Keycloak", async () => {
+    await expect(
+      adapters.createPastor({
+        body: {
+          name: "Teste",
+          email: "teste",
+          phone: "teste",
+          password: "teste123",
+        },
+      } as FastifyRequest),
+    ).rejects.toThrow("Email inválido");
+
+    expect(mockKeycloakCreateUser).not.toHaveBeenCalled();
+  });
+
+  it("turns a Keycloak duplicate email into a user-facing domain error", async () => {
+    mockKeycloakCreateUser.mockRejectedValue({
+      response: {
+        status: 409,
+        data: { errorMessage: "User exists with same username" },
+      },
+    });
+
+    await expect(
+      adapters.createPastor({
+        body: {
+          name: "Teste",
+          email: "teste@example.com",
+          phone: "teste",
+          password: "teste123",
+        },
+      } as FastifyRequest),
+    ).rejects.toMatchObject({
+      name: "DomainError",
+      message: "Já existe uma conta com esse email",
+    });
   });
 });
 

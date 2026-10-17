@@ -20,6 +20,7 @@ import { hasPermission } from "../../application/Services/Auth/AuthorizationServ
 import { PermissionKey } from "../../domain/permissions";
 import { PLAN_FEATURES, resolveEffectivePlan, pastDueGraceDaysLeft } from "../../domain/planConfig";
 import { CommercialLeadRepository } from "./commercialLeadRepository";
+import { z } from "zod";
 
 const TRIAL_PERIOD_DAYS = 90;
 
@@ -40,6 +41,51 @@ const CHURCH_PHOTO_MAX_SIZE_BYTES = 5 * 1024 * 1024;
 const CHURCH_PHOTO_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const USER_AVATAR_MAX_SIZE_BYTES = CHURCH_PHOTO_MAX_SIZE_BYTES;
 const USER_AVATAR_MIME_TYPES = CHURCH_PHOTO_MIME_TYPES;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getStringField(value: unknown, field: string) {
+  if (!isRecord(value) || typeof value[field] !== "string") {
+    return undefined;
+  }
+
+  return value[field];
+}
+
+function mapPastorSignupError(error: unknown): DomainError {
+  if (error instanceof DomainError) {
+    return error;
+  }
+
+  const response = isRecord(error) && isRecord(error.response)
+    ? error.response
+    : undefined;
+  const status = typeof response?.status === "number" ? response.status : undefined;
+  const responseData = response?.data;
+  const details = [
+    getStringField(error, "message"),
+    getStringField(responseData, "errorMessage"),
+    getStringField(responseData, "error"),
+    typeof responseData === "string" ? responseData : undefined,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(" ");
+
+  if (
+    status === 409 ||
+    /already exists|exists with same|duplicate|already registered|já existe/i.test(
+      details,
+    )
+  ) {
+    return new DomainError("Já existe uma conta com esse email");
+  }
+
+  return new DomainError(
+    "Não foi possível concluir o cadastro agora. Tente novamente.",
+  );
+}
 
 function formatChurch(church: {
   id: string;
@@ -158,6 +204,11 @@ export class UserAdapters {
     const normalizedName = name.trim();
     const normalizedPhone = phone.trim();
 
+    const emailValidation = z.string().email("Email inválido").safeParse(normalizedEmail);
+    if (!emailValidation.success) {
+      throw new DomainError("Email inválido");
+    }
+
     const existingUser = await $prismaClient.user.findUnique({
       where: {
         email: normalizedEmail,
@@ -169,13 +220,15 @@ export class UserAdapters {
     }
 
     const identityProvider = new KeycloakProvider();
-    const keycloakId = await identityProvider.createUser(
-      normalizedEmail,
-      normalizedName,
-      password,
-    );
+    let keycloakId: string | undefined;
 
     try {
+      keycloakId = await identityProvider.createUser(
+        normalizedEmail,
+        normalizedName,
+        password,
+      );
+
       const userEntity = User.create({
         id: keycloakId,
         name: normalizedName,
@@ -197,8 +250,11 @@ export class UserAdapters {
 
       return createdUser;
     } catch (error) {
-      await identityProvider.deleteUser(keycloakId).catch(() => undefined);
-      throw error;
+      if (keycloakId) {
+        await identityProvider.deleteUser(keycloakId).catch(() => undefined);
+      }
+
+      throw mapPastorSignupError(error);
     }
   }
 

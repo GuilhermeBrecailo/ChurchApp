@@ -88,10 +88,11 @@
           <v-text-field
             v-model="churchForm.name"
             label="Nome da igreja"
-            placeholder="Igreja Quadrangular Centro"
             variant="outlined"
+            density="comfortable"
             color="primary"
             class="mb-4"
+            hide-details="auto"
             :disabled="loading"
           />
 
@@ -100,7 +101,9 @@
               v-model="churchForm.city"
               label="Cidade"
               variant="outlined"
+              density="comfortable"
               color="primary"
+              hide-details="auto"
               :disabled="loading"
             />
 
@@ -108,7 +111,9 @@
               v-model="churchForm.state"
               label="Estado"
               variant="outlined"
+              density="comfortable"
               color="primary"
+              hide-details="auto"
               :disabled="loading"
             />
           </div>
@@ -117,8 +122,10 @@
             v-model="churchForm.road"
             label="Endereço"
             variant="outlined"
+            density="comfortable"
             color="primary"
             class="mb-4"
+            hide-details="auto"
             :disabled="loading"
           />
 
@@ -127,7 +134,9 @@
               v-model="churchForm.number"
               label="Número"
               variant="outlined"
+              density="comfortable"
               color="primary"
+              hide-details="auto"
               :disabled="loading"
             />
 
@@ -135,7 +144,9 @@
               v-model="churchForm.localZipCode"
               label="CEP"
               variant="outlined"
+              density="comfortable"
               color="primary"
+              hide-details="auto"
               :disabled="loading"
             />
           </div>

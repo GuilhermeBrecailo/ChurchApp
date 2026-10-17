@@ -67,10 +67,11 @@
           <v-text-field
             v-model="form.name"
             label="Nome da igreja"
-            placeholder="Igreja Quadrangular Centro"
             variant="outlined"
+            density="comfortable"
             color="primary"
             class="mb-4"
+            hide-details="auto"
             :disabled="loading"
           />
 
@@ -79,7 +80,9 @@
               v-model="form.city"
               label="Cidade"
               variant="outlined"
+              density="comfortable"
               color="primary"
+              hide-details="auto"
               :disabled="loading"
             />
 
@@ -87,7 +90,9 @@
               v-model="form.state"
               label="Estado"
               variant="outlined"
+              density="comfortable"
               color="primary"
+              hide-details="auto"
               :disabled="loading"
             />
           </div>
@@ -96,8 +101,10 @@
             v-model="form.road"
             label="Endereço"
             variant="outlined"
+            density="comfortable"
             color="primary"
             class="mb-4"
+            hide-details="auto"
             :disabled="loading"
           />
 
@@ -106,7 +113,9 @@
               v-model="form.number"
               label="Número"
               variant="outlined"
+              density="comfortable"
               color="primary"
+              hide-details="auto"
               :disabled="loading"
             />
 
@@ -114,7 +123,9 @@
               v-model="form.localZipCode"
               label="CEP"
               variant="outlined"
+              density="comfortable"
               color="primary"
+              hide-details="auto"
               :disabled="loading"
             />
           </div>
@@ -123,8 +134,10 @@
             v-model="form.document"
             label="Documento"
             variant="outlined"
+            density="comfortable"
             color="primary"
             class="mb-4"
+            hide-details="auto"
             :disabled="loading"
           />
 

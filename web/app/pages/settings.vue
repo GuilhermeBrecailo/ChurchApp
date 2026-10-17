@@ -139,7 +139,9 @@
           v-model="form.name"
           label="Nome da igreja"
           variant="outlined"
+          density="comfortable"
           color="primary"
+          hide-details="auto"
           :disabled="!canEditChurch || loading"
         />
 
@@ -148,7 +150,9 @@
             v-model="form.city"
             label="Cidade"
             variant="outlined"
+            density="comfortable"
             color="primary"
+            hide-details="auto"
             :disabled="!canEditChurch || loading"
           />
 
@@ -156,7 +160,9 @@
             v-model="form.state"
             label="Estado"
             variant="outlined"
+            density="comfortable"
             color="primary"
+            hide-details="auto"
             :disabled="!canEditChurch || loading"
           />
         </div>
@@ -165,7 +171,9 @@
           v-model="form.road"
           label="Endereço"
           variant="outlined"
+          density="comfortable"
           color="primary"
+          hide-details="auto"
           :disabled="!canEditChurch || loading"
         />
 
@@ -174,7 +182,9 @@
             v-model="form.number"
             label="Número"
             variant="outlined"
+            density="comfortable"
             color="primary"
+            hide-details="auto"
             :disabled="!canEditChurch || loading"
           />
 
@@ -182,7 +192,9 @@
             v-model="form.localZipCode"
             label="CEP"
             variant="outlined"
+            density="comfortable"
             color="primary"
+            hide-details="auto"
             :disabled="!canEditChurch || loading"
           />
         </div>
@@ -191,7 +203,9 @@
           v-model="form.complement"
           label="Complemento"
           variant="outlined"
+          density="comfortable"
           color="primary"
+          hide-details="auto"
           :disabled="!canEditChurch || loading"
         />
 
@@ -199,7 +213,9 @@
           v-model="form.document"
           label="Documento"
           variant="outlined"
+          density="comfortable"
           color="primary"
+          hide-details="auto"
           :disabled="!canEditChurch || loading"
         />
 

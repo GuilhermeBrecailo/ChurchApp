@@ -205,6 +205,11 @@ const handleRegister = async () => {
     return;
   }
 
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    errorMessage.value = "Informe um e-mail válido.";
+    return;
+  }
+
   if (form.password.length < 6) {
     errorMessage.value = "A senha deve ter pelo menos 6 caracteres.";
     return;
