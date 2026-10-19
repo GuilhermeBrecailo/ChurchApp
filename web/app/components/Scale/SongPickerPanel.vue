@@ -123,20 +123,20 @@ const positionOf = (songId: string) => {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 2px 2px 10px;
+  gap: 10px;
+  padding: 4px 2px 12px;
 }
 
 .song-picker-item {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
-  min-height: 54px;
-  padding: 10px 12px;
+  min-height: 78px;
+  padding: 14px 16px;
   border: 1px solid var(--app-color-border);
-  border-radius: 12px;
+  border-radius: 16px;
   background: var(--app-color-surface);
   text-align: left;
   cursor: pointer;
@@ -156,10 +156,10 @@ const positionOf = (songId: string) => {
 .song-picker-check {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   border: 2px solid var(--app-color-border-strong, #d1d5db);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--app-color-accent, #b5472a);
 }
 
@@ -175,23 +175,23 @@ const positionOf = (songId: string) => {
 
 .song-picker-title {
   color: var(--app-color-text);
-  font-size: 0.9rem;
+  font-size: 0.98rem;
   font-weight: 800;
-  line-height: 1.25;
+  line-height: 1.3;
   overflow-wrap: anywhere;
 }
 
 .song-picker-artist {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   color: var(--app-color-text-soft);
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 600;
 }
 
 .song-picker-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 6px;
 }
 
 .song-picker-order {
@@ -204,5 +204,12 @@ const positionOf = (songId: string) => {
   flex: 0 0 auto;
   padding: 10px 0 0;
   border-top: 1px solid var(--app-color-border);
+}
+
+@media (max-width: 420px) {
+  .song-picker-item {
+    min-height: 84px;
+    padding: 14px;
+  }
 }
 </style>
