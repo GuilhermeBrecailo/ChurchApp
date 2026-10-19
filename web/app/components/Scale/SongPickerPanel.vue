@@ -14,9 +14,27 @@
     />
 
     <div class="song-picker-list">
-      <p v-if="!results.length" class="text-caption text-grey-darken-1 text-center py-6 mb-0">
-        Nenhuma música encontrada.
-      </p>
+      <div v-if="!results.length" class="song-picker-empty">
+        <span class="song-picker-empty-icon" aria-hidden="true">
+          <Music2 size="24" />
+        </span>
+        <div class="song-picker-empty-copy">
+          <p class="song-picker-empty-title mb-0">
+            {{ search.trim() ? "Nenhuma música encontrada" : "Este ministério ainda não tem músicas" }}
+          </p>
+          <p class="song-picker-empty-description mb-0">
+            Cadastre uma música agora para continuar montando a escala.
+          </p>
+        </div>
+        <v-btn
+          color="primary"
+          variant="tonal"
+          class="text-none font-weight-bold"
+          @click="$emit('create', search.trim())"
+        >
+          <Plus size="17" class="mr-2" /> Adicionar música
+        </v-btn>
+      </div>
 
       <button
         v-for="song in results"
@@ -69,6 +87,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { Music2, Plus } from "lucide-vue-next";
 import type { DepartmentSong } from "../../../composables/useDepartments";
 import { useThemeMode } from "../../../composables/useThemeMode";
 
@@ -80,6 +99,7 @@ const props = defineProps<{
 defineEmits<{
   toggle: [songId: string];
   close: [];
+  create: [searchTerm: string];
 }>();
 
 const { isDark } = useThemeMode();
@@ -144,6 +164,46 @@ const positionOf = (songId: string) => {
   box-shadow: 0 2px 8px color-mix(in srgb, var(--app-color-text) 5%, transparent);
   text-align: left;
   cursor: pointer;
+}
+
+.song-picker-empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  margin: 4px 0 12px;
+  padding: clamp(28px, 8vw, 56px) 24px;
+  border: 1px dashed var(--app-color-border-strong, #d1d5db);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--app-color-surface) 88%, var(--app-color-accent-tint, #f7e2d3));
+  text-align: center;
+}
+
+.song-picker-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--app-color-accent-tint, #f7e2d3);
+  color: var(--app-color-accent, #b5472a);
+}
+
+.song-picker-empty-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.song-picker-empty-title {
+  color: var(--app-color-text);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.song-picker-empty-description {
+  max-width: 34rem;
+  color: var(--app-color-text-soft);
+  font-size: 0.88rem;
+  line-height: 1.45;
 }
 
 .song-picker-item:hover,

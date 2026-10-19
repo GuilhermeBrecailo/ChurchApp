@@ -59,6 +59,7 @@
         :selected-ids="scheduleForm.songIds"
         @toggle="toggleFormSong"
         @close="isSongPickerOpen = false"
+        @create="openSongCreateSheet"
       />
 
       <v-form v-else autocomplete="off" @submit.prevent="handleSaveSchedule">
@@ -475,6 +476,16 @@
       @select="copySchedule"
     />
 
+    <ScaleSongCreateSheet
+      v-model="isSongCreateOpen"
+      :song-form="songCreateForm"
+      :is-dark="isDark"
+      :is-saving="isCreatingSong"
+      :error="songCreateError"
+      @close="closeSongCreateSheet"
+      @submit="handleCreateSong"
+    />
+
   </UtilsResponsiveOverlay>
 </template>
 
@@ -502,6 +513,10 @@ import {
 } from "../../utils/scheduleFormConfig";
 import { resolveDepartmentScheduleConfig } from "../../utils/departmentScheduleConfig";
 import {
+  getSongCreationPrefill,
+  mergeCreatedSongIntoSelection,
+} from "../../utils/songPicker";
+import {
   useDepartments,
   type ChurchDepartment,
   type DepartmentMember,
@@ -526,6 +541,7 @@ const emit = defineEmits<{
 
 const {
   createChurchSchedule,
+  createDepartmentSong,
   updateChurchSchedule,
   updateScheduleAssignments,
   getDepartmentMembers,
@@ -574,6 +590,17 @@ const isPrefilling = ref(false);
 const saveError = ref("");
 const isCopyDialogOpen = ref(false);
 const isSongPickerOpen = ref(false);
+const isSongCreateOpen = ref(false);
+const isCreatingSong = ref(false);
+const songCreateError = ref("");
+const songCreateForm = reactive({
+  title: "",
+  artist: "",
+  key: "",
+  url: "",
+  lyrics: "",
+  chords: "",
+});
 
 const resourcesByDepartment = ref<Record<string, DepartmentResource[]>>({});
 const songsByDepartment = ref<Record<string, DepartmentSong[]>>({});
@@ -684,6 +711,79 @@ const toggleFormSong = (songId: string) => {
   }
 
   scheduleForm.songIds = scheduleForm.songIds.filter((id) => id !== songId);
+};
+
+const resetSongCreateForm = () => {
+  songCreateForm.title = "";
+  songCreateForm.artist = "";
+  songCreateForm.key = "";
+  songCreateForm.url = "";
+  songCreateForm.lyrics = "";
+  songCreateForm.chords = "";
+  songCreateError.value = "";
+};
+
+const openSongCreateSheet = (searchTerm: string) => {
+  const prefill = getSongCreationPrefill(searchTerm);
+  resetSongCreateForm();
+  songCreateForm.title = prefill.title;
+  isSongCreateOpen.value = true;
+};
+
+const closeSongCreateSheet = () => {
+  isSongCreateOpen.value = false;
+  songCreateError.value = "";
+};
+
+const handleCreateSong = async () => {
+  const departmentId = scheduleForm.departmentId;
+  const title = songCreateForm.title.trim();
+
+  if (!departmentId) {
+    songCreateError.value = "Selecione um ministério antes de adicionar a música.";
+    return;
+  }
+
+  if (!title) {
+    songCreateError.value = "Informe o título da música.";
+    return;
+  }
+
+  isCreatingSong.value = true;
+  songCreateError.value = "";
+
+  try {
+    const { data, error } = await createDepartmentSong(departmentId, {
+      title,
+      artist: songCreateForm.artist.trim() || undefined,
+      key: songCreateForm.key.trim() || undefined,
+      songCategory: "Louvor",
+      url: songCreateForm.url.trim() || undefined,
+      lyrics: songCreateForm.lyrics.trim() || undefined,
+      chords: songCreateForm.chords.trim() || undefined,
+    });
+
+    if (error || !data) {
+      songCreateError.value = error || "Não foi possível adicionar a música.";
+      return;
+    }
+
+    const merged = mergeCreatedSongIntoSelection(
+      selectedDepartmentSongs.value,
+      scheduleForm.songIds,
+      data,
+    );
+    songsByDepartment.value = {
+      ...songsByDepartment.value,
+      [departmentId]: merged.songs,
+    };
+    scheduleForm.songIds = merged.selectedIds;
+    closeSongCreateSheet();
+  } catch (error: any) {
+    songCreateError.value = error?.message || "Não foi possível adicionar a música.";
+  } finally {
+    isCreatingSong.value = false;
+  }
 };
 
 const moveFormSong = (index: number, direction: -1 | 1) => {
@@ -1134,8 +1234,8 @@ const handleSaveSchedule = async () => {
 .scale-song-picker-dialog {
   display: flex;
   flex-direction: column;
-  width: min(calc(100vw - 24px), 720px);
-  max-height: min(88svh, 820px);
+  width: min(calc(100vw - 24px), 860px);
+  max-height: min(92svh, 860px);
   min-height: 0;
   overflow: hidden;
 }
@@ -1322,6 +1422,7 @@ const handleSaveSchedule = async () => {
 
 @media (max-width: 600px) {
   .scale-song-picker-dialog {
+    width: calc(100vw - 12px);
     max-height: calc(92svh - 16px);
     padding: 16px !important;
   }
