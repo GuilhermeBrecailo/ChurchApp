@@ -453,6 +453,39 @@ describe("ChurchDepartmentAdapters - musicas", () => {
       expect(result.youtubeUrl).toBe("https://www.youtube.com/watch?v=abc123");
     });
 
+    it("usa um user-agent mobile para evitar bloqueio do Cifra Club na VPS", async () => {
+      const html = `
+        <title>Todavia Me Alegrarei - Samuel Messias - Cifra Club</title>
+        <link rel="canonical" href="https://www.cifraclub.com.br/samuel-messias/todavia-me-alegrarei/simplificada.html" />
+        <article data-chord-container="true">
+          <pre>[Intro] G D G A Bm\nTodavia me alegrarei</pre>
+        </article>
+      `;
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: true,
+        text: async () => html,
+      }) as unknown as typeof fetch;
+      global.fetch = fetchMock;
+
+      await adapters.importCifraClubSong(
+        makeRequest({
+          params: { id: "dept-1" },
+          body: {
+            url: "https://www.cifraclub.com.br/samuel-messias/todavia-me-alegrarei/simplificada.html?keyShape=5",
+          },
+        }),
+      );
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://www.cifraclub.com.br/samuel-messias/todavia-me-alegrarei/simplificada.html?keyShape=5",
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            "User-Agent": expect.stringContaining("iPhone"),
+          }),
+        }),
+      );
+    });
+
     it("extrai o tom do markup atual da pagina simplificada com instrumento", async () => {
       const html = `
         <title>Me Atraiu - Gabriela Rocha - Cifra Club</title>
