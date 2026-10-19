@@ -1099,7 +1099,8 @@ const handleSaveSchedule = async () => {
 .scale-song-picker-dialog {
   display: flex;
   flex-direction: column;
-  max-height: min(82svh, 760px);
+  width: min(calc(100vw - 24px), 720px);
+  max-height: min(88svh, 820px);
   min-height: 0;
   overflow: hidden;
 }

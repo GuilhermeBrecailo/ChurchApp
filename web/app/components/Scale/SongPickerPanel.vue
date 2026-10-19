@@ -124,20 +124,23 @@ const positionOf = (songId: string) => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 4px 2px 12px;
+  padding: 4px 4px 24px;
+  scroll-padding-block: 12px 24px;
+  overscroll-behavior: contain;
 }
 
 .song-picker-item {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
+  align-items: start;
   gap: 14px;
   width: 100%;
-  min-height: 78px;
+  min-height: 86px;
   padding: 14px 16px;
   border: 1px solid var(--app-color-border);
   border-radius: 16px;
   background: var(--app-color-surface);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--app-color-text) 5%, transparent);
   text-align: left;
   cursor: pointer;
 }
@@ -156,6 +159,7 @@ const positionOf = (songId: string) => {
 .song-picker-check {
   display: grid;
   place-items: center;
+  margin-top: 2px;
   width: 32px;
   height: 32px;
   border: 2px solid var(--app-color-border-strong, #d1d5db);
@@ -173,19 +177,28 @@ const positionOf = (songId: string) => {
   display: block;
 }
 
+.song-picker-item > .min-w-0 {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+}
+
 .song-picker-title {
   color: var(--app-color-text);
-  font-size: 0.98rem;
+  font-size: 1rem;
   font-weight: 800;
-  line-height: 1.3;
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
 .song-picker-artist {
-  margin-bottom: 8px;
+  margin-bottom: 0;
   color: var(--app-color-text-soft);
   font-size: 0.84rem;
   font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .song-picker-chips {
@@ -195,6 +208,8 @@ const positionOf = (songId: string) => {
 }
 
 .song-picker-order {
+  align-self: start;
+  margin-top: 2px;
   color: var(--app-color-accent, #b5472a);
   font-size: 0.82rem;
   font-weight: 900;
@@ -202,14 +217,23 @@ const positionOf = (songId: string) => {
 
 .song-picker-footer {
   flex: 0 0 auto;
-  padding: 10px 0 0;
+  position: relative;
+  z-index: 1;
+  padding: 14px 0 0;
   border-top: 1px solid var(--app-color-border);
+  background: var(--app-color-surface);
+  box-shadow: 0 -8px 18px color-mix(in srgb, var(--app-color-surface) 88%, transparent);
+}
+
+.song-picker-footer .v-btn {
+  min-height: 48px;
 }
 
 @media (max-width: 420px) {
   .song-picker-item {
-    min-height: 84px;
-    padding: 14px;
+    min-height: 92px;
+    padding: 15px 14px;
+    gap: 12px;
   }
 }
 </style>
