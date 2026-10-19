@@ -93,17 +93,16 @@ describe("role navigation", () => {
   });
 
   it("prioriza ministerios e escalas para lider de ministerio", () => {
-    const items = getBottomNavigationItems(
-      churchUser({
-        roles: [
-          {
-            scope: "MINISTRY",
-            departmentId: "music",
-            permissions: ["SCHEDULE_CREATE", "SONG_EDIT"],
-          },
-        ],
-      }),
-    );
+    const user = churchUser({
+      roles: [
+        {
+          scope: "MINISTRY",
+          departmentId: "music",
+          permissions: ["SCHEDULE_CREATE", "SONG_EDIT"],
+        },
+      ],
+    });
+    const items = getBottomNavigationItems(user);
 
     assert.deepEqual(labels(items), [
       "Início",
@@ -112,6 +111,11 @@ describe("role navigation", () => {
       "Cultos",
       "Mais",
     ]);
+
+    const moreKeys = getMoreNavigationItems(user).map((entry) => entry.key);
+    assert.ok(moreKeys.includes("team"));
+    assert.ok(moreKeys.includes("scale"));
+    assert.ok(moreKeys.includes("cults"));
   });
 
   it("leva gestor de membros direto para pessoas sem expor cargos globais", () => {
@@ -138,6 +142,23 @@ describe("role navigation", () => {
     assert.ok(moreKeys.includes("settings"));
     assert.ok(!moreKeys.includes("rolesManagement"));
     assert.ok(!moreKeys.includes("messages"));
+  });
+
+  it("mantem ministerios no menu mais do lider que gerencia pessoas", () => {
+    const user = churchUser({
+      canManageMembers: true,
+      roles: [
+        {
+          scope: "MINISTRY",
+          departmentId: "music",
+          permissions: ["SCHEDULE_CREATE", "MINISTRY_MEMBER_MANAGE"],
+        },
+      ],
+    });
+
+    const moreKeys = getMoreNavigationItems(user).map((entry) => entry.key);
+
+    assert.ok(moreKeys.includes("team"));
   });
 
   it("prioriza conteudo para comunicacao sem liberar admin pastoral", () => {
@@ -252,6 +273,10 @@ describe("role navigation", () => {
 		"Cadastro da igreja",
 		"Cargos e permissões",
 		"Conteúdo",
+		"Cuidado pastoral",
+		"Cultos",
+		"Escalas",
+		"Início",
 		"Integrações e página pública",
 		"Mensagens",
 		"Meu perfil",
@@ -294,7 +319,7 @@ describe("role navigation", () => {
     });
     const keys = items.map((entry) => entry.key);
 
-    assert.deepEqual(keys, ["profile"]);
+    assert.deepEqual(keys, ["platformAdmin", "home", "profile"]);
   });
 
   it("ordena o menu mais do membro em ordem alfabetica pelo titulo", () => {
@@ -302,7 +327,7 @@ describe("role navigation", () => {
 
     assert.deepEqual(
       items.map((entry) => entry.title),
-      ["Conteúdo", "Meu perfil", "Oração"],
+      ["Conteúdo", "Cultos", "Escalas", "Início", "Meu perfil", "Ministérios", "Oração"],
     );
   });
 

@@ -795,6 +795,22 @@ export class ScheduleAdapters {
       usedAssignmentIds.add(assignment.id);
     }
 
+    const departmentMemberships = await $prismaClient.userDepartmentMembership.findMany({
+      where: {
+        departmentId: schedule.departmentId,
+        userId: { in: uniqueUserIds },
+      },
+      select: { userId: true },
+    });
+    const departmentMemberIds = new Set([
+      schedule.department.leaderId,
+      ...departmentMemberships.map((membership) => membership.userId),
+    ]);
+
+    if (uniqueUserIds.some((userId) => !departmentMemberIds.has(userId))) {
+      throw new DomainError("Um ou mais voluntários não pertencem a este ministério");
+    }
+
     const previousAssignmentsByKey = new Map<string, typeof previousAssignments>();
     for (const assignment of previousAssignments) {
       const key = JSON.stringify([assignment.userId, normalizeRole(assignment.role)]);

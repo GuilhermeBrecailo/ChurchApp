@@ -471,7 +471,7 @@ export function getQuickAccessItems(user: RoleNavigationUser | null | undefined)
 
   if (tier === "leader") {
     if (hasMemberManagementAccess(user)) {
-      return [item("people"), item("scale"), item("cults"), item("prayer")];
+      return [item("people"), item("team"), item("scale"), item("cults"), item("prayer")];
     }
 
     if (hasContentPublishingAccess(user) && !hasMinistryAccess(user) && !canSeePastoralCareInPreview(user, tier)) {
@@ -559,14 +559,11 @@ export function getAllNavigationItems(user: RoleNavigationUser | null | undefine
 }
 
 export function getMoreNavigationItems(user: RoleNavigationUser | null | undefined) {
-  const bottomKeys = new Set(
-    getBottomNavigationItems(user)
-      .filter((entry) => entry.key !== "more")
-      .map((entry) => entry.key),
-  );
-
+  // O menu Mais e uma segunda porta de entrada para todos os atalhos
+  // disponiveis. Um item tambem aparecer na barra inferior nao deve remove-lo
+  // daqui: no celular, o usuario precisa conseguir alcancar o mesmo destino
+  // pelos dois caminhos.
   return getAllNavigationItems(user)
-    .filter((entry) => !bottomKeys.has(entry.key))
     .sort(compareNavigationTitle);
 }
 

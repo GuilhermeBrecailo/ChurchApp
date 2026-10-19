@@ -79,6 +79,7 @@ const props = defineProps<{
 
 defineEmits<{
   toggle: [songId: string];
+  close: [];
 }>();
 
 const { isDark } = useThemeMode();

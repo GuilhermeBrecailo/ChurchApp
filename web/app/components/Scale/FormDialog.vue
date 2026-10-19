@@ -58,6 +58,7 @@
         :songs="selectedDepartmentSongs"
         :selected-ids="scheduleForm.songIds"
         @toggle="toggleFormSong"
+        @close="isSongPickerOpen = false"
       />
 
       <v-form v-else autocomplete="off" @submit.prevent="handleSaveSchedule">
@@ -349,6 +350,9 @@
             <p class="text-caption text-grey-darken-1 mb-0">
               Escolha alguém para cada função mantida ou remova as que não serão usadas.
             </p>
+            <p v-if="scheduleForm.departmentId && selectedDepartmentMembers.length" class="text-caption text-grey-darken-1 mb-0">
+              Mostrando apenas {{ selectedDepartmentMembers.length }} pessoa{{ selectedDepartmentMembers.length === 1 ? "" : "s" }} deste ministério.
+            </p>
           </div>
 
           <v-alert
@@ -500,6 +504,7 @@ import { resolveDepartmentScheduleConfig } from "../../utils/departmentScheduleC
 import {
   useDepartments,
   type ChurchDepartment,
+  type DepartmentMember,
   type DepartmentResource,
   type DepartmentSchedule,
   type DepartmentSong,
@@ -523,6 +528,7 @@ const {
   createChurchSchedule,
   updateChurchSchedule,
   updateScheduleAssignments,
+  getDepartmentMembers,
   getDepartmentResources,
   getDepartmentSongs,
 } = useDepartments();
@@ -571,6 +577,7 @@ const isSongPickerOpen = ref(false);
 
 const resourcesByDepartment = ref<Record<string, DepartmentResource[]>>({});
 const songsByDepartment = ref<Record<string, DepartmentSong[]>>({});
+const membersByDepartment = ref<Record<string, DepartmentMember[]>>({});
 
 const scheduleForm = reactive({
   title: "",
@@ -619,8 +626,27 @@ const scheduleFormDefinition = computed(() =>
 );
 const scheduleFormAssignmentRoleOptions = computed(() => scheduleFormDefinition.value.roles);
 
+const selectedDepartmentMembers = computed(() => {
+  const members = membersByDepartment.value[scheduleForm.departmentId] || [];
+  const leader = selectedDepartment.value?.leader;
+
+  if (!leader || members.some((member) => member.id === leader.id)) {
+    return members;
+  }
+
+  return [
+    {
+      id: leader.id,
+      name: leader.name,
+      email: leader.email,
+      role: "Líder",
+    },
+    ...members,
+  ];
+});
+
 const memberOptions = computed(() =>
-  props.members.map((member) => ({
+  selectedDepartmentMembers.value.map((member) => ({
     label: `${member.name} (${member.email})`,
     value: member.id,
   })),
@@ -683,7 +709,8 @@ const setFormVolunteer = (draftId: string, userId: string | null) => {
   const assignment = scheduleForm.assignments.find((item) => item.draftId === draftId);
   if (!assignment) return;
 
-  const member = props.members.find((item) => item.id === userId);
+  const member = props.members.find((item) => item.id === userId) ||
+    selectedDepartmentMembers.value.find((item) => item.id === userId);
   if (member && scheduleForm.assignments.some((item) =>
     item.draftId !== draftId && item.userId &&
     getScheduleAssignmentKey(item.userId, item.role) ===
@@ -755,16 +782,20 @@ const loadScheduleMediaItems = async (departmentId: string) => {
 
   const shouldLoadResources = !resourcesByDepartment.value[departmentId];
   const shouldLoadSongs = !songsByDepartment.value[departmentId];
+  const shouldLoadMembers = !membersByDepartment.value[departmentId];
 
-  if (!shouldLoadResources && !shouldLoadSongs) return;
+  if (!shouldLoadResources && !shouldLoadSongs && !shouldLoadMembers) return;
 
-  const [resourcesResponse, songsResponse] = await Promise.all([
+  const [resourcesResponse, songsResponse, membersResponse] = await Promise.all([
     shouldLoadResources
       ? getDepartmentResources(departmentId)
       : Promise.resolve({ data: resourcesByDepartment.value[departmentId] }),
     shouldLoadSongs
       ? getDepartmentSongs(departmentId)
       : Promise.resolve({ data: songsByDepartment.value[departmentId] }),
+    shouldLoadMembers
+      ? getDepartmentMembers(departmentId)
+      : Promise.resolve({ data: membersByDepartment.value[departmentId] }),
   ]);
 
   resourcesByDepartment.value = {
@@ -774,6 +805,10 @@ const loadScheduleMediaItems = async (departmentId: string) => {
   songsByDepartment.value = {
     ...songsByDepartment.value,
     [departmentId]: songsResponse.data ?? [],
+  };
+  membersByDepartment.value = {
+    ...membersByDepartment.value,
+    [departmentId]: membersResponse.data ?? [],
   };
 };
 

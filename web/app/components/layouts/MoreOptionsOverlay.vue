@@ -136,6 +136,7 @@ const groupDefinitions = [
     key: "routine",
     label: "Rotina da igreja",
     keys: new Set([
+      "home",
       "pastoral",
       "visits",
       "people",

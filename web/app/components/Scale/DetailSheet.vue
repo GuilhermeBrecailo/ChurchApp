@@ -280,8 +280,7 @@
                   role="button"
                   tabindex="0"
                   @click="openPlaylistSequence(songIndex)"
-                  @keydown.enter="openPlaylistSequence(songIndex)"
-                  @keydown.space.prevent="openPlaylistSequence(songIndex)"
+                  @keydown="handleSongInfoKeydown($event, songIndex)"
                 >
                   <div class="scale-song-header">
                     <div class="min-w-0">
@@ -513,6 +512,7 @@ import {
 } from "lucide-vue-next";
 import { useDepartments } from "../../../composables/useDepartments";
 import { useHolyrics, type HolyricsSyncResult } from "../../../composables/useHolyrics";
+import { shouldActivateKeyboardCard } from "../../utils/keyboardActivation";
 import type { ScheduleEvent } from "./types";
 
 const props = defineProps<{
@@ -623,6 +623,13 @@ const openPlaylistSequence = (index: number) => {
 
   playlistIndex.value = index;
   isSongFullscreenOpen.value = true;
+};
+
+const handleSongInfoKeydown = (event: KeyboardEvent, index: number) => {
+  if (!shouldActivateKeyboardCard(event)) return;
+
+  event.preventDefault();
+  openPlaylistSequence(index);
 };
 
 const setEventSongOrder = (orderedSongs: ScheduleEvent["mediaItems"]) => {

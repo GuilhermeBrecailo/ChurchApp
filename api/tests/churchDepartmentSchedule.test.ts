@@ -10,6 +10,7 @@ const mockPrismaClient = {
     deleteMany: jest.fn(),
     create: jest.fn(),
   },
+  userDepartmentMembership: { findMany: jest.fn() },
   scheduleMediaItem: { updateMany: jest.fn(), deleteMany: jest.fn() },
   mediaItem: { findMany: jest.fn() },
   appNotification: { updateMany: jest.fn() },
@@ -104,6 +105,7 @@ describe("ChurchDepartmentAdapters - escalas", () => {
     });
     mockPrismaClient.crunch.findUnique.mockResolvedValue({ id: "church-1" });
     mockPrismaClient.department.findFirst.mockResolvedValue(departmentRow);
+    mockPrismaClient.userDepartmentMembership.findMany.mockResolvedValue([]);
   });
 
   describe("createChurchSchedule / createChurchDepartmentSchedule", () => {
@@ -382,6 +384,11 @@ describe("ChurchDepartmentAdapters - escalas", () => {
         .mockResolvedValueOnce(scheduleRow({ assignments: previousAssignments }))
         .mockResolvedValueOnce(scheduleRow({ assignments: updatedAssignments }));
       mockPrismaClient.user.findMany.mockResolvedValue([{ id: "vol-1" }]);
+      mockPrismaClient.userDepartmentMembership.findMany.mockResolvedValue(
+        [...new Set(updatedAssignments.map((assignment) => assignment.userId).filter(Boolean))].map(
+          (userId) => ({ userId }),
+        ),
+      );
       mockPrismaClient.scheduleAssignment.findMany.mockResolvedValue(previousAssignments);
       mockPrismaClient.$transaction.mockResolvedValue(undefined);
       mockSendToUsers.mockResolvedValue(undefined);
@@ -562,6 +569,21 @@ describe("ChurchDepartmentAdapters - escalas", () => {
       ).rejects.toThrow("Um ou mais voluntários não pertencem a esta igreja");
     });
 
+    it("rejeita voluntario da igreja que nao pertence ao ministerio da escala", async () => {
+      mockPrismaClient.schedule.findFirst.mockResolvedValue(scheduleRow());
+      mockPrismaClient.user.findMany.mockResolvedValue([{ id: "vol-1" }]);
+      mockPrismaClient.userDepartmentMembership.findMany.mockResolvedValue([]);
+
+      await expect(
+        adapters.updateChurchScheduleAssignments(
+          makeRequest({
+            params: { id: "schedule-1" },
+            body: { assignments: [{ userId: "vol-1", role: "Vocal" }] },
+          }),
+        ),
+      ).rejects.toThrow("Um ou mais voluntários não pertencem a este ministério");
+    });
+
     it("notifica separadamente quem entrou, quem saiu e quem ficou", async () => {
       mockPrismaClient.schedule.findFirst
         .mockResolvedValueOnce(scheduleRow())
@@ -569,6 +591,10 @@ describe("ChurchDepartmentAdapters - escalas", () => {
           scheduleRow({ assignments: [{ userId: "vol-1" }, { userId: "vol-2" }] }),
         );
       mockPrismaClient.user.findMany.mockResolvedValue([{ id: "vol-1" }, { id: "vol-2" }]);
+      mockPrismaClient.userDepartmentMembership.findMany.mockResolvedValue([
+        { userId: "vol-1" },
+        { userId: "vol-2" },
+      ]);
       mockPrismaClient.scheduleAssignment.findMany.mockResolvedValue([
         { id: "assign-old-1", userId: "vol-1", role: "Vocal" },
         { id: "assign-old-2", userId: "vol-3", role: "Baixo" },

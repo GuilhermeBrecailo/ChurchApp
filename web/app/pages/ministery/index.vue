@@ -25,7 +25,7 @@
       </div>
     </div>
 
-    <div v-if="departments.length" class="tabs-row mb-5">
+    <div v-if="visibleDepartments.length" class="tabs-row mb-5">
       <v-chip
         v-for="tab in listTabs"
         :key="tab.value"
@@ -40,11 +40,11 @@
     </div>
 
     <div
-      v-if="departments.length && activeTab === 'overview'"
+      v-if="visibleDepartments.length && activeTab === 'overview'"
       class="ministery-summary mb-5"
     >
       <div class="ministery-summary-item">
-        <span>{{ departments.length }}</span>
+        <span>{{ visibleDepartments.length }}</span>
         <small>ministérios</small>
       </div>
       <div class="ministery-summary-item">
@@ -63,12 +63,12 @@
     </div>
 
     <v-card
-      v-else-if="departments.length === 0 && !departmentsError"
+      v-else-if="visibleDepartments.length === 0 && !departmentsError"
       class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
     >
       <Building size="32" color="#9CA3AF" class="mb-3" />
       <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-        Nenhum ministério cadastrado ainda
+        {{ isChurchWideManager ? "Nenhum ministério cadastrado ainda" : "Você ainda não participa de nenhum ministério" }}
       </p>
       <v-btn
         v-if="canCreateDepartment"
@@ -114,7 +114,7 @@
 
     <div v-else class="ministery-grid">
       <div
-        v-for="department in departments"
+        v-for="department in visibleDepartments"
         :key="department.id"
         class="ministery-list-shell"
       >
@@ -324,6 +324,7 @@ import {
   departmentTypeLabel,
   getDepartmentSchedulePreset,
 } from "../../utils/departmentScheduleConfig";
+import { getVisibleDepartments } from "../../utils/departmentVisibility";
 
 const router = useRouter();
 const { user } = useAuth();
@@ -378,6 +379,9 @@ const isChurchWideManager = computed(
 );
 const canCreateDepartment = computed(() => isChurchWideManager.value);
 const canDeleteDepartment = computed(() => isChurchWideManager.value);
+const visibleDepartments = computed(() =>
+  getVisibleDepartments(departments.value, isChurchWideManager.value),
+);
 const isDeleteDepartmentDialogOpen = computed({
   get: () => Boolean(pendingDeleteDepartment.value),
   set: (value: boolean) => {
@@ -392,18 +396,18 @@ const deleteDepartmentMessage = computed(() =>
     : "Essa ação não pode ser desfeita.",
 );
 const activeDepartmentsCount = computed(
-  () => departments.value.filter((department) => department.isActive).length,
+  () => visibleDepartments.value.filter((department) => department.isActive).length,
 );
 const worshipDepartmentsCount = computed(
   () =>
-    departments.value.filter((department) =>
+    visibleDepartments.value.filter((department) =>
       ["WORSHIP", "MUSIC"].includes(department.type),
     ).length,
 );
 const departmentsByType = computed(() => {
   const totals = new Map<string, number>();
 
-  departments.value.forEach((department) => {
+  visibleDepartments.value.forEach((department) => {
     const label = departmentTypeLabel(department.type);
     totals.set(label, (totals.get(label) || 0) + 1);
   });

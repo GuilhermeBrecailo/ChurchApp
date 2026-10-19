@@ -405,12 +405,16 @@ export class DepartmentCore {
     }
 
     const department = await this.context.getDepartmentFromCurrentChurch(id, user.crunchId!);
-    if (
-      !hasPermission(user, "MINISTRY_MEMBER_MANAGE", {
-        departmentId: id,
-        isDepartmentLeader: department.leaderId === user.id,
-      })
-    ) {
+    const permissionOptions = {
+      departmentId: id,
+      isDepartmentLeader: department.leaderId === user.id,
+    };
+    const canListMembers =
+      hasPermission(user, "MINISTRY_MEMBER_MANAGE", permissionOptions) ||
+      hasPermission(user, "SCHEDULE_CREATE", permissionOptions) ||
+      hasPermission(user, "SCHEDULE_EDIT", permissionOptions);
+
+    if (!canListMembers) {
       throw new DomainError(
         "Apenas pastores, admins, lideres ou cargos com permissao podem listar os membros deste ministerio",
       );

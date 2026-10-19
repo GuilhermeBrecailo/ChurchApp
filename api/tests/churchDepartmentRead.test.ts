@@ -165,5 +165,32 @@ describe("ChurchDepartmentAdapters - leituras", () => {
 
       expect(result).toHaveLength(1);
     });
+
+    it("lider com permissao de escala lista os membros do ministerio", async () => {
+      mockPrismaClient.user.findUnique.mockResolvedValue({
+        id: "user-1",
+        crunchId: "church-1",
+        role: "LIDER",
+      });
+      mockPrismaClient.userDepartmentMembership.findMany.mockResolvedValue([
+        { id: "membership-1", function: "Vocal", isPrimary: true, user: { id: "user-2", name: "Membro", email: "m@igreja.com", phone: null } },
+      ]);
+
+      const result = await adapters.listChurchDepartmentScheduleManagers(
+        makeRequest({
+          role: "LIDER",
+          roles: [
+            {
+              scope: "MINISTRY",
+              departmentId: "dept-1",
+              permissions: ["SCHEDULE_CREATE"],
+            },
+          ],
+          params: { id: "dept-1" },
+        }),
+      );
+
+      expect(result).toHaveLength(1);
+    });
   });
 });
