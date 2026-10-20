@@ -27,11 +27,19 @@ jobs:
             fi
           done
 
-          if [ -z "$project_dir" ]; then
-            echo "Projeto não encontrado em um diretório acessível ao runner."
-            find /home/ghrunner /opt /srv -maxdepth 4 -type f -name docker-compose.yml -print 2>/dev/null || true
-            exit 1
+          if [ -n "$project_dir" ]; then
+            git -C "$project_dir" pull origin main
+            docker compose --project-directory "$project_dir" up -d --build web api
+            exit 0
           fi
 
-          git -C "$project_dir" pull origin main
-          docker compose --project-directory "$project_dir" up -d --build web api
+          docker run --rm \
+            -v /root/CrunchApp:/root/CrunchApp \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -w /root/CrunchApp \
+            docker:27-cli \
+            sh -euxc '
+              apk add --no-cache git docker-cli-compose
+              git pull origin main
+              docker compose up -d --build web api
+            '
