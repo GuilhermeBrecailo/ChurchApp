@@ -13,5 +13,25 @@ jobs:
       - name: Atualizar servidor
         run: |
           set -e
-          sudo -n git -C /root/CrunchApp pull origin main
-          sudo -n docker compose --project-directory /root/CrunchApp up -d --build web api
+          project_dir=""
+          for candidate in \
+            /home/ghrunner/CrunchApp \
+            /home/ghrunner/ChurchApp \
+            /opt/CrunchApp \
+            /opt/ChurchApp \
+            /srv/CrunchApp \
+            /srv/ChurchApp; do
+            if [ -f "$candidate/docker-compose.yml" ]; then
+              project_dir="$candidate"
+              break
+            fi
+          done
+
+          if [ -z "$project_dir" ]; then
+            echo "Projeto não encontrado em um diretório acessível ao runner."
+            find /home/ghrunner /opt /srv -maxdepth 4 -type f -name docker-compose.yml -print 2>/dev/null || true
+            exit 1
+          fi
+
+          git -C "$project_dir" pull origin main
+          docker compose --project-directory "$project_dir" up -d --build web api
