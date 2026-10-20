@@ -13,6 +13,5 @@ jobs:
       - name: Atualizar servidor
         run: |
           set -e
-          cd /root/CrunchApp
-          git pull origin main
-          docker compose up -d --build web api
+          sudo -n git -C /root/CrunchApp pull origin main
+          sudo -n docker compose --project-directory /root/CrunchApp up -d --build web api
