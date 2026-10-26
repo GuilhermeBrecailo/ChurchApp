@@ -13,6 +13,20 @@ jobs:
       - name: Atualizar servidor
         run: |
           set -e
+
+          run_docker() {
+            if docker info >/dev/null 2>&1; then
+              docker "$@"
+            elif command -v sudo >/dev/null 2>&1 && sudo -n docker info >/dev/null 2>&1; then
+              sudo docker "$@"
+            else
+              echo "Runner $(id -un) cannot access Docker at /var/run/docker.sock." >&2
+              id >&2
+              ls -l /var/run/docker.sock >&2 || true
+              echo "Configure Docker access for the runner, then rerun this workflow." >&2
+              exit 1
+            fi
+          }
           project_dir=""
           for candidate in \
             /home/ghrunner/CrunchApp \
@@ -29,11 +43,11 @@ jobs:
 
           if [ -n "$project_dir" ]; then
             git -C "$project_dir" pull origin main
-            docker compose --project-directory "$project_dir" up -d --build web api
+            run_docker compose --project-directory "$project_dir" up -d --build web api
             exit 0
           fi
 
-          docker run --rm \
+          run_docker run --rm \
             -v /root/CrunchApp:/root/CrunchApp \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -w /root/CrunchApp \
