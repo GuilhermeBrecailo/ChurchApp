@@ -10,6 +10,26 @@ export async function HolyricsRoutes(app: FastifyInstance) {
     controllerHandler(adapters.status.bind(adapters)),
   );
 
+  app.get(
+    "/api/church/holyrics/capabilities",
+    controllerHandler(adapters.capabilities.bind(adapters)),
+  );
+
+  app.get(
+    "/api/church/holyrics/current-schedule",
+    controllerHandler(adapters.currentSchedule.bind(adapters)),
+  );
+
+  app.get(
+    "/api/church/holyrics/current-presentation",
+    controllerHandler(adapters.currentPresentation.bind(adapters)),
+  );
+
+  app.get(
+    "/api/church/holyrics/media",
+    controllerHandler(adapters.searchMedia.bind(adapters)),
+  );
+
   app.post(
     "/api/church/holyrics/connect",
     controllerHandler(adapters.connect.bind(adapters)),
