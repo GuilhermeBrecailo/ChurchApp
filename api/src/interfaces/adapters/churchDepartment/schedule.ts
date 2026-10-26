@@ -666,29 +666,40 @@ export class ScheduleAdapters {
       "Apenas pastores, admins ou cargos com permissao podem editar escalas deste ministerio",
     );
 
-    const normalizedAssignments = assignments
-      .map((assignment) => ({
-        id: assignment.id?.trim() || undefined,
-        userId: assignment.userId?.trim(),
-        role: assignment.role?.trim() || "Voluntário",
-      }))
-      .filter(
-        (
-          assignment,
-        ): assignment is { id: string | undefined; userId: string; role: string } =>
-          Boolean(assignment.userId),
-      );
+    const normalizedAssignmentsByUser = new Map<string, {
+      id: string | undefined;
+      userId: string;
+      role: string;
+    }>();
+    for (const assignment of assignments) {
+      const userId = assignment.userId?.trim();
+      if (!userId) continue;
 
-    const normalizeRole = (role: string) => role.trim().toLowerCase();
-    const assignmentKeys = normalizedAssignments.map((assignment) =>
-      JSON.stringify([assignment.userId, normalizeRole(assignment.role)]),
-    );
+      const role = assignment.role?.trim() || "Voluntário";
+      const existing = normalizedAssignmentsByUser.get(userId);
+      if (!existing) {
+        normalizedAssignmentsByUser.set(userId, {
+          id: assignment.id?.trim() || undefined,
+          userId,
+          role,
+        });
+        continue;
+      }
 
-    if (new Set(assignmentKeys).size !== normalizedAssignments.length) {
-      throw new DomainError(
-        "Não é possível repetir a mesma função para a mesma pessoa nesta escala",
-      );
+      const roles = [...existing.role.split(/\s*·\s*/), ...role.split(/\s*·\s*/)]
+        .map((item) => item.trim())
+        .filter(Boolean);
+      const seenRoles = new Set<string>();
+      existing.role = roles.filter((item) => {
+        const normalized = item.toLocaleLowerCase("pt-BR");
+        if (seenRoles.has(normalized)) return false;
+        seenRoles.add(normalized);
+        return true;
+      }).join(" · ") || "Voluntário";
+      existing.id ||= assignment.id?.trim() || undefined;
     }
+
+    const normalizedAssignments = [...normalizedAssignmentsByUser.values()];
 
     const uniqueUserIds = [...new Set(normalizedAssignments.map((item) => item.userId))];
 
@@ -740,20 +751,18 @@ export class ScheduleAdapters {
       usedAssignmentIds.add(assignment.id);
     }
 
-    const previousAssignmentsByKey = new Map<string, typeof previousAssignments>();
+    const previousAssignmentsByUser = new Map<string, typeof previousAssignments>();
     for (const assignment of previousAssignments) {
-      const key = JSON.stringify([assignment.userId, normalizeRole(assignment.role)]);
-      const matchingAssignments = previousAssignmentsByKey.get(key) ?? [];
+      const matchingAssignments = previousAssignmentsByUser.get(assignment.userId) ?? [];
       matchingAssignments.push(assignment);
-      previousAssignmentsByKey.set(key, matchingAssignments);
+      previousAssignmentsByUser.set(assignment.userId, matchingAssignments);
     }
 
     const assignmentsWithIds = normalizedAssignments.map((assignment) => {
       if (assignment.id) return { ...assignment, assignmentId: assignment.id };
 
-      const key = JSON.stringify([assignment.userId, normalizeRole(assignment.role)]);
-      const previousAssignment = previousAssignmentsByKey
-        .get(key)
+      const previousAssignment = previousAssignmentsByUser
+        .get(assignment.userId)
         ?.find((candidate) => !usedAssignmentIds.has(candidate.id));
 
       if (!previousAssignment) return { ...assignment, assignmentId: undefined };
@@ -951,9 +960,10 @@ export class ScheduleAdapters {
     }
 
     const now = new Date();
-    const updatedAssignment = await $prismaClient.scheduleAssignment.update({
+    await $prismaClient.scheduleAssignment.updateMany({
       where: {
-        id: assignment.id,
+        scheduleId: id,
+        userId: user.id,
       },
       data:
         body.action === "VIEWED"
@@ -980,6 +990,13 @@ export class ScheduleAdapters {
               confirmedAt: null,
               declineReason: null,
             },
+    });
+
+    const updatedAssignment = await $prismaClient.scheduleAssignment.findFirstOrThrow({
+      where: {
+        scheduleId: id,
+        userId: user.id,
+      },
       select: {
         id: true,
         role: true,

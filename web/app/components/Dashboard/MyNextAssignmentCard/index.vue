@@ -112,6 +112,7 @@ import { Calendar, CalendarCheck, CheckCircle, Briefcase } from "lucide-vue-next
 import { useAuth } from "../../../../composables/useAuth";
 import { useDepartments } from "../../../../composables/useDepartments";
 import type { DepartmentSchedule } from "../../../../composables/useDepartments";
+import { groupScheduleAssignments } from "../../../utils/scaleSchedule";
 
 const { user } = useAuth();
 const { getChurchSchedules, updateMyScheduleAssignment } = useDepartments();
@@ -135,7 +136,8 @@ const myAssignment = computed(() => {
 });
 
 const mySlot = computed(() => {
-  const a = myAssignment.value?.assignments?.find((a) => a.userId === user.value?.id);
+  const a = groupScheduleAssignments(myAssignment.value?.assignments || [])
+    .find((assignment) => assignment.userId === user.value?.id);
   return a ?? { role: "", confirmationStatus: "PENDING" };
 });
 

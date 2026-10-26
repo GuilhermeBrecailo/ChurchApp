@@ -72,6 +72,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ChevronRight, Users, Sun } from "lucide-vue-next";
 import { useDepartments } from "../../../../composables/useDepartments";
+import { groupScheduleAssignments } from "../../../utils/scaleSchedule";
 
 const router = useRouter();
 const { getChurchSchedules } = useDepartments();
@@ -103,8 +104,8 @@ const todayItems = computed(() => {
     const rehearsal = s.rehearsalAt ? new Date(s.rehearsalAt) : null;
 
     if (date >= todayStart.value && date <= todayEnd.value) {
-      const assignments = s.assignments ?? [];
-      const confirmed = assignments.filter((a: any) => a.confirmationStatus === "CONFIRMED").length;
+      const assignments = groupScheduleAssignments(s.assignments ?? []);
+      const confirmed = assignments.filter((assignment) => assignment.confirmationStatus === "CONFIRMED").length;
       items.push({
         id: s.id,
         description: s.description,

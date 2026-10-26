@@ -104,7 +104,8 @@
         :disabled="isSavingAssignments || !assignmentForm.userId"
         @click="$emit('add-draft-assignment')"
       >
-        <Plus size="18" class="mr-1" /> Adicionar voluntário
+        <Plus size="18" class="mr-1" />
+        {{ draftAssignments.some((item) => item.userId === assignmentForm.userId) ? "Adicionar função à pessoa" : "Adicionar voluntário" }}
       </v-btn>
 
       <div v-if="draftAssignments.length" class="d-flex flex-column ga-2 mb-4">

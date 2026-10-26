@@ -182,6 +182,7 @@ import { useHolyrics } from "../../composables/useHolyrics";
 import type { ScheduleEvent } from "../components/Scale/types";
 import { getInitials } from "../utils/initials";
 import { splitSchedulesByDate } from "../utils/dashboardSchedules";
+import { groupScheduleAssignments } from "../utils/scaleSchedule";
 
 const {
   getDepartments,
@@ -254,7 +255,9 @@ const canManageSchedule = (schedule: DepartmentSchedule) =>
   schedule.department?.leaderId === user.value?.id;
 
 const leaderSummary = computed(() => {
-  const assignments = schedules.value.flatMap((schedule) => schedule.assignments || []);
+  const assignments = schedules.value.flatMap((schedule) =>
+    groupScheduleAssignments(schedule.assignments || []),
+  );
 
   return {
     pending: assignments.filter(
@@ -296,7 +299,8 @@ const selectedDetailDepartmentName = computed(() => {
 const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
   const date = new Date(schedule.date);
   const rehearsalDate = schedule.rehearsalAt ? new Date(schedule.rehearsalAt) : null;
-  const currentUserAssignment = schedule.assignments?.find(
+  const assignments = groupScheduleAssignments(schedule.assignments || []);
+  const currentUserAssignment = assignments.find(
     (assignment) => assignment.userId === user.value?.id,
   );
 
@@ -310,10 +314,10 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
         ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short" }).format(rehearsalDate)
         : "",
     rehearsalNotes: schedule.rehearsalNotes,
-    volunteerCount: schedule.assignments?.length || 0,
-    viewedCount: schedule.assignments?.filter((assignment) => Boolean(assignment.viewedAt)).length || 0,
+    volunteerCount: assignments.length,
+    viewedCount: assignments.filter((assignment) => Boolean(assignment.viewedAt)).length,
     confirmedCount:
-      schedule.assignments?.filter((assignment) => assignment.confirmationStatus === "CONFIRMED").length || 0,
+      assignments.filter((assignment) => assignment.confirmationStatus === "CONFIRMED").length,
     currentUserAssignment: currentUserAssignment
       ? {
           id: currentUserAssignment.id,
@@ -338,7 +342,7 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
       })) || [],
     canManage: canManageSchedule(schedule),
     volunteers:
-      schedule.assignments?.map((assignment) => ({
+      assignments.map((assignment) => ({
         userId: assignment.userId,
         name: assignment.user.name,
         role: assignment.role,

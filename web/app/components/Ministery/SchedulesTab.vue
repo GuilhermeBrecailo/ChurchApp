@@ -46,7 +46,7 @@
             </v-chip>
           </div>
           <v-chip size="small" color="primary" variant="tonal">
-            {{ schedule.assignments?.length || 0 }} voluntários
+            {{ assignmentsForSchedule(schedule).length }} voluntários
           </v-chip>
         </div>
 
@@ -68,12 +68,12 @@
         </div>
 
         <div
-          v-if="schedule.assignments?.length"
+          v-if="assignmentsForSchedule(schedule).length"
           class="schedule-assignment-list mt-3"
         >
           <div
-            v-for="assignment in schedule.assignments"
-            :key="assignment.id"
+            v-for="assignment in assignmentsForSchedule(schedule)"
+            :key="assignment.userId"
             class="schedule-assignment-item"
           >
             <span class="schedule-assignment-name">
@@ -176,6 +176,10 @@ import type {
   DepartmentSchedule,
   DepartmentSong,
 } from "../../../composables/useDepartments";
+import { groupScheduleAssignments } from "../../utils/scaleSchedule";
+
+const assignmentsForSchedule = (schedule: DepartmentSchedule) =>
+  groupScheduleAssignments(schedule.assignments || []);
 
 defineProps<{
   schedules: DepartmentSchedule[];
@@ -252,9 +256,15 @@ defineEmits<{
 .schedule-assignment-name,
 .schedule-assignment-role {
   min-width: 0;
+  overflow-wrap: anywhere;
+}
+.schedule-assignment-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.schedule-assignment-role {
+  white-space: normal;
 }
 .schedule-assignment-status {
   display: flex;

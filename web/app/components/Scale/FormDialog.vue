@@ -367,7 +367,8 @@
             :disabled="isSaving || !scheduleForm.departmentId || !volunteerUserId"
             @click="addFormVolunteer"
           >
-            <Plus size="16" class="mr-1" /> Adicionar voluntário
+            <Plus size="16" class="mr-1" />
+            {{ scheduleForm.assignments.some((item) => item.userId === volunteerUserId) ? "Adicionar função à pessoa" : "Adicionar voluntário" }}
           </v-btn>
 
           <div v-if="scheduleForm.assignments.length" class="d-flex flex-column gap-2">
@@ -444,7 +445,8 @@ import {
 } from "../../../composables/useServiceOccurrences";
 import {
   getScheduleCopySelection,
-  getScheduleAssignmentKey,
+  appendScheduleAssignmentRole,
+  groupScheduleAssignments,
   getScheduleCultOptions,
   getScheduleCultResolution,
   getDepartmentAssignmentRoleOptions,
@@ -623,11 +625,17 @@ const addFormVolunteer = () => {
   if (!member) return;
   const role = volunteerRole.value.trim() || "Voluntário";
 
-  if (scheduleForm.assignments.some((assignment) =>
-    getScheduleAssignmentKey(assignment.userId, assignment.role) ===
-      getScheduleAssignmentKey(member.id, role)
-  )) {
-    saveError.value = `Essa pessoa já está escalada para a função ${role}.`;
+  const existingAssignment = scheduleForm.assignments.find((assignment) => assignment.userId === member.id);
+  if (existingAssignment) {
+    const mergedRole = appendScheduleAssignmentRole(existingAssignment.role, role);
+    if (!mergedRole) {
+      saveError.value = `${member.name} já está escalado(a) para ${role}.`;
+      return;
+    }
+    existingAssignment.role = mergedRole;
+    saveError.value = "";
+    volunteerUserId.value = "";
+    volunteerRole.value = "";
     return;
   }
 
@@ -778,14 +786,19 @@ const prefillForm = async (schedule: DepartmentSchedule, mode: "edit" | "copy" =
   scheduleForm.songIds = copySelection.songIds;
   scheduleForm.resourceIds = copySelection.resourceIds;
   scheduleForm.assignments = mode === "edit"
-    ? (schedule.assignments ?? []).map((assignment) => ({
+    ? groupScheduleAssignments(schedule.assignments ?? []).map((assignment) => ({
         draftId: crypto.randomUUID(),
         assignmentId: assignment.id,
         userId: assignment.userId,
         name: assignment.user.name,
         role: assignment.role,
       }))
-    : copySelection.assignments.map((assignment) => ({
+    : groupScheduleAssignments(copySelection.assignments.map((assignment) => ({
+        confirmationStatus: "PENDING",
+        attendanceStatus: "PENDING",
+        viewedAt: null,
+        ...assignment,
+      }))).map((assignment) => ({
         ...assignment,
         draftId: crypto.randomUUID(),
       }));

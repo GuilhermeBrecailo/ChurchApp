@@ -515,9 +515,13 @@ export class AdminAdapters {
             name: true,
           },
         },
+        assignments: {
+          select: {
+            userId: true,
+          },
+        },
         _count: {
           select: {
-            assignments: true,
             mediaItems: true,
           },
         },
@@ -557,7 +561,7 @@ export class AdminAdapters {
         description: schedule.description,
         rehearsalAt: schedule.rehearsalAt,
         department: schedule.department,
-        assignmentsCount: schedule._count.assignments,
+        assignmentsCount: new Set(schedule.assignments.map((assignment) => assignment.userId)).size,
         mediaItemsCount: schedule._count.mediaItems,
       })),
       pastorHistory: church.pastorHistory,

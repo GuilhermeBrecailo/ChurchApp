@@ -799,12 +799,22 @@ onUnmounted(() => {
 .scale-details-sheet {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   height: min(92svh, 920px);
   max-height: min(92svh, 920px);
   overflow: hidden;
   border-radius: 22px 22px 0 0 !important;
   background: var(--app-color-surface) !important;
   color: var(--app-color-text);
+}
+
+:global(.scale-details-mobile-sheet .v-bottom-sheet__content) {
+  width: 100vw;
+  max-width: 100vw;
+  box-sizing: border-box;
 }
 
 .scale-details-handle {
@@ -854,6 +864,9 @@ onUnmounted(() => {
   flex: 1 1 auto;
   display: grid;
   gap: 24px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   min-height: 0;
   overflow-y: auto;
   /* Sem isso, o navegador computa overflow-x como "auto" tambem (regra do
@@ -866,6 +879,16 @@ onUnmounted(() => {
   overflow-x: hidden;
   padding: 24px;
   scrollbar-color: var(--app-color-border-strong) transparent;
+}
+
+.scale-details-body > *,
+.scale-details-section,
+.scale-song-list,
+.scale-song-card,
+.scale-song-row {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .scale-details-stats {
@@ -930,6 +953,12 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.scale-details-section-title-row {
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: space-between;
 }
 
 .scale-details-section-title h3 {
@@ -1163,6 +1192,11 @@ onUnmounted(() => {
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 12px;
+  min-width: 0;
+}
+
+.song-instrument-toggle {
+  flex-shrink: 0;
 }
 
 @media (min-width: 900px) {
@@ -1197,6 +1231,41 @@ onUnmounted(() => {
   .scale-resource-item {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+@media (max-width: 600px) {
+  .scale-playlist-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .scale-playlist-actions > .v-btn {
+    width: 100%;
+  }
+
+  .song-instrument-toggle {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .song-instrument-toggle :deep(.v-btn) {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .scale-song-row {
+    width: 100%;
+  }
+
+  .scale-song-info {
+    padding: 12px 8px;
+  }
+
+  .scale-song-index {
+    margin-left: 8px;
   }
 }
 </style>

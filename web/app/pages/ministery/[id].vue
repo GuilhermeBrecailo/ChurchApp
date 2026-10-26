@@ -413,10 +413,11 @@ import {
 import { compareListText } from "../../utils/listOrdering";
 import { duplicateSongTitleMessage } from "../../utils/songMessages";
 import {
-  getScheduleAssignmentKey,
+  appendScheduleAssignmentRole,
   getScheduleCultOptions,
   getScheduleCultResolution,
   getDepartmentAssignmentRoleOptions,
+  groupScheduleAssignments,
   type ScheduleCultOption,
 } from "../../utils/scaleSchedule";
 
@@ -1080,7 +1081,7 @@ const unavailableMemberIds = computed(() => {
 
 const allAssignments = computed(() =>
   schedules.value.flatMap((schedule) =>
-    (schedule.assignments || []).map((assignment) => ({
+    groupScheduleAssignments(schedule.assignments || []).map((assignment) => ({
       ...assignment,
       scheduleId: schedule.id,
       scheduleDate: schedule.date,
@@ -1161,7 +1162,7 @@ const leaderMetrics = computed(() => [
 const schedulesWithoutVolunteers = computed(
   () =>
     upcomingLeaderSchedules.value.filter(
-      (schedule) => (schedule.assignments?.length || 0) === 0,
+      (schedule) => groupScheduleAssignments(schedule.assignments || []).length === 0,
     ).length,
 );
 
@@ -1316,12 +1317,12 @@ const attendanceStatusLabel = (status?: string) => {
 };
 
 const confirmedAssignments = (schedule: DepartmentSchedule) =>
-  schedule.assignments?.filter(
+  groupScheduleAssignments(schedule.assignments || []).filter(
     (assignment) => assignment.confirmationStatus === "CONFIRMED",
-  ).length || 0;
+  ).length;
 
 const notViewedAssignments = (schedule: DepartmentSchedule) =>
-  schedule.assignments?.filter((assignment) => !assignment.viewedAt).length || 0;
+  groupScheduleAssignments(schedule.assignments || []).filter((assignment) => !assignment.viewedAt).length;
 
 const loadDepartment = async () => {
   departmentError.value = "";
@@ -2632,7 +2633,7 @@ const openAssignmentsDialog = (schedule: DepartmentSchedule) => {
   assignmentForm.userId = "";
   assignmentForm.role = "";
   draftAssignments.value =
-    schedule.assignments?.map((assignment) => ({
+    groupScheduleAssignments(schedule.assignments || []).map((assignment) => ({
       draftId: crypto.randomUUID(),
       assignmentId: assignment.id,
       userId: assignment.userId,
@@ -2671,10 +2672,17 @@ const addDraftAssignment = () => {
   if (!member) return;
   const role = assignmentForm.role.trim() || "Voluntário";
 
-  if (draftAssignments.value.some((item) =>
-    getScheduleAssignmentKey(item.userId, item.role) === getScheduleAssignmentKey(member.id, role)
-  )) {
-    assignmentsError.value = `Essa pessoa já está escalada para a função ${role}.`;
+  const existingAssignment = draftAssignments.value.find((item) => item.userId === member.id);
+  if (existingAssignment) {
+    const mergedRole = appendScheduleAssignmentRole(existingAssignment.role, role);
+    if (!mergedRole) {
+      assignmentsError.value = `${member.name} já está escalado(a) para ${role}.`;
+      return;
+    }
+    existingAssignment.role = mergedRole;
+    assignmentsError.value = "";
+    assignmentForm.userId = "";
+    assignmentForm.role = "";
     return;
   }
 
@@ -2754,11 +2762,9 @@ const markAttendance = async (
 const saveAssignments = async () => {
   assignmentsError.value = "";
 
-  const assignmentKeys = draftAssignments.value.map((assignment) =>
-    getScheduleAssignmentKey(assignment.userId, assignment.role)
-  );
-  if (new Set(assignmentKeys).size !== assignmentKeys.length) {
-    assignmentsError.value = "Remova ou altere a função duplicada antes de salvar.";
+  const assignedUserIds = draftAssignments.value.map((assignment) => assignment.userId);
+  if (new Set(assignedUserIds).size !== assignedUserIds.length) {
+    assignmentsError.value = "Cada pessoa deve ter uma única escalação. Adicione as funções na mesma pessoa.";
     return;
   }
 

@@ -412,6 +412,7 @@ import { useRoster, type RosterMember } from "../../../composables/useRoster";
 import { usePermissions } from "../../../composables/usePermissions";
 import { useDepartments, type ChurchDepartment } from "../../../composables/useDepartments";
 import { usePosts } from "../../../composables/usePosts";
+import { groupScheduleAssignments } from "../../utils/scaleSchedule";
 
 const route = useRoute();
 const router = useRouter();
@@ -493,7 +494,7 @@ const escalados = computed(() => {
   if (!occurrence.value) return [];
 
   return occurrence.value.schedules.flatMap((schedule) =>
-    schedule.assignments.map((assignment) => ({
+    groupScheduleAssignments(schedule.assignments).map((assignment) => ({
       userId: assignment.user.id,
       userName: assignment.user.name,
       role: assignment.role,
