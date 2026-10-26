@@ -19,6 +19,51 @@ type ReportQuery = {
   departmentId?: string;
 };
 
+type AssignmentReportRow = {
+  scheduleId: string;
+  userId: string;
+  confirmationStatus: string;
+  attendanceStatus: string;
+};
+
+function groupAssignmentsByVolunteer(assignments: AssignmentReportRow[]) {
+  const grouped = new Map<string, AssignmentReportRow>();
+  const confirmationPriority: Record<string, number> = {
+    CONFIRMED: 5,
+    DECLINED: 4,
+    SWAP_REQUESTED: 3,
+    MAYBE: 2,
+    PENDING: 1,
+  };
+
+  for (const assignment of assignments) {
+    const key = `${assignment.scheduleId}:${assignment.userId}`;
+    const existing = grouped.get(key);
+    if (!existing) {
+      grouped.set(key, { ...assignment });
+      continue;
+    }
+
+    if (
+      (confirmationPriority[assignment.confirmationStatus] || 0) >
+      (confirmationPriority[existing.confirmationStatus] || 0)
+    ) {
+      existing.confirmationStatus = assignment.confirmationStatus;
+    }
+
+    if (assignment.attendanceStatus === "PRESENT" || assignment.attendanceStatus === "ATTENDED") {
+      existing.attendanceStatus = assignment.attendanceStatus;
+    } else if (
+      assignment.attendanceStatus === "ABSENT" &&
+      existing.attendanceStatus === "PENDING"
+    ) {
+      existing.attendanceStatus = assignment.attendanceStatus;
+    }
+  }
+
+  return [...grouped.values()];
+}
+
 export class ReportAdapters {
   private async getCurrentUser(request: FastifyRequest) {
     const user = await $prismaClient.user.findUnique({
@@ -67,13 +112,17 @@ export class ReportAdapters {
     const user = await this.getCurrentUser(request);
     const { days, dateFrom, where } = this.getFilters(request, user.crunchId!);
 
-    const rows = await $prismaClient.scheduleAssignment.groupBy({
-      by: ["confirmationStatus", "scheduleId"],
+    const assignments = groupAssignmentsByVolunteer(await $prismaClient.scheduleAssignment.findMany({
       where,
-      _count: true,
-    });
+      select: {
+        scheduleId: true,
+        userId: true,
+        confirmationStatus: true,
+        attendanceStatus: true,
+      },
+    }));
 
-    const scheduleIds = [...new Set(rows.map((row) => row.scheduleId))];
+    const scheduleIds = [...new Set(assignments.map((assignment) => assignment.scheduleId))];
     const schedules = await $prismaClient.schedule.findMany({
       where: { id: { in: scheduleIds } },
       select: {
@@ -96,11 +145,11 @@ export class ReportAdapters {
       total: number;
     }>();
 
-    rows.forEach((row) => {
-      const schedule = scheduleMap.get(row.scheduleId);
+    assignments.forEach((assignment) => {
+      const schedule = scheduleMap.get(assignment.scheduleId);
       if (!schedule) return;
-      const current = grouped.get(row.scheduleId) ?? {
-        scheduleId: row.scheduleId,
+      const current = grouped.get(assignment.scheduleId) ?? {
+        scheduleId: assignment.scheduleId,
         schedule: schedule.description,
         date: schedule.date,
         department: schedule.department,
@@ -109,12 +158,11 @@ export class ReportAdapters {
         pending: 0,
         total: 0,
       };
-      const count = row._count;
-      if (row.confirmationStatus === "CONFIRMED") current.confirmed += count;
-      else if (row.confirmationStatus === "DECLINED") current.declined += count;
-      else current.pending += count;
-      current.total += count;
-      grouped.set(row.scheduleId, current);
+      if (assignment.confirmationStatus === "CONFIRMED") current.confirmed += 1;
+      else if (assignment.confirmationStatus === "DECLINED") current.declined += 1;
+      else current.pending += 1;
+      current.total += 1;
+      grouped.set(assignment.scheduleId, current);
     });
 
     return {
@@ -130,20 +178,33 @@ export class ReportAdapters {
     const user = await this.getCurrentUser(request);
     const { days, dateFrom, where } = this.getFilters(request, user.crunchId!);
 
-    const rows = await $prismaClient.scheduleAssignment.groupBy({
-      by: ["attendanceStatus", "scheduleId"],
+    const assignments = groupAssignmentsByVolunteer(await $prismaClient.scheduleAssignment.findMany({
       where,
-      _count: true,
-    });
+      select: {
+        scheduleId: true,
+        userId: true,
+        confirmationStatus: true,
+        attendanceStatus: true,
+      },
+    }));
 
-    const total = rows.reduce((sum, row) => sum + row._count, 0);
-    const attended = rows
-      .filter((row) => row.attendanceStatus === "PRESENT" || row.attendanceStatus === "ATTENDED")
-      .reduce((sum, row) => sum + row._count, 0);
-    const absent = rows
-      .filter((row) => row.attendanceStatus === "ABSENT")
-      .reduce((sum, row) => sum + row._count, 0);
+    const total = assignments.length;
+    const attended = assignments.filter(
+      (assignment) => assignment.attendanceStatus === "PRESENT" || assignment.attendanceStatus === "ATTENDED",
+    ).length;
+    const absent = assignments.filter((assignment) => assignment.attendanceStatus === "ABSENT").length;
     const pending = total - attended - absent;
+    const detailCounts = new Map<string, { scheduleId: string; attendanceStatus: string; _count: number }>();
+    for (const assignment of assignments) {
+      const key = `${assignment.scheduleId}:${assignment.attendanceStatus}`;
+      const current = detailCounts.get(key) || {
+        scheduleId: assignment.scheduleId,
+        attendanceStatus: assignment.attendanceStatus,
+        _count: 0,
+      };
+      current._count += 1;
+      detailCounts.set(key, current);
+    }
 
     return {
       days,
@@ -153,7 +214,7 @@ export class ReportAdapters {
       absent,
       pending,
       attendanceRate: total > 0 ? Math.round((attended / total) * 100) : 0,
-      details: rows,
+      details: [...detailCounts.values()],
     };
   }
 
@@ -161,34 +222,32 @@ export class ReportAdapters {
     const user = await this.getCurrentUser(request);
     const { days, dateFrom, where } = this.getFilters(request, user.crunchId!);
 
-    const rows = await $prismaClient.scheduleAssignment.groupBy({
-      by: ["userId"],
+    const assignments = groupAssignmentsByVolunteer(await $prismaClient.scheduleAssignment.findMany({
       where,
-      _count: { confirmationStatus: true },
+      select: {
+        scheduleId: true,
+        userId: true,
+        confirmationStatus: true,
+        attendanceStatus: true,
+      },
+    }));
+
+    const userIds = [...new Set(assignments.map((assignment) => assignment.userId))];
+    const members = await $prismaClient.user.findMany({
+      where: { id: { in: userIds }, crunchId: user.crunchId! },
+      select: { id: true, name: true, email: true },
     });
 
-    const userIds = rows.map((row) => row.userId);
-    const [members, assignments] = await Promise.all([
-      $prismaClient.user.findMany({
-        where: { id: { in: userIds }, crunchId: user.crunchId! },
-        select: { id: true, name: true, email: true },
-      }),
-      $prismaClient.scheduleAssignment.findMany({
-        where: { ...where, userId: { in: userIds } },
-        select: {
-          userId: true,
-          confirmationStatus: true,
-          attendanceStatus: true,
-        },
-      }),
-    ]);
-
     const memberMap = new Map(members.map((member) => [member.id, member]));
+    const assignmentsByUser = new Map<string, AssignmentReportRow[]>();
+    for (const assignment of assignments) {
+      const current = assignmentsByUser.get(assignment.userId) || [];
+      current.push(assignment);
+      assignmentsByUser.set(assignment.userId, current);
+    }
 
-    const items = rows.map((row) => {
-      const memberAssignments = assignments.filter(
-        (assignment) => assignment.userId === row.userId,
-      );
+    const items = userIds.map((userId) => {
+      const memberAssignments = assignmentsByUser.get(userId) || [];
       const confirmed = memberAssignments.filter(
         (assignment) => assignment.confirmationStatus === "CONFIRMED",
       ).length;
@@ -200,10 +259,10 @@ export class ReportAdapters {
       ).length;
 
       return {
-        userId: row.userId,
-        name: memberMap.get(row.userId)?.name || "Membro",
-        email: memberMap.get(row.userId)?.email || "",
-        total: row._count.confirmationStatus,
+        userId,
+        name: memberMap.get(userId)?.name || "Membro",
+        email: memberMap.get(userId)?.email || "",
+        total: memberAssignments.length,
         confirmed,
         declined,
         absent,

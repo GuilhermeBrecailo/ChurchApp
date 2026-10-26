@@ -7,6 +7,54 @@ export interface HolyricsStatus {
   connected: boolean;
 }
 
+export interface HolyricsFeature {
+  id: string;
+  label: string;
+  description: string;
+  actions: string[];
+  available: boolean;
+  implemented: boolean;
+  impact: "read" | "playlist" | "live_projection";
+}
+
+export interface HolyricsCapabilities {
+  version: string | null;
+  features: HolyricsFeature[];
+}
+
+export type HolyricsMediaKind = "audio" | "video" | "image";
+
+export interface HolyricsScheduleItem {
+  id?: string;
+  title?: string;
+  artist?: string;
+  name?: string;
+  type?: string;
+}
+
+export interface HolyricsCurrentSchedule {
+  name?: string;
+  type?: string;
+  datetime?: string;
+  lyrics_playlist?: HolyricsScheduleItem[];
+  media_playlist?: HolyricsScheduleItem[];
+  notes?: string;
+}
+
+export interface HolyricsCurrentPresentation {
+  id?: string;
+  type?: string;
+  name?: string;
+  slide_number?: number;
+  total_slides?: number;
+  slide_type?: string;
+}
+
+export interface HolyricsMediaItem {
+  name: string;
+  isDir: boolean;
+}
+
 export interface HolyricsCredentials {
   apiKey: string;
   token: string;
@@ -57,6 +105,41 @@ export const useHolyrics = () => {
     );
   };
 
+  const getHolyricsCapabilities = async (): Promise<ApiResponse<HolyricsCapabilities>> => {
+    return await $customFetch<HolyricsCapabilities>(
+      `${config.public.URL_BACKEND}/api/church/holyrics/capabilities`,
+      {
+        method: "GET",
+        headers: authHeaders(),
+      },
+    );
+  };
+
+  const getHolyricsCurrentSchedule = async (): Promise<ApiResponse<HolyricsCurrentSchedule | null>> => {
+    return await $customFetch<HolyricsCurrentSchedule | null>(
+      `${config.public.URL_BACKEND}/api/church/holyrics/current-schedule`,
+      { method: "GET", headers: authHeaders() },
+    );
+  };
+
+  const getHolyricsCurrentPresentation = async (): Promise<ApiResponse<HolyricsCurrentPresentation | null>> => {
+    return await $customFetch<HolyricsCurrentPresentation | null>(
+      `${config.public.URL_BACKEND}/api/church/holyrics/current-presentation`,
+      { method: "GET", headers: authHeaders() },
+    );
+  };
+
+  const searchHolyricsMedia = async (
+    kind: HolyricsMediaKind,
+    query: string,
+  ): Promise<ApiResponse<HolyricsMediaItem[]>> => {
+    const params = new URLSearchParams({ kind, q: query });
+    return await $customFetch<HolyricsMediaItem[]>(
+      `${config.public.URL_BACKEND}/api/church/holyrics/media?${params.toString()}`,
+      { method: "GET", headers: authHeaders() },
+    );
+  };
+
   const connectHolyrics = async (
     credentials: HolyricsCredentials,
   ): Promise<ApiResponse<HolyricsStatus>> => {
@@ -96,6 +179,10 @@ export const useHolyrics = () => {
 
   return {
     getHolyricsStatus,
+    getHolyricsCapabilities,
+    getHolyricsCurrentSchedule,
+    getHolyricsCurrentPresentation,
+    searchHolyricsMedia,
     connectHolyrics,
     disconnectHolyrics,
     syncScheduleToHolyrics,

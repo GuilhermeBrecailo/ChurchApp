@@ -99,6 +99,7 @@
 import { computed, ref } from "vue";
 import { Calendar, Clock, CheckCircle, XCircle, HelpCircle, Briefcase } from "lucide-vue-next";
 import type { DepartmentSchedule } from "../../../../composables/useDepartments";
+import { groupScheduleAssignments } from "../../../utils/scaleSchedule";
 
 const props = defineProps<{
   schedule: DepartmentSchedule;
@@ -114,7 +115,8 @@ const showDeclineInput = ref(false);
 const declineReason = ref("");
 
 const mySlot = computed(() =>
-  props.schedule.assignments?.find((a) => a.userId === props.userId),
+  groupScheduleAssignments(props.schedule.assignments || [])
+    .find((assignment) => assignment.userId === props.userId),
 );
 
 const currentStatus = computed(() => mySlot.value?.confirmationStatus ?? "PENDING");

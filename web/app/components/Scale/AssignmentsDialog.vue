@@ -68,7 +68,8 @@
         :disabled="isSaving"
         @click="addDraftAssignment"
       >
-        <Plus size="18" class="mr-1" /> Adicionar voluntário
+        <Plus size="18" class="mr-1" />
+        {{ draftAssignments.some((item) => item.userId === assignmentForm.userId) ? "Adicionar função à pessoa" : "Adicionar voluntário" }}
       </v-btn>
 
       <v-alert
@@ -237,9 +238,10 @@ import { computed, reactive, ref, watch } from "vue";
 import { Plus, UserPlus } from "lucide-vue-next";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import {
+  appendScheduleAssignmentRole,
   formatScheduleAssignmentConflict,
   getDepartmentAssignmentRoleOptions,
-  getScheduleAssignmentKey,
+  groupScheduleAssignments,
 } from "../../utils/scaleSchedule";
 import {
   useDepartments,
@@ -421,7 +423,7 @@ const resetForm = () => {
   assignmentForm.role = "";
 
   draftAssignments.value =
-    props.schedule?.assignments?.map((assignment) => ({
+    groupScheduleAssignments(props.schedule?.assignments || []).map((assignment) => ({
       draftId: crypto.randomUUID(),
       assignmentId: assignment.id,
       userId: assignment.userId,
@@ -468,10 +470,17 @@ const addDraftAssignment = () => {
   if (!member) return;
   const role = assignmentForm.role.trim() || "Voluntário";
 
-  if (draftAssignments.value.some((item) =>
-    getScheduleAssignmentKey(item.userId, item.role) === getScheduleAssignmentKey(member.id, role)
-  )) {
-    assignmentsError.value = `Essa pessoa já está escalada para a função ${role}.`;
+  const existingAssignment = draftAssignments.value.find((item) => item.userId === member.id);
+  if (existingAssignment) {
+    const mergedRole = appendScheduleAssignmentRole(existingAssignment.role, role);
+    if (!mergedRole) {
+      assignmentsError.value = `${member.name} já está escalado(a) para ${role}.`;
+      return;
+    }
+    existingAssignment.role = mergedRole;
+    assignmentsError.value = "";
+    assignmentForm.userId = "";
+    assignmentForm.role = "";
     return;
   }
 

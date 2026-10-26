@@ -34,7 +34,7 @@
             </p>
           </div>
           <v-chip size="small" color="primary" variant="tonal">
-            {{ schedule.assignments?.length || 0 }} escalados
+            {{ assignmentsForSchedule(schedule).length }} escalados
           </v-chip>
         </div>
       </div>
@@ -48,6 +48,10 @@
 <script setup lang="ts">
 import { Calendar } from "lucide-vue-next";
 import type { DepartmentSchedule } from "../../../composables/useDepartments";
+import { groupScheduleAssignments } from "../../utils/scaleSchedule";
+
+const assignmentsForSchedule = (schedule: DepartmentSchedule) =>
+  groupScheduleAssignments(schedule.assignments || []);
 
 defineProps<{
   upcomingSchedules: DepartmentSchedule[];

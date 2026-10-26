@@ -349,6 +349,7 @@ import {
 import { useServiceTimes, type ServiceTime } from "../../../composables/useServiceTimes";
 import { useAttendance, type ServiceAttendance } from "../../../composables/useAttendance";
 import { useRoster } from "../../../composables/useRoster";
+import { groupScheduleAssignments } from "../../utils/scaleSchedule";
 
 const router = useRouter();
 
@@ -420,7 +421,9 @@ const loadChurchSchedules = async () => {
 };
 
 const churchAssignments = computed(() =>
-  churchSchedules.value.flatMap((schedule) => schedule.assignments || []),
+  churchSchedules.value.flatMap((schedule) =>
+    groupScheduleAssignments(schedule.assignments || []),
+  ),
 );
 
 const percentage = (value: number, total: number) =>
@@ -468,7 +471,9 @@ const departmentReportRows = computed(() =>
       const schedules = churchSchedules.value.filter(
         (schedule) => schedule.departmentId === department.id,
       );
-      const assignments = schedules.flatMap((schedule) => schedule.assignments || []);
+      const assignments = schedules.flatMap((schedule) =>
+        groupScheduleAssignments(schedule.assignments || []),
+      );
       const confirmed = assignments.filter(
         (assignment) => assignment.confirmationStatus === "CONFIRMED",
       ).length;

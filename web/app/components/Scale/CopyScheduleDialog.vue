@@ -87,6 +87,7 @@
 import { computed, ref, watch } from "vue";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import type { DepartmentSchedule } from "../../../composables/useDepartments";
+import { groupScheduleAssignments } from "../../utils/scaleSchedule";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -131,7 +132,8 @@ const formatDate = (value: string) => {
 const musicCount = (schedule: DepartmentSchedule) =>
   schedule.mediaItems?.filter((item) => item.mediaItem.category === "MUSIC").length || 0;
 
-const volunteerCount = (schedule: DepartmentSchedule) => schedule.assignments?.length || 0;
+const volunteerCount = (schedule: DepartmentSchedule) =>
+  groupScheduleAssignments(schedule.assignments || []).length;
 
 watch(
   () => props.modelValue,

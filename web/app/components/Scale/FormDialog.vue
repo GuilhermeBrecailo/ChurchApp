@@ -877,6 +877,11 @@ const toTimeInputValue = (value: string) => {
   return Number.isNaN(date.getTime()) ? "" : date.toTimeString().slice(0, 5);
 };
 
+const splitScheduleAssignmentRoles = (role: string) => {
+  const roles = role.split(/\s*·\s*/).map((item) => item.trim()).filter(Boolean);
+  return roles.length ? roles : ["Voluntário"];
+};
+
 const loadScheduleMediaItems = async (departmentId: string) => {
   if (!departmentId) return;
 
@@ -1005,23 +1010,28 @@ const prefillForm = async (schedule: DepartmentSchedule, mode: "edit" | "copy" =
   scheduleForm.songIds = copySelection.songIds;
   scheduleForm.resourceIds = copySelection.resourceIds;
   scheduleForm.assignments = mode === "edit"
-    ? (schedule.assignments ?? []).map((assignment) => ({
-        draftId: crypto.randomUUID(),
-        assignmentId: assignment.id,
-        userId: assignment.userId,
-        name: assignment.user.name,
-        role: assignment.role,
-        isCommunionRole: schedule.isCommunionService
-          ? isCommunionScheduleRole(selectedDepartmentConfig.value, assignment.role)
-          : false,
-      }))
-    : copySelection.assignments.map((assignment) => ({
-        ...assignment,
-        draftId: crypto.randomUUID(),
-        isCommunionRole: scheduleForm.isCommunionService
-          ? isCommunionScheduleRole(selectedDepartmentConfig.value, assignment.role)
-          : false,
-      }));
+    ? (schedule.assignments ?? []).flatMap((assignment) =>
+        splitScheduleAssignmentRoles(assignment.role).map((role, index) => ({
+          draftId: crypto.randomUUID(),
+          assignmentId: index === 0 ? assignment.id : undefined,
+          userId: assignment.userId,
+          name: assignment.user.name,
+          role,
+          isCommunionRole: schedule.isCommunionService
+            ? isCommunionScheduleRole(selectedDepartmentConfig.value, role)
+            : false,
+        })),
+      )
+    : copySelection.assignments.flatMap((assignment) =>
+        splitScheduleAssignmentRoles(assignment.role).map((role) => ({
+          ...assignment,
+          draftId: crypto.randomUUID(),
+          role,
+          isCommunionRole: scheduleForm.isCommunionService
+            ? isCommunionScheduleRole(selectedDepartmentConfig.value, role)
+            : false,
+        })),
+      );
   if (mode === "copy") appendMissingRoleDrafts(scheduleForm.isCommunionService);
   saveError.value = "";
 

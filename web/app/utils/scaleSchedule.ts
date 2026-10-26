@@ -72,6 +72,69 @@ export function getScheduleAssignmentKey(userId: string, role: string): string {
   return JSON.stringify([userId.trim(), normalizedRole]);
 }
 
+export function mergeScheduleAssignmentRoles(...roles: string[]): string {
+  const seen = new Set<string>();
+  const merged: string[] = [];
+
+  for (const role of roles.flatMap((value) => value.split(/\s*·\s*/))) {
+    const normalized = role.trim();
+    const key = normalized.toLocaleLowerCase("pt-BR");
+    if (!normalized || seen.has(key)) continue;
+    seen.add(key);
+    merged.push(normalized);
+  }
+
+  return merged.join(" · ") || "Voluntário";
+}
+
+export function appendScheduleAssignmentRole(currentRoles: string, nextRole: string): string | null {
+  const role = nextRole.trim() || "Voluntário";
+  const roles = currentRoles.split(/\s*·\s*/).map((item) => item.trim()).filter(Boolean);
+  if (roles.some((item) => item.toLocaleLowerCase("pt-BR") === role.toLocaleLowerCase("pt-BR"))) {
+    return null;
+  }
+
+  return mergeScheduleAssignmentRoles(currentRoles, role);
+}
+
+export function groupScheduleAssignments<T extends {
+  userId: string;
+  role: string;
+  confirmationStatus?: string | null;
+  attendanceStatus?: string | null;
+}>(assignments: T[]): T[] {
+  const grouped = new Map<string, T[]>();
+  for (const assignment of assignments) {
+    const current = grouped.get(assignment.userId) ?? [];
+    current.push(assignment);
+    grouped.set(assignment.userId, current);
+  }
+
+  const responsePriority: Record<string, number> = {
+    CONFIRMED: 5,
+    DECLINED: 4,
+    SWAP_REQUESTED: 3,
+    MAYBE: 2,
+    PENDING: 1,
+  };
+  const attendancePriority: Record<string, number> = { PRESENT: 2, ABSENT: 2, PENDING: 1 };
+
+  return [...grouped.values()].map((items) => {
+    const preferred = [...items].sort((a, b) =>
+      (responsePriority[b.confirmationStatus || "PENDING"] || 0) -
+        (responsePriority[a.confirmationStatus || "PENDING"] || 0) ||
+      (attendancePriority[b.attendanceStatus || "PENDING"] || 0) -
+        (attendancePriority[a.attendanceStatus || "PENDING"] || 0) ||
+      Number(Boolean(b.viewedAt)) - Number(Boolean(a.viewedAt)),
+    )[0];
+
+    return {
+      ...preferred,
+      role: mergeScheduleAssignmentRoles(...items.map((item) => item.role)),
+    };
+  });
+}
+
 const DEPARTMENT_ASSIGNMENT_ROLE_OPTIONS: Record<string, string[]> = {
   WORSHIP: ["Ministro", "Cantor(a)", "Guitarra", "Baixo", "Violão", "Bateria", "Cajon", "Teclado"],
   MUSIC: ["Ministro", "Cantor(a)", "Guitarra", "Baixo", "Violão", "Bateria", "Cajon", "Teclado"],

@@ -9,6 +9,7 @@ import { resolveActiveChurchContext, RoleContext } from "../utils/churchContext"
 import {
   HolyricsClientError,
   HolyricsCredentials,
+  type HolyricsMediaKind,
   HolyricsServiceClient,
 } from "../../infrastructure/holyrics/HolyricsServiceClient";
 
@@ -152,6 +153,58 @@ export class HolyricsAdapters {
     const user = await this.getCurrentUser(request);
     const credentials = await this.getStoredCredentials(user.crunchId);
     return { connected: Boolean(credentials) };
+  }
+
+  async capabilities(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const credentials = await this.getStoredCredentials(user.crunchId);
+    if (!credentials) throw new DomainError("Conecte o Holyrics para consultar os recursos disponíveis");
+
+    try {
+      return await HolyricsServiceClient.getCapabilities(credentials);
+    } catch (error) {
+      throw toConnectionError(error);
+    }
+  }
+
+  private async readHolyrics(request: FastifyRequest, operation: () => Promise<unknown>) {
+    try {
+      return await operation();
+    } catch (error) {
+      throw toConnectionError(error);
+    }
+  }
+
+  private async requireCredentials(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const credentials = await this.getStoredCredentials(user.crunchId);
+    if (!credentials) throw new DomainError("Conecte o Holyrics nas configurações antes de consultar os dados");
+    return credentials;
+  }
+
+  async currentSchedule(request: FastifyRequest) {
+    const credentials = await this.requireCredentials(request);
+    return this.readHolyrics(request, () => HolyricsServiceClient.getCurrentSchedule(credentials));
+  }
+
+  async currentPresentation(request: FastifyRequest) {
+    const credentials = await this.requireCredentials(request);
+    return this.readHolyrics(request, () => HolyricsServiceClient.getCurrentPresentation(credentials));
+  }
+
+  async searchMedia(request: FastifyRequest) {
+    const credentials = await this.requireCredentials(request);
+    const query = (request.query || {}) as { kind?: unknown; q?: unknown };
+    const kind = query.kind;
+    const text = typeof query.q === "string" ? query.q.trim().slice(0, 120) : "";
+    if (kind !== "audio" && kind !== "video" && kind !== "image") {
+      throw new DomainError("Escolha áudio, vídeo ou imagem para pesquisar");
+    }
+    if (text.length < 2) throw new DomainError("Digite ao menos 2 caracteres para buscar na biblioteca");
+
+    return this.readHolyrics(request, () =>
+      HolyricsServiceClient.searchMedia(credentials, kind as HolyricsMediaKind, text),
+    );
   }
 
   async connect(request: FastifyRequest) {

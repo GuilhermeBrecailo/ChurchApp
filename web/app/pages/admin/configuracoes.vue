@@ -202,10 +202,10 @@
             </v-avatar>
             <div>
               <p class="font-weight-bold mb-0" style="font-size:0.9rem;">
-                {{ holyricsConnected ? "Holyrics conectado" : "Conectar Holyrics" }}
+                {{ holyricsConnected ? "Holyrics configurado" : "Conectar Holyrics" }}
               </p>
               <p class="text-caption text-grey-darken-1 mb-0">
-                {{ holyricsConnected ? "As músicas da escala podem ser enviadas para a playlist atual" : "Envie as músicas da escala para a playlist atual do culto" }}
+                {{ holyricsConnected ? "Credenciais salvas; verifique se o computador está online" : "Conecte uma vez para liberar recursos do culto e do louvor" }}
               </p>
             </div>
           </div>
@@ -226,8 +226,31 @@
             </v-alert>
 
             <template v-if="!holyricsConnected">
-              <p class="text-body-2 text-grey-darken-1 mb-4">
-                Use a API key e o token gerados pelo servidor oficial do Holyrics. A conexão é validada antes de ser salva.
+              <v-alert type="info" variant="tonal" density="compact" class="mb-4">
+                O ChurchApp conversa com o Holyrics pela conexão oficial. Não precisa instalar nada no servidor do ChurchApp. O computador com Holyrics precisa estar ligado e conectado à internet para responder.
+              </v-alert>
+
+              <div class="text-body-2 text-grey-darken-1 mb-4">
+                <p class="font-weight-bold text-grey-darken-3 mb-1">1. No Holyrics, abra Arquivo → Configurações → API Server</p>
+                <p class="mb-3">Ative o API Server e copie a API key. Em “Gerenciar permissões”, crie um token para o ChurchApp.</p>
+                <p class="font-weight-bold text-grey-darken-3 mb-1">2. Libere as ações necessárias no token</p>
+                <p class="mb-2">Para conectar, permita <code>GetTokenInfo</code>. Para enviar músicas da escala, permita também:</p>
+                <div class="d-flex flex-wrap ga-2 mb-3">
+                  <v-chip size="small" variant="tonal" color="primary">SearchLyrics</v-chip>
+                  <v-chip size="small" variant="tonal" color="primary">AddLyricsToPlaylist</v-chip>
+                </div>
+                <p class="mb-2">Opcional: para consultar programação, projeção e biblioteca de mídia, permita:</p>
+                <div class="d-flex flex-wrap ga-2 mb-3">
+                  <v-chip size="small" variant="tonal">GetCurrentSchedule</v-chip>
+                  <v-chip size="small" variant="tonal">GetCurrentPresentation</v-chip>
+                  <v-chip size="small" variant="tonal">GetAudios</v-chip>
+                  <v-chip size="small" variant="tonal">GetVideos</v-chip>
+                  <v-chip size="small" variant="tonal">GetImages</v-chip>
+                </div>
+                <p class="mb-0">3. Cole abaixo a API key e o token. O ChurchApp valida o acesso antes de salvar.</p>
+              </div>
+
+              <p class="text-caption text-grey-darken-1 mb-4">
                 <a
                   href="https://github.com/holyrics/API-Server"
                   target="_blank"
@@ -269,14 +292,200 @@
                 :loading="isConnectingHolyrics"
                 @click="handleConnectHolyrics"
               >
-                <MonitorPlay size="15" class="mr-1" /> Salvar conexão
+                <MonitorPlay size="15" class="mr-1" /> Testar e conectar
               </v-btn>
             </template>
 
             <template v-else>
               <v-alert type="info" variant="tonal" density="compact" class="mb-4">
-                O envio usa a playlist que estiver selecionada no Holyrics no momento da sincronização.
+                A conexão está vinculada a esta igreja. O envio de músicas usa a playlist atualmente selecionada no Holyrics.
               </v-alert>
+              <div class="d-flex align-center flex-wrap ga-3 mb-4">
+                <span v-if="holyricsCapabilities?.version" class="text-caption text-grey-darken-1">
+                  API Holyrics v{{ holyricsCapabilities.version }}
+                </span>
+                <v-btn
+                  variant="tonal"
+                  color="primary"
+                  size="small"
+                  class="text-none"
+                  :loading="isLoadingHolyricsCapabilities"
+                  @click="loadHolyricsCapabilities"
+                >
+                  <RefreshCw size="15" class="mr-1" /> Verificar recursos
+                </v-btn>
+              </div>
+              <v-alert
+                v-if="holyricsCapabilitiesError"
+                type="warning"
+                variant="tonal"
+                density="compact"
+                class="mb-4"
+              >
+                {{ holyricsCapabilitiesError }}
+              </v-alert>
+              <div v-if="holyricsCapabilities" class="d-flex flex-column ga-2 mb-4">
+                <div
+                  v-for="feature in holyricsCapabilities.features"
+                  :key="feature.id"
+                  class="d-flex align-start ga-2 pa-3 rounded-lg border-subtle"
+                >
+                  <CheckCircle2 v-if="feature.available && feature.implemented" size="18" color="#2E7D32" class="mt-1 flex-shrink-0" />
+                  <Lock v-else-if="!feature.available" size="18" color="#8A8A8A" class="mt-1 flex-shrink-0" />
+                  <MonitorPlay v-else size="18" color="#8A8A8A" class="mt-1 flex-shrink-0" />
+                  <div class="flex-grow-1">
+                    <div class="d-flex align-center flex-wrap ga-2">
+                      <span class="text-body-2 font-weight-bold">{{ feature.label }}</span>
+                      <v-chip
+                        v-if="feature.impact === 'live_projection'"
+                        size="x-small"
+                        color="warning"
+                        variant="tonal"
+                      >
+                        altera o telão ao vivo
+                      </v-chip>
+                      <v-chip
+                        v-if="feature.available && !feature.implemented"
+                        size="x-small"
+                        variant="tonal"
+                      >
+                        disponível na API; falta ligar no app
+                      </v-chip>
+                    </div>
+                    <p class="text-caption text-grey-darken-1 mb-1">{{ feature.description }}</p>
+                    <p v-if="!feature.available" class="text-caption text-grey mb-0">
+                      Permissões necessárias: {{ feature.actions.join(", ") }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div v-if="holyricsCapabilities" class="mt-5">
+                <v-divider class="mb-4" />
+                <p class="text-subtitle-2 font-weight-bold mb-3">Consultar dados do Holyrics</p>
+                <v-alert
+                  v-if="holyricsReadError"
+                  type="warning"
+                  variant="tonal"
+                  density="compact"
+                  class="mb-3"
+                >
+                  {{ holyricsReadError }}
+                </v-alert>
+                <div class="d-flex flex-wrap ga-2 mb-3">
+                  <v-btn
+                    v-if="hasHolyricsFeature('schedule_read')"
+                    variant="tonal"
+                    size="small"
+                    class="text-none"
+                    :loading="isLoadingHolyricsSchedule"
+                    @click="loadHolyricsCurrentSchedule"
+                  >
+                    Consultar programação atual
+                  </v-btn>
+                  <v-btn
+                    v-if="hasHolyricsFeature('presentation_read')"
+                    variant="tonal"
+                    size="small"
+                    class="text-none"
+                    :loading="isLoadingHolyricsPresentation"
+                    @click="loadHolyricsCurrentPresentation"
+                  >
+                    Consultar telão atual
+                  </v-btn>
+                </div>
+                <v-card
+                  v-if="holyricsCurrentSchedule"
+                  variant="tonal"
+                  class="pa-3 mb-3 rounded-lg"
+                >
+                  <p class="font-weight-bold mb-1">
+                    {{ holyricsCurrentSchedule.name || "Programação selecionada" }}
+                  </p>
+                  <p class="text-caption text-grey-darken-1 mb-2">
+                    {{ holyricsCurrentSchedule.datetime || "Data não informada pelo Holyrics" }}
+                  </p>
+                  <p class="text-caption font-weight-bold mb-1">
+                    {{ holyricsCurrentSchedule.lyrics_playlist?.length || 0 }} música(s)
+                    · {{ holyricsCurrentSchedule.media_playlist?.length || 0 }} mídia(s)
+                  </p>
+                  <ul v-if="holyricsCurrentSchedule.lyrics_playlist?.length" class="pl-5 mb-0">
+                    <li
+                      v-for="song in holyricsCurrentSchedule.lyrics_playlist"
+                      :key="song.id || song.title"
+                      class="text-body-2"
+                    >
+                      {{ song.title || song.name || "Música sem título" }}
+                      <span v-if="song.artist" class="text-grey-darken-1"> · {{ song.artist }}</span>
+                    </li>
+                  </ul>
+                </v-card>
+                <v-card
+                  v-if="holyricsPresentationLoaded"
+                  variant="tonal"
+                  class="pa-3 mb-3 rounded-lg"
+                >
+                  <p class="font-weight-bold mb-1">
+                    {{ holyricsCurrentPresentation?.name || "Nenhum item sendo projetado" }}
+                  </p>
+                  <p v-if="holyricsCurrentPresentation" class="text-caption text-grey-darken-1 mb-0">
+                    {{ holyricsCurrentPresentation.type || "Apresentação" }}
+                    <span v-if="holyricsCurrentPresentation.slide_number">
+                      · slide {{ holyricsCurrentPresentation.slide_number }}
+                      <span v-if="holyricsCurrentPresentation.total_slides">
+                        de {{ holyricsCurrentPresentation.total_slides }}
+                      </span>
+                    </span>
+                  </p>
+                </v-card>
+                <div v-if="availableHolyricsMediaKinds.length" class="d-flex flex-column ga-2 mt-4">
+                  <p class="text-body-2 font-weight-medium mb-0">Buscar na biblioteca de mídia</p>
+                  <div class="d-flex flex-wrap align-start ga-2">
+                    <v-select
+                      v-model="holyricsMediaKind"
+                      :items="availableHolyricsMediaKinds"
+                      item-title="label"
+                      item-value="value"
+                      label="Tipo de mídia"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                      style="max-width: 180px"
+                    />
+                    <v-text-field
+                      v-model="holyricsMediaQuery"
+                      label="Nome do arquivo"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                      class="flex-grow-1"
+                      @keyup.enter="searchHolyricsMediaItems"
+                    />
+                    <v-btn
+                      color="primary"
+                      variant="tonal"
+                      size="small"
+                      class="mt-1 text-none"
+                      :loading="isSearchingHolyricsMedia"
+                      :disabled="holyricsMediaQuery.trim().length < 2"
+                      @click="searchHolyricsMediaItems"
+                    >
+                      Buscar
+                    </v-btn>
+                  </div>
+                  <v-list v-if="holyricsMediaResults" density="compact" class="rounded-lg">
+                    <v-list-item
+                      v-for="(item, index) in holyricsMediaResults"
+                      :key="`${item.name}-${index}`"
+                      :title="item.name"
+                      :subtitle="item.isDir ? 'Pasta' : undefined"
+                    />
+                    <v-list-item
+                      v-if="holyricsMediaResults.length === 0"
+                      title="Nenhum arquivo encontrado"
+                    />
+                  </v-list>
+                </div>
+              </div>
               <v-btn
                 color="red-darken-2"
                 variant="tonal"
@@ -783,7 +992,14 @@ import { useChurchInvite } from "../../../composables/useChurchInvite";
 import { useChurch } from "../../../composables/useChurch";
 import { useServiceTimes, type ServiceTime } from "../../../composables/useServiceTimes";
 import { useWhatsApp } from "../../../composables/useWhatsApp";
-import { useHolyrics } from "../../../composables/useHolyrics";
+import {
+  useHolyrics,
+  type HolyricsCapabilities,
+  type HolyricsCurrentPresentation,
+  type HolyricsCurrentSchedule,
+  type HolyricsMediaItem,
+  type HolyricsMediaKind,
+} from "../../../composables/useHolyrics";
 import { FONT_OPTIONS } from "../../../composables/useChurchAppearance";
 import { useChurchPlan, PLAN_LABELS, PLAN_FEATURE_LABELS, type PlanFeature } from "../../../composables/usePlan";
 
@@ -890,7 +1106,15 @@ const handleCopyInviteLink = () => {
 };
 
 const { getWhatsAppStatus, connectWhatsApp, disconnectWhatsApp } = useWhatsApp();
-const { getHolyricsStatus, connectHolyrics, disconnectHolyrics } = useHolyrics();
+const {
+  getHolyricsStatus,
+  getHolyricsCapabilities,
+  getHolyricsCurrentSchedule,
+  getHolyricsCurrentPresentation,
+  searchHolyricsMedia,
+  connectHolyrics,
+  disconnectHolyrics,
+} = useHolyrics();
 
 const whatsappConnected = ref(false);
 const whatsappStatusLoading = ref(false);
@@ -908,6 +1132,31 @@ const isDisconnectingHolyrics = ref(false);
 const holyricsApiKey = ref("");
 const holyricsToken = ref("");
 const holyricsError = ref("");
+const holyricsCapabilities = ref<HolyricsCapabilities | null>(null);
+const holyricsCapabilitiesError = ref("");
+const isLoadingHolyricsCapabilities = ref(false);
+const holyricsReadError = ref("");
+const holyricsCurrentSchedule = ref<HolyricsCurrentSchedule | null>(null);
+const holyricsCurrentPresentation = ref<HolyricsCurrentPresentation | null>(null);
+const holyricsPresentationLoaded = ref(false);
+const isLoadingHolyricsSchedule = ref(false);
+const isLoadingHolyricsPresentation = ref(false);
+const holyricsMediaQuery = ref("");
+const holyricsMediaKind = ref<HolyricsMediaKind>("audio");
+const holyricsMediaResults = ref<HolyricsMediaItem[] | null>(null);
+const isSearchingHolyricsMedia = ref(false);
+const hasHolyricsFeature = (id: string) =>
+  holyricsCapabilities.value?.features.some((feature) => feature.id === id && feature.available) ?? false;
+const availableHolyricsMediaKinds = computed(() => {
+  const mediaKinds: { label: string; value: HolyricsMediaKind; featureId: string }[] = [
+    { label: "Áudio", value: "audio", featureId: "audio_search" },
+    { label: "Vídeo", value: "video", featureId: "video_search" },
+    { label: "Imagem", value: "image", featureId: "image_search" },
+  ];
+  return mediaKinds
+    .filter((item) => hasHolyricsFeature(item.featureId))
+    .map(({ label, value }) => ({ label, value }));
+});
 
 const loadWhatsAppStatus = async () => {
   if (!isChurchWideManager.value) return;
@@ -984,6 +1233,48 @@ const loadHolyricsStatus = async () => {
   holyricsStatusLoading.value = false;
 };
 
+const loadHolyricsCapabilities = async () => {
+  if (!holyricsConnected.value) return;
+  isLoadingHolyricsCapabilities.value = true;
+  holyricsCapabilitiesError.value = "";
+  const { data, error } = await getHolyricsCapabilities();
+  holyricsCapabilities.value = data ?? null;
+  if (error) holyricsCapabilitiesError.value = error;
+  const availableMediaKinds = availableHolyricsMediaKinds.value;
+  if (!availableMediaKinds.some((item) => item.value === holyricsMediaKind.value) && availableMediaKinds.length) {
+    holyricsMediaKind.value = availableMediaKinds[0].value;
+  }
+  isLoadingHolyricsCapabilities.value = false;
+};
+
+const loadHolyricsCurrentSchedule = async () => {
+  isLoadingHolyricsSchedule.value = true;
+  holyricsReadError.value = "";
+  const { data, error } = await getHolyricsCurrentSchedule();
+  if (error) holyricsReadError.value = error;
+  holyricsCurrentSchedule.value = data ?? null;
+  isLoadingHolyricsSchedule.value = false;
+};
+
+const loadHolyricsCurrentPresentation = async () => {
+  isLoadingHolyricsPresentation.value = true;
+  holyricsReadError.value = "";
+  const { data, error } = await getHolyricsCurrentPresentation();
+  if (error) holyricsReadError.value = error;
+  holyricsCurrentPresentation.value = data ?? null;
+  holyricsPresentationLoaded.value = !error;
+  isLoadingHolyricsPresentation.value = false;
+};
+
+const searchHolyricsMediaItems = async () => {
+  isSearchingHolyricsMedia.value = true;
+  holyricsReadError.value = "";
+  const { data, error } = await searchHolyricsMedia(holyricsMediaKind.value, holyricsMediaQuery.value.trim());
+  if (error) holyricsReadError.value = error;
+  holyricsMediaResults.value = data ?? null;
+  isSearchingHolyricsMedia.value = false;
+};
+
 const handleConnectHolyrics = async () => {
   const apiKey = holyricsApiKey.value.trim();
   const token = holyricsToken.value.trim();
@@ -1006,6 +1297,7 @@ const handleConnectHolyrics = async () => {
   holyricsConnected.value = true;
   holyricsApiKey.value = "";
   holyricsToken.value = "";
+  await loadHolyricsCapabilities();
 };
 
 const handleDisconnectHolyrics = async () => {
@@ -1020,6 +1312,12 @@ const handleDisconnectHolyrics = async () => {
   }
 
   holyricsConnected.value = false;
+  holyricsCapabilities.value = null;
+  holyricsCapabilitiesError.value = "";
+  holyricsCurrentSchedule.value = null;
+  holyricsCurrentPresentation.value = null;
+  holyricsPresentationLoaded.value = false;
+  holyricsMediaResults.value = null;
 };
 
 onUnmounted(() => {

@@ -10,6 +10,91 @@ export type HolyricsLyrics = {
   author?: string;
 };
 
+export type HolyricsFeature = {
+  id: string;
+  label: string;
+  description: string;
+  actions: string[];
+  available: boolean;
+  implemented: boolean;
+  impact: "read" | "playlist" | "live_projection";
+};
+
+export type HolyricsMediaKind = "audio" | "video" | "image";
+
+const HOLYRICS_MEDIA_ACTIONS: Record<HolyricsMediaKind, string> = {
+  audio: "GetAudios",
+  video: "GetVideos",
+  image: "GetImages",
+};
+
+const HOLYRICS_FEATURES: Omit<HolyricsFeature, "available">[] = [
+  {
+    id: "schedule_read",
+    label: "Consultar programação selecionada",
+    description: "Ler o culto, a ordem de músicas e as mídias da programação atual.",
+    actions: ["GetCurrentSchedule"],
+    impact: "read",
+    implemented: true,
+  },
+  {
+    id: "presentation_read",
+    label: "Consultar o slide projetado",
+    description: "Ver qual item e slide estão sendo exibidos no momento.",
+    actions: ["GetCurrentPresentation"],
+    impact: "read",
+    implemented: true,
+  },
+  {
+    id: "song_search",
+    label: "Localizar músicas para sincronizar escalas",
+    description: "Comparar título e artista da escala com a biblioteca do Holyrics.",
+    actions: ["SearchLyrics"],
+    impact: "read",
+    implemented: true,
+  },
+  {
+    id: "audio_search",
+    label: "Pesquisar áudios",
+    description: "Consultar nomes de arquivos e pastas da biblioteca de áudio.",
+    actions: ["GetAudios"],
+    impact: "read",
+    implemented: true,
+  },
+  {
+    id: "video_search",
+    label: "Pesquisar vídeos",
+    description: "Consultar nomes de arquivos e pastas da biblioteca de vídeo.",
+    actions: ["GetVideos"],
+    impact: "read",
+    implemented: true,
+  },
+  {
+    id: "image_search",
+    label: "Pesquisar imagens",
+    description: "Consultar nomes de arquivos e pastas da biblioteca de imagens.",
+    actions: ["GetImages"],
+    impact: "read",
+    implemented: true,
+  },
+  {
+    id: "scale_sync",
+    label: "Enviar músicas da escala para a playlist",
+    description: "Adicionar à playlist selecionada no Holyrics as músicas encontradas na escala.",
+    actions: ["SearchLyrics", "AddLyricsToPlaylist"],
+    impact: "playlist",
+    implemented: true,
+  },
+  {
+    id: "live_projection",
+    label: "Exibir e controlar conteúdo ao vivo",
+    description: "Exibir letras, versículos, textos ou mídias e avançar/voltar slides no telão.",
+    actions: ["ShowLyrics", "ShowVerse", "ShowText", "ShowImage", "PlayAudio", "PlayVideo", "ActionNext", "ActionPrevious"],
+    impact: "live_projection",
+    implemented: false,
+  },
+];
+
 type HolyricsInnerResponse<T> = {
   status?: string;
   data?: T;
@@ -167,12 +252,87 @@ export const HolyricsServiceClient = {
   },
 
   async validate(credentials: HolyricsCredentials) {
+    return this.getTokenInfo(credentials);
+  },
+
+  async getCapabilities(credentials: HolyricsCredentials) {
     const tokenInfo = await this.getTokenInfo(credentials);
-    await this.checkPermissions(
-      credentials,
-      "SearchLyrics,AddLyricsToPlaylist",
+    const granted = new Set(
+      (tokenInfo.permissions || "")
+        .split(",")
+        .map((action) => action.trim())
+        .filter(Boolean),
     );
-    return tokenInfo;
+    const grantsAll = granted.has("*") || granted.has("all");
+
+    return {
+      version: tokenInfo.version || null,
+      features: HOLYRICS_FEATURES.map((feature) => ({
+        ...feature,
+        available: grantsAll || feature.actions.every((action) => granted.has(action)),
+      })),
+    };
+  },
+
+  async getCurrentSchedule(credentials: HolyricsCredentials) {
+    const schedule = await this.request<Record<string, unknown> | null>(
+      "GetCurrentSchedule",
+      credentials,
+      { include_lyrics_slides: false, include_lyrics_history: false },
+    );
+    if (!schedule) return null;
+
+    const toItems = (value: unknown) =>
+      Array.isArray(value)
+        ? value.map((item) => {
+            const entry = item && typeof item === "object" ? item as Record<string, unknown> : {};
+            return {
+              id: typeof entry.id === "string" ? entry.id : undefined,
+              title: typeof entry.title === "string" ? entry.title : undefined,
+              artist: typeof entry.artist === "string" ? entry.artist : undefined,
+              name: typeof entry.name === "string" ? entry.name : undefined,
+              type: typeof entry.type === "string" ? entry.type : undefined,
+            };
+          })
+        : [];
+
+    return {
+      name: typeof schedule.name === "string" ? schedule.name : undefined,
+      type: typeof schedule.type === "string" ? schedule.type : undefined,
+      datetime: typeof schedule.datetime === "string" ? schedule.datetime : undefined,
+      lyrics_playlist: toItems(schedule.lyrics_playlist),
+      media_playlist: toItems(schedule.media_playlist),
+    };
+  },
+
+  async getCurrentPresentation(credentials: HolyricsCredentials) {
+    const presentation = await this.request<Record<string, unknown> | null>(
+      "GetCurrentPresentation",
+      credentials,
+      { include_slides: false },
+    );
+    if (!presentation) return null;
+    return {
+      id: typeof presentation.id === "string" ? presentation.id : undefined,
+      type: typeof presentation.type === "string" ? presentation.type : undefined,
+      name: typeof presentation.name === "string" ? presentation.name : undefined,
+      slide_number: typeof presentation.slide_number === "number" ? presentation.slide_number : undefined,
+      total_slides: typeof presentation.total_slides === "number" ? presentation.total_slides : undefined,
+      slide_type: typeof presentation.slide_type === "string" ? presentation.slide_type : undefined,
+    };
+  },
+
+  async searchMedia(
+    credentials: HolyricsCredentials,
+    kind: HolyricsMediaKind,
+    query: string,
+  ) {
+    const items = await this.request<{ name: string; isDir: boolean }[]>(
+      HOLYRICS_MEDIA_ACTIONS[kind],
+      credentials,
+      { filter: query, include_metadata: false, include_thumbnail: false },
+    );
+    return Array.isArray(items) ? items.slice(0, 100) : [];
   },
 
   async searchLyrics(credentials: HolyricsCredentials, text: string) {

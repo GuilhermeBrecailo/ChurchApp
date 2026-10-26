@@ -285,7 +285,7 @@
             </p>
             <div class="d-flex flex-wrap ga-2 mt-2">
               <v-chip size="x-small" color="primary" variant="tonal">
-                {{ schedule.assignments?.length || 0 }} escalados
+                {{ assignmentsForSchedule(schedule).length }} escalados
               </v-chip>
               <v-chip size="x-small" color="teal-darken-2" variant="tonal">
                 {{ confirmedAssignments(schedule) }} confirmados
@@ -323,6 +323,10 @@ import { AlertTriangle, BarChart3, BellRing, Calendar, Send, Trash2, UserPlus } 
 import type { DepartmentMember, DepartmentSchedule } from "../../../composables/useDepartments";
 import type { MemberRole } from "../../../composables/useChurchRoles";
 import { compareListText, normalizeListText } from "../../utils/listOrdering";
+import { groupScheduleAssignments } from "../../utils/scaleSchedule";
+
+const assignmentsForSchedule = (schedule: DepartmentSchedule) =>
+  groupScheduleAssignments(schedule.assignments || []);
 
 const props = defineProps<{
   isDark: boolean;
