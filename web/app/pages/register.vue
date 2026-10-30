@@ -7,11 +7,23 @@
           ChurchApp
         </NuxtLink>
         <p class="auth-promo__eyebrow">Primeiro passo simples</p>
-        <h2>Comece com a próxima escala e organize o resto no seu ritmo.</h2>
+        <h2>
+          {{ signupRole === "PASTOR" ? "Comece a organizar sua igreja." : "Entre para fazer parte da sua igreja." }}
+        </h2>
         <ul class="auth-promo__list">
-          <li><CheckCircle2 :size="17" aria-hidden="true" /> Cadastro da igreja em poucos minutos</li>
-          <li><CheckCircle2 :size="17" aria-hidden="true" /> Convites para líderes e membros</li>
-          <li><CheckCircle2 :size="17" aria-hidden="true" /> Três meses de Pro para experimentar</li>
+          <li>
+            <CheckCircle2 :size="17" aria-hidden="true" />
+            {{ signupRole === "PASTOR" ? "Crie a conta e cadastre sua igreja" : "Acesse sua igreja pelo código de convite" }}
+          </li>
+          <li v-if="signupRole === 'PASTOR'">
+            <CheckCircle2 :size="17" aria-hidden="true" /> Configure ministérios no primeiro acesso
+          </li>
+          <li v-else>
+            <CheckCircle2 :size="17" aria-hidden="true" /> A liderança aprova sua solicitação de acesso
+          </li>
+          <li v-if="signupRole === 'PASTOR'">
+            <CheckCircle2 :size="17" aria-hidden="true" /> Três meses de Pro para experimentar
+          </li>
         </ul>
       </aside>
 
@@ -34,13 +46,66 @@
               mdi-account-plus-outline
             </v-icon>
           </div>
-          <h1 class="app-page-title auth-title">Crie sua igreja</h1>
+          <h1 class="app-page-title auth-title">
+            {{ signupRole === "PASTOR" ? "Crie sua conta" : "Cadastre-se como membro" }}
+          </h1>
           <p class="auth-subtitle text-center">
-            Crie sua conta de pastor titular para iniciar sua igreja.
+            {{ signupRole === "PASTOR" ? "Depois, você já segue para cadastrar sua igreja." : "Use o código de convite enviado pela sua igreja." }}
           </p>
         </div>
 
-        <v-form autocomplete="off" @submit.prevent="handleRegister">
+        <div class="auth-role-picker" role="group" aria-label="Como você vai usar o ChurchApp?">
+          <button
+            type="button"
+            class="auth-role-option"
+            :class="{ 'is-selected': signupRole === 'PASTOR' }"
+            :aria-pressed="signupRole === 'PASTOR'"
+            :disabled="loading"
+            @click="selectSignupRole('PASTOR')"
+          >
+            <span class="auth-role-option__icon"><v-icon icon="mdi-church" aria-hidden="true" /></span>
+            <span class="auth-role-option__copy">
+              <strong>Sou pastor</strong>
+              <small>Vou criar uma igreja</small>
+            </span>
+            <v-icon
+              class="auth-role-option__check"
+              :icon="signupRole === 'PASTOR' ? 'mdi-check-circle' : 'mdi-circle-outline'"
+              aria-hidden="true"
+            />
+          </button>
+          <button
+            type="button"
+            class="auth-role-option"
+            :class="{ 'is-selected': signupRole === 'MEMBER' }"
+            :aria-pressed="signupRole === 'MEMBER'"
+            :disabled="loading"
+            @click="selectSignupRole('MEMBER')"
+          >
+            <span class="auth-role-option__icon"><v-icon icon="mdi-account-group-outline" aria-hidden="true" /></span>
+            <span class="auth-role-option__copy">
+              <strong>Sou membro</strong>
+              <small>Tenho um código de convite</small>
+            </span>
+            <v-icon
+              class="auth-role-option__check"
+              :icon="signupRole === 'MEMBER' ? 'mdi-check-circle' : 'mdi-circle-outline'"
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+
+        <v-alert
+          v-if="memberRegistrationSent"
+          type="success"
+          variant="tonal"
+          density="compact"
+          class="mt-5"
+        >
+          Solicitação enviada para <strong>{{ memberChurchName }}</strong>. Assim que a liderança aprovar, você poderá entrar normalmente.
+        </v-alert>
+
+        <v-form v-else autocomplete="off" class="mt-5" @submit.prevent="handleRegister">
           <v-text-field
             v-model="form.name"
             label="Nome completo"
@@ -76,6 +141,21 @@
             type="tel"
             autocomplete="off"
             prepend-inner-icon="mdi-phone-outline"
+            variant="outlined"
+            density="comfortable"
+            :bg-color="isDark ? 'transparent' : 'white'"
+            color="primary"
+            class="auth-input mb-4"
+            hide-details="auto"
+            :disabled="loading"
+          />
+
+          <v-text-field
+            v-if="signupRole === 'MEMBER'"
+            v-model="form.inviteCode"
+            label="Código de convite da igreja"
+            autocomplete="off"
+            prepend-inner-icon="mdi-ticket-confirmation-outline"
             variant="outlined"
             density="comfortable"
             :bg-color="isDark ? 'transparent' : 'white'"
@@ -147,14 +227,17 @@
             :loading="loading"
             :disabled="loading"
           >
-            Cadastrar
+            {{ signupRole === "PASTOR" ? "Criar conta e continuar" : "Solicitar acesso à igreja" }}
           </v-btn>
           </MotionPressableScale>
         </v-form>
 
         <div class="mt-6 text-center">
-          <p class="auth-hint mb-3">
-            Se você é membro, peça para sua igreja criar seu acesso.
+          <p v-if="signupRole === 'PASTOR'" class="auth-hint mb-3">
+            Se você já tem uma conta de membro, faça login normalmente.
+          </p>
+          <p v-else-if="!memberRegistrationSent" class="auth-hint mb-3">
+            Peça o código de convite ao pastor ou líder da sua igreja.
           </p>
           <span class="auth-meta">Já tem uma conta? </span>
           <NuxtLink to="/login" class="auth-link font-bold">Faça login</NuxtLink>
@@ -171,6 +254,7 @@ import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { CheckCircle2, ChevronLeft, Church } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
+import { useChurchInvite } from "../../composables/useChurchInvite";
 
 definePageMeta({
   layout: "not-app-bottom",
@@ -179,12 +263,17 @@ definePageMeta({
 const router = useRouter();
 const route = useRoute();
 const { registerPastor, login, setSessionFromToken, fetchMe, session, access_token } = useAuth();
+const { registerByCode } = useChurchInvite();
 const { isDark } = useThemeMode();
+
+type SignupRole = "PASTOR" | "MEMBER";
+const signupRole = ref<SignupRole>(route.query.role === "MEMBER" ? "MEMBER" : "PASTOR");
 
 const form = reactive({
   name: "",
   email: "",
   phone: "",
+  inviteCode: typeof route.query.code === "string" ? route.query.code : "",
   password: "",
   confirmPassword: "",
 });
@@ -192,6 +281,14 @@ const form = reactive({
 const showPassword = ref(false);
 const loading = ref(false);
 const errorMessage = ref("");
+const memberRegistrationSent = ref(false);
+const memberChurchName = ref("sua igreja");
+
+const selectSignupRole = (role: SignupRole) => {
+  signupRole.value = role;
+  errorMessage.value = "";
+  memberRegistrationSent.value = false;
+};
 
 const handleRegister = async () => {
   errorMessage.value = "";
@@ -220,7 +317,31 @@ const handleRegister = async () => {
     return;
   }
 
+  if (signupRole.value === "MEMBER" && !form.inviteCode.trim()) {
+    errorMessage.value = "Informe o código de convite da sua igreja.";
+    return;
+  }
+
   loading.value = true;
+
+  if (signupRole.value === "MEMBER") {
+    const { data, error } = await registerByCode(form.inviteCode.trim().toUpperCase(), {
+      name: normalizedName,
+      email: normalizedEmail,
+      phone: normalizedPhone,
+      password: form.password,
+    });
+
+    loading.value = false;
+    if (error) {
+      errorMessage.value = error;
+      return;
+    }
+
+    memberChurchName.value = data?.churchName || "sua igreja";
+    memberRegistrationSent.value = true;
+    return;
+  }
 
   const commercialLeadToken =
     typeof route.query.lead === "string" ? route.query.lead.trim() : "";
@@ -420,6 +541,81 @@ const handleRegister = async () => {
   margin: 0;
 }
 
+.auth-role-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.auth-role-option {
+  display: flex;
+  min-width: 0;
+  min-height: 72px;
+  align-items: center;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: 12px;
+  background: var(--app-color-surface);
+  color: var(--app-color-text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.auth-role-option:hover {
+  border-color: var(--app-color-accent);
+}
+
+.auth-role-option:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-color-accent) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.auth-role-option.is-selected {
+  border-color: var(--app-color-accent);
+  background: color-mix(in srgb, var(--app-color-accent) 7%, var(--app-color-surface));
+}
+
+.auth-role-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.auth-role-option__icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--app-color-accent) 12%, var(--app-color-surface));
+  color: var(--app-color-accent);
+}
+
+.auth-role-option__copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 3px;
+}
+
+.auth-role-option__copy strong {
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.auth-role-option__copy small {
+  color: var(--app-color-text-muted);
+  font-size: 0.68rem;
+  line-height: 1.3;
+}
+
+.auth-role-option__check {
+  flex: 0 0 auto;
+  color: var(--app-color-accent);
+}
+
 .auth-input :deep(.v-field) {
   border-radius: 14px;
 }
@@ -519,6 +715,16 @@ const handleRegister = async () => {
 
   .auth-form-wrap {
     padding: 8px;
+  }
+
+  .auth-card-inner {
+    padding: 40px 20px 28px;
+  }
+}
+
+@media (max-width: 380px) {
+  .auth-role-picker {
+    grid-template-columns: 1fr;
   }
 }
 </style>

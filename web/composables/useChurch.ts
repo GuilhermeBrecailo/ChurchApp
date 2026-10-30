@@ -2,6 +2,10 @@ import type { CustomFetch } from "../types/nuxt";
 import type { ApiResponse } from "./useTypes";
 import { useNuxtApp, useRuntimeConfig } from "#app";
 import { useAuth } from "./useAuth";
+import type {
+  ChurchSetupMode,
+  InitialChurchDepartment,
+} from "./churchOnboarding";
 
 interface CreateOwnChurchDTO {
   name: string;
@@ -14,6 +18,8 @@ interface CreateOwnChurchDTO {
   document?: string;
   logo?: string;
   commercialLeadToken?: string;
+  setupMode?: ChurchSetupMode;
+  initialDepartments?: InitialChurchDepartment[];
 }
 
 interface ChurchResponse {
@@ -42,7 +48,9 @@ export interface UploadedChurchPhoto {
   size: number;
 }
 
-type UpdateChurchDTO = Partial<CreateOwnChurchDTO> & {
+type UpdateChurchDTO = Partial<
+  Omit<CreateOwnChurchDTO, "setupMode" | "initialDepartments">
+> & {
   isActive?: boolean;
   slug?: string | null;
   accentColor?: string | null;

@@ -151,6 +151,11 @@
             />
           </div>
 
+          <ChurchMinistrySetup
+            v-model="churchSetup"
+            :disabled="loading"
+          />
+
           <v-alert
             v-if="errorMessage"
             type="error"
@@ -239,9 +244,11 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { Church, Clock } from "lucide-vue-next";
+import ChurchMinistrySetup from "../components/onboarding/ChurchMinistrySetup.vue";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
 import { useChurch } from "../../composables/useChurch";
+import { createDefaultChurchSetup } from "../../composables/churchOnboarding";
 import {
   useDepartments,
   type DepartmentSchedule,
@@ -300,6 +307,7 @@ const churchForm = reactive({
   number: "",
   localZipCode: "",
 });
+const churchSetup = ref(createDefaultChurchSetup());
 
 const handleCreateChurch = async () => {
   errorMessage.value = "";
@@ -318,6 +326,9 @@ const handleCreateChurch = async () => {
     road: churchForm.road,
     number: churchForm.number,
     localZipCode: churchForm.localZipCode,
+    setupMode: churchSetup.value.mode,
+    initialDepartments:
+      churchSetup.value.mode === "now" ? churchSetup.value.departments : [],
   });
 
   loading.value = false;

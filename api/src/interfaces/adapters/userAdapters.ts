@@ -87,6 +87,26 @@ function mapPastorSignupError(error: unknown): DomainError {
   );
 }
 
+const INITIAL_CHURCH_MINISTRY_TYPES = new Set([
+  "WORSHIP",
+  "DEACONATE",
+  "KIDS",
+  "RECEPTION",
+  "MEDIA",
+  "INTERCESSION",
+  "OTHER",
+]);
+
+const INITIAL_CHURCH_MINISTRY_MODULES: Record<string, string[]> = {
+  WORSHIP: ["SCHEDULES", "TASKS", "RESOURCES", "SONGS"],
+  DEACONATE: ["SCHEDULES", "TASKS", "RESOURCES"],
+  KIDS: ["SCHEDULES", "TASKS", "RESOURCES", "CLASSES"],
+  RECEPTION: ["SCHEDULES", "TASKS", "RESOURCES"],
+  MEDIA: ["SCHEDULES", "TASKS", "RESOURCES"],
+  INTERCESSION: ["SCHEDULES", "TASKS", "RESOURCES"],
+  OTHER: ["SCHEDULES", "TASKS", "RESOURCES"],
+};
+
 function formatChurch(church: {
   id: string;
   name: string;
@@ -610,6 +630,8 @@ export class UserAdapters {
       slug?: string;
       accentColor?: string | null;
       commercialLeadToken?: string;
+      setupMode?: unknown;
+      initialDepartments?: unknown;
     };
 
     if (!body.name?.trim()) {
@@ -628,6 +650,59 @@ export class UserAdapters {
 
     if (user.role !== "PASTOR") {
       throw new DomainError("Apenas pastor pode criar uma igreja");
+    }
+
+    if (body.setupMode !== undefined && body.setupMode !== "now" && body.setupMode !== "later") {
+      throw new DomainError("Opção de configuração inicial inválida");
+    }
+
+    if (body.initialDepartments !== undefined && !Array.isArray(body.initialDepartments)) {
+      throw new DomainError("Lista de ministérios inválida");
+    }
+
+    const setupMode =
+      body.setupMode ??
+      (Array.isArray(body.initialDepartments) && body.initialDepartments.length > 0
+        ? "now"
+        : "later");
+    const initialDepartmentInputs =
+      setupMode === "now" && Array.isArray(body.initialDepartments)
+        ? body.initialDepartments
+        : [];
+
+    if (initialDepartmentInputs.length > 12) {
+      throw new DomainError("Você pode configurar até 12 ministérios neste passo");
+    }
+
+    if (setupMode === "now" && initialDepartmentInputs.length === 0) {
+      throw new DomainError("Selecione ao menos um ministério ou escolha configurar depois");
+    }
+
+    const initialDepartments = initialDepartmentInputs.map((input) => {
+      if (typeof input !== "object" || input === null || Array.isArray(input)) {
+        throw new DomainError("Dados de ministério inválidos");
+      }
+
+      const department = input as { name?: unknown; type?: unknown };
+      const name = typeof department.name === "string" ? department.name.trim() : "";
+      const type = typeof department.type === "string" ? department.type.trim() : "";
+
+      if (name.length < 2 || name.length > 80) {
+        throw new DomainError("O nome do ministério deve ter entre 2 e 80 caracteres");
+      }
+
+      if (!INITIAL_CHURCH_MINISTRY_TYPES.has(type)) {
+        throw new DomainError("Tipo de ministério inválido");
+      }
+
+      return { name, type };
+    });
+
+    const normalizedMinistryNames = initialDepartments.map(({ name }) =>
+      name.toLocaleLowerCase("pt-BR"),
+    );
+    if (new Set(normalizedMinistryNames).size !== normalizedMinistryNames.length) {
+      throw new DomainError("Remova os ministérios com nomes repetidos");
     }
 
     const slug = await ensureUniqueChurchSlug(body.slug?.trim() || body.name.trim());
@@ -683,6 +758,39 @@ export class UserAdapters {
           isPrimary: !user.crunchId,
         },
       });
+
+      if (initialDepartments.length > 0) {
+        let canSetPrimaryDepartment =
+          !(await tx.userDepartmentMembership.findFirst({
+            where: { userId: user.id, isPrimary: true },
+            select: { id: true },
+          }));
+
+        for (const departmentDraft of initialDepartments) {
+          const department = await tx.department.create({
+            data: {
+              id: crypto.randomUUID(),
+              name: departmentDraft.name,
+              type: departmentDraft.type,
+              modules: INITIAL_CHURCH_MINISTRY_MODULES[departmentDraft.type],
+              leaderId: user.id,
+              crunchId: createdChurch.id,
+              isActive: true,
+            },
+            select: { id: true },
+          });
+
+          await tx.userDepartmentMembership.create({
+            data: {
+              id: crypto.randomUUID(),
+              userId: user.id,
+              departmentId: department.id,
+              isPrimary: canSetPrimaryDepartment,
+            },
+          });
+          canSetPrimaryDepartment = false;
+        }
+      }
 
       return createdChurch;
     });

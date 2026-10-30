@@ -130,6 +130,11 @@
             />
           </div>
 
+          <ChurchMinistrySetup
+            v-model="churchSetup"
+            :disabled="loading"
+          />
+
           <v-text-field
             v-model="form.document"
             label="Documento"
@@ -181,6 +186,8 @@
 <script setup lang="ts">
 import { reactive, ref } from "vue";
 import { QrCode } from "lucide-vue-next";
+import ChurchMinistrySetup from "../../components/onboarding/ChurchMinistrySetup.vue";
+import { createDefaultChurchSetup } from "../../../composables/churchOnboarding";
 import { useAuth } from "../../../composables/useAuth";
 import { useChurch } from "../../../composables/useChurch";
 import { useChurchInvite } from "../../../composables/useChurchInvite";
@@ -210,6 +217,7 @@ const form = reactive({
   localZipCode: "",
   document: "",
 });
+const churchSetup = ref(createDefaultChurchSetup());
 
 const handleCreateChurch = async () => {
   errorMessage.value = "";
@@ -229,6 +237,9 @@ const handleCreateChurch = async () => {
     number: form.number,
     localZipCode: form.localZipCode,
     document: form.document,
+    setupMode: churchSetup.value.mode,
+    initialDepartments:
+      churchSetup.value.mode === "now" ? churchSetup.value.departments : [],
   });
 
   loading.value = false;
