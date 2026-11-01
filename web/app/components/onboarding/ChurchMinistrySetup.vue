@@ -454,6 +454,10 @@ const moduleSummary = (type: InitialDepartmentType) => {
   font-weight: 650;
 }
 
+.church-setup__custom :deep(.v-field:not(.v-field--focused) .v-field__input::placeholder) {
+  opacity: 0 !important;
+}
+
 @media (max-width: 600px) {
   .church-setup {
     padding: 15px;

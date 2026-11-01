@@ -19,7 +19,7 @@
         <div class="setup-step-body">
           <p class="setup-step-title mb-1">Convide sua equipe</p>
           <p class="setup-step-desc mb-3">
-            Compartilhe o código para que membros entrem na igreja.
+            Envie o link para sua equipe pedir acesso. A liderança aprova depois.
           </p>
 
           <template v-if="membersCount <= 1">
@@ -38,6 +38,18 @@
               >
                 <Link size="14" class="mr-1" />
                 {{ inviteCodeCopied ? "Copiado!" : "Copiar link" }}
+              </v-btn>
+              <v-btn
+                color="primary"
+                variant="tonal"
+                size="small"
+                class="text-none font-weight-bold"
+                :href="whatsappInviteLink"
+                target="_blank"
+                rel="noopener noreferrer"
+                :disabled="!inviteCodeValue"
+              >
+                <MessageCircle size="14" class="mr-1" /> Enviar no WhatsApp
               </v-btn>
             </div>
           </template>
@@ -74,8 +86,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { Sparkles, Check, Link, Building } from "lucide-vue-next";
+import { computed, onMounted, ref } from "vue";
+import { Sparkles, Check, Link, Building, MessageCircle } from "lucide-vue-next";
 import { useThemeMode } from "../../../../composables/useThemeMode";
 import { useChurchInvite } from "../../../../composables/useChurchInvite";
 
@@ -91,10 +103,22 @@ const inviteCodeValue = ref("");
 const inviteCodeLoading = ref(false);
 const inviteCodeCopied = ref(false);
 
+const inviteJoinUrl = computed(() =>
+  inviteCodeValue.value && import.meta.client
+    ? `${window.location.origin}/join?code=${encodeURIComponent(inviteCodeValue.value)}`
+    : "",
+);
+
+const whatsappInviteLink = computed(() => {
+  if (!inviteJoinUrl.value) return "";
+
+  const message = `Oi! Faça seu cadastro para pedir acesso à minha igreja no ChurchApp: ${inviteJoinUrl.value}`;
+  return `https://wa.me/?text=${encodeURIComponent(message)}`;
+});
+
 const handleCopyInviteLink = () => {
-  if (!inviteCodeValue.value) return;
-  const url = `${window.location.origin}/join?code=${inviteCodeValue.value}`;
-  navigator.clipboard.writeText(url).then(() => {
+  if (!inviteJoinUrl.value) return;
+  navigator.clipboard.writeText(inviteJoinUrl.value).then(() => {
     inviteCodeCopied.value = true;
     setTimeout(() => {
       inviteCodeCopied.value = false;

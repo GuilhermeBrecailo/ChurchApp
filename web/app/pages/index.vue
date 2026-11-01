@@ -88,6 +88,7 @@
           <v-text-field
             v-model="churchForm.name"
             label="Nome da igreja"
+            required
             variant="outlined"
             density="comfortable"
             color="primary"
@@ -96,7 +97,7 @@
             :disabled="loading"
           />
 
-          <div class="responsive-grid">
+          <div class="responsive-grid mb-4">
             <v-text-field
               v-model="churchForm.city"
               label="Cidade"
@@ -291,12 +292,13 @@ const schedulesError = ref("");
 const churchMembersCount = ref(0);
 const churchDepartmentsCount = ref(0);
 const setupStateLoaded = ref(false);
+const canManageChurchMembers = canRef("MEMBER_CREATE");
 
 const needsSetup = computed(
   () =>
     setupStateLoaded.value &&
     churchMembersCount.value <= 1 &&
-    churchDepartmentsCount.value === 0,
+    canManageChurchMembers.value,
 );
 
 const churchForm = reactive({

@@ -67,6 +67,7 @@
           <v-text-field
             v-model="form.name"
             label="Nome da igreja"
+            required
             variant="outlined"
             density="comfortable"
             color="primary"
@@ -75,7 +76,7 @@
             :disabled="loading"
           />
 
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-4">
             <v-text-field
               v-model="form.city"
               label="Cidade"
