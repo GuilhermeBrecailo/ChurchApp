@@ -4,5 +4,8 @@
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
+    <ClientOnly>
+      <PwaInstallPrompt />
+    </ClientOnly>
   </MotionConfig>
 </template>
