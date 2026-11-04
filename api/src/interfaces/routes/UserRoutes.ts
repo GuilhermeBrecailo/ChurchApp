@@ -1,12 +1,14 @@
 import { FastifyInstance } from "fastify";
 import { controllerHandler } from "../controllers/Handler";
 import { UserAdapters } from "../adapters/userAdapters";
+import { authRateLimits } from "../plugins/RateLimit";
 
 export async function UserRoutes(app: FastifyInstance) {
   const adapters = new UserAdapters();
 
   app.post(
     "/api/pastor/signup",
+    { config: { rateLimit: authRateLimits.pastorSignup } },
     controllerHandler(adapters.createPastor.bind(adapters)),
   );
 
