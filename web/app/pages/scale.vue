@@ -37,8 +37,9 @@
         <v-chip
           v-for="filter in filters"
           :key="filter"
-          :variant="activeFilter === filter ? 'flat' : 'outlined'"
+          :variant="activeFilter === filter ? 'tonal' : 'outlined'"
           :color="activeFilter === filter ? accentColor : 'grey-darken-1'"
+          :aria-pressed="activeFilter === filter"
           class="filter-chip cursor-pointer"
           @click="activeFilter = filter"
         >

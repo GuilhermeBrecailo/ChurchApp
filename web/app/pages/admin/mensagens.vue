@@ -19,13 +19,15 @@
     </div>
 
     <section class="church-admin-section">
-      <div class="messages-subtabs d-flex ga-2 mb-5 flex-wrap">
+      <div class="messages-subtabs app-segmented mb-5" role="tablist" aria-label="Seções de mensagens">
         <v-btn
           v-for="tab in messagesSubTabs"
           :key="tab.value"
-          :color="messagesSubTab === tab.value ? 'primary' : 'grey-darken-2'"
-          :variant="messagesSubTab === tab.value ? 'flat' : 'tonal'"
+          variant="text"
+          role="tab"
+          :aria-selected="messagesSubTab === tab.value"
           class="text-none"
+          :class="{ 'app-segmented--active': messagesSubTab === tab.value }"
           @click="messagesSubTab = tab.value"
         >
           {{ tab.label }}
@@ -33,7 +35,7 @@
       </div>
 
       <v-alert v-if="!whatsappConnected" type="warning" variant="tonal" density="compact" class="mb-4">
-        WhatsApp não conectado. Conecte na aba "Geral" antes de enviar mensagens.
+        WhatsApp não conectado. <NuxtLink to="/admin/configuracoes?secao=whatsapp" class="config-inline-link">Conectar em Configurações › WhatsApp</NuxtLink> antes de enviar mensagens.
       </v-alert>
 
       <div v-show="messagesSubTab === 'modelos'">
@@ -88,7 +90,7 @@
                 </v-chip>
                 <v-btn
                   color="primary"
-                  :variant="suggestion.savedTemplate ? 'tonal' : 'flat'"
+                  :variant="suggestion.savedTemplate ? 'text' : 'tonal'"
                   class="text-none"
                   size="small"
                   :disabled="templatesLoading || Boolean(templatesError)"
@@ -596,7 +598,7 @@
           density="compact"
           class="mb-3"
         >
-          Nenhum culto cadastrado ainda. Configure um horário de culto na aba "Geral" antes de criar uma regra automática.
+          Nenhum culto cadastrado ainda. <NuxtLink to="/admin/configuracoes?secao=horarios" class="config-inline-link">Configure um horário de culto</NuxtLink> antes de criar uma regra automática.
         </v-alert>
         <v-select
           v-else

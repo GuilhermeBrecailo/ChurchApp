@@ -615,8 +615,8 @@ watch(slug, (nextSlug, previousSlug) => {
   min-height: 100vh;
 }
 
-:global(.dark-theme) .church-landing,
-:global(.v-theme--dark) .church-landing {
+:global(.dark-theme .church-landing),
+:global(.v-theme--dark .church-landing) {
   --paper: #17140F;
   --ink: #F3EFE6;
   --ink-soft: #B9B0A2;

@@ -425,7 +425,7 @@ onMounted(async () => {
     0 4px 12px -4px rgba(15, 17, 21, 0.12) !important;
 }
 
-:global(.app-theme-dark) .notification-card {
+:global(.app-theme-dark .notification-card) {
   --notif-accent-text: color-mix(in srgb, var(--church-accent) 45%, var(--app-color-accent-muted));
   --notif-accent-tint: color-mix(in srgb, var(--church-accent) 22%, var(--app-color-surface));
 }

@@ -25,13 +25,15 @@
       {{ departmentsError }}
     </v-alert>
 
-    <div class="pessoas-subtabs app-surface-muted pa-1 mb-5">
+    <div class="pessoas-subtabs app-segmented mb-5" role="tablist" aria-label="Seções de pessoas">
       <v-btn
         v-for="tab in pessoasSubTabs"
         :key="tab.value"
-        :color="activeSection === tab.value ? 'primary' : 'grey-darken-2'"
-        :variant="activeSection === tab.value ? 'flat' : 'text'"
+        variant="text"
+        role="tab"
+        :aria-selected="activeSection === tab.value"
         class="text-none pessoas-subtab"
+        :class="{ 'app-segmented--active': activeSection === tab.value }"
         size="small"
         @click="selectPessoasSection(tab.value)"
       >
@@ -2271,13 +2273,6 @@ onMounted(async () => {
 
 .church-admin-section {
   min-width: 0;
-}
-
-.pessoas-subtabs {
-  display: inline-flex;
-  gap: 2px;
-  max-width: 100%;
-  overflow-x: auto;
 }
 
 .pessoas-subtab {

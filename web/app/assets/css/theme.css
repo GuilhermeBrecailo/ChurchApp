@@ -604,15 +604,83 @@ h1.text-h5 {
   border-radius: var(--app-control-radius);
 }
 
+/* ============================================================
+   SELETOR SEGMENTADO — padrão único para abas e filtros
+   Antes havia 4 estilos (abas sublinhadas, botões vermelhos cheios, chips
+   contornados e o segmentado). Agora: trilho claro com borda, item ativo em
+   superfície branca + sombra + texto terracota. Vale para v-tabs,
+   v-btn-toggle (regra abaixo) e grupos de botões com a classe .app-segmented.
+   ============================================================ */
+.app-segmented,
 :where(.app-operational-page, .responsive-overlay) .v-tabs {
-  --v-tabs-height: 44px;
+  display: inline-flex;
+  gap: 4px;
+  max-width: 100%;
+  padding: 4px;
+  border: 1px solid var(--app-color-border);
+  border-radius: var(--app-control-radius);
+  background: var(--app-color-surface-soft);
 }
 
+/* v-tabs já rola sozinho (slide-group); só o grupo customizado precisa disso. */
+.app-segmented {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-segmented::-webkit-scrollbar {
+  display: none;
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-tabs {
+  --v-tabs-height: 36px;
+  height: auto !important;
+}
+
+.app-segmented > .v-btn,
+.app-segmented > button,
 :where(.app-operational-page, .responsive-overlay) .v-tab {
+  flex: 0 0 auto;
   min-width: 0;
-  border-radius: var(--app-control-radius) var(--app-control-radius) 0 0;
+  min-height: var(--app-control-height-compact, 36px);
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--app-color-text-soft) !important;
   font-weight: 700;
   text-transform: none;
+  letter-spacing: 0;
+  box-shadow: none !important;
+}
+
+.app-segmented > .v-btn.app-segmented--active,
+.app-segmented > button.app-segmented--active,
+:where(.app-operational-page, .responsive-overlay) .v-tab.v-tab--selected {
+  background: var(--app-color-surface) !important;
+  color: var(--app-color-accent) !important;
+  box-shadow: var(--app-shadow-sm) !important;
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-tab .v-tab__slider {
+  display: none;
+}
+
+.app-segmented > button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 0;
+  font-size: 0.875rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.app-segmented > button:focus-visible,
+.app-segmented > .v-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--app-focus-ring) !important;
 }
 
 :where(.app-operational-page, .responsive-overlay) .v-btn-toggle {
@@ -1502,4 +1570,13 @@ h1.text-h5 {
   .marketing-page .marketing-button:focus-visible {
     transform: none;
   }
+}
+
+/* Link dentro de alertas/avisos que leva direto para a aba certa das
+   Configurações (ex.: "Conectar em Configurações › WhatsApp"). */
+.config-inline-link {
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }

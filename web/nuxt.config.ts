@@ -28,6 +28,9 @@ export default defineNuxtConfig({
   // modulo gera loc relativo e o Google rejeita as entradas.
   site: {
     url: process.env.NUXT_PUBLIC_SITE_URL || "https://churchapp.site",
+    // O nuxt-site-config (via @nuxtjs/sitemap) escreve o <html lang> a partir
+    // daqui; o padrão "en" sobrescrevia o htmlAttrs de app.head.
+    defaultLocale: "pt-BR",
   },
   sitemap: {
     exclude: [
@@ -123,6 +126,9 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
+      // Idioma da página: leitores de tela, tradução automática e hifenização
+      // do navegador usam isso. Sem ele o documento era tratado como sem idioma.
+      htmlAttrs: { lang: "pt-BR" },
       title: "ChurchApp",
       meta: [
         { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },

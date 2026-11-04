@@ -53,18 +53,20 @@
         </div>
       </div>
 
-      <div class="tabs-row mb-5">
-        <v-chip
+      <div class="tabs-row app-segmented mb-5" role="tablist" aria-label="Seções do ministério">
+        <button
           v-for="tab in tabs"
           :key="tab.value"
-          :variant="activeTab === tab.value ? 'flat' : 'outlined'"
-          :color="activeTab === tab.value ? 'primary' : 'grey-darken-1'"
-          class="tab-chip font-weight-medium cursor-pointer"
+          type="button"
+          role="tab"
+          :aria-selected="activeTab === tab.value"
+          class="tab-chip"
+          :class="{ 'app-segmented--active': activeTab === tab.value }"
           @click="activeTab = tab.value"
         >
           <component :is="tab.icon" size="16" class="tab-chip-icon" />
           <span class="tab-chip-label">{{ tab.label }}</span>
-        </v-chip>
+        </button>
       </div>
 
       <MinisteryOverviewTab
@@ -3011,34 +3013,13 @@ onMounted(async () => {
 }
 .tabs-row {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  flex-wrap: nowrap;
-  padding-bottom: 6px;
-  margin-right: -16px;
-  margin-left: -16px;
-  padding-right: 16px;
-  padding-left: 16px;
-  scroll-padding-inline: 16px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.tabs-row::-webkit-scrollbar {
-  display: none;
+  width: 100%;
 }
 .tab-chip {
-  flex: 0 0 auto;
   max-width: min(62vw, 190px);
-  height: 34px !important;
-  padding-inline: 14px !important;
-}
-.tab-chip :deep(.v-chip__content) {
-  min-width: 0;
-  max-width: 100%;
 }
 .tab-chip-icon {
   flex: 0 0 auto;
-  margin-right: 8px;
 }
 .tab-chip-label {
   display: block;
@@ -3058,20 +3039,10 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
 
-  .tabs-row {
-    gap: 6px;
-    margin-right: -12px;
-    margin-left: -12px;
-    padding-right: 12px;
-    padding-left: 12px;
-    scroll-padding-inline: 12px;
-  }
-
   .tab-chip {
     max-width: 56vw;
-    height: 32px !important;
-    padding-inline: 12px !important;
-    font-size: 0.78rem;
+    padding-inline: 12px;
+    font-size: 0.8rem;
   }
 }
 </style>

@@ -21,6 +21,7 @@
   <LayoutsMoreOptionsOverlay
     v-model="showMore"
     :items="moreItems"
+    :pinned-keys="bottomBarKeys"
     :subtitle="moreSubtitle"
     @select="handleMoreSelect"
   />
@@ -61,6 +62,9 @@ const route = useRoute();
 
 const navigationItems = computed(() => getBottomNavigationItems(user.value));
 const moreItems = computed(() => getMoreNavigationItems(user.value));
+const bottomBarKeys = computed(() =>
+  navigationItems.value.map((entry) => entry.key).filter((key) => key !== "more"),
+);
 const showMore = ref(false);
 const moreSubtitle = computed(() =>
   user.value?.is_admin === true || user.value?.role === "PASTOR"
