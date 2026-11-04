@@ -392,7 +392,6 @@ import {
   type DepartmentSchedule,
   type DepartmentSong,
   type DepartmentTask,
-  type PdfSongSuggestion,
   type ScheduleAssignmentConflict,
 } from "../../../composables/useDepartments";
 import {
@@ -407,18 +406,18 @@ import {
 } from "../../../composables/useChildrenMinistry";
 import { useAuth } from "../../../composables/useAuth";
 import { useMembers, type ChurchMember } from "../../../composables/useMembers";
-import { useChurchRoles, type ChurchRole, type MemberRole } from "../../../composables/useChurchRoles";
 import { usePermissions } from "../../../composables/usePermissions";
+import { useScheduleCultOptions } from "../../../composables/ministry/useScheduleCultOptions";
+import { useMinistryCargos } from "../../../composables/ministry/useMinistryCargos";
+import { usePdfSongImport } from "../../../composables/ministry/usePdfSongImport";
 import {
   useServiceOccurrences,
   type ServiceOccurrenceDetail,
-  type UpcomingOccurrence,
 } from "../../../composables/useServiceOccurrences";
 import { compareListText } from "../../utils/listOrdering";
 import { duplicateSongTitleMessage } from "../../utils/songMessages";
 import {
   appendScheduleAssignmentRole,
-  getScheduleCultOptions,
   getScheduleCultResolution,
   getDepartmentAssignmentRoleOptions,
   groupScheduleAssignments,
@@ -457,8 +456,6 @@ const {
   updateDepartmentSong,
   deleteDepartmentSong,
   importCifraClubSong,
-  previewSongsFromPdf,
-  importSongsFromPdf,
   uploadDepartmentPdf,
   getSongPreference,
   updateSongPreference,
@@ -480,99 +477,10 @@ const {
   getMaterials: getMinistryChildMaterials,
   getMaterialPdf: getChildMaterialPdf,
 } = useChildrenMinistry();
-const { getRoles, addMemberRole, removeMemberRole } = useChurchRoles();
-const { resolveOccurrence, getOccurrence, listOccurrences } = useServiceOccurrences();
-const upcomingOccurrences = ref<UpcomingOccurrence[]>([]);
-const cultOptionsError = ref("");
-const cultOptions = computed(() => getScheduleCultOptions(upcomingOccurrences.value));
+const { resolveOccurrence, getOccurrence } = useServiceOccurrences();
+// Cultos para vincular a uma escala nova (carrega ao montar).
+const { cultOptions, cultOptionsError } = useScheduleCultOptions();
 
-const loadCultOptions = async () => {
-  const { data, error } = await listOccurrences(180);
-
-  if (error || !data) {
-    upcomingOccurrences.value = [];
-    cultOptionsError.value = "Não foi possível carregar os cultos. Você ainda pode criar a escala sem vínculo.";
-    return;
-  }
-
-  upcomingOccurrences.value = data.upcoming ?? [];
-  cultOptionsError.value = "";
-};
-
-onMounted(() => {
-  void loadCultOptions();
-});
-
-// Cargos de ministerio deste departamento, para o lider delegar aos membros.
-const churchRolesList = ref<ChurchRole[]>([]);
-const cargoError = ref("");
-const isAssigningCargo = ref("");
-const selectedCargo = reactive<Record<string, string | null>>({});
-const memberCargoOverride = reactive<Record<string, MemberRole[]>>({});
-
-const ministryRoles = computed(() =>
-  churchRolesList.value.filter(
-    (role) => role.scope === "MINISTRY" && role.departmentId === departmentId,
-  ),
-);
-
-const memberCargos = (memberId: string): MemberRole[] => {
-  if (memberCargoOverride[memberId]) return memberCargoOverride[memberId];
-  const churchMember = members.value.find((item) => item.id === memberId);
-  return (churchMember?.roles ?? []).filter(
-    (role) => role.scope === "MINISTRY" && role.departmentId === departmentId,
-  );
-};
-
-const assignableCargos = (memberId: string) => {
-  const assigned = new Set(memberCargos(memberId).map((role) => role.id));
-  return ministryRoles.value
-    .filter((role) => !assigned.has(role.id))
-    .map((role) => ({ label: role.name, value: role.id }));
-};
-
-const loadMinistryRoles = async () => {
-  const { data } = await getRoles();
-  churchRolesList.value = data ?? [];
-};
-
-const thisMinistryRoles = (roles: MemberRole[]) =>
-  roles.filter(
-    (role) => role.scope === "MINISTRY" && role.departmentId === departmentId,
-  );
-
-const assignCargo = async (memberId: string) => {
-  const roleId = selectedCargo[memberId];
-  if (!roleId) return;
-  cargoError.value = "";
-  isAssigningCargo.value = memberId;
-  try {
-    const { data, error } = await addMemberRole(memberId, roleId);
-    if (error || !data) {
-      cargoError.value = error || "Não foi possível atribuir o cargo.";
-      return;
-    }
-    memberCargoOverride[memberId] = thisMinistryRoles(data.roles);
-    selectedCargo[memberId] = null;
-  } finally {
-    isAssigningCargo.value = "";
-  }
-};
-
-const removeCargo = async (memberId: string, roleId: string) => {
-  cargoError.value = "";
-  isAssigningCargo.value = memberId;
-  try {
-    const { data, error } = await removeMemberRole(memberId, roleId);
-    if (error || !data) {
-      cargoError.value = error || "Não foi possível remover o cargo.";
-      return;
-    }
-    memberCargoOverride[memberId] = thisMinistryRoles(data.roles);
-  } finally {
-    isAssigningCargo.value = "";
-  }
-};
 const { user } = useAuth();
 const { can } = usePermissions();
 
@@ -595,6 +503,31 @@ const childMaterials = ref<MinistryChildMaterial[]>([]);
 const songs = ref<DepartmentSong[]>([]);
 const members = ref<ChurchMember[]>([]);
 const departmentMembers = ref<DepartmentMember[]>([]);
+// Cargos de ministério deste departamento, para o líder delegar aos membros.
+const {
+  cargoError,
+  isAssigningCargo,
+  selectedCargo,
+  memberCargos,
+  assignableCargos,
+  loadMinistryRoles,
+  assignCargo,
+  removeCargo,
+} = useMinistryCargos(departmentId, members);
+// Importação de músicas por PDF (aba Músicas).
+const {
+  isPdfImportDialogOpen,
+  pdfImportStep,
+  pdfImportSongs,
+  pdfImportError,
+  isExtractingPdfSongs,
+  isConfirmingPdfImport,
+  openPdfImportDialog,
+  closePdfImportDialog,
+  onPdfImportFileChange,
+  removePdfImportSong,
+  confirmPdfImport,
+} = usePdfSongImport(departmentId, songs);
 const departmentError = ref("");
 const tasksError = ref("");
 const schedulesError = ref("");
@@ -627,13 +560,6 @@ const isScheduleDialogOpen = ref(false);
 const isResourceDialogOpen = ref(false);
 const isSongDialogOpen = ref(false);
 const songFormTab = ref("info");
-const isPdfImportDialogOpen = ref(false);
-const pdfImportStep = ref<"upload" | "review">("upload");
-const pdfImportFileInput = ref<HTMLInputElement | null>(null);
-const pdfImportSongs = ref<PdfSongSuggestion[]>([]);
-const pdfImportError = ref("");
-const isExtractingPdfSongs = ref(false);
-const isConfirmingPdfImport = ref(false);
 const isActivityDialogOpen = ref(false);
 const isChildFormOpen = ref(false);
 const isChildrenAttendanceDialogOpen = ref(false);
@@ -1522,58 +1448,6 @@ const loadSongs = async () => {
   }
 
   songs.value = data ?? [];
-};
-
-const openPdfImportDialog = () => {
-  pdfImportStep.value = "upload";
-  pdfImportSongs.value = [];
-  pdfImportError.value = "";
-  isPdfImportDialogOpen.value = true;
-};
-
-const closePdfImportDialog = () => {
-  isPdfImportDialogOpen.value = false;
-  if (pdfImportFileInput.value) pdfImportFileInput.value.value = "";
-};
-
-const onPdfImportFileChange = async (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (!file) return;
-  pdfImportError.value = "";
-  isExtractingPdfSongs.value = true;
-  try {
-    const { data, error } = await previewSongsFromPdf(departmentId, file);
-    if (error || !data) {
-      pdfImportError.value = error || "Não foi possível ler o PDF.";
-      return;
-    }
-    pdfImportSongs.value = data.songs;
-    pdfImportStep.value = "review";
-  } finally {
-    isExtractingPdfSongs.value = false;
-    if (pdfImportFileInput.value) pdfImportFileInput.value.value = "";
-  }
-};
-
-const removePdfImportSong = (index: number) => {
-  pdfImportSongs.value = pdfImportSongs.value.filter((_, i) => i !== index);
-};
-
-const confirmPdfImport = async () => {
-  pdfImportError.value = "";
-  if (!pdfImportSongs.value.length) return;
-  isConfirmingPdfImport.value = true;
-  try {
-    const { data, error } = await importSongsFromPdf(departmentId, pdfImportSongs.value);
-    if (error || !data) {
-      pdfImportError.value = error || "Não foi possível importar as músicas.";
-      return;
-    }
-    songs.value = [...songs.value, ...data.songs];
-    closePdfImportDialog();
-  } finally {
-    isConfirmingPdfImport.value = false;
-  }
 };
 
 const loadMembers = async () => {
