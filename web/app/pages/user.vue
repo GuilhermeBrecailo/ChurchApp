@@ -1,5 +1,5 @@
 <template>
-  <div class="profile-page pa-4 min-vh-100 pb-20 app-operational-page">
+  <div class="profile-page pa-4 min-vh-100 pb-20 app-operational-page app-page--narrow">
     <section class="profile-hero mb-4">
       <div class="profile-hero-banner">
         <div class="profile-hero-circles">

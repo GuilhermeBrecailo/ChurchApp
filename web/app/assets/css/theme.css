@@ -320,7 +320,32 @@ body {
 }
 
 .app-page-header-copy {
+  flex: 1 1 auto;
   min-width: 0;
+}
+
+/* ============================================================
+   DESKTOP — coluna de leitura
+   Páginas de formulário e leitura (perfil, cadastro, oração, notificações,
+   Bíblia, devocional...) ficavam esticadas em ~1050px no desktop: rótulo de
+   um lado e valor do outro, campos enormes, botões de largura total. Com
+   .app-page--narrow o conteúdo fica numa coluna de 880px centralizada; no
+   celular nada muda (a coluna é mais larga que a tela).
+   ============================================================ */
+.app-page--narrow {
+  width: 100%;
+  max-width: 880px;
+  margin-inline: auto;
+}
+
+/* Listas de cards (escalas, cultos, devocionais, visitas, playlist): uma
+   coluna no celular, duas no desktop. align-items: start para um card que
+   expande não esticar o vizinho da mesma linha. */
+.app-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  align-items: start;
+  gap: 12px;
 }
 
 /* Títulos de página: no Vuetify 4 o text-h5 tem 32px, grande demais para o

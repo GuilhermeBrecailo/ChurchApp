@@ -498,6 +498,8 @@ onMounted(loadData);
 
 .visit-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  align-items: start;
   gap: 12px;
 }
 

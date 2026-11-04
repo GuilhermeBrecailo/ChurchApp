@@ -16,6 +16,7 @@
           class="side-nav-link"
           :class="{ 'side-nav-link--active': isActive(item) }"
           :aria-current="isActive(item) ? 'page' : undefined"
+          :title="item.title"
         >
           <component :is="navigationIcons[item.icon]" size="18" aria-hidden="true" />
           <span>{{ item.title }}</span>
@@ -36,6 +37,7 @@
           class="side-nav-link"
           :class="{ 'side-nav-link--active': isActive(item) }"
           :aria-current="isActive(item) ? 'page' : undefined"
+          :title="item.title"
         >
           <component :is="navigationIcons[item.icon]" size="18" aria-hidden="true" />
           <span>{{ item.title }}</span>
@@ -105,12 +107,14 @@ const isActive = (item: RoleNavigationItem) => item.key === activeKey.value;
   box-sizing: border-box;
   width: 100%;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   padding: 16px 12px 24px;
 }
 
 .side-nav-group {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2px;
 }
 

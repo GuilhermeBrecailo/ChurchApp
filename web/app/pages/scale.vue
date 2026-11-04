@@ -21,18 +21,22 @@
       </div>
     </div>
 
+    <!-- O seletor fica fora da .filter-strip: a faixa tem margem negativa
+         (para os chips rolarem até a borda) e degradês nas laterais, que
+         desalinhavam e cobriam o seletor. -->
+    <v-btn-toggle
+      v-model="schedulePeriod"
+      mandatory
+      color="primary"
+      variant="outlined"
+      class="schedule-period-toggle mb-3"
+      aria-label="Período das escalas"
+    >
+      <v-btn value="upcoming" class="text-none">Próximas</v-btn>
+      <v-btn value="history" class="text-none">Histórico</v-btn>
+    </v-btn-toggle>
+
     <div class="filter-strip mb-8">
-      <v-btn-toggle
-        v-model="schedulePeriod"
-        mandatory
-        color="primary"
-        variant="outlined"
-        class="schedule-period-toggle mb-3"
-        aria-label="Período das escalas"
-      >
-        <v-btn value="upcoming" class="text-none">Próximas</v-btn>
-        <v-btn value="history" class="text-none">Histórico</v-btn>
-      </v-btn-toggle>
       <div class="filter-scroll hide-scrollbar">
         <v-chip
           v-for="filter in filters"

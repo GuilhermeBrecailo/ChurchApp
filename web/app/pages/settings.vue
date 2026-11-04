@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 min-vh-100 pb-20 app-operational-page">
+  <div class="pa-4 min-vh-100 pb-20 app-operational-page app-page--narrow">
     <div class="app-help-header mb-6">
       <div class="min-w-0">
         <div class="app-help-title-row">

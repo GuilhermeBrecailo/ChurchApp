@@ -1,5 +1,5 @@
 <template>
-  <div class="bible-page pa-4 pb-8 app-operational-page">
+  <div class="bible-page pa-4 pb-8 app-operational-page app-page--narrow">
     <div class="bible-header mb-4">
       <div class="content-detail-title-group min-w-0">
         <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
@@ -287,6 +287,9 @@ onMounted(() => {
 .bible-page {
   background: var(--app-color-background);
   min-height: 100%;
+  /* Coluna de leitura mais estreita que o padrão (880px): ~70 caracteres por
+     linha no texto bíblico. Os controles acompanham a mesma largura. */
+  max-width: 760px;
 }
 
 .bible-header {
@@ -337,10 +340,6 @@ onMounted(() => {
   color: var(--app-color-text);
 }
 
-.bible-content {
-  max-width: 680px;
-}
-
 .bible-verse {
   font-size: 1rem;
   line-height: 1.85;
@@ -357,20 +356,14 @@ onMounted(() => {
   line-height: 0;
 }
 
-.bible-loading {
-  max-width: 680px;
-}
-
 .bible-nav {
   display: flex;
   align-items: center;
   gap: 12px;
-  max-width: 680px;
 }
 
 .bible-note-editor {
-  max-width: 680px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--app-color-border-subtle);
   padding-top: 12px;
 }
 

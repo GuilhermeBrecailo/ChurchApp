@@ -1,7 +1,7 @@
 <template>
   <div>
     <UtilsTitle :title="title">
-      <div class="d-flex flex-column gap-3">
+      <div class="app-card-grid">
         <ScaleScheduleCard
           v-for="event in events"
           :key="event.id"

@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 pb-8 page-wrapper app-operational-page">
+  <div class="pa-4 pb-8 page-wrapper app-operational-page app-page--narrow">
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
       {{ errorMessage }}
     </v-alert>
