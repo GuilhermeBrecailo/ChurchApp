@@ -5,8 +5,10 @@ const mockPrismaClient = {
   schedule: { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() },
   scheduleAssignment: {
     findFirst: jest.fn(),
+    findFirstOrThrow: jest.fn(),
     findMany: jest.fn(),
     update: jest.fn(),
+    updateMany: jest.fn(),
     deleteMany: jest.fn(),
     create: jest.fn(),
   },
@@ -394,29 +396,32 @@ describe("ChurchDepartmentAdapters - escalas", () => {
       mockSendToUsers.mockResolvedValue(undefined);
     };
 
-    it("rejeita a mesma pessoa e função após normalizar espaços e caixa", async () => {
-      mockPrismaClient.schedule.findFirst.mockResolvedValue(scheduleRow());
+    // Desde "agrupar funções por pessoa na escala" (94eac6b) cada pessoa tem
+    // uma única linha na escala; funções repetidas (ignorando espaços e caixa)
+    // são unificadas em vez de rejeitadas.
+    it("unifica a mesma função da mesma pessoa após normalizar espaços e caixa", async () => {
+      prepareAssignmentSave([], [{ id: "new-teclado", userId: "vol-1", role: "Teclado" }]);
 
-      await expect(
-        adapters.updateChurchScheduleAssignments(
-          makeRequest({
-            params: { id: "schedule-1" },
-            body: {
-              assignments: [
-                { userId: "vol-1", role: "Teclado" },
-                { userId: "vol-1", role: " teclado " },
-              ],
-            },
-          }),
-        ),
-      ).rejects.toThrow("Não é possível repetir a mesma função para a mesma pessoa nesta escala");
+      await adapters.updateChurchScheduleAssignments(
+        makeRequest({
+          params: { id: "schedule-1" },
+          body: {
+            assignments: [
+              { userId: "vol-1", role: "Teclado" },
+              { userId: "vol-1", role: " teclado " },
+            ],
+          },
+        }),
+      );
+
+      expect(mockPrismaClient.scheduleAssignment.create).toHaveBeenCalledTimes(1);
+      expect(mockPrismaClient.scheduleAssignment.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ userId: "vol-1", role: "Teclado" }) }),
+      );
     });
 
-    it("aceita a mesma pessoa em funções diferentes e envia uma notificação", async () => {
-      prepareAssignmentSave([], [
-        { id: "new-teclado", userId: "vol-1", role: "Teclado" },
-        { id: "new-vocal", userId: "vol-1", role: "Vocal" },
-      ]);
+    it("agrupa funções diferentes da mesma pessoa numa linha e envia uma notificação", async () => {
+      prepareAssignmentSave([], [{ id: "new-vol-1", userId: "vol-1", role: "Teclado · Vocal" }]);
 
       await adapters.updateChurchScheduleAssignments(
         makeRequest({
@@ -430,11 +435,14 @@ describe("ChurchDepartmentAdapters - escalas", () => {
         }),
       );
 
-      expect(mockPrismaClient.scheduleAssignment.create).toHaveBeenCalledTimes(2);
+      expect(mockPrismaClient.scheduleAssignment.create).toHaveBeenCalledTimes(1);
+      expect(mockPrismaClient.scheduleAssignment.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ role: "Teclado · Vocal" }) }),
+      );
       expect(mockSendToUsers).toHaveBeenCalledTimes(1);
       expect(mockSendToUsers).toHaveBeenCalledWith(
         ["vol-1"],
-        expect.objectContaining({ body: expect.stringContaining("como Teclado") }),
+        expect.objectContaining({ body: expect.stringContaining("como Teclado · Vocal") }),
       );
     });
 
@@ -503,7 +511,7 @@ describe("ChurchDepartmentAdapters - escalas", () => {
       ).rejects.toThrow("Atribuição inválida para esta escala");
     });
 
-    it("reaproveita linhas sem ID pela combinação normalizada de pessoa e função", async () => {
+    it("reaproveita a linha existente da pessoa quando a atribuição vem sem ID", async () => {
       prepareAssignmentSave(
         [
           { id: "assign-teclado", userId: "vol-1", role: "Teclado" },
@@ -527,14 +535,16 @@ describe("ChurchDepartmentAdapters - escalas", () => {
         }),
       );
 
-      expect(mockPrismaClient.scheduleAssignment.update).toHaveBeenCalledTimes(2);
-      expect(mockPrismaClient.scheduleAssignment.update).toHaveBeenNthCalledWith(1, {
-        where: { id: "assign-vocal" },
-        data: { role: "vocal" },
-      });
-      expect(mockPrismaClient.scheduleAssignment.update).toHaveBeenNthCalledWith(2, {
+      // Uma linha por pessoa: a primeira linha existente de vol-1 é reaproveitada
+      // com as funções agrupadas, e a outra linha antiga é apagada.
+      expect(mockPrismaClient.scheduleAssignment.create).not.toHaveBeenCalled();
+      expect(mockPrismaClient.scheduleAssignment.update).toHaveBeenCalledTimes(1);
+      expect(mockPrismaClient.scheduleAssignment.update).toHaveBeenCalledWith({
         where: { id: "assign-teclado" },
-        data: { role: "TECLADO" },
+        data: { role: "vocal · TECLADO" },
+      });
+      expect(mockPrismaClient.scheduleAssignment.deleteMany).toHaveBeenCalledWith({
+        where: { scheduleId: "schedule-1", id: { notIn: ["assign-teclado"] } },
       });
     });
 
@@ -650,7 +660,10 @@ describe("ChurchDepartmentAdapters - escalas", () => {
         id: "assign-1",
         viewedAt: null,
       });
-      mockPrismaClient.scheduleAssignment.update.mockResolvedValue({
+      // Confirmar vale para todas as linhas da pessoa na escala (updateMany)
+      // e a resposta é relida em seguida.
+      mockPrismaClient.scheduleAssignment.updateMany.mockResolvedValue({ count: 1 });
+      mockPrismaClient.scheduleAssignment.findFirstOrThrow.mockResolvedValue({
         id: "assign-1",
         confirmationStatus: "CONFIRMED",
       });
@@ -668,6 +681,12 @@ describe("ChurchDepartmentAdapters - escalas", () => {
       );
 
       expect(result.confirmationStatus).toBe("CONFIRMED");
+      expect(mockPrismaClient.scheduleAssignment.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { scheduleId: "schedule-1", userId: "user-1" },
+          data: expect.objectContaining({ confirmationStatus: "CONFIRMED" }),
+        }),
+      );
       expect(mockSendToUsers).toHaveBeenCalled();
     });
 
@@ -677,7 +696,8 @@ describe("ChurchDepartmentAdapters - escalas", () => {
         id: "assign-1",
         viewedAt: null,
       });
-      mockPrismaClient.scheduleAssignment.update.mockResolvedValue({ id: "assign-1" });
+      mockPrismaClient.scheduleAssignment.updateMany.mockResolvedValue({ count: 1 });
+      mockPrismaClient.scheduleAssignment.findFirstOrThrow.mockResolvedValue({ id: "assign-1" });
 
       await adapters.updateMyChurchScheduleAssignment(
         makeRequest({ params: { id: "schedule-1" }, body: { action: "VIEWED" } }),

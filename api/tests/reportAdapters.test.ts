@@ -1,6 +1,6 @@
 const mockPrismaClient = {
   user: { findUnique: jest.fn() },
-  scheduleAssignment: { groupBy: jest.fn() },
+  scheduleAssignment: { groupBy: jest.fn(), findMany: jest.fn() },
   schedule: { findMany: jest.fn() },
 };
 
@@ -56,7 +56,9 @@ describe("ReportAdapters plan gate", () => {
   });
 
   it("allows getConfirmationReport on a PRO church", async () => {
-    mockPrismaClient.scheduleAssignment.groupBy.mockResolvedValue([]);
+    // O relatório agrupa as funções por voluntário a partir de findMany
+    // (commit 94eac6b); groupBy não é mais usado aqui.
+    mockPrismaClient.scheduleAssignment.findMany.mockResolvedValue([]);
     mockPrismaClient.schedule.findMany.mockResolvedValue([]);
 
     const result = await adapters.getConfirmationReport(makeRequest(true));
