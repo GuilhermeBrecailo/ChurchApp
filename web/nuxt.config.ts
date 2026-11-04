@@ -84,6 +84,13 @@ export default defineNuxtConfig({
   },
   vuetify: {
     vuetifyOptions: {
+      // Textos internos dos componentes (tabela vazia, paginação, "Fechar"...)
+      // em português — sem isto apareciam "No data available"/"Items per page".
+      locale: {
+        locale: "pt",
+        fallback: "en",
+      },
+      localeMessages: ["pt"],
       theme: {
         defaultTheme: "light",
         themes: {
@@ -101,6 +108,9 @@ export default defineNuxtConfig({
             dark: true,
             colors: {
               primary: "#f0975a",
+              // Texto escuro sobre o laranja claro do tema escuro: branco em
+              // #f0975a dá ~2.3:1 de contraste (ilegível em "Salvar Perfil").
+              "on-primary": "#1f1410",
               secondary: "#5eead4",
               background: "#0d1117",
               surface: "#151b23",

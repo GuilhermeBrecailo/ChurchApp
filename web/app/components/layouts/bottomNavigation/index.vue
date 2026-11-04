@@ -87,7 +87,13 @@ const iconComponents: Record<RoleNavigationIcon, unknown> = {
 
 const isItemActive = (item: RoleNavigationItem) => {
   if (item.key === "more") {
-    return moreItems.value.some((entry) => isNavigationItemActive(entry, route.path));
+    // O menu "Mais" repete atalhos que já estão na barra (Início, Escalas...):
+    // só destaca "Mais" quando nenhum item visível da barra já está ativo.
+    const primaryActive = navigationItems.value.some(
+      (entry) => entry.key !== "more" && isNavigationItemActive(entry, route.path),
+    );
+
+    return !primaryActive && moreItems.value.some((entry) => isNavigationItemActive(entry, route.path));
   }
 
   return isNavigationItemActive(item, route.path);

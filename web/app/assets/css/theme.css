@@ -11,6 +11,23 @@
  * original) aplicada no app inteiro — ver openspec/changes se existir
  * changelog, ou histórico de commits "redesign visual".
  */
+
+/* Ordem dos layers do Vuetify 4, declarada aqui para não depender da ordem em
+   que os CSS são carregados. Regras fora de layer (o resto deste arquivo)
+   vencem qualquer layer; por isso resets e tipografia de compatibilidade abaixo
+   ficam DENTRO dos layers do Vuetify — assim mb-*, font-weight-* etc.
+   (vuetify-utilities.helpers) continuam podendo sobrescrevê-los. */
+@layer vuetify-core, vuetify-components, vuetify-overrides, vuetify-utilities, vuetify-final;
+@layer vuetify-core {
+  @layer reset, base;
+}
+@layer vuetify-utilities {
+  @layer theme-base, typography, helpers, theme-background, theme-foreground;
+}
+@layer vuetify-final {
+  @layer transitions, trumps;
+}
+
 :root {
   color-scheme: light;
   --app-color-accent: #b5472a;
@@ -89,15 +106,108 @@ body,
   letter-spacing: -0.01em;
 }
 
-/* O navegador aplica margin-top/bottom padrao em h1-h6 por conta propria.
-   Todo espacamento de titulo no app ja e explicito via classes Vuetify
-   (mb-1, mb-2, mb-4...), entao essa margem nativa nunca e o espacamento
-   desejado - so sobra como resto que desalinha titulo+icone em flex rows
-   (o icone fica centralizado na caixa cheia, o texto empurrado pela
-   margem que ninguem pediu). Zerando na raiz em vez de remendar caso a
-   caso. */
-h1, h2, h3, h4, h5, h6 {
-  margin: 0;
+/* O navegador aplica margem nativa em h1-h6 e <p>. Todo espaçamento de texto
+   no app já é explícito via classes Vuetify (mb-1, mb-2, mb-4...), então essa
+   margem nativa nunca é a desejada - só desalinha título+ícone em flex rows e
+   descola linhas (ex.: "Membros" longe do número no card de estatística).
+   O Vuetify 3 zerava isso no reset; o Vuetify 4 não. Fica no layer de reset
+   do Vuetify para que as classes de margem (vuetify-utilities.helpers) ainda
+   vençam - fora de layer, este reset anulava todo mb-x/mt-x em títulos. */
+@layer vuetify-core.reset {
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+/* ============================================================
+   TIPOGRAFIA — compatibilidade com as classes do Vuetify 3
+   O Vuetify 4 trocou a escala MD2 (text-h5, text-subtitle-2, text-body-2,
+   text-caption...) pela MD3 (text-headline-*, text-title-*, text-body-*,
+   text-label-*) e REMOVEU as classes antigas. O app usa as antigas em ~600
+   lugares, que viraram no-op: <h1> caía nos 32px nativos, <h3> em 18.7px e
+   text-caption (legenda, 12px) saía com 16px. Estas regras restauram a
+   escala para a qual as telas foram desenhadas.
+   ============================================================ */
+@layer vuetify-utilities.typography {
+  .text-h4 {
+    font-size: 2.125rem;
+    font-weight: 400;
+    line-height: 1.18;
+    letter-spacing: 0.0073529412em;
+  }
+
+  .text-h5 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    line-height: 1.33;
+    letter-spacing: normal;
+  }
+
+  .text-h6 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0.0125em;
+  }
+
+  .text-subtitle-1 {
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0.009375em;
+  }
+
+  .text-subtitle-2 {
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.43;
+    letter-spacing: 0.0071428571em;
+  }
+
+  .text-body-1 {
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0.03125em;
+  }
+
+  .text-body-2 {
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.43;
+    letter-spacing: 0.0178571429em;
+  }
+
+  .text-caption {
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.4;
+    letter-spacing: 0.0333333333em;
+  }
+
+  /* Títulos (h1-h6) sempre foram negrito pelo padrão do navegador; a classe de
+     tamanho não deve deixá-los com peso 400. font-weight-* explícito ainda vence. */
+  :is(h1, h2, h3, h4, h5, h6):is(
+      .text-h4,
+      .text-h5,
+      .text-h6,
+      .text-subtitle-1,
+      .text-subtitle-2
+    ) {
+    font-weight: 700;
+  }
+
+  .text-button {
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.43;
+    letter-spacing: 0.0892857143em;
+    text-transform: uppercase;
+  }
 }
 
 /* Transições globais suaves */
@@ -211,6 +321,31 @@ body {
 
 .app-page-header-copy {
   min-width: 0;
+}
+
+/* Títulos de página: no Vuetify 4 o text-h5 tem 32px, grande demais para o
+   celular (quebrava "Visitas pastorais", "Pedidos de Oração" em duas linhas e
+   espremia os botões ao lado). Escala fluida: ~25px no celular, 32px no desktop. */
+h1.text-h5 {
+  font-size: clamp(1.5rem, 1.1rem + 2vw, 2rem) !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.02em !important;
+}
+
+@media (max-width: 600px) {
+  /* Cabeçalho com ação: o texto ocupa a linha e o botão desce para baixo,
+     em vez de dividir a largura e quebrar o subtítulo em 4 linhas. */
+  .app-page-header {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .app-page-header-copy {
+    /* min-width (e não flex-basis) para funcionar também em páginas que
+       empilham o cabeçalho em coluna — lá o basis viraria altura. */
+    flex: 1 1 auto;
+    min-width: min(100%, 240px);
+  }
 }
 
 .app-operational-page .app-page-title {
@@ -410,6 +545,15 @@ body {
   opacity: 1;
 }
 
+/* O Vuetify esconde o placeholder enquanto o label ainda está dentro do campo
+   (campo vazio e sem foco). Sem isto, o opacity: 1 acima vencia essa regra e o
+   label ficava por cima do texto de exemplo (ex.: "Título" em Novo pedido). */
+:where(.app-operational-page, .responsive-overlay)
+  .v-field:not(.v-field--no-label, .v-field--active)
+  :is(input, textarea)::placeholder {
+  opacity: 0;
+}
+
 :where(.app-operational-page, .responsive-overlay) .v-field__prepend-inner,
 :where(.app-operational-page, .responsive-overlay) .v-field__append-inner {
   color: var(--app-color-text-soft);
@@ -514,6 +658,12 @@ body {
 .more-options-row:focus-visible {
   outline: none;
   box-shadow: var(--app-focus-ring);
+}
+
+/* Dentro de um v-field o anel de foco já é desenhado no próprio campo
+   (.v-field--focused); repetir no <input> interno criava uma borda dupla. */
+.v-field :is(input, textarea, select):focus-visible {
+  box-shadow: none;
 }
 
 :where(.app-operational-page, .responsive-overlay, .more-options-list) {
@@ -1051,6 +1201,26 @@ body {
   border-radius: var(--app-overlay-sheet-radius) var(--app-overlay-sheet-radius) 0 0 !important;
 }
 
+/* Alça no topo do bottom sheet: o sinal visual de "painel que desliza" que o
+   usuário espera de um app nativo. Puramente decorativa. */
+.responsive-bottom-sheet .v-bottom-sheet__content {
+  position: relative;
+}
+
+.responsive-bottom-sheet .v-bottom-sheet__content::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  z-index: 2;
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--app-color-border-strong);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
 .scale-select-menu {
   z-index: 2500 !important;
 }
@@ -1112,6 +1282,14 @@ body {
 
 .responsive-overlay--fullscreen .v-overlay__content > .v-card {
   border-radius: 0 !important;
+}
+
+/* O v-input do Vuetify tem flex: 1 1 auto. Num overlay de altura fixa
+   (fullscreen no celular) o card é flex-column e os campos cresciam para
+   preencher a tela — "Título" em Novo pedido virava uma caixa de 200px. */
+.responsive-overlay .v-overlay__content > .v-card > .v-input,
+.responsive-overlay .v-overlay__content > .v-card > form > .v-input {
+  flex: 0 0 auto;
 }
 
 .responsive-overlay--form .dialog-actions,

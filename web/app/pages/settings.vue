@@ -67,13 +67,13 @@
     </v-alert>
 
     <v-card class="settings-card app-surface pa-4">
-      <v-form @submit.prevent="handleSaveChurch">
-        <div class="d-flex align-center mb-5">
-          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="48" class="mr-3">
-            <Church size="23" :color="isDark ? '#f0975a' : '#B5472A'" />
-          </v-avatar>
-          <div class="min-w-0 flex-grow-1">
-            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+      <v-form class="settings-form" @submit.prevent="handleSaveChurch">
+        <div class="settings-church-header">
+          <span class="settings-church-avatar">
+            <Church size="23" />
+          </span>
+          <div class="settings-church-copy">
+            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
               {{ user?.church?.name || "Igreja" }}
             </h2>
             <p class="text-caption text-grey-darken-1 mb-0">
@@ -89,16 +89,16 @@
             variant="tonal"
             color="primary"
             size="small"
-            class="text-none flex-shrink-0"
+            class="text-none flex-shrink-0 settings-public-link"
           >
             <Globe size="15" class="mr-1" /> Ver página pública
           </v-btn>
         </div>
 
-        <div class="church-photo-row mb-5">
+        <div class="church-photo-row">
           <div class="church-photo-preview">
             <img v-if="churchPhotoUrl" :src="churchPhotoUrl" alt="Foto da igreja" />
-            <Church v-else size="26" color="#9CA3AF" />
+            <Church v-else size="26" />
           </div>
 
           <div class="min-w-0 flex-grow-1">
@@ -130,7 +130,7 @@
           type="error"
           variant="tonal"
           density="compact"
-          class="mb-4"
+          class="mb-0"
         >
           {{ photoError }}
         </v-alert>
@@ -224,7 +224,7 @@
           :type="messageType"
           variant="tonal"
           density="compact"
-          class="mb-4"
+          class="mb-0"
         >
           {{ message }}
         </v-alert>
@@ -255,7 +255,6 @@ import { useChurchPlan, PLAN_LABELS, type Plan } from "../../composables/usePlan
 
 const { user } = useAuth();
 const { updateOwnChurch, uploadChurchPhoto } = useChurch();
-const { isDark } = useThemeMode();
 const { plan, isOnTrial, trialDaysLeft, isPastDue, pastDueGraceDaysLeft } = useChurchPlan();
 
 const planLabel = computed(() => PLAN_LABELS[plan.value as Plan] ?? plan.value);
@@ -392,8 +391,44 @@ watch(
 
 <style scoped>
 .settings-card {
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border-radius: var(--app-radius-card, 12px);
+  border: 1px solid var(--app-color-border-subtle);
+}
+
+/* Espaçamento uniforme entre os blocos e campos do formulário — antes os
+   v-text-field ficavam colados e o label de um encostava na borda do outro. */
+.settings-form {
+  display: grid;
+  gap: 16px;
+}
+
+.settings-church-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 4px;
+}
+
+.settings-church-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--app-color-accent-tint);
+  color: var(--app-color-accent);
+  flex-shrink: 0;
+}
+
+.settings-church-copy {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.settings-church-copy h2 {
+  overflow-wrap: anywhere;
 }
 
 .church-photo-row {
@@ -408,8 +443,9 @@ watch(
   width: 84px;
   height: 84px;
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border: 1px dashed var(--app-color-border);
+  background: var(--app-color-surface-soft);
+  color: var(--app-color-text-muted);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -427,33 +463,13 @@ watch(
 }
 
 @media (max-width: 640px) {
-  .church-photo-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.church-photo-preview {
-  display: grid;
-  place-items: center;
-  width: 84px;
-  height: 84px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.church-photo-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.settings-grid {
+  .settings-grid {
     grid-template-columns: 1fr;
-    gap: 0;
+  }
+
+  /* No celular o botão desce para a própria linha, sem espremer o nome. */
+  .settings-public-link {
+    width: 100%;
   }
 }
 </style>
