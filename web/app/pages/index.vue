@@ -34,7 +34,10 @@
               </h2>
               <DashboardTodayCard />
               <DashboardMyNextAssignmentCard />
-              <DashboardNextScheduleCard :schedule="nextSchedule" />
+              <!-- Se a próxima escala da igreja é a mesma em que a pessoa está
+                   escalada, o card "Minha escala" logo acima já mostra tudo:
+                   repetir a mesma escala em dois cards confundia. -->
+              <DashboardNextScheduleCard v-if="!nextScheduleIsMine" :schedule="nextSchedule" />
             </section>
             <DashboardPastoralOverviewCard v-if="canSeePastoralDashboard" />
 
@@ -348,6 +351,12 @@ const upcomingSchedules = computed(() => scheduleSections.value.upcoming);
 const recentSchedules = computed(() => scheduleSections.value.recent.slice(0, 5));
 
 const nextSchedule = computed(() => upcomingSchedules.value[0] || null);
+const nextScheduleIsMine = computed(() =>
+  Boolean(
+    user.value?.id &&
+      nextSchedule.value?.assignments?.some((assignment) => assignment.userId === user.value?.id),
+  ),
+);
 
 const loadSchedules = async () => {
   if (!hasChurch.value) return;

@@ -41,6 +41,22 @@
       {{ error }}
     </v-alert>
 
+    <!-- Confirmação de envio: o pedido só aparece na lista depois que o
+         pastor aprova, então sem este aviso a pessoa via "Nenhum pedido ainda"
+         logo depois de enviar e achava que não tinha dado certo. -->
+    <v-alert
+      v-if="submittedNotice"
+      type="success"
+      variant="tonal"
+      density="comfortable"
+      closable
+      class="mb-4"
+      @click:close="submittedNotice = false"
+    >
+      <strong>Pedido enviado!</strong> Ele aparece aqui assim que o pastor aprovar.
+      {{ submittedAnonymously ? "Seu nome não vai aparecer." : "" }}
+    </v-alert>
+
     <v-window v-model="activeTab">
       <v-window-item value="community">
         <div v-if="loading">
@@ -51,8 +67,16 @@
           <div class="prayer-empty-icon-wrap">
             <Heart size="36" :color="isDark ? '#f0975a' : '#B5472A'" />
           </div>
-          <h3 class="prayer-empty-title">Nenhum pedido ainda</h3>
-          <p class="prayer-empty-body">Seja o primeiro a compartilhar um pedido de oração com a comunidade. Pedidos passam pela revisão do pastor antes de aparecer aqui.</p>
+          <h3 class="prayer-empty-title">
+            {{ submittedNotice ? "Seu pedido está em revisão" : "Nenhum pedido ainda" }}
+          </h3>
+          <p class="prayer-empty-body">
+            {{
+              submittedNotice
+                ? "Assim que o pastor aprovar, ele aparece aqui para a igreja orar junto."
+                : "Seja o primeiro a compartilhar um pedido de oração com a comunidade. Pedidos passam pela revisão do pastor antes de aparecer aqui."
+            }}
+          </p>
           <v-btn
             color="primary"
             variant="tonal"
@@ -315,6 +339,8 @@ const error = ref("");
 const showNewDialog = ref(false);
 const saving = ref(false);
 const formError = ref("");
+const submittedNotice = ref(false);
+const submittedAnonymously = ref(false);
 const answeringId = ref<string | null>(null);
 const reviewingId = ref<string | null>(null);
 const reviewingAction = ref<"approve" | "reject" | null>(null);
@@ -362,6 +388,8 @@ async function submitPrayer() {
 
   if (err) { formError.value = err; return; }
 
+  submittedAnonymously.value = form.isAnonymous;
+  submittedNotice.value = true;
   showNewDialog.value = false;
   form.title = "";
   form.body = "";

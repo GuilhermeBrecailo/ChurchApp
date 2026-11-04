@@ -236,7 +236,9 @@
             Indisponibilidade
           </h2>
         </div>
-        <p class="section-subtitle mb-3">Marque datas em que você não poderá servir.</p>
+        <p class="section-subtitle mb-3">
+          Marque datas em que você não poderá servir. Cada data é salva na hora.
+        </p>
 
       <div class="unavailable-date-row mb-3">
         <v-text-field
@@ -258,7 +260,8 @@
           size="large"
           icon
           aria-label="Adicionar data de indisponibilidade"
-          :disabled="isLoading || isSaving"
+          :disabled="isLoading || isSaving || isSavingDates || !newUnavailableDate"
+          :loading="isSavingDates"
           @click="addUnavailableDate"
         >
           <Plus size="20" />
@@ -280,12 +283,29 @@
           variant="tonal"
           size="small"
           class="unavailable-chip font-weight-medium"
-          :disabled="isSaving"
+          :disabled="isSaving || isSavingDates"
           @click:close="removeUnavailableDate(date)"
         >
           <span>{{ formatDate(date) }}</span>
         </v-chip>
       </div>
+      <!-- Retorno do salvamento automático: antes a data só era gravada no
+           "Salvar Perfil" e quem saía da tela perdia a indisponibilidade. -->
+      <p
+        v-if="datesError"
+        class="unavailable-status unavailable-status--error mt-2 mb-0"
+        role="alert"
+      >
+        {{ datesError }}
+      </p>
+      <p
+        v-else-if="datesStatus"
+        class="unavailable-status mt-2 mb-0"
+        role="status"
+        aria-live="polite"
+      >
+        {{ datesStatus }}
+      </p>
       </v-card>
 
 
@@ -664,18 +684,58 @@ const loadPageData = async () => {
   isLoading.value = false;
 };
 
-const addUnavailableDate = () => {
-  if (!newUnavailableDate.value) return;
+const isSavingDates = ref(false);
+const datesStatus = ref("");
+const datesError = ref("");
 
-  if (!unavailableDates.value.includes(newUnavailableDate.value)) {
-    unavailableDates.value = [...unavailableDates.value, newUnavailableDate.value].sort();
+// Salva só a indisponibilidade, na hora. A API grava o perfil inteiro, então
+// os outros campos vão como estavam no último salvamento (profile) — assim um
+// telefone ainda sendo digitado não é salvo junto sem a pessoa pedir, e a
+// resposta atualiza só as datas (sem apagar o que está no formulário).
+const persistUnavailableDates = async (nextDates: string[]) => {
+  const saved = profile.value;
+  if (!saved) return;
+
+  const previousDates = unavailableDates.value;
+  unavailableDates.value = nextDates;
+  isSavingDates.value = true;
+  datesError.value = "";
+  datesStatus.value = "Salvando…";
+
+  const { data, error } = await updateMyProfile({
+    phone: saved.phone || "",
+    profileSuggestion: saved.profileSuggestion || "",
+    primaryDepartmentId: saved.primaryDepartmentId || null,
+    ministryFunction: saved.ministryFunction || "",
+    unavailableDates: nextDates,
+  });
+
+  isSavingDates.value = false;
+
+  if (error || !data) {
+    unavailableDates.value = previousDates;
+    datesStatus.value = "";
+    datesError.value = error || "Não foi possível salvar a data. Tente de novo.";
+    return;
   }
 
-  newUnavailableDate.value = "";
+  profile.value = data;
+  unavailableDates.value = [...(data.unavailableDates || [])].sort();
+  datesStatus.value = "Datas salvas.";
 };
 
-const removeUnavailableDate = (date: string) => {
-  unavailableDates.value = unavailableDates.value.filter((item) => item !== date);
+const addUnavailableDate = async () => {
+  if (!newUnavailableDate.value) return;
+
+  const date = newUnavailableDate.value;
+  newUnavailableDate.value = "";
+  if (unavailableDates.value.includes(date)) return;
+
+  await persistUnavailableDates([...unavailableDates.value, date].sort());
+};
+
+const removeUnavailableDate = async (date: string) => {
+  await persistUnavailableDates(unavailableDates.value.filter((item) => item !== date));
 };
 
 const formatDate = (dateIso: string) => {
@@ -781,6 +841,16 @@ onMounted(loadPageData);
 </script>
 
 <style scoped>
+.unavailable-status {
+  color: var(--app-color-success);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.unavailable-status--error {
+  color: var(--app-color-danger);
+}
+
 .min-vh-100 {
   min-height: 100vh;
 }
