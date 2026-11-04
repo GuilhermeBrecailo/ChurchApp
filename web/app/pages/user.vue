@@ -352,10 +352,23 @@
       size="large"
       :loading="loadingLogout"
       :disabled="loadingLogout || isSaving"
-      @click="handleLogout"
+      @click="isLogoutConfirmOpen = true"
     >
       <LogOut size="18" class="mr-2" /> Sair
     </v-btn>
+
+    <!-- Confirmação: o "Sair" fica logo abaixo de "Salvar Perfil" e um toque
+         sem querer mandava a pessoa de volta para a tela de login. -->
+    <UtilsConfirmDialog
+      v-model="isLogoutConfirmOpen"
+      title="Sair da sua conta?"
+      message="Você vai precisar do seu e-mail e senha para entrar de novo neste aparelho."
+      confirm-text="Sair"
+      :icon="LogOut"
+      :loading="loadingLogout"
+      @cancel="isLogoutConfirmOpen = false"
+      @confirm="handleLogout"
+    />
 
     <p class="text-caption text-center text-grey-darken-1 mt-4 mb-0">
       <NuxtLink to="/termos" target="_blank" class="text-grey-darken-1">Termos de Uso</NuxtLink>
@@ -755,6 +768,8 @@ const handleUpdatePassword = async () => {
   isPasswordDialogOpen.value = false;
 };
 
+const isLogoutConfirmOpen = ref(false);
+
 const handleLogout = async () => {
   loadingLogout.value = true;
   await logout();
@@ -789,8 +804,18 @@ onMounted(loadPageData);
 .profile-hero-banner {
   position: relative;
   height: 80px;
-  background: var(--app-color-accent);
+  /* Degradê em vez de cor chapada: dá profundidade à capa no claro e, no
+     escuro, evita um bloco laranja claro ofuscante (ver regra abaixo). */
+  background: linear-gradient(
+    135deg,
+    var(--app-color-accent) 0%,
+    color-mix(in srgb, var(--app-color-accent) 72%, #000) 100%
+  );
   overflow: hidden;
+}
+
+:global(.app-theme-dark .profile-hero-banner) {
+  background: linear-gradient(135deg, #8a3d22 0%, #4a2416 60%, #2a1810 100%);
 }
 
 .profile-hero-circles {
@@ -835,7 +860,8 @@ onMounted(loadPageData);
 }
 
 .profile-initials {
-  color: #ffffff;
+  /* on-primary: escuro no tema escuro (avatar laranja claro), branco no claro */
+  color: rgb(var(--v-theme-on-primary));
   font-weight: 800;
   font-size: 1.35rem;
   letter-spacing: -0.01em;

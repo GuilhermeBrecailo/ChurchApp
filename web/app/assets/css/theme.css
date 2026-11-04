@@ -182,8 +182,10 @@ body,
     letter-spacing: 0.0178571429em;
   }
 
+  /* 13px em vez dos 12px do MD2: legendas em cinza a 12px ficavam difíceis
+     de ler para parte do público (pessoas mais velhas, telas pequenas). */
   .text-caption {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 400;
     line-height: 1.4;
     letter-spacing: 0.0333333333em;
@@ -238,63 +240,64 @@ body {
    ============================================================ */
 .app-theme-dark {
   color-scheme: dark;
+  /*
+   * PALETA ESCURA "TERRACOTA À NOITE"
+   * A versão anterior usava os neutros frios/azulados do GitHub (#0d1117,
+   * #161b22, superfícies #1c2433) junto com o terracota quente e tons
+   * marrons da marca — frio + quente juntos deixavam o tema "sujo", e as
+   * bordas cinza-azuladas fortes davam cara de caixa a todo cartão.
+   * Agora os neutros são quentes (carvão com um toque de marrom), a
+   * profundidade vem de degraus de superfície (fundo < cartão < cartão
+   * elevado) e as bordas ficam sutis; o contorno forte fica só nos campos,
+   * onde precisa ser visto para operar (≥3:1).
+   */
   --app-color-accent: #f0975a;
-  --app-color-accent-soft: #f0a875;
-  --app-color-accent-muted: #f6c7a1;
-  --app-color-accent-tint: #3a2a20;
-  --app-color-background: #0d1117;
-  --app-color-surface: #161b22;
-  --app-color-surface-soft: #1c2433;
-  --app-color-surface-muted: #33241a;
+  --app-color-accent-soft: #f4ab78;
+  --app-color-accent-muted: #f8c9a4;
+  --app-color-accent-tint: #33231a;
+  --app-color-background: #12100e;
+  --app-color-surface: #1b1815;
+  --app-color-surface-soft: #23201c;
+  --app-color-surface-muted: #2e2219;
+  --app-color-border: #3a342f;
+  --app-color-border-strong: #5c534c;
+  --app-color-input-border: #81776f;
+  --app-color-input-label: #ddd4ca;
+  --app-color-text: #f4eee8;
+  --app-color-text-soft: #cdc2b7;
+  --app-color-text-muted: #a0948a;
+  --app-color-border-subtle: #2c2824;
   /*
-   * border/border-strong originais (#30363d / #484f58) mediam ~1.4:1 e ~2.1:1
-   * de contraste contra --app-color-surface — abaixo do que um olho humano
-   * percebe como "borda visível". Cartões e campos de formulário ficavam
-   * praticamente sem contorno no dark mode. Valores abaixo miram ~2.3:1
-   * (separação sutil de cartão) e ~3.5-4:1 (contorno de input, precisa
-   * ser percebido para operar o campo).
+   * Sombra preta sobre fundo quase preto não cria profundidade perceptível —
+   * a elevação vem principalmente dos degraus de superfície; a sombra é só
+   * reforço.
    */
-  --app-color-border: #4a5461;
-  --app-color-border-strong: #6a7786;
-  --app-color-input-border: #aeb8c4;
-  --app-color-input-label: #d5dce5;
-  --app-color-text: #e6edf3;
-  --app-color-text-soft: #b1bac4;
-  --app-color-text-muted: #8b949e;
-  --app-color-border-subtle: #303946;
-  /*
-   * Sombra preta sobre fundo quase preto (#0d1117) não cria profundidade
-   * perceptível — por isso a elevação aqui depende principalmente do
-   * degradê surface > surface-soft > background e das bordas acima; a
-   * sombra é só um reforço, com opacidade um pouco maior que o padrão
-   * do Vuetify para ainda contribuir com alguma leitura de profundidade.
-   */
-  --app-shadow-sm: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.26);
-  --app-shadow-md: 0 4px 16px rgba(0,0,0,0.52), 0 2px 6px rgba(0,0,0,0.32);
-  --app-shadow-lg: 0 12px 32px rgba(0,0,0,0.62), 0 4px 12px rgba(0,0,0,0.4);
-  --app-shadow-hover: 0 8px 22px rgba(0,0,0,0.46), 0 2px 8px rgba(0,0,0,0.32);
-  --app-shadow-accent: 0 8px 24px rgba(240,151,90,0.3);
+  --app-shadow-sm: 0 1px 2px rgba(0,0,0,0.45), 0 1px 1px rgba(0,0,0,0.3);
+  --app-shadow-md: 0 6px 18px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.32);
+  --app-shadow-lg: 0 16px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4);
+  --app-shadow-hover: 0 10px 26px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.34);
+  --app-shadow-accent: 0 8px 24px rgba(240,151,90,0.22);
 
-  /* Paleta semântica "success" no dark — mesmo valor já usado em text-teal-darken-2 */
-  --app-color-success: #2dd4bf;
-  --app-color-success-soft: #5eead4;
-  --app-color-success-tint: rgba(45, 212, 191, 0.14);
+  /* Paleta semântica "success" no dark */
+  --app-color-success: #3fd4b8;
+  --app-color-success-soft: #6ee7cf;
+  --app-color-success-tint: rgba(63, 212, 184, 0.13);
 
-  /* Shell (AppBar / BottomNav) no dark — ver comentário no bloco :root */
-  --app-color-appbar-bg: rgba(21, 27, 35, 0.88);
-  --app-color-appbar-border: rgba(45, 55, 70, 0.6);
-  --app-color-shell-bg: rgba(21, 27, 35, 0.92);
-  --app-color-shell-border: rgba(45, 55, 70, 0.5);
+  /* Shell (AppBar / BottomNav / barra lateral) no dark — vidro quente */
+  --app-color-appbar-bg: rgba(27, 24, 21, 0.86);
+  --app-color-appbar-border: rgba(255, 236, 220, 0.07);
+  --app-color-shell-bg: rgba(24, 21, 19, 0.94);
+  --app-color-shell-border: rgba(255, 236, 220, 0.07);
 
-  /* Paleta semântica "warning" no dark — mesmo padrão de conversão do accent/success */
+  /* Paleta semântica "warning" no dark */
   --app-color-warning: #fbbf24;
   --app-color-warning-soft: #fcd34d;
-  --app-color-warning-tint: rgba(180, 83, 9, 0.16);
+  --app-color-warning-tint: rgba(251, 191, 36, 0.12);
 
   /* Paleta semântica "danger" no dark */
   --app-color-danger: #f87171;
   --app-color-danger-soft: #fca5a5;
-  --app-color-danger-tint: rgba(185, 28, 28, 0.16);
+  --app-color-danger-tint: rgba(248, 113, 113, 0.12);
 }
 
 .app-theme-light,
@@ -858,7 +861,7 @@ h1.text-h5 {
 }
 
 .app-theme-dark .auth-promo {
-  background: #0d1117 !important;
+  background: var(--app-color-background) !important;
 }
 
 .app-theme-dark .auth-icon-circle {
@@ -902,9 +905,11 @@ h1.text-h5 {
 .app-theme-dark .v-toolbar,
 .app-theme-dark .appbar,
 .app-theme-dark .bottom-nav {
-  background-color: rgba(22, 27, 34, 0.95) !important;
+  background-color: var(--app-color-appbar-bg) !important;
   color: var(--app-color-text) !important;
-  border-color: var(--app-color-border) !important;
+  border-color: var(--app-color-appbar-border) !important;
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
 }
 
 /* ============================================================
@@ -1182,11 +1187,11 @@ h1.text-h5 {
 }
 
 .app-theme-dark .filter-strip::before {
-  background: linear-gradient(90deg, var(--app-color-background) 0%, rgba(13, 17, 23, 0) 100%) !important;
+  background: linear-gradient(90deg, var(--app-color-background) 0%, transparent 100%) !important;
 }
 
 .app-theme-dark .filter-strip::after {
-  background: linear-gradient(270deg, var(--app-color-background) 0%, rgba(13, 17, 23, 0) 100%) !important;
+  background: linear-gradient(270deg, var(--app-color-background) 0%, transparent 100%) !important;
 }
 
 .app-theme-dark .scale-song-card-active {
@@ -1604,4 +1609,232 @@ h1.text-h5 {
   font-weight: 800;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+/* Ícones neutros (estado vazio, setas de lista) seguindo o tema, em vez de
+   hex fixos diferentes para claro/escuro em cada componente. */
+.empty-state-icon,
+.upcoming-chevron {
+  color: var(--app-color-text-muted);
+}
+
+/* Avatar/ícone de destaque (cabeçalho de modais e cartões): tom de terracota
+   que acompanha o tema, em vez de #F7E2D3 fixo (rosa-claro gritante no escuro). */
+.accent-avatar {
+  background: var(--app-color-accent-tint) !important;
+  color: var(--app-color-accent) !important;
+}
+
+/* ============================================================
+   MOTION — animações globais
+   Tudo aqui é CSS puro e curto (≤ 450ms), com easing "emphasized" do
+   design system. Desligado por completo em prefers-reduced-motion (bloco
+   no fim). animation-fill-mode: backwards — o estado inicial vale só
+   durante o atraso; depois que a animação termina os estilos normais
+   (hover, transform de cards) voltam a valer.
+   ============================================================ */
+@keyframes app-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes app-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes app-bell-ring {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-12deg); }
+  45% { transform: rotate(8deg); }
+  60% { transform: rotate(-5deg); }
+  75% { transform: rotate(2deg); }
+}
+
+@keyframes app-spin-in {
+  from {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Entrada em cascata dos itens de listas e grades: cada card aparece um
+   pouco depois do anterior (40ms), até o 10º; o resto entra junto. */
+:is(
+    .app-card-grid,
+    .hub-list,
+    .content-grid,
+    .stats-grid,
+    .people-list,
+    .visit-grid,
+    .cultos-list,
+    .devotional-grid,
+    .playlist-grid,
+    .notif-list,
+    .notification-list,
+    .more-options-group-list,
+    .ministery-grid
+  ) > * {
+  animation: app-rise 380ms var(--app-motion-ease-emphasized) backwards;
+}
+
+:is(
+    .app-card-grid,
+    .hub-list,
+    .content-grid,
+    .stats-grid,
+    .people-list,
+    .visit-grid,
+    .cultos-list,
+    .devotional-grid,
+    .playlist-grid,
+    .notif-list,
+    .notification-list,
+    .more-options-group-list,
+    .ministery-grid
+  ) > :nth-child(2) { animation-delay: 40ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(3) { animation-delay: 80ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(4) { animation-delay: 120ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(5) { animation-delay: 160ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(6) { animation-delay: 200ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(7) { animation-delay: 240ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(8) { animation-delay: 280ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(9) { animation-delay: 320ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(n + 10) { animation-delay: 360ms; }
+
+/* Estados vazios: o ícone "aparece" com um leve salto. */
+:is(.empty-state-icon, .notif-empty-icon, .notification-empty-icon) {
+  animation: app-pop 450ms var(--app-motion-ease-emphasized) 120ms backwards;
+}
+
+/* Seletor segmentado e chips: troca de item ativo suave. */
+.app-segmented > *,
+:where(.app-operational-page, .responsive-overlay) .v-tab,
+:where(.app-operational-page, .responsive-overlay) .v-btn-toggle .v-btn {
+  transition:
+    background-color var(--app-motion-duration-base) var(--app-motion-ease-standard),
+    color var(--app-motion-duration-base) var(--app-motion-ease-standard),
+    box-shadow var(--app-motion-duration-base) var(--app-motion-ease-standard),
+    transform var(--app-motion-duration-fast) var(--app-motion-ease-standard) !important;
+}
+
+/* Toque: tudo que é clicável "afunda" um pouco ao pressionar — o retorno
+   tátil que faz o app parecer responsivo no celular. */
+:is(
+    .app-segmented > *,
+    .side-nav-link,
+    .more-options-row,
+    .more-options-chip,
+    .notification-item,
+    .notif-item,
+    .content-card-link,
+    .member-card
+  ):active {
+  transform: scale(0.98);
+}
+
+.side-nav-link,
+.more-options-row,
+.more-options-chip,
+.content-card-link {
+  transition:
+    background-color var(--app-motion-duration-fast) ease,
+    color var(--app-motion-duration-fast) ease,
+    transform var(--app-motion-duration-fast) var(--app-motion-ease-standard);
+}
+
+/* Cards clicáveis sobem um pouco e ganham sombra ao passar o mouse
+   (só em dispositivos com mouse, para não "grudar" o hover no toque). */
+@media (hover: hover) {
+  .app-interactive-surface:hover,
+  .content-card-link:hover > .v-card {
+    box-shadow: var(--app-shadow-hover) !important;
+  }
+
+  .content-card-link > .v-card {
+    transition:
+      transform var(--app-motion-duration-fast) var(--app-motion-ease-standard),
+      box-shadow var(--app-motion-duration-fast) ease;
+  }
+
+  .content-card-link:hover > .v-card {
+    transform: translateY(-2px);
+  }
+}
+
+/* Barra inferior: o ícone do item ativo dá um pequeno salto ao ser
+   selecionado (a animação roda quando a classe ativa entra). */
+.bottom-nav .v-btn--active .nav-icon {
+  animation: app-pop 360ms var(--app-motion-ease-emphasized);
+}
+
+/* Sino com notificações não lidas balança uma vez ao aparecer. */
+.notification-trigger--unread .v-badge > svg,
+.notification-trigger--unread .v-badge__wrapper > svg {
+  transform-origin: 50% 10%;
+  animation: app-bell-ring 900ms ease-in-out 400ms 1;
+}
+
+/* Botão de tema: sol/lua entram girando na troca. */
+.theme-toggle-btn svg {
+  animation: app-spin-in 420ms var(--app-motion-ease-emphasized);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(
+      .app-card-grid,
+      .hub-list,
+      .content-grid,
+      .stats-grid,
+      .people-list,
+      .visit-grid,
+      .cultos-list,
+      .devotional-grid,
+      .playlist-grid,
+      .notif-list,
+      .notification-list,
+      .more-options-group-list,
+      .ministery-grid
+    ) > *,
+  :is(.empty-state-icon, .notif-empty-icon, .notification-empty-icon),
+  .bottom-nav .v-btn--active .nav-icon,
+  .notification-trigger--unread .v-badge > svg,
+  .notification-trigger--unread .v-badge__wrapper > svg,
+  .theme-toggle-btn svg {
+    animation: none !important;
+  }
+
+  :is(
+      .app-segmented > *,
+      .side-nav-link,
+      .more-options-row,
+      .more-options-chip,
+      .notification-item,
+      .notif-item,
+      .content-card-link,
+      .member-card
+    ):active,
+  .content-card-link:hover > .v-card {
+    transform: none !important;
+  }
 }

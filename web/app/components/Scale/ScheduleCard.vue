@@ -70,7 +70,7 @@
         <v-avatar
           v-if="extraVolunteerCount > 0"
           size="34"
-          :color="isDark ? 'rgba(139,148,158,0.18)' : '#F3F4F6'"
+          :color="isDark ? 'rgba(205,194,183,0.12)' : '#F3F4F6'"
           class="schedule-avatar schedule-avatar-extra"
         >
           +{{ extraVolunteerCount }}

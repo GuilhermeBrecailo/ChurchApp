@@ -608,8 +608,10 @@
 
         <v-text-field
           v-model="publicChurchForm.slug"
-          label="Slug da página pública"
+          label="Endereço da página pública"
           placeholder="ex: comunidade-vida"
+          hint="É o final do link que você compartilha: churchapp.site/c/comunidade-vida"
+          persistent-hint
           prepend-inner-icon="mdi-web"
           variant="outlined"
           density="comfortable"

@@ -123,7 +123,7 @@
 
         <MotionFadeInUp tag="section" class="feed-section" in-view>
           <div class="section-heading-copy">
-            <p class="landing-kicker">Feed publico</p>
+            <p class="landing-kicker">Mural da igreja</p>
             <h2>Avisos, palavras e oracoes</h2>
           </div>
 

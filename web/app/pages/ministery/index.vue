@@ -159,8 +159,8 @@
       <v-card class="app-surface rounded-xl pa-6" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
-            <v-avatar color="#F7E2D3" size="44" class="mr-3">
-              <Building size="20" color="#B5472A" />
+            <v-avatar size="44" class="mr-3 accent-avatar">
+              <Building size="20" />
             </v-avatar>
             <div class="min-w-0">
               <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">

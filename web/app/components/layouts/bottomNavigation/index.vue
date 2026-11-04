@@ -210,7 +210,9 @@ const handleMoreSelect = (route: string) => {
   }
 
   .nav-label {
-    font-size: 0.62rem;
+    /* 390px é a largura da maioria dos iPhones: 0.62rem (~10px) era pequeno
+       demais para ler o nome da aba. */
+    font-size: 0.68rem;
   }
 
   .nav-icon {

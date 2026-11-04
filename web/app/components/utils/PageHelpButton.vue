@@ -1,18 +1,20 @@
 <template>
   <div class="page-help-button">
-    <v-tooltip text="Ajuda da tela" location="bottom">
+    <v-tooltip text="Como usar esta tela" location="bottom">
       <template #activator="{ props }">
+        <!-- Botão com texto ("Ajuda") e não só um "?": quem tem pouca
+             familiaridade com apps não reconhece o ícone sozinho. -->
         <v-btn
           v-bind="props"
-          icon
           variant="tonal"
           color="primary"
-          size="x-small"
-          class="page-help-trigger"
+          size="small"
+          class="page-help-trigger text-none"
           :aria-label="`Abrir ajuda da tela ${title}`"
           @click="isOpen = true"
         >
-          <HelpCircle size="16" aria-hidden="true" />
+          <HelpCircle size="16" class="mr-1" aria-hidden="true" />
+          Ajuda
         </v-btn>
       </template>
     </v-tooltip>
@@ -210,8 +212,10 @@ const whatsappHref = computed(() => {
 
 .page-help-trigger {
   flex: 0 0 auto;
-  width: 30px !important;
-  height: 30px !important;
+  min-height: 36px !important;
+  padding-inline: 12px !important;
+  border-radius: 999px !important;
+  font-weight: 700 !important;
 }
 
 .page-help-modal {

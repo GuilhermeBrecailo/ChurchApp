@@ -115,8 +115,8 @@ export default defineNuxtConfig({
               // #f0975a dá ~2.3:1 de contraste (ilegível em "Salvar Perfil").
               "on-primary": "#1f1410",
               secondary: "#5eead4",
-              background: "#0d1117",
-              surface: "#151b23",
+              background: "#12100e",
+              surface: "#1b1815",
               error: "#f87171",
             },
           },

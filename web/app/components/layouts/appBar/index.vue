@@ -72,7 +72,10 @@
             icon
             variant="text"
             class="notification-trigger"
-            :class="{ 'notification-trigger--muted': status === 'denied' || status === 'unsupported' }"
+            :class="{
+              'notification-trigger--muted': status === 'denied' || status === 'unsupported',
+              'notification-trigger--unread': hasUnreadNotifications,
+            }"
             :loading="loading"
             :aria-label="unreadCount ? `Notificações, ${unreadCount} não lidas` : 'Notificações'"
           >
@@ -291,7 +294,7 @@ const notificationTitle = computed(() => {
 const notificationDescription = computed(() => {
   if (isEnabled.value) return "Escalas, alterações e lembretes chegam neste aparelho.";
   if (status.value === "denied") return "Libere a permissão nas configurações do navegador.";
-  if (status.value === "unsupported") return "Instale o app ou abra por HTTPS para receber avisos.";
+  if (status.value === "unsupported") return "Adicione o app à tela inicial do celular para receber avisos.";
 
   return "Receba escalas e lembretes mesmo com o app fechado.";
 });

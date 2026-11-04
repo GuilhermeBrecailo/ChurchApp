@@ -2,8 +2,8 @@
   <v-card
     class="ministry-card app-surface app-interactive-surface rounded-xl pa-3 mb-3 cursor-pointer"
   >
-    <v-avatar size="48" color="#F7E2D3" class="ministry-avatar rounded-lg">
-      <Users size="20" color="#B5472A" />
+    <v-avatar size="48" class="ministry-avatar accent-avatar rounded-lg">
+      <Users size="20" />
     </v-avatar>
 
     <div class="ministry-copy">

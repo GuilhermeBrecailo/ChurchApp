@@ -472,7 +472,7 @@
 
           <div class="member-badges">
             <v-chip v-if="member.userId" size="small" color="primary" variant="tonal">
-              Tem login
+              Tem acesso ao app
             </v-chip>
             <v-chip
               v-if="whatsappCheckResults[member.id] !== undefined"
