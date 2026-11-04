@@ -21,24 +21,29 @@
       </div>
     </div>
 
+    <!-- O seletor fica fora da .filter-strip: a faixa tem margem negativa
+         (para os chips rolarem até a borda) e degradês nas laterais, que
+         desalinhavam e cobriam o seletor. -->
+    <v-btn-toggle
+      v-model="schedulePeriod"
+      mandatory
+      color="primary"
+      variant="outlined"
+      class="schedule-period-toggle mb-3"
+      aria-label="Período das escalas"
+    >
+      <v-btn value="upcoming" class="text-none">Próximas</v-btn>
+      <v-btn value="history" class="text-none">Histórico</v-btn>
+    </v-btn-toggle>
+
     <div class="filter-strip mb-8">
-      <v-btn-toggle
-        v-model="schedulePeriod"
-        mandatory
-        color="primary"
-        variant="outlined"
-        class="schedule-period-toggle mb-3"
-        aria-label="Período das escalas"
-      >
-        <v-btn value="upcoming" class="text-none">Próximas</v-btn>
-        <v-btn value="history" class="text-none">Histórico</v-btn>
-      </v-btn-toggle>
       <div class="filter-scroll hide-scrollbar">
         <v-chip
           v-for="filter in filters"
           :key="filter"
-          :variant="activeFilter === filter ? 'flat' : 'outlined'"
+          :variant="activeFilter === filter ? 'tonal' : 'outlined'"
           :color="activeFilter === filter ? accentColor : 'grey-darken-1'"
+          :aria-pressed="activeFilter === filter"
           class="filter-chip cursor-pointer"
           @click="activeFilter = filter"
         >
@@ -97,12 +102,16 @@
         v-else-if="filteredSchedules.length === 0 && !schedulesError"
         class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center"
       >
-        <Calendar size="32" :color="isDark ? '#484f58' : '#9CA3AF'" class="mb-3" />
+        <Calendar size="32" class="empty-state-icon mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
           {{ schedulePeriod === "history" ? "Nenhuma escala no histórico" : "Nenhuma escala futura" }}
         </p>
         <p v-if="schedulePeriod === 'upcoming'" class="text-caption text-grey-darken-1 text-center mt-2">
-          Crie uma escala para organizar a próxima equipe.
+          {{
+            canCreateChurchSchedule
+              ? "Crie uma escala para organizar a próxima equipe."
+              : "Quando você for escalado para servir, a escala aparece aqui."
+          }}
         </p>
         <v-btn
           v-if="schedulePeriod === 'upcoming' && canCreateChurchSchedule"

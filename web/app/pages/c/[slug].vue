@@ -123,7 +123,7 @@
 
         <MotionFadeInUp tag="section" class="feed-section" in-view>
           <div class="section-heading-copy">
-            <p class="landing-kicker">Feed publico</p>
+            <p class="landing-kicker">Mural da igreja</p>
             <h2>Avisos, palavras e oracoes</h2>
           </div>
 
@@ -615,8 +615,8 @@ watch(slug, (nextSlug, previousSlug) => {
   min-height: 100vh;
 }
 
-:global(.dark-theme) .church-landing,
-:global(.v-theme--dark) .church-landing {
+:global(.dark-theme .church-landing),
+:global(.v-theme--dark .church-landing) {
   --paper: #17140F;
   --ink: #F3EFE6;
   --ink-soft: #B9B0A2;

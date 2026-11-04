@@ -51,7 +51,19 @@
           :aria-labelledby="`more-options-${group.key}`"
         >
           <h3 :id="`more-options-${group.key}`">{{ group.label }}</h3>
-          <div class="more-options-group-list">
+          <div v-if="group.compact" class="more-options-chip-list">
+            <button
+              v-for="entry in group.items"
+              :key="entry.key"
+              type="button"
+              class="more-options-chip"
+              @click="select(entry.route)"
+            >
+              <component :is="iconComponents[entry.icon]" size="15" aria-hidden="true" />
+              {{ entry.title }}
+            </button>
+          </div>
+          <div v-else class="more-options-group-list">
             <button
               v-for="entry in group.items"
               :key="entry.key"
@@ -99,7 +111,7 @@ import {
 } from "lucide-vue-next";
 import { computed, ref, watch } from "vue";
 import type { RoleNavigationIcon, RoleNavigationItem } from "../../utils/roleNavigation";
-import { compareListText } from "../../utils/listOrdering";
+import { groupNavigationItems, type NavigationGroup } from "../../utils/navigationGroups";
 
 const props = withDefaults(
   defineProps<{
@@ -108,11 +120,16 @@ const props = withDefaults(
     subtitle?: string;
     searchPlaceholder?: string;
     emptyMessage?: string;
+    /** Atalhos que já estão visíveis na barra inferior: continuam alcançáveis
+     * aqui (e na busca), mas vão para um grupo compacto no fim da lista em vez
+     * de ocupar o topo repetindo o que o usuário já vê. */
+    pinnedKeys?: string[];
   }>(),
   {
     subtitle: "Atalhos disponíveis para o seu perfil.",
     searchPlaceholder: "Buscar atalho",
     emptyMessage: "Nenhum atalho encontrado.",
+    pinnedKeys: () => [],
   },
 );
 
@@ -131,58 +148,25 @@ const filteredItems = computed(() => {
   );
 });
 
-const groupDefinitions = [
-  {
-    key: "routine",
-    label: "Rotina da igreja",
-    keys: new Set([
-      "home",
-      "pastoral",
-      "visits",
-      "people",
-      "cults",
-      "reports",
-      "team",
-      "scale",
-      "ministries",
-      "churchHub",
-    ]),
-  },
-  {
-    key: "content",
-    label: "Conteúdo e cuidado",
-    keys: new Set(["content", "prayer", "publications", "messages"]),
-  },
-  {
-    key: "management",
-    label: "Gestão e administração",
-    keys: new Set(["churchAdmin", "rolesManagement", "settings", "churchProfile", "platformAdmin"]),
-  },
-  {
-    key: "account",
-    label: "Minha conta",
-    keys: new Set(["profile"]),
-  },
-];
+const filteredGroups = computed<NavigationGroup[]>(() => {
+  // Com busca ativa todos os resultados aparecem nos grupos normais; sem
+  // busca, os atalhos da barra inferior descem para um grupo compacto.
+  const pinned = search.value.trim() ? new Set<string>() : new Set(props.pinnedKeys);
+  const groups = groupNavigationItems(
+    filteredItems.value.filter((entry) => !pinned.has(entry.key)),
+  );
+  const pinnedItems = filteredItems.value.filter((entry) => pinned.has(entry.key));
 
-const filteredGroups = computed(() => {
-  const knownKeys = new Set(groupDefinitions.flatMap((group) => [...group.keys]));
-  const groups = groupDefinitions.map((group) => ({
-    key: group.key,
-    label: group.label,
-    items: filteredItems.value
-      .filter((entry) => group.keys.has(entry.key))
-      .sort((first, second) => compareListText(first.label, second.label)),
-  }));
-  const otherItems = filteredItems.value
-    .filter((entry) => !knownKeys.has(entry.key))
-    .sort((first, second) => compareListText(first.label, second.label));
-
-  if (otherItems.length) {
-    groups.push({ key: "other", label: "Outros atalhos", items: otherItems });
+  if (pinnedItems.length) {
+    groups.push({
+      key: "pinned",
+      label: "Também na barra inferior",
+      items: pinnedItems,
+      compact: true,
+    });
   }
 
-  return groups.filter((group) => group.items.length > 0);
+  return groups;
 });
 
 const iconComponents: Record<RoleNavigationIcon, unknown> = {
@@ -285,6 +269,43 @@ function select(route: string) {
 .more-options-group {
   display: grid;
   gap: 8px;
+}
+
+.more-options-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.more-options-chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: 999px;
+  background: var(--app-color-surface-soft);
+  color: var(--app-color-text-soft);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.more-options-chip:hover {
+  border-color: var(--app-color-border);
+  background: var(--app-color-surface);
+}
+
+.more-options-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--app-focus-ring);
+}
+
+.more-options-chip svg {
+  color: var(--app-color-accent);
 }
 
 .more-options-group h3 {

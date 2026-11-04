@@ -1315,8 +1315,10 @@ onMounted(async () => {
   border: 1px solid var(--app-color-border-subtle);
 }
 
+/* Formulário de publicação + lista: coluna de leitura no desktop, como as
+   demais páginas de formulário (.app-page--narrow). */
 .church-admin-page {
-  max-width: 1120px;
+  max-width: 880px;
   margin: 0 auto;
 }
 

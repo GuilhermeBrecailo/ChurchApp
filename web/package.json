@@ -7,7 +7,10 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "test": "tsx --test tests/*.test.ts",
+    "verify": "node scripts/verify-overlay-contract.mjs && node scripts/verify-pastoral-ux.mjs",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
     "@nuxtjs/sitemap": "^8.3.4",
@@ -22,6 +25,8 @@
   },
   "devDependencies": {
     "nuxt-lucide-icons": "^2.1.0",
+    "playwright": "^1.63.0",
+    "tsx": "^4.21.0",
     "vuetify": "^4.0.5",
     "vuetify-nuxt-module": "^0.19.5"
   }

@@ -59,15 +59,25 @@
         </template>
       </v-tooltip>
 
-      <v-menu location="bottom end" :close-on-content-click="false">
+      <v-menu
+        v-model="notificationMenuOpen"
+        location="bottom end"
+        offset="10"
+        :close-on-content-click="false"
+        transition="scale-transition"
+      >
         <template #activator="{ props }">
           <v-btn
             v-bind="props"
             icon
             variant="text"
-            :color="notificationColor"
+            class="notification-trigger"
+            :class="{
+              'notification-trigger--muted': status === 'denied' || status === 'unsupported',
+              'notification-trigger--unread': hasUnreadNotifications,
+            }"
             :loading="loading"
-            aria-label="Notificações"
+            :aria-label="unreadCount ? `Notificações, ${unreadCount} não lidas` : 'Notificações'"
           >
             <v-badge
               :content="unreadCount"
@@ -75,115 +85,114 @@
               color="error"
               max="9"
             >
-              <BellRing v-if="isEnabled" size="24" />
-              <BellOff v-else-if="status === 'denied' || status === 'unsupported'" size="24" />
-              <Bell v-else size="24" />
+              <BellRing v-if="isEnabled" size="22" />
+              <BellOff v-else-if="status === 'denied' || status === 'unsupported'" size="22" />
+              <Bell v-else size="22" />
             </v-badge>
           </v-btn>
         </template>
 
-        <v-card class="notification-card" elevation="8" :style="notificationCardStyle">
-          <v-card-text class="notification-content">
-            <div class="notification-header">
-              <div>
-                <p class="notification-title mb-0">Notificações</p>
-                <p class="notification-description mb-0">
-                  {{ unreadCount }} não lidas
-                </p>
-              </div>
-              <v-btn
-                v-if="notifications.length"
-                variant="text"
-                color="primary"
-                size="small"
-                class="text-none"
-                :disabled="inboxLoading || unreadCount === 0"
-                @click="markAllNotificationsRead"
-              >
-                Marcar lidas
-              </v-btn>
+        <v-card class="notification-card" elevation="0" :style="notificationCardStyle">
+          <header class="notification-header">
+            <div class="notification-header-copy">
+              <p class="notification-title">Notificações</p>
+              <span v-if="unreadCount > 0" class="notification-count">
+                {{ unreadCount > 99 ? "99+" : unreadCount }}
+                {{ unreadCount === 1 ? "nova" : "novas" }}
+              </span>
             </div>
-
-            <div v-if="notifications.length" class="notification-list">
-              <button
-                v-for="notification in notifications"
-                :key="notification.id"
-                type="button"
-                class="notification-item"
-                :class="{ 'notification-item-unread': !notification.readAt }"
-                @click="openNotification(notification)"
-              >
-                <span
-                  class="notification-item-icon"
-                  :class="{ 'notification-item-icon-unread': !notification.readAt }"
-                >
-                  <component :is="notificationIconFor(notification)" size="16" />
-                </span>
-                <span class="notification-item-copy">
-                  <span class="notification-item-title">
-                    {{ notification.title }}
-                  </span>
-                  <span class="notification-item-body">
-                    {{ notification.body }}
-                  </span>
-                  <span class="notification-item-meta">
-                    <span v-if="!notification.readAt" class="notification-unread-label">Nova</span>
-                    <span class="notification-item-date">
-                      {{ formatNotificationDate(notification.createdAt) }}
-                    </span>
-                  </span>
-                </span>
-              </button>
-            </div>
-
-            <div v-else class="notification-list-empty">
-              <Bell size="22" />
-              <div>
-                <p class="notification-title">Sem notificações</p>
-                <p class="notification-description">Quando algo acontecer, aparece aqui.</p>
-              </div>
-            </div>
-
-            <v-btn
-              block
-              variant="text"
-              size="small"
-              class="text-none"
-              @click="router.push('/notifications')"
+            <button
+              v-if="unreadCount > 0"
+              type="button"
+              class="notification-mark-all"
+              :disabled="inboxLoading"
+              @click="markAllNotificationsRead"
             >
-              Ver todas as notificações
-            </v-btn>
+              <CheckCheck size="15" />
+              Marcar lidas
+            </button>
+          </header>
 
-            <div class="notification-settings">
-              <p class="notification-settings-title">{{ notificationTitle }}</p>
-              <p class="notification-description">{{ notificationDescription }}</p>
+          <div v-if="notifications.length" class="notification-list">
+            <button
+              v-for="notification in notifications"
+              :key="notification.id"
+              type="button"
+              class="notification-item"
+              :class="[
+                `notification-item--${notificationToneFor(notification)}`,
+                { 'notification-item--unread': !notification.readAt },
+              ]"
+              @click="openNotification(notification)"
+            >
+              <span class="notification-item-icon">
+                <component :is="notificationIconFor(notification)" size="17" />
+              </span>
+              <span class="notification-item-copy">
+                <span class="notification-item-title">{{ notification.title }}</span>
+                <span class="notification-item-body">{{ notification.body }}</span>
+                <time
+                  class="notification-item-date"
+                  :datetime="notification.createdAt"
+                  :title="formatNotificationFullDate(notification.createdAt)"
+                >
+                  {{ formatNotificationRelativeDate(notification.createdAt) }}
+                </time>
+              </span>
+              <span
+                v-if="!notification.readAt"
+                class="notification-unread-dot"
+                aria-label="Não lida"
+              />
+            </button>
+          </div>
+
+          <div v-else class="notification-empty">
+            <span class="notification-empty-icon">
+              <BellRing size="22" />
+            </span>
+            <p class="notification-empty-title">Tudo em dia por aqui</p>
+            <p class="notification-empty-body">
+              Avisos de escala, ensaios e recados da igreja aparecem aqui.
+            </p>
+          </div>
+
+          <div class="notification-push" :class="`notification-push--${pushTone}`">
+            <span class="notification-push-icon">
+              <Smartphone size="16" />
+            </span>
+            <div class="notification-push-copy">
+              <p class="notification-push-title">{{ notificationTitle }}</p>
+              <p class="notification-push-description">{{ notificationDescription }}</p>
             </div>
-
             <v-btn
               v-if="isEnabled"
-              block
-              variant="tonal"
-              color="grey-darken-3"
+              size="small"
+              variant="text"
+              class="notification-push-action text-none"
               :loading="loading"
               @click="disable"
             >
-              Desativar notificações
+              Desativar
             </v-btn>
-
             <v-btn
-              v-else
-              block
+              v-else-if="canAskPermission"
+              size="small"
               variant="flat"
-              class="notification-enable-btn text-none"
-              :disabled="!canAskPermission"
+              class="notification-push-action notification-push-action--primary text-none"
               :loading="loading"
               @click="enable"
             >
-              Ativar notificações
+              Ativar
             </v-btn>
+          </div>
 
-            <p v-if="message" class="notification-message">{{ message }}</p>
-          </v-card-text>
+          <footer class="notification-footer">
+            <button type="button" class="notification-see-all" @click="goToAllNotifications">
+              Ver todas as notificações
+              <ArrowRight size="15" />
+            </button>
+          </footer>
         </v-card>
       </v-menu>
 
@@ -195,15 +204,31 @@
 </template>
 
 <script setup lang="ts">
-import { Bell, BellOff, BellRing, CalendarCheck, ChevronDown, Church, Megaphone, UserCheck } from "lucide-vue-next";
-import { Moon, Sun } from "lucide-vue-next";
-import { computed, onMounted } from "vue";
+import {
+  ArrowRight,
+  Bell,
+  BellOff,
+  BellRing,
+  CheckCheck,
+  ChevronDown,
+  Church,
+  Moon,
+  Smartphone,
+  Sun,
+} from "lucide-vue-next";
+import { computed, onMounted, ref } from "vue";
 import { useAuth } from "../../../../composables/useAuth";
 import {
   usePushNotifications,
   type AppNotification,
 } from "../../../../composables/usePushNotifications";
 import { getInitials } from "../../../utils/initials";
+import {
+  formatNotificationFullDate,
+  formatNotificationRelativeDate,
+  notificationIconFor,
+  notificationToneFor,
+} from "../../../utils/notificationDisplay";
 
 const { user, setActiveChurch } = useAuth();
 const { isDark, toggleTheme } = useThemeMode();
@@ -225,6 +250,7 @@ const {
   disable,
 } = usePushNotifications();
 const router = useRouter();
+const notificationMenuOpen = ref(false);
 
 const firstName = computed(() => {
   const name = user.value?.name?.trim();
@@ -250,27 +276,27 @@ const themeToggleLabel = computed(() =>
   isDark.value ? "Ativar tema claro" : "Ativar tema escuro",
 );
 
-const notificationColor = computed(() => {
-  if (isEnabled.value) return "primary";
-  if (status.value === "denied" || status.value === "unsupported") return "error";
+const pushTone = computed(() => {
+  if (isEnabled.value) return "on";
+  if (status.value === "denied" || status.value === "unsupported") return "blocked";
 
-  return "grey-darken-3";
+  return "off";
 });
 
 const notificationTitle = computed(() => {
-  if (isEnabled.value) return "Notificações do celular ativas";
+  if (isEnabled.value) return "Avisos no celular ativos";
   if (status.value === "denied") return "Permissão bloqueada";
-  if (status.value === "unsupported") return "PWA indisponível";
+  if (status.value === "unsupported") return "Avisos indisponíveis";
 
-  return "Notificações do celular desligadas";
+  return "Avisos no celular desligados";
 });
 
 const notificationDescription = computed(() => {
-  if (isEnabled.value) return "Você será avisado sobre escalas, alterações e lembretes.";
+  if (isEnabled.value) return "Escalas, alterações e lembretes chegam neste aparelho.";
   if (status.value === "denied") return "Libere a permissão nas configurações do navegador.";
-  if (status.value === "unsupported") return "No celular, abra o app por HTTPS para receber push.";
+  if (status.value === "unsupported") return "Adicione o app à tela inicial do celular para receber avisos.";
 
-  return "Receba avisos de escala, alteração e ensaio neste aparelho.";
+  return "Receba escalas e lembretes mesmo com o app fechado.";
 });
 
 const showNotificationMessage = computed({
@@ -282,31 +308,15 @@ const showNotificationMessage = computed({
   },
 });
 
-const notificationIconFor = (notification: AppNotification) => {
-  const context = `${notification.type || ""} ${notification.title} ${notification.body} ${notification.url || ""}`.toLowerCase();
-
-  if (context.includes("escala") || context.includes("schedule")) return CalendarCheck;
-  if (context.includes("membro") || context.includes("user")) return UserCheck;
-  if (context.includes("aviso") || context.includes("conteudo") || context.includes("post")) return Megaphone;
-
-  return Bell;
-};
-
-const formatNotificationDate = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-};
-
 const openNotification = async (notification: AppNotification) => {
+  notificationMenuOpen.value = false;
   await markNotificationRead(notification.id);
-  await router.push(notification.url || "/user");
+  await router.push(notification.url || "/notifications");
+};
+
+const goToAllNotifications = async () => {
+  notificationMenuOpen.value = false;
+  await router.push("/notifications");
 };
 
 const handleChurchChange = async (churchId: string) => {
@@ -390,165 +400,351 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-.notification-card {
-  --church-accent: #B5472A;
-  width: min(360px, calc(100vw - 32px));
-  border-radius: 14px;
-  background: var(--app-color-surface);
-  color: var(--app-color-text);
-  border: 1px solid var(--app-color-border);
+.notification-trigger {
+  color: var(--app-color-text-soft);
 }
 
-.notification-content {
-  display: grid;
-  gap: 16px;
-  padding: 16px !important;
+.notification-trigger--muted {
+  color: var(--app-color-text-muted);
+}
+
+.notification-card {
+  --church-accent: #b5472a;
+  /* Tom de destaque legível nos dois temas: no escuro, mistura a cor da
+     igreja com o texto claro para não sumir no fundo. */
+  --notif-accent-text: color-mix(in srgb, var(--church-accent) 82%, var(--app-color-text));
+  --notif-accent-tint: color-mix(in srgb, var(--church-accent) 12%, var(--app-color-surface));
+  display: flex;
+  flex-direction: column;
+  width: min(380px, calc(100vw - 24px));
+  max-height: min(600px, calc(100dvh - 88px));
+  overflow: hidden;
+  border-radius: 18px !important;
+  background: var(--app-color-surface) !important;
+  color: var(--app-color-text);
+  border: 1px solid var(--app-color-border-subtle);
+  box-shadow:
+    0 18px 44px -12px rgba(15, 17, 21, 0.28),
+    0 4px 12px -4px rgba(15, 17, 21, 0.12) !important;
+}
+
+:global(.app-theme-dark .notification-card) {
+  --notif-accent-text: color-mix(in srgb, var(--church-accent) 45%, var(--app-color-accent-muted));
+  --notif-accent-tint: color-mix(in srgb, var(--church-accent) 22%, var(--app-color-surface));
 }
 
 .notification-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
+  padding: 16px 18px 12px;
+}
+
+.notification-header-copy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.notification-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--app-color-text);
+}
+
+.notification-count {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--notif-accent-tint);
+  color: var(--notif-accent-text);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.notification-mark-all,
+.notification-see-all {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--notif-accent-text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.16s ease, opacity 0.16s ease;
+}
+
+.notification-mark-all {
+  flex-shrink: 0;
+  padding: 6px 8px;
+  margin-right: -8px;
+}
+
+.notification-mark-all:hover,
+.notification-see-all:hover {
+  background: var(--notif-accent-tint);
+}
+
+.notification-mark-all:disabled {
+  opacity: 0.5;
+  cursor: progress;
 }
 
 .notification-list {
-  display: grid;
-  gap: 10px;
-  max-height: 320px;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 380px;
   overflow-y: auto;
-  padding-right: 2px;
+  overscroll-behavior: contain;
+  padding: 0 8px 8px;
+  border-top: 1px solid var(--app-color-border-subtle);
+  border-bottom: 1px solid var(--app-color-border-subtle);
+  margin-bottom: 8px;
+  scrollbar-width: thin;
 }
 
 .notification-item {
   appearance: none;
+  position: relative;
   width: 100%;
-  border: 1px solid var(--app-color-border);
-  border-radius: 11px;
-  background: var(--app-color-surface);
-  color: var(--app-color-text);
-  cursor: pointer;
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 38px minmax(0, 1fr) 10px;
+  align-items: start;
   gap: 12px;
-  padding: 12px;
+  margin-top: 6px;
+  padding: 11px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--app-color-text);
   text-align: left;
-  transition: border-color 0.16s ease, background-color 0.16s ease, transform 0.16s ease;
+  cursor: pointer;
+  transition: background-color 0.16s ease;
 }
 
 .notification-item:hover {
-  border-color: color-mix(in srgb, var(--church-accent) 36%, var(--app-color-border));
+  background: var(--app-color-surface-soft);
 }
 
-.notification-item-unread {
-  border-color: color-mix(in srgb, var(--church-accent) 42%, var(--app-color-border));
-  background: color-mix(in srgb, var(--church-accent) 9%, var(--app-color-surface));
+.notification-item:focus-visible,
+.notification-mark-all:focus-visible,
+.notification-see-all:focus-visible {
+  outline: 2px solid var(--church-accent);
+  outline-offset: 2px;
+}
+
+.notification-item--unread {
+  background: color-mix(in srgb, var(--church-accent) 6%, var(--app-color-surface));
+}
+
+.notification-item--unread:hover {
+  background: var(--notif-accent-tint);
 }
 
 .notification-item-icon {
+  --tone: var(--app-color-text-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  background: var(--app-color-background);
-  color: var(--app-color-text-muted);
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tone) 14%, var(--app-color-surface));
+  color: var(--tone);
 }
 
-.notification-item-icon-unread {
-  background: color-mix(in srgb, var(--church-accent) 14%, #ffffff);
-  color: var(--church-accent);
+.notification-item--schedule .notification-item-icon {
+  --tone: var(--notif-accent-text);
+}
+
+.notification-item--member .notification-item-icon {
+  --tone: var(--app-color-success);
+}
+
+.notification-item--announcement .notification-item-icon {
+  --tone: var(--app-color-warning);
 }
 
 .notification-item-copy {
   display: grid;
-  gap: 5px;
+  gap: 3px;
   min-width: 0;
 }
 
 .notification-item-title {
   color: var(--app-color-text);
-  font-size: 0.88rem;
-  font-weight: 800;
-  line-height: 1.25;
+  font-size: 0.87rem;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
-.notification-item-body,
-.notification-item-date {
-  color: var(--app-color-text-soft);
-  font-size: 0.79rem;
-  line-height: 1.35;
+.notification-item--unread .notification-item-title {
+  font-weight: 800;
 }
 
 .notification-item-body {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
   overflow-wrap: anywhere;
+  color: var(--app-color-text-soft);
+  font-size: 0.8rem;
+  line-height: 1.4;
 }
 
-.notification-item-meta {
+.notification-item-date {
+  margin-top: 2px;
+  color: var(--app-color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.notification-item--unread .notification-item-date {
+  color: var(--notif-accent-text);
+}
+
+.notification-unread-dot {
+  width: 9px;
+  height: 9px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--church-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--church-accent) 20%, transparent);
+}
+
+.notification-empty {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px;
+  padding: 28px 28px 24px;
+  border-top: 1px solid var(--app-color-border-subtle);
+  text-align: center;
 }
 
-.notification-unread-label {
-  color: var(--church-accent);
-  font-size: 0.7rem;
+.notification-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 10px;
+  border-radius: 16px;
+  background: var(--notif-accent-tint);
+  color: var(--notif-accent-text);
+}
+
+.notification-empty-title {
+  margin: 0;
+  font-size: 0.92rem;
   font-weight: 800;
-  letter-spacing: 0;
-  text-transform: uppercase;
+  color: var(--app-color-text);
 }
 
-.notification-list-empty {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--app-color-border);
+.notification-empty-body {
+  max-width: 250px;
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
   color: var(--app-color-text-muted);
 }
 
-.notification-settings {
+.notification-push {
+  --push-tone: var(--app-color-text-muted);
   display: grid;
-  gap: 5px;
-  padding: 12px;
-  border: 1px solid var(--app-color-border);
-  border-radius: 11px;
-  background: var(--app-color-background);
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 12px 0;
+  padding: 10px 10px 10px 12px;
+  border-radius: 14px;
+  background: var(--app-color-surface-soft);
+  border: 1px solid var(--app-color-border-subtle);
 }
 
-.notification-enable-btn {
-  background: var(--church-accent, #B5472A) !important;
-  color: #ffffff !important;
+.notification-push--on {
+  --push-tone: var(--app-color-success);
+}
+
+.notification-push--blocked {
+  --push-tone: var(--app-color-danger);
+}
+
+.notification-push-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--push-tone) 14%, var(--app-color-surface));
+  color: var(--push-tone);
+}
+
+.notification-push-icon::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--push-tone);
+  border: 2px solid var(--app-color-surface-soft);
+}
+
+.notification-push-copy {
+  min-width: 0;
+}
+
+.notification-push-title {
+  margin: 0;
+  font-size: 0.8rem;
   font-weight: 800;
+  color: var(--app-color-text);
+  line-height: 1.25;
 }
 
-.notification-enable-btn.v-btn--disabled {
-  background: color-mix(in srgb, var(--church-accent, #B5472A) 42%, #ffffff) !important;
+.notification-push-description {
+  margin: 2px 0 0;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: var(--app-color-text-muted);
+}
+
+.notification-push-action {
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+  color: var(--app-color-text-soft) !important;
+}
+
+.notification-push-action--primary {
+  background: var(--church-accent) !important;
   color: #ffffff !important;
 }
 
-.notification-title {
-  margin: 0 0 4px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--app-color-text) !important;
+.notification-footer {
+  display: flex;
+  justify-content: center;
+  padding: 8px 12px 10px;
 }
 
-.notification-settings-title {
-  margin: 0;
-  font-size: 0.86rem;
-  font-weight: 700;
-  color: var(--app-color-text) !important;
-}
-
-.notification-description,
-.notification-message {
-  margin: 0;
-  font-size: 0.84rem;
-  line-height: 1.35;
-  color: var(--app-color-text-muted) !important;
+.notification-see-all {
+  padding: 8px 12px;
 }
 
 @media (max-width: 600px) {
@@ -570,7 +766,7 @@ onMounted(async () => {
   }
 
   .notification-card {
-    width: min(360px, calc(100vw - 20px));
+    width: calc(100vw - 20px);
   }
 }
 </style>

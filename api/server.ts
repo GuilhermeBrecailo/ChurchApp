@@ -33,6 +33,7 @@ import { AttendanceRoutes } from "./src/interfaces/routes/AttendanceRoutes.ts";
 import { ServiceOccurrenceRoutes } from "./src/interfaces/routes/ServiceOccurrenceRoutes.ts";
 import { PastoralRoutes } from "./src/interfaces/routes/PastoralRoutes.ts";
 import TenantHandler from "./src/interfaces/plugins/TenantHandler.ts";
+import { registerRateLimit } from "./src/interfaces/plugins/RateLimit.ts";
 import { startMessageRuleScheduler } from "./src/infrastructure/whatsapp/messageRuleScheduler.ts";
 import { startBirthdayScheduler } from "./src/infrastructure/whatsapp/birthdayScheduler.ts";
 
@@ -63,6 +64,9 @@ await server.register(multipart, {
 
 // Registra a proteção antes do plugin estático, para que downloads em
 // /uploads/church/... também passem pela verificação de departamento.
+// Limite de tentativas nas rotas públicas de autenticação (precisa vir antes
+// das rotas; só vale onde a rota declara config.rateLimit).
+await registerRateLimit(server);
 await server.register(TenantHandler);
 
 await server.register(fastifyStatic, {

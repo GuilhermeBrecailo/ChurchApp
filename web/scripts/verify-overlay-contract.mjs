@@ -52,9 +52,10 @@ const longFormOverlays = [
   content: readFileSync(resolve(root, relativePath), "utf8"),
 }));
 
+// O acesso rápido do Início deixou de abrir o menu "Mais" (055388b); só a
+// barra inferior usa o MoreOptionsOverlay.
 const moreOptionsSources = [
   "app/components/layouts/bottomNavigation/index.vue",
-  "app/components/Dashboard/quickAccess/index.vue",
 ].map((relativePath) => ({
   relativePath,
   content: readFileSync(resolve(root, relativePath), "utf8"),
@@ -65,7 +66,6 @@ const moreOptionsComponent = existsSync(moreOptionsComponentPath)
   : "";
 const stableFilterOverlaySources = [
   "app/components/Ministery/SongPickerDialog.vue",
-  "app/components/Scale/SongPickerDialog.vue",
   "app/components/layouts/MoreOptionsOverlay.vue",
 ].map((relativePath) => ({
   relativePath,

@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { controllerHandler } from "../controllers/Handler";
 import { ChurchInviteAdapters } from "../adapters/churchInviteAdapters";
+import { authRateLimits } from "../plugins/RateLimit";
 
 export async function ChurchInviteRoutes(app: FastifyInstance) {
   const adapters = new ChurchInviteAdapters();
@@ -29,6 +30,7 @@ export async function ChurchInviteRoutes(app: FastifyInstance) {
 
   app.post(
     "/public/church/invite/:code/register",
+    { config: { rateLimit: authRateLimits.inviteRegister } },
     controllerHandler(adapters.registerByCode.bind(adapters)),
   );
 }

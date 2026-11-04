@@ -1,0 +1,134 @@
+name: CI
+
+# Roda em todo PR (e pode ser disparado manualmente). O deploy continua no
+# deploy.yml, só no push para a main — este workflow é a checagem ANTES do
+# merge, para erro de build/teste não chegar em produção.
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API (lint, tipos, testes)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tipos (gera o Prisma Client antes)
+        run: npm run typecheck
+
+      - name: Testes
+        run: npm run test:ci
+
+  web:
+    name: Web (testes, contratos, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Testes
+        run: npm test
+
+      - name: Contratos de UI (overlays e cuidado pastoral)
+        run: npm run verify
+
+      - name: Build
+        run: npm run build
+
+  screenshots:
+    name: Prints das telas
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: web
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Instalar Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      # A API é simulada pelo próprio script (respostas para http://mock.local),
+      # então não precisa de banco, Keycloak nem segredos.
+      - name: Subir o app
+        env:
+          NUXT_PUBLIC_URL_BACKEND: http://mock.local
+          NUXT_API_INTERNAL_BASE: http://mock.local
+          PORT: 3000
+        run: |
+          node .output/server/index.mjs > server.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            curl -sf -o /dev/null http://localhost:3000/login && exit 0
+            sleep 2
+          done
+          echo "O app não respondeu em 60s" >&2
+          cat server.log >&2
+          exit 1
+
+      - name: Capturar telas
+        run: npm run screenshots
+
+      - name: Resumo no PR
+        if: always()
+        run: |
+          if [ -f screenshots/report.md ]; then
+            cat screenshots/report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Publicar prints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prints-das-telas
+          path: web/screenshots/
+          retention-days: 14
+          if-no-files-found: warn

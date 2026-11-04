@@ -21,7 +21,7 @@
 
       <div class="d-flex align-start ga-3 mb-4">
         <v-avatar class="confirm-icon" size="42">
-          <Trash2 size="20" color="var(--app-color-danger)" />
+          <component :is="icon || Trash2" size="20" color="var(--app-color-danger)" />
         </v-avatar>
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
@@ -80,6 +80,11 @@ defineProps({
   loading: {
     type: Boolean,
     default: false,
+  },
+  /** Ícone do cabeçalho (lucide). Padrão: lixeira, para exclusões. */
+  icon: {
+    type: [Object, Function],
+    default: null,
   },
 });
 

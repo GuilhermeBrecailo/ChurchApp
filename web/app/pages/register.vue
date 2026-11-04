@@ -631,9 +631,13 @@ const handleRegister = async () => {
   font-size: 0.95rem;
 }
 
-:global(.app-theme-dark) .auth-input :deep(input:-webkit-autofill),
-:global(.app-theme-dark) .auth-input :deep(input:-webkit-autofill:hover),
-:global(.app-theme-dark) .auth-input :deep(input:-webkit-autofill:focus) {
+/* Seletor inteiro dentro de :global(): com ":global(.app-theme-dark) .auth-input"
+   o compilador do Vue descartava o resto e a regra virava ".app-theme-dark {}",
+   pintando TODO texto do app no tema escuro com a cor padrão (abas ativas,
+   links e avisos perdiam a cor) e aplicando uma sombra interna na raiz. */
+:global(.app-theme-dark .auth-input input:-webkit-autofill),
+:global(.app-theme-dark .auth-input input:-webkit-autofill:hover),
+:global(.app-theme-dark .auth-input input:-webkit-autofill:focus) {
   -webkit-box-shadow: 0 0 0 1000px var(--app-color-surface-soft) inset !important;
   -webkit-text-fill-color: var(--app-color-text) !important;
   caret-color: var(--app-color-text);
@@ -645,7 +649,7 @@ const handleRegister = async () => {
   letter-spacing: 0.01em !important;
 }
 
-:global(.app-theme-dark) .auth-btn.bg-primary {
+:global(.app-theme-dark .auth-btn.bg-primary) {
   box-shadow: 0 4px 16px rgba(240, 151, 90, 0.3) !important;
 }
 

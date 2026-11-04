@@ -38,27 +38,7 @@
       {{ departmentsError }}
     </v-alert>
 
-    <div class="hub-list">
-      <NuxtLink
-        v-for="item in visibleAdminHubItems"
-        :key="item.route"
-        :to="item.route"
-        class="member-card app-surface app-interactive-surface pa-3 text-decoration-none"
-        :aria-label="`Abrir ${item.title}`"
-        :style="{ '--hub-icon': item.iconColor }"
-      >
-        <v-avatar size="44" class="member-avatar admin-hub-avatar">
-          <component :is="item.icon" size="20" />
-        </v-avatar>
-        <div class="member-copy">
-          <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">{{ item.title }}</h3>
-          <p class="text-caption text-grey-darken-1 mb-0">{{ item.description }}</p>
-        </div>
-        <ChevronRight size="18" class="member-chevron" />
-      </NuxtLink>
-    </div>
-
-    <div class="stats-grid church-stats-grid mb-6">
+    <div class="stats-grid church-stats-grid mb-5">
       <AdminStatCard
         title="Membros"
         :value="members.length"
@@ -88,6 +68,27 @@
         bgColor="#FEFCE8"
       />
     </div>
+
+    <div class="hub-list">
+      <NuxtLink
+        v-for="item in visibleAdminHubItems"
+        :key="item.route"
+        :to="item.route"
+        class="member-card app-surface app-interactive-surface pa-3 text-decoration-none"
+        :aria-label="`Abrir ${item.title}`"
+        :style="{ '--hub-icon': item.iconColor }"
+      >
+        <v-avatar size="44" class="member-avatar admin-hub-avatar">
+          <component :is="item.icon" size="20" />
+        </v-avatar>
+        <div class="member-copy">
+          <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">{{ item.title }}</h3>
+          <p class="text-caption text-grey-darken-1 mb-0">{{ item.description }}</p>
+        </div>
+        <ChevronRight size="18" class="member-chevron" />
+      </NuxtLink>
+    </div>
+
   </div>
 
   <div v-else class="pa-4 app-operational-page min-vh-100 pb-20">
@@ -275,9 +276,9 @@ onMounted(async () => {
 }
 
 .hub-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 10px;
   margin-bottom: 24px;
 }
 
@@ -305,11 +306,21 @@ onMounted(async () => {
 }
 
 .member-avatar {
-  align-self: start;
+  align-self: center;
 }
 
 .member-copy {
+  display: grid;
+  gap: 2px;
   min-width: 0;
+}
+
+.member-copy h3 {
+  line-height: 1.3 !important;
+}
+
+.member-copy p {
+  line-height: 1.4 !important;
 }
 
 .member-copy h3,

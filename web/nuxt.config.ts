@@ -28,6 +28,9 @@ export default defineNuxtConfig({
   // modulo gera loc relativo e o Google rejeita as entradas.
   site: {
     url: process.env.NUXT_PUBLIC_SITE_URL || "https://churchapp.site",
+    // O nuxt-site-config (via @nuxtjs/sitemap) escreve o <html lang> a partir
+    // daqui; o padrão "en" sobrescrevia o htmlAttrs de app.head.
+    defaultLocale: "pt-BR",
   },
   sitemap: {
     exclude: [
@@ -84,6 +87,13 @@ export default defineNuxtConfig({
   },
   vuetify: {
     vuetifyOptions: {
+      // Textos internos dos componentes (tabela vazia, paginação, "Fechar"...)
+      // em português — sem isto apareciam "No data available"/"Items per page".
+      locale: {
+        locale: "pt",
+        fallback: "en",
+      },
+      localeMessages: ["pt"],
       theme: {
         defaultTheme: "light",
         themes: {
@@ -101,9 +111,12 @@ export default defineNuxtConfig({
             dark: true,
             colors: {
               primary: "#f0975a",
+              // Texto escuro sobre o laranja claro do tema escuro: branco em
+              // #f0975a dá ~2.3:1 de contraste (ilegível em "Salvar Perfil").
+              "on-primary": "#1f1410",
               secondary: "#5eead4",
-              background: "#0d1117",
-              surface: "#151b23",
+              background: "#12100e",
+              surface: "#1b1815",
               error: "#f87171",
             },
           },
@@ -113,6 +126,9 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
+      // Idioma da página: leitores de tela, tradução automática e hifenização
+      // do navegador usam isso. Sem ele o documento era tratado como sem idioma.
+      htmlAttrs: { lang: "pt-BR" },
       title: "ChurchApp",
       meta: [
         { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },

@@ -18,8 +18,8 @@
 
         <v-card class="rounded-xl pa-5 mb-4 elevation-1 invite-join-card">
           <div class="d-flex align-center gap-3 mb-4">
-            <v-avatar size="40" color="#f7e2d3">
-              <QrCode size="20" color="#B5472A" />
+            <v-avatar size="40" class="accent-avatar">
+              <QrCode size="20" />
             </v-avatar>
             <div>
               <p class="font-weight-bold mb-0" style="font-size:0.95rem;color:#111827;">Tenho um código de convite</p>

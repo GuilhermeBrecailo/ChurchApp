@@ -11,6 +11,23 @@
  * original) aplicada no app inteiro — ver openspec/changes se existir
  * changelog, ou histórico de commits "redesign visual".
  */
+
+/* Ordem dos layers do Vuetify 4, declarada aqui para não depender da ordem em
+   que os CSS são carregados. Regras fora de layer (o resto deste arquivo)
+   vencem qualquer layer; por isso resets e tipografia de compatibilidade abaixo
+   ficam DENTRO dos layers do Vuetify — assim mb-*, font-weight-* etc.
+   (vuetify-utilities.helpers) continuam podendo sobrescrevê-los. */
+@layer vuetify-core, vuetify-components, vuetify-overrides, vuetify-utilities, vuetify-final;
+@layer vuetify-core {
+  @layer reset, base;
+}
+@layer vuetify-utilities {
+  @layer theme-base, typography, helpers, theme-background, theme-foreground;
+}
+@layer vuetify-final {
+  @layer transitions, trumps;
+}
+
 :root {
   color-scheme: light;
   --app-color-accent: #b5472a;
@@ -89,15 +106,110 @@ body,
   letter-spacing: -0.01em;
 }
 
-/* O navegador aplica margin-top/bottom padrao em h1-h6 por conta propria.
-   Todo espacamento de titulo no app ja e explicito via classes Vuetify
-   (mb-1, mb-2, mb-4...), entao essa margem nativa nunca e o espacamento
-   desejado - so sobra como resto que desalinha titulo+icone em flex rows
-   (o icone fica centralizado na caixa cheia, o texto empurrado pela
-   margem que ninguem pediu). Zerando na raiz em vez de remendar caso a
-   caso. */
-h1, h2, h3, h4, h5, h6 {
-  margin: 0;
+/* O navegador aplica margem nativa em h1-h6 e <p>. Todo espaçamento de texto
+   no app já é explícito via classes Vuetify (mb-1, mb-2, mb-4...), então essa
+   margem nativa nunca é a desejada - só desalinha título+ícone em flex rows e
+   descola linhas (ex.: "Membros" longe do número no card de estatística).
+   O Vuetify 3 zerava isso no reset; o Vuetify 4 não. Fica no layer de reset
+   do Vuetify para que as classes de margem (vuetify-utilities.helpers) ainda
+   vençam - fora de layer, este reset anulava todo mb-x/mt-x em títulos. */
+@layer vuetify-core.reset {
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+/* ============================================================
+   TIPOGRAFIA — compatibilidade com as classes do Vuetify 3
+   O Vuetify 4 trocou a escala MD2 (text-h5, text-subtitle-2, text-body-2,
+   text-caption...) pela MD3 (text-headline-*, text-title-*, text-body-*,
+   text-label-*) e REMOVEU as classes antigas. O app usa as antigas em ~600
+   lugares, que viraram no-op: <h1> caía nos 32px nativos, <h3> em 18.7px e
+   text-caption (legenda, 12px) saía com 16px. Estas regras restauram a
+   escala para a qual as telas foram desenhadas.
+   ============================================================ */
+@layer vuetify-utilities.typography {
+  .text-h4 {
+    font-size: 2.125rem;
+    font-weight: 400;
+    line-height: 1.18;
+    letter-spacing: 0.0073529412em;
+  }
+
+  .text-h5 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    line-height: 1.33;
+    letter-spacing: normal;
+  }
+
+  .text-h6 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0.0125em;
+  }
+
+  .text-subtitle-1 {
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0.009375em;
+  }
+
+  .text-subtitle-2 {
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.43;
+    letter-spacing: 0.0071428571em;
+  }
+
+  .text-body-1 {
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0.03125em;
+  }
+
+  .text-body-2 {
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.43;
+    letter-spacing: 0.0178571429em;
+  }
+
+  /* 13px em vez dos 12px do MD2: legendas em cinza a 12px ficavam difíceis
+     de ler para parte do público (pessoas mais velhas, telas pequenas). */
+  .text-caption {
+    font-size: 0.8125rem;
+    font-weight: 400;
+    line-height: 1.4;
+    letter-spacing: 0.0333333333em;
+  }
+
+  /* Títulos (h1-h6) sempre foram negrito pelo padrão do navegador; a classe de
+     tamanho não deve deixá-los com peso 400. font-weight-* explícito ainda vence. */
+  :is(h1, h2, h3, h4, h5, h6):is(
+      .text-h4,
+      .text-h5,
+      .text-h6,
+      .text-subtitle-1,
+      .text-subtitle-2
+    ) {
+    font-weight: 700;
+  }
+
+  .text-button {
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.43;
+    letter-spacing: 0.0892857143em;
+    text-transform: uppercase;
+  }
 }
 
 /* Transições globais suaves */
@@ -128,63 +240,64 @@ body {
    ============================================================ */
 .app-theme-dark {
   color-scheme: dark;
+  /*
+   * PALETA ESCURA "TERRACOTA À NOITE"
+   * A versão anterior usava os neutros frios/azulados do GitHub (#0d1117,
+   * #161b22, superfícies #1c2433) junto com o terracota quente e tons
+   * marrons da marca — frio + quente juntos deixavam o tema "sujo", e as
+   * bordas cinza-azuladas fortes davam cara de caixa a todo cartão.
+   * Agora os neutros são quentes (carvão com um toque de marrom), a
+   * profundidade vem de degraus de superfície (fundo < cartão < cartão
+   * elevado) e as bordas ficam sutis; o contorno forte fica só nos campos,
+   * onde precisa ser visto para operar (≥3:1).
+   */
   --app-color-accent: #f0975a;
-  --app-color-accent-soft: #f0a875;
-  --app-color-accent-muted: #f6c7a1;
-  --app-color-accent-tint: #3a2a20;
-  --app-color-background: #0d1117;
-  --app-color-surface: #161b22;
-  --app-color-surface-soft: #1c2433;
-  --app-color-surface-muted: #33241a;
+  --app-color-accent-soft: #f4ab78;
+  --app-color-accent-muted: #f8c9a4;
+  --app-color-accent-tint: #33231a;
+  --app-color-background: #12100e;
+  --app-color-surface: #1b1815;
+  --app-color-surface-soft: #23201c;
+  --app-color-surface-muted: #2e2219;
+  --app-color-border: #3a342f;
+  --app-color-border-strong: #5c534c;
+  --app-color-input-border: #81776f;
+  --app-color-input-label: #ddd4ca;
+  --app-color-text: #f4eee8;
+  --app-color-text-soft: #cdc2b7;
+  --app-color-text-muted: #a0948a;
+  --app-color-border-subtle: #2c2824;
   /*
-   * border/border-strong originais (#30363d / #484f58) mediam ~1.4:1 e ~2.1:1
-   * de contraste contra --app-color-surface — abaixo do que um olho humano
-   * percebe como "borda visível". Cartões e campos de formulário ficavam
-   * praticamente sem contorno no dark mode. Valores abaixo miram ~2.3:1
-   * (separação sutil de cartão) e ~3.5-4:1 (contorno de input, precisa
-   * ser percebido para operar o campo).
+   * Sombra preta sobre fundo quase preto não cria profundidade perceptível —
+   * a elevação vem principalmente dos degraus de superfície; a sombra é só
+   * reforço.
    */
-  --app-color-border: #4a5461;
-  --app-color-border-strong: #6a7786;
-  --app-color-input-border: #aeb8c4;
-  --app-color-input-label: #d5dce5;
-  --app-color-text: #e6edf3;
-  --app-color-text-soft: #b1bac4;
-  --app-color-text-muted: #8b949e;
-  --app-color-border-subtle: #303946;
-  /*
-   * Sombra preta sobre fundo quase preto (#0d1117) não cria profundidade
-   * perceptível — por isso a elevação aqui depende principalmente do
-   * degradê surface > surface-soft > background e das bordas acima; a
-   * sombra é só um reforço, com opacidade um pouco maior que o padrão
-   * do Vuetify para ainda contribuir com alguma leitura de profundidade.
-   */
-  --app-shadow-sm: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.26);
-  --app-shadow-md: 0 4px 16px rgba(0,0,0,0.52), 0 2px 6px rgba(0,0,0,0.32);
-  --app-shadow-lg: 0 12px 32px rgba(0,0,0,0.62), 0 4px 12px rgba(0,0,0,0.4);
-  --app-shadow-hover: 0 8px 22px rgba(0,0,0,0.46), 0 2px 8px rgba(0,0,0,0.32);
-  --app-shadow-accent: 0 8px 24px rgba(240,151,90,0.3);
+  --app-shadow-sm: 0 1px 2px rgba(0,0,0,0.45), 0 1px 1px rgba(0,0,0,0.3);
+  --app-shadow-md: 0 6px 18px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.32);
+  --app-shadow-lg: 0 16px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4);
+  --app-shadow-hover: 0 10px 26px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.34);
+  --app-shadow-accent: 0 8px 24px rgba(240,151,90,0.22);
 
-  /* Paleta semântica "success" no dark — mesmo valor já usado em text-teal-darken-2 */
-  --app-color-success: #2dd4bf;
-  --app-color-success-soft: #5eead4;
-  --app-color-success-tint: rgba(45, 212, 191, 0.14);
+  /* Paleta semântica "success" no dark */
+  --app-color-success: #3fd4b8;
+  --app-color-success-soft: #6ee7cf;
+  --app-color-success-tint: rgba(63, 212, 184, 0.13);
 
-  /* Shell (AppBar / BottomNav) no dark — ver comentário no bloco :root */
-  --app-color-appbar-bg: rgba(21, 27, 35, 0.88);
-  --app-color-appbar-border: rgba(45, 55, 70, 0.6);
-  --app-color-shell-bg: rgba(21, 27, 35, 0.92);
-  --app-color-shell-border: rgba(45, 55, 70, 0.5);
+  /* Shell (AppBar / BottomNav / barra lateral) no dark — vidro quente */
+  --app-color-appbar-bg: rgba(27, 24, 21, 0.86);
+  --app-color-appbar-border: rgba(255, 236, 220, 0.07);
+  --app-color-shell-bg: rgba(24, 21, 19, 0.94);
+  --app-color-shell-border: rgba(255, 236, 220, 0.07);
 
-  /* Paleta semântica "warning" no dark — mesmo padrão de conversão do accent/success */
+  /* Paleta semântica "warning" no dark */
   --app-color-warning: #fbbf24;
   --app-color-warning-soft: #fcd34d;
-  --app-color-warning-tint: rgba(180, 83, 9, 0.16);
+  --app-color-warning-tint: rgba(251, 191, 36, 0.12);
 
   /* Paleta semântica "danger" no dark */
   --app-color-danger: #f87171;
   --app-color-danger-soft: #fca5a5;
-  --app-color-danger-tint: rgba(185, 28, 28, 0.16);
+  --app-color-danger-tint: rgba(248, 113, 113, 0.12);
 }
 
 .app-theme-light,
@@ -210,7 +323,57 @@ body {
 }
 
 .app-page-header-copy {
+  flex: 1 1 auto;
   min-width: 0;
+}
+
+/* ============================================================
+   DESKTOP — coluna de leitura
+   Páginas de formulário e leitura (perfil, cadastro, oração, notificações,
+   Bíblia, devocional...) ficavam esticadas em ~1050px no desktop: rótulo de
+   um lado e valor do outro, campos enormes, botões de largura total. Com
+   .app-page--narrow o conteúdo fica numa coluna de 880px centralizada; no
+   celular nada muda (a coluna é mais larga que a tela).
+   ============================================================ */
+.app-page--narrow {
+  width: 100%;
+  max-width: 880px;
+  margin-inline: auto;
+}
+
+/* Listas de cards (escalas, cultos, devocionais, visitas, playlist): uma
+   coluna no celular, duas no desktop. align-items: start para um card que
+   expande não esticar o vizinho da mesma linha. */
+.app-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  align-items: start;
+  gap: 12px;
+}
+
+/* Títulos de página: no Vuetify 4 o text-h5 tem 32px, grande demais para o
+   celular (quebrava "Visitas pastorais", "Pedidos de Oração" em duas linhas e
+   espremia os botões ao lado). Escala fluida: ~25px no celular, 32px no desktop. */
+h1.text-h5 {
+  font-size: clamp(1.5rem, 1.1rem + 2vw, 2rem) !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.02em !important;
+}
+
+@media (max-width: 600px) {
+  /* Cabeçalho com ação: o texto ocupa a linha e o botão desce para baixo,
+     em vez de dividir a largura e quebrar o subtítulo em 4 linhas. */
+  .app-page-header {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .app-page-header-copy {
+    /* min-width (e não flex-basis) para funcionar também em páginas que
+       empilham o cabeçalho em coluna — lá o basis viraria altura. */
+    flex: 1 1 auto;
+    min-width: min(100%, 240px);
+  }
 }
 
 .app-operational-page .app-page-title {
@@ -410,6 +573,15 @@ body {
   opacity: 1;
 }
 
+/* O Vuetify esconde o placeholder enquanto o label ainda está dentro do campo
+   (campo vazio e sem foco). Sem isto, o opacity: 1 acima vencia essa regra e o
+   label ficava por cima do texto de exemplo (ex.: "Título" em Novo pedido). */
+:where(.app-operational-page, .responsive-overlay)
+  .v-field:not(.v-field--no-label, .v-field--active)
+  :is(input, textarea)::placeholder {
+  opacity: 0;
+}
+
 :where(.app-operational-page, .responsive-overlay) .v-field__prepend-inner,
 :where(.app-operational-page, .responsive-overlay) .v-field__append-inner {
   color: var(--app-color-text-soft);
@@ -460,15 +632,83 @@ body {
   border-radius: var(--app-control-radius);
 }
 
+/* ============================================================
+   SELETOR SEGMENTADO — padrão único para abas e filtros
+   Antes havia 4 estilos (abas sublinhadas, botões vermelhos cheios, chips
+   contornados e o segmentado). Agora: trilho claro com borda, item ativo em
+   superfície branca + sombra + texto terracota. Vale para v-tabs,
+   v-btn-toggle (regra abaixo) e grupos de botões com a classe .app-segmented.
+   ============================================================ */
+.app-segmented,
 :where(.app-operational-page, .responsive-overlay) .v-tabs {
-  --v-tabs-height: 44px;
+  display: inline-flex;
+  gap: 4px;
+  max-width: 100%;
+  padding: 4px;
+  border: 1px solid var(--app-color-border);
+  border-radius: var(--app-control-radius);
+  background: var(--app-color-surface-soft);
 }
 
+/* v-tabs já rola sozinho (slide-group); só o grupo customizado precisa disso. */
+.app-segmented {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-segmented::-webkit-scrollbar {
+  display: none;
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-tabs {
+  --v-tabs-height: 36px;
+  height: auto !important;
+}
+
+.app-segmented > .v-btn,
+.app-segmented > button,
 :where(.app-operational-page, .responsive-overlay) .v-tab {
+  flex: 0 0 auto;
   min-width: 0;
-  border-radius: var(--app-control-radius) var(--app-control-radius) 0 0;
+  min-height: var(--app-control-height-compact, 36px);
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--app-color-text-soft) !important;
   font-weight: 700;
   text-transform: none;
+  letter-spacing: 0;
+  box-shadow: none !important;
+}
+
+.app-segmented > .v-btn.app-segmented--active,
+.app-segmented > button.app-segmented--active,
+:where(.app-operational-page, .responsive-overlay) .v-tab.v-tab--selected {
+  background: var(--app-color-surface) !important;
+  color: var(--app-color-accent) !important;
+  box-shadow: var(--app-shadow-sm) !important;
+}
+
+:where(.app-operational-page, .responsive-overlay) .v-tab .v-tab__slider {
+  display: none;
+}
+
+.app-segmented > button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 0;
+  font-size: 0.875rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.app-segmented > button:focus-visible,
+.app-segmented > .v-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--app-focus-ring) !important;
 }
 
 :where(.app-operational-page, .responsive-overlay) .v-btn-toggle {
@@ -514,6 +754,12 @@ body {
 .more-options-row:focus-visible {
   outline: none;
   box-shadow: var(--app-focus-ring);
+}
+
+/* Dentro de um v-field o anel de foco já é desenhado no próprio campo
+   (.v-field--focused); repetir no <input> interno criava uma borda dupla. */
+.v-field :is(input, textarea, select):focus-visible {
+  box-shadow: none;
 }
 
 :where(.app-operational-page, .responsive-overlay, .more-options-list) {
@@ -615,7 +861,7 @@ body {
 }
 
 .app-theme-dark .auth-promo {
-  background: #0d1117 !important;
+  background: var(--app-color-background) !important;
 }
 
 .app-theme-dark .auth-icon-circle {
@@ -659,9 +905,11 @@ body {
 .app-theme-dark .v-toolbar,
 .app-theme-dark .appbar,
 .app-theme-dark .bottom-nav {
-  background-color: rgba(22, 27, 34, 0.95) !important;
+  background-color: var(--app-color-appbar-bg) !important;
   color: var(--app-color-text) !important;
-  border-color: var(--app-color-border) !important;
+  border-color: var(--app-color-appbar-border) !important;
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
 }
 
 /* ============================================================
@@ -939,11 +1187,11 @@ body {
 }
 
 .app-theme-dark .filter-strip::before {
-  background: linear-gradient(90deg, var(--app-color-background) 0%, rgba(13, 17, 23, 0) 100%) !important;
+  background: linear-gradient(90deg, var(--app-color-background) 0%, transparent 100%) !important;
 }
 
 .app-theme-dark .filter-strip::after {
-  background: linear-gradient(270deg, var(--app-color-background) 0%, rgba(13, 17, 23, 0) 100%) !important;
+  background: linear-gradient(270deg, var(--app-color-background) 0%, transparent 100%) !important;
 }
 
 .app-theme-dark .scale-song-card-active {
@@ -1051,6 +1299,26 @@ body {
   border-radius: var(--app-overlay-sheet-radius) var(--app-overlay-sheet-radius) 0 0 !important;
 }
 
+/* Alça no topo do bottom sheet: o sinal visual de "painel que desliza" que o
+   usuário espera de um app nativo. Puramente decorativa. */
+.responsive-bottom-sheet .v-bottom-sheet__content {
+  position: relative;
+}
+
+.responsive-bottom-sheet .v-bottom-sheet__content::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  z-index: 2;
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--app-color-border-strong);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
 .scale-select-menu {
   z-index: 2500 !important;
 }
@@ -1112,6 +1380,14 @@ body {
 
 .responsive-overlay--fullscreen .v-overlay__content > .v-card {
   border-radius: 0 !important;
+}
+
+/* O v-input do Vuetify tem flex: 1 1 auto. Num overlay de altura fixa
+   (fullscreen no celular) o card é flex-column e os campos cresciam para
+   preencher a tela — "Título" em Novo pedido virava uma caixa de 200px. */
+.responsive-overlay .v-overlay__content > .v-card > .v-input,
+.responsive-overlay .v-overlay__content > .v-card > form > .v-input {
+  flex: 0 0 auto;
 }
 
 .responsive-overlay--form .dialog-actions,
@@ -1323,5 +1599,242 @@ body {
   .marketing-page .marketing-button:hover,
   .marketing-page .marketing-button:focus-visible {
     transform: none;
+  }
+}
+
+/* Link dentro de alertas/avisos que leva direto para a aba certa das
+   Configurações (ex.: "Conectar em Configurações › WhatsApp"). */
+.config-inline-link {
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Ícones neutros (estado vazio, setas de lista) seguindo o tema, em vez de
+   hex fixos diferentes para claro/escuro em cada componente. */
+.empty-state-icon,
+.upcoming-chevron {
+  color: var(--app-color-text-muted);
+}
+
+/* Avatar/ícone de destaque (cabeçalho de modais e cartões): tom de terracota
+   que acompanha o tema, em vez de #F7E2D3 fixo (rosa-claro gritante no escuro). */
+.accent-avatar {
+  background: var(--app-color-accent-tint) !important;
+  color: var(--app-color-accent) !important;
+}
+
+/* ============================================================
+   MOTION — animações globais
+   Tudo aqui é CSS puro e curto (≤ 450ms), com easing "emphasized" do
+   design system. Desligado por completo em prefers-reduced-motion (bloco
+   no fim). animation-fill-mode: backwards — o estado inicial vale só
+   durante o atraso; depois que a animação termina os estilos normais
+   (hover, transform de cards) voltam a valer.
+   ============================================================ */
+@keyframes app-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes app-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes app-bell-ring {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-12deg); }
+  45% { transform: rotate(8deg); }
+  60% { transform: rotate(-5deg); }
+  75% { transform: rotate(2deg); }
+}
+
+@keyframes app-spin-in {
+  from {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Entrada em cascata dos itens de listas e grades: cada card aparece um
+   pouco depois do anterior (40ms), até o 10º; o resto entra junto. */
+:is(
+    .app-card-grid,
+    .hub-list,
+    .content-grid,
+    .stats-grid,
+    .people-list,
+    .visit-grid,
+    .cultos-list,
+    .devotional-grid,
+    .playlist-grid,
+    .notif-list,
+    .notification-list,
+    .more-options-group-list,
+    .ministery-grid
+  ) > * {
+  animation: app-rise 380ms var(--app-motion-ease-emphasized) backwards;
+}
+
+:is(
+    .app-card-grid,
+    .hub-list,
+    .content-grid,
+    .stats-grid,
+    .people-list,
+    .visit-grid,
+    .cultos-list,
+    .devotional-grid,
+    .playlist-grid,
+    .notif-list,
+    .notification-list,
+    .more-options-group-list,
+    .ministery-grid
+  ) > :nth-child(2) { animation-delay: 40ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(3) { animation-delay: 80ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(4) { animation-delay: 120ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(5) { animation-delay: 160ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(6) { animation-delay: 200ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(7) { animation-delay: 240ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(8) { animation-delay: 280ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(9) { animation-delay: 320ms; }
+:is(.app-card-grid, .hub-list, .content-grid, .stats-grid, .people-list, .visit-grid, .cultos-list, .devotional-grid, .playlist-grid, .notif-list, .notification-list, .more-options-group-list, .ministery-grid) > :nth-child(n + 10) { animation-delay: 360ms; }
+
+/* Estados vazios: o ícone "aparece" com um leve salto. */
+:is(.empty-state-icon, .notif-empty-icon, .notification-empty-icon) {
+  animation: app-pop 450ms var(--app-motion-ease-emphasized) 120ms backwards;
+}
+
+/* Seletor segmentado e chips: troca de item ativo suave. */
+.app-segmented > *,
+:where(.app-operational-page, .responsive-overlay) .v-tab,
+:where(.app-operational-page, .responsive-overlay) .v-btn-toggle .v-btn {
+  transition:
+    background-color var(--app-motion-duration-base) var(--app-motion-ease-standard),
+    color var(--app-motion-duration-base) var(--app-motion-ease-standard),
+    box-shadow var(--app-motion-duration-base) var(--app-motion-ease-standard),
+    transform var(--app-motion-duration-fast) var(--app-motion-ease-standard) !important;
+}
+
+/* Toque: tudo que é clicável "afunda" um pouco ao pressionar — o retorno
+   tátil que faz o app parecer responsivo no celular. */
+:is(
+    .app-segmented > *,
+    .side-nav-link,
+    .more-options-row,
+    .more-options-chip,
+    .notification-item,
+    .notif-item,
+    .content-card-link,
+    .member-card
+  ):active {
+  transform: scale(0.98);
+}
+
+.side-nav-link,
+.more-options-row,
+.more-options-chip,
+.content-card-link {
+  transition:
+    background-color var(--app-motion-duration-fast) ease,
+    color var(--app-motion-duration-fast) ease,
+    transform var(--app-motion-duration-fast) var(--app-motion-ease-standard);
+}
+
+/* Cards clicáveis sobem um pouco e ganham sombra ao passar o mouse
+   (só em dispositivos com mouse, para não "grudar" o hover no toque). */
+@media (hover: hover) {
+  .app-interactive-surface:hover,
+  .content-card-link:hover > .v-card {
+    box-shadow: var(--app-shadow-hover) !important;
+  }
+
+  .content-card-link > .v-card {
+    transition:
+      transform var(--app-motion-duration-fast) var(--app-motion-ease-standard),
+      box-shadow var(--app-motion-duration-fast) ease;
+  }
+
+  .content-card-link:hover > .v-card {
+    transform: translateY(-2px);
+  }
+}
+
+/* Barra inferior: o ícone do item ativo dá um pequeno salto ao ser
+   selecionado (a animação roda quando a classe ativa entra). */
+.bottom-nav .v-btn--active .nav-icon {
+  animation: app-pop 360ms var(--app-motion-ease-emphasized);
+}
+
+/* Sino com notificações não lidas balança uma vez ao aparecer. */
+.notification-trigger--unread .v-badge > svg,
+.notification-trigger--unread .v-badge__wrapper > svg {
+  transform-origin: 50% 10%;
+  animation: app-bell-ring 900ms ease-in-out 400ms 1;
+}
+
+/* Botão de tema: sol/lua entram girando na troca. */
+.theme-toggle-btn svg {
+  animation: app-spin-in 420ms var(--app-motion-ease-emphasized);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(
+      .app-card-grid,
+      .hub-list,
+      .content-grid,
+      .stats-grid,
+      .people-list,
+      .visit-grid,
+      .cultos-list,
+      .devotional-grid,
+      .playlist-grid,
+      .notif-list,
+      .notification-list,
+      .more-options-group-list,
+      .ministery-grid
+    ) > *,
+  :is(.empty-state-icon, .notif-empty-icon, .notification-empty-icon),
+  .bottom-nav .v-btn--active .nav-icon,
+  .notification-trigger--unread .v-badge > svg,
+  .notification-trigger--unread .v-badge__wrapper > svg,
+  .theme-toggle-btn svg {
+    animation: none !important;
+  }
+
+  :is(
+      .app-segmented > *,
+      .side-nav-link,
+      .more-options-row,
+      .more-options-chip,
+      .notification-item,
+      .notif-item,
+      .content-card-link,
+      .member-card
+    ):active,
+  .content-card-link:hover > .v-card {
+    transform: none !important;
   }
 }

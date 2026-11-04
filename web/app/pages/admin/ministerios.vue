@@ -280,7 +280,7 @@
             </p>
           </div>
           <div>
-            <p class="text-caption text-grey-darken-1 mb-1">Status</p>
+            <p class="text-caption text-grey-darken-1 mb-1">Situação</p>
             <v-chip
               size="small"
               :color="selectedChurchDepartment.isActive ? 'teal-darken-2' : 'grey'"

@@ -21,6 +21,7 @@
   <LayoutsMoreOptionsOverlay
     v-model="showMore"
     :items="moreItems"
+    :pinned-keys="bottomBarKeys"
     :subtitle="moreSubtitle"
     @select="handleMoreSelect"
   />
@@ -61,6 +62,9 @@ const route = useRoute();
 
 const navigationItems = computed(() => getBottomNavigationItems(user.value));
 const moreItems = computed(() => getMoreNavigationItems(user.value));
+const bottomBarKeys = computed(() =>
+  navigationItems.value.map((entry) => entry.key).filter((key) => key !== "more"),
+);
 const showMore = ref(false);
 const moreSubtitle = computed(() =>
   user.value?.is_admin === true || user.value?.role === "PASTOR"
@@ -87,7 +91,13 @@ const iconComponents: Record<RoleNavigationIcon, unknown> = {
 
 const isItemActive = (item: RoleNavigationItem) => {
   if (item.key === "more") {
-    return moreItems.value.some((entry) => isNavigationItemActive(entry, route.path));
+    // O menu "Mais" repete atalhos que já estão na barra (Início, Escalas...):
+    // só destaca "Mais" quando nenhum item visível da barra já está ativo.
+    const primaryActive = navigationItems.value.some(
+      (entry) => entry.key !== "more" && isNavigationItemActive(entry, route.path),
+    );
+
+    return !primaryActive && moreItems.value.some((entry) => isNavigationItemActive(entry, route.path));
   }
 
   return isNavigationItemActive(item, route.path);
@@ -200,7 +210,9 @@ const handleMoreSelect = (route: string) => {
   }
 
   .nav-label {
-    font-size: 0.62rem;
+    /* 390px é a largura da maioria dos iPhones: 0.62rem (~10px) era pequeno
+       demais para ler o nome da aba. */
+    font-size: 0.68rem;
   }
 
   .nav-icon {

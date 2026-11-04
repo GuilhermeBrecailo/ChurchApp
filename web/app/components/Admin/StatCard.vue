@@ -1,17 +1,16 @@
 <template>
-  <v-card class="stat-card app-surface pa-3 d-flex flex-column">
-    <v-avatar size="40" :color="computedBgColor" class="mb-3 rounded-lg">
+  <v-card class="stat-card app-surface pa-3">
+    <v-avatar size="40" :color="computedBgColor" class="rounded-lg flex-shrink-0">
       <component :is="icon" size="20" :color="computedIconColor" />
     </v-avatar>
-    <h2
-      class="text-h5 font-weight-bold text-grey-darken-4 mb-0"
-      style="line-height: 1.2"
-    >
-      {{ value }}
-    </h2>
-    <p class="text-caption text-grey-darken-1 mb-0 mt-1">
-      {{ title }}
-    </p>
+    <div class="stat-card-copy">
+      <p class="stat-card-value text-grey-darken-4 mb-0">
+        {{ value }}
+      </p>
+      <p class="text-caption text-grey-darken-1 mb-0">
+        {{ title }}
+      </p>
+    </div>
   </v-card>
 </template>
 
@@ -49,3 +48,23 @@ const computedIconColor = computed(() =>
   isDark.value ? (darkIconMap[props.iconColor] ?? props.iconColor) : props.iconColor,
 );
 </script>
+
+<style scoped>
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-card-copy {
+  min-width: 0;
+}
+
+.stat-card-value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+</style>

@@ -49,7 +49,7 @@
             {{ event.department }} &bull; {{ event.time }}
           </p>
         </div>
-        <ChevronRight size="20" :color="isDark ? '#8b949e' : '#9CA3AF'" />
+        <ChevronRight size="20" class="upcoming-chevron" />
       </v-card>
     </div>
   </section>

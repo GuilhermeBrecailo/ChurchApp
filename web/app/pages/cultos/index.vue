@@ -384,9 +384,15 @@ onMounted(load);
 <style scoped>
 .cultos-page-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.cultos-page-header > div:first-child {
+  flex: 1 1 auto;
+  min-width: min(100%, 240px);
 }
 
 .cultos-section-title {
@@ -398,6 +404,8 @@ onMounted(load);
 
 .cultos-list {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  align-items: start;
   gap: 14px;
 }
 

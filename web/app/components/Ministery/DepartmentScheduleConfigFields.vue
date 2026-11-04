@@ -335,7 +335,7 @@ function removeCommunionTask(index: number) {
 
 .schedule-config-heading p {
   margin: 0.25rem 0 0.75rem;
-  color: rgb(var(--v-theme-on-surface-variant));
+  color: var(--app-color-text-muted);
   font-size: 0.82rem;
   line-height: 1.45;
 }

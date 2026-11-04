@@ -1,25 +1,26 @@
 <template>
-  <div class="pa-4 pb-8 page-wrapper app-operational-page">
+  <div class="pa-4 pb-8 page-wrapper app-operational-page app-page--narrow">
     <div class="notif-header mb-5">
-      <div class="min-w-0">
-        <div class="app-help-title-row">
-          <h1 class="text-h5 font-weight-bold mb-1">Notificações</h1>
-          <div class="notif-header-actions">
-            <UtilsPageHelpButton title="Notificações" />
-            <v-btn
-              v-if="unreadCount > 0"
-              color="primary"
-              variant="tonal"
-              size="small"
-              class="text-none font-weight-bold rounded-lg"
-              :loading="inboxLoading"
-              @click="markAllRead"
-            >
-              Marcar todas lidas
-            </v-btn>
-          </div>
-        </div>
-        <p class="text-body-2 mb-0">Histórico de avisos recebidos</p>
+      <div class="app-help-title-row">
+        <h1 class="text-h5 font-weight-bold mb-1">Notificações</h1>
+        <UtilsPageHelpButton title="Notificações" />
+      </div>
+      <div class="notif-subheader">
+        <p class="text-body-2 mb-0">
+          Histórico de avisos recebidos<template v-if="unreadCount > 0"> · {{ unreadCount }} não {{ unreadCount === 1 ? "lida" : "lidas" }}</template>
+        </p>
+        <v-btn
+          v-if="unreadCount > 0"
+          color="primary"
+          variant="tonal"
+          size="small"
+          class="text-none font-weight-bold rounded-lg"
+          :loading="inboxLoading"
+          @click="markAllRead"
+        >
+          <CheckCheck size="15" class="mr-1" />
+          Marcar todas lidas
+        </v-btn>
       </div>
     </div>
 
@@ -34,7 +35,7 @@
 
     <div v-else-if="notifications.length === 0" class="notif-empty">
       <div class="notif-empty-icon">
-        <Bell size="36" :color="isDark ? '#f0975a' : '#B5472A'" />
+        <Bell size="32" />
       </div>
       <h3 class="notif-empty-title">Nenhuma notificação ainda</h3>
       <p class="notif-empty-body">Quando algo acontecer, aparece aqui.</p>
@@ -46,48 +47,47 @@
         :key="notification.id"
         type="button"
         class="notif-item"
-        :class="{ 'notif-item--unread': !notification.readAt }"
+        :class="[
+          `notif-item--${notificationToneFor(notification)}`,
+          { 'notif-item--unread': !notification.readAt },
+        ]"
         @click="handleClick(notification)"
       >
-        <span class="notif-dot" />
+        <span class="notif-icon">
+          <component :is="notificationIconFor(notification)" size="18" />
+        </span>
         <span class="notif-copy">
           <span class="notif-title">{{ notification.title }}</span>
           <span class="notif-body">{{ notification.body }}</span>
-          <span class="notif-date">{{ relativeDate(notification.createdAt) }}</span>
+          <time
+            class="notif-date"
+            :datetime="notification.createdAt"
+            :title="formatNotificationFullDate(notification.createdAt)"
+          >
+            {{ formatNotificationRelativeDate(notification.createdAt) }}
+          </time>
         </span>
+        <span v-if="!notification.readAt" class="notif-dot" aria-label="Não lida" />
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Bell } from "lucide-vue-next";
+import { Bell, CheckCheck } from "lucide-vue-next";
 import { useNotifications } from "../../composables/useNotifications";
 import type { AppNotification } from "../../composables/usePushNotifications";
+import {
+  formatNotificationFullDate,
+  formatNotificationRelativeDate,
+  notificationIconFor,
+  notificationToneFor,
+} from "../utils/notificationDisplay";
 
-const { isDark } = useThemeMode();
 const router = useRouter();
 const { notifications, unreadCount, inboxLoading, startInboxSync, markRead, markAllRead } =
   useNotifications();
 
-
-function relativeDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const diffMs = Date.now() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60_000);
-  if (diffMin < 1) return "agora";
-  if (diffMin < 60) return `há ${diffMin} min`;
-  const diffH = Math.floor(diffMin / 60);
-  if (diffH < 24) return `há ${diffH}h`;
-  const diffD = Math.floor(diffH / 24);
-  if (diffD < 7) return `há ${diffD} dia${diffD === 1 ? "" : "s"}`;
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-  }).format(date);
-}
 
 async function handleClick(notification: AppNotification) {
   await markRead(notification.id);
@@ -106,17 +106,16 @@ onMounted(() => startInboxSync());
 }
 
 .notif-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  gap: 4px;
 }
 
-.notif-header-actions {
+.notif-subheader {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
 }
 
 .notif-header h1 {
@@ -140,6 +139,7 @@ onMounted(() => startInboxSync());
   height: 64px;
   border-radius: 20px;
   background: var(--app-color-accent-tint, #f7e2d3);
+  color: var(--app-color-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -166,37 +166,73 @@ onMounted(() => startInboxSync());
 }
 
 .notif-item {
+  --notif-accent-text: color-mix(in srgb, var(--app-color-accent) 85%, var(--app-color-text));
   appearance: none;
   width: 100%;
-  border: 1px solid var(--app-color-border, #e5e7eb);
-  border-radius: 12px;
+  border: 1px solid var(--app-color-border-subtle, #e7e9ec);
+  border-radius: 14px;
   background: var(--app-color-surface, #fff);
   color: var(--app-color-text, #111827);
   cursor: pointer;
   display: grid;
-  grid-template-columns: 10px minmax(0, 1fr);
+  grid-template-columns: 40px minmax(0, 1fr) 10px;
+  align-items: start;
   gap: 12px;
-  padding: 14px 12px;
+  padding: 14px;
   text-align: left;
-  transition: background 0.15s ease;
+  transition: background-color 0.16s ease, border-color 0.16s ease;
+}
+
+.notif-item:hover {
+  border-color: var(--app-color-border);
+  background: var(--app-color-surface-soft);
+}
+
+.notif-item:focus-visible {
+  outline: 2px solid var(--app-color-accent);
+  outline-offset: 2px;
 }
 
 .notif-item--unread {
-  border-color: rgba(240, 151, 90, 0.42);
-  background: rgba(240, 151, 90, 0.16);
+  border-color: color-mix(in srgb, var(--app-color-accent) 30%, var(--app-color-border-subtle));
+  background: color-mix(in srgb, var(--app-color-accent) 6%, var(--app-color-surface));
+}
+
+.notif-item--unread:hover {
+  background: color-mix(in srgb, var(--app-color-accent) 10%, var(--app-color-surface));
+}
+
+.notif-icon {
+  --tone: var(--app-color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tone) 14%, var(--app-color-surface));
+  color: var(--tone);
+}
+
+.notif-item--schedule .notif-icon {
+  --tone: var(--notif-accent-text);
+}
+
+.notif-item--member .notif-icon {
+  --tone: var(--app-color-success);
+}
+
+.notif-item--announcement .notif-icon {
+  --tone: var(--app-color-warning);
 }
 
 .notif-dot {
-  width: 10px;
-  height: 10px;
-  margin-top: 4px;
+  width: 9px;
+  height: 9px;
+  margin-top: 6px;
   border-radius: 999px;
-  background: transparent;
-  flex-shrink: 0;
-}
-
-.notif-item--unread .notif-dot {
-  background: var(--app-color-accent, #b5472a);
+  background: var(--app-color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-color-accent) 20%, transparent);
 }
 
 .notif-copy {
@@ -207,13 +243,13 @@ onMounted(() => startInboxSync());
 
 .notif-title {
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.3;
   color: var(--app-color-text, #111827);
 }
 
 .notif-item--unread .notif-title {
-  color: var(--app-color-accent);
+  font-weight: 800;
 }
 
 .notif-body {
@@ -224,12 +260,13 @@ onMounted(() => startInboxSync());
 }
 
 .notif-date {
-  font-size: 0.75rem;
+  font-size: 0.74rem;
+  font-weight: 600;
   color: var(--app-color-text-muted, #6b7280);
   margin-top: 2px;
 }
 
-.notif-item:not(.notif-item--unread) {
-  opacity: 0.72;
+.notif-item--unread .notif-date {
+  color: var(--notif-accent-text);
 }
 </style>

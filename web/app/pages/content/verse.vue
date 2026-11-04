@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 pb-8 page-wrapper app-operational-page">
+  <div class="pa-4 pb-8 page-wrapper app-operational-page app-page--narrow">
     <div class="verse-header mb-4">
       <div class="content-detail-title-group min-w-0">
         <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">

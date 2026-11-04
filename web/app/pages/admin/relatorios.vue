@@ -237,7 +237,7 @@
           density="compact"
           class="mb-3"
         >
-          Nenhum culto cadastrado ainda. Configure um horário de culto na aba "Geral" antes de registrar presença.
+          Nenhum culto cadastrado ainda. <NuxtLink to="/admin/configuracoes?secao=horarios" class="config-inline-link">Configure um horário de culto</NuxtLink> antes de registrar presença.
         </v-alert>
         <v-select
           v-else

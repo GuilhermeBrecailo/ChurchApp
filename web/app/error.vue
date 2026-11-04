@@ -124,7 +124,7 @@ const reset = () => {
   letter-spacing: 0.01em !important;
 }
 
-:global(.app-theme-dark) .auth-btn.bg-primary {
+:global(.app-theme-dark .auth-btn.bg-primary) {
   box-shadow: 0 4px 16px rgba(240, 151, 90, 0.3) !important;
 }
 </style>

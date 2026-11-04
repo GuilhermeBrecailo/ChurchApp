@@ -159,8 +159,8 @@
       <v-card class="app-surface rounded-xl pa-6" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
-            <v-avatar color="#F7E2D3" size="44" class="mr-3">
-              <Building size="20" color="#B5472A" />
+            <v-avatar size="44" class="mr-3 accent-avatar">
+              <Building size="20" />
             </v-avatar>
             <div class="min-w-0">
               <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -258,8 +258,14 @@
               "
               class="cursor-pointer font-weight-medium"
               :disabled="isCreatingDepartment"
+              :aria-pressed="departmentForm.modules.includes(module.value)"
               @click="toggleModule(module.value)"
             >
+              <Check
+                v-if="departmentForm.modules.includes(module.value)"
+                size="14"
+                class="mr-1"
+              />
               {{ module.label }}
             </v-chip>
           </div>
@@ -311,7 +317,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, watch } from "vue";
-import { Building, List, Plus, Trash2, BarChart3 } from "lucide-vue-next";
+import { Building, Check, List, Plus, Trash2, BarChart3 } from "lucide-vue-next";
 import {
   useDepartments,
   DEPARTMENT_MODULE_OPTIONS,

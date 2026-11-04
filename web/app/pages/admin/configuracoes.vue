@@ -15,15 +15,35 @@
       <UtilsPageHelpButton title="Configurações" />
     </div>
 
+    <div
+      v-if="configTabs.length > 1"
+      class="config-tabs app-segmented mb-5"
+      role="tablist"
+      aria-label="Seções das configurações"
+    >
+      <button
+        v-for="tab in configTabs"
+        :key="tab.value"
+        type="button"
+        role="tab"
+        :aria-selected="activeConfigTab === tab.value"
+        :class="{ 'app-segmented--active': activeConfigTab === tab.value }"
+        @click="selectConfigTab(tab.value)"
+      >
+        <component :is="tab.icon" size="15" aria-hidden="true" />
+        {{ tab.label }}
+      </button>
+    </div>
+
     <section v-if="canManageMembersByRole" class="church-admin-section mb-6">
-      <div class="section-heading mb-4">
+      <div v-show="isConfigTab('geral')" class="section-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Código de Convite</h2>
           <p class="text-caption text-grey-darken-1 mb-0">Compartilhe o link para novos membros entrarem na igreja</p>
         </div>
       </div>
 
-      <v-card class="invite-code-card rounded-xl pa-5 elevation-1 border-subtle">
+      <v-card v-show="isConfigTab('geral')" class="invite-code-card rounded-xl pa-5 elevation-1 border-subtle">
         <div class="d-flex align-center gap-3 mb-4">
           <v-avatar size="40" :color="avatarBgIndigo">
             <QrCode size="20" :color="accentColor" />
@@ -84,7 +104,7 @@
         </template>
       </v-card>
 
-      <div v-if="isChurchWideManager" class="mt-6">
+      <div v-if="isChurchWideManager" v-show="isConfigTab('whatsapp')">
         <div class="section-heading mb-4">
           <div>
             <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">WhatsApp</h2>
@@ -187,7 +207,7 @@
         </v-card>
       </UtilsResponsiveOverlay>
 
-      <div v-if="isChurchWideManager" class="mt-6">
+      <div v-if="isChurchWideManager" v-show="isConfigTab('integracoes')">
         <div class="section-heading mb-4">
           <div>
             <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Integrações</h2>
@@ -501,7 +521,7 @@
         </v-card>
       </div>
 
-      <div v-if="isChurchWideManager" class="mt-6">
+      <div v-if="isChurchWideManager" v-show="isConfigTab('geral')" class="mt-6">
         <div class="section-heading mb-4">
           <div>
             <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Pré-visualizar navegação</h2>
@@ -527,15 +547,15 @@
         </v-card>
       </div>
 
-      <div class="mt-6">
-      <div class="section-heading mb-4">
+      <div>
+      <div v-show="isConfigTab('publica')" class="section-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Página Pública</h2>
           <p class="text-caption text-grey-darken-1 mb-0">Vitrine da igreja para visitantes, sem precisar de login</p>
         </div>
       </div>
 
-      <v-card class="invite-code-card rounded-xl pa-5 elevation-1 border-subtle">
+      <v-card v-show="isConfigTab('publica')" class="invite-code-card rounded-xl pa-5 elevation-1 border-subtle">
         <div class="d-flex align-center gap-3 mb-4">
           <v-avatar size="40" :color="avatarBgIndigo">
             <Globe size="20" :color="churchAccent" />
@@ -588,8 +608,10 @@
 
         <v-text-field
           v-model="publicChurchForm.slug"
-          label="Slug da página pública"
+          label="Endereço da página pública"
           placeholder="ex: comunidade-vida"
+          hint="É o final do link que você compartilha: churchapp.site/c/comunidade-vida"
+          persistent-hint
           prepend-inner-icon="mdi-web"
           variant="outlined"
           density="comfortable"
@@ -777,14 +799,14 @@
         </div>
       </v-card>
 
-      <div class="section-heading mb-4 mt-6">
+      <div v-show="isConfigTab('horarios')" class="section-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Horários de culto</h2>
           <p class="text-caption text-grey-darken-1 mb-0">Aparecem nos "Próximos cultos" da página pública</p>
         </div>
       </div>
 
-      <v-card class="invite-code-card rounded-xl pa-5 elevation-1 border-subtle">
+      <v-card v-show="isConfigTab('horarios')" class="invite-code-card rounded-xl pa-5 elevation-1 border-subtle">
         <div class="d-flex align-center gap-3 mb-4">
           <v-avatar size="40" :color="avatarBgIndigo">
             <Calendar size="20" :color="churchAccent" />
@@ -891,7 +913,7 @@
       </div>
     </section>
 
-    <section class="church-admin-section mb-8">
+    <section v-show="isConfigTab('plano')" class="church-admin-section mb-8">
       <div class="section-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
@@ -966,7 +988,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import {
   ChevronLeft,
   QrCode,
@@ -984,6 +1006,11 @@ import {
   Lock,
   UserCheck,
   MonitorPlay,
+  Settings2,
+  MessageCircle,
+  Plug,
+  Clock,
+  Crown,
 } from "lucide-vue-next";
 import { useAuth } from "../../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
@@ -1004,6 +1031,7 @@ import { FONT_OPTIONS } from "../../../composables/useChurchAppearance";
 import { useChurchPlan, PLAN_LABELS, PLAN_FEATURE_LABELS, type PlanFeature } from "../../../composables/usePlan";
 
 const router = useRouter();
+const route = useRoute();
 
 const { user, updateNavPreviewRole } = useAuth();
 const { isDark } = useThemeMode();
@@ -1035,6 +1063,45 @@ const canManageMembersByRole = computed(
     can("MEMBER_EDIT") ||
     can("MEMBER_DELETE"),
 );
+// ── Abas da página ──────────────────────────────────────
+// A página era um único rolo com convite, WhatsApp, integrações, página
+// pública, horários e plano. Agora cada assunto fica numa aba; a aba ativa vai
+// para a URL (?secao=) para dar para linkar direto (ex.: mensagens -> WhatsApp).
+type ConfigTabValue = "geral" | "whatsapp" | "integracoes" | "publica" | "horarios" | "plano";
+
+const configTabs = computed(() =>
+  [
+    { value: "geral", label: "Geral", icon: Settings2, visible: canManageMembersByRole.value },
+    {
+      value: "whatsapp",
+      label: "WhatsApp",
+      icon: MessageCircle,
+      visible: canManageMembersByRole.value && isChurchWideManager.value,
+    },
+    {
+      value: "integracoes",
+      label: "Integrações",
+      icon: Plug,
+      visible: canManageMembersByRole.value && isChurchWideManager.value,
+    },
+    { value: "publica", label: "Página pública", icon: Globe, visible: canManageMembersByRole.value },
+    { value: "horarios", label: "Horários", icon: Clock, visible: canManageMembersByRole.value },
+    { value: "plano", label: "Plano", icon: Crown, visible: true },
+  ].filter((tab) => tab.visible) as { value: ConfigTabValue; label: string; icon: unknown }[],
+);
+
+const activeConfigTab = computed<ConfigTabValue>(() => {
+  const requested = route.query.secao;
+  const match = configTabs.value.find((tab) => tab.value === requested);
+  return match?.value ?? configTabs.value[0]?.value ?? "plano";
+});
+
+const isConfigTab = (value: ConfigTabValue) => activeConfigTab.value === value;
+
+const selectConfigTab = (value: ConfigTabValue) => {
+  router.replace({ query: { ...route.query, secao: value } });
+};
+
 const canAccessChurchAdmin = computed(
   () =>
     user.value?.hasChurch === true &&
