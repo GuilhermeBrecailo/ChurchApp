@@ -58,6 +58,7 @@ export interface PastoralDashboard {
   stats: {
     upcomingCults: number;
     pendingPrayers: number;
+    visitorsToFollowUp: number;
     absentMembers: number;
     openVisits: number;
   };

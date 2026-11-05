@@ -213,6 +213,7 @@ export class PastoralAdapters {
       recentAttendees,
       pendingPrayers,
       pendingPrayerCount,
+      visitorsToFollowUp,
       openVisitCount,
       scheduledVisits,
     ] = await Promise.all([
@@ -238,6 +239,9 @@ export class PastoralAdapters {
       }),
       $prismaClient.prayerRequest.count({
         where: { crunchId: user.crunchId, status: "PENDING" },
+      }),
+      $prismaClient.visitorFollowUp.count({
+        where: { crunchId: user.crunchId, stage: { in: ["NEW", "CONTACTED", "RETURNED"] } },
       }),
       $prismaClient.pastoralVisit.count({
         where: { crunchId: user.crunchId, status: { in: ["OPEN", "SCHEDULED"] } },
@@ -276,6 +280,7 @@ export class PastoralAdapters {
       stats: {
         upcomingCults: upcomingOccurrences.length,
         pendingPrayers: pendingPrayerCount,
+        visitorsToFollowUp,
         absentMembers: absentMembers.length,
         openVisits: openVisitCount,
       },

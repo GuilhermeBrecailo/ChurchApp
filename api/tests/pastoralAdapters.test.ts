@@ -6,6 +6,7 @@ const mockPrismaClient = {
   serviceOccurrenceAttendee: { findMany: jest.fn() },
   rosterMember: { findMany: jest.fn(), findUnique: jest.fn() },
   prayerRequest: { findMany: jest.fn(), count: jest.fn() },
+  visitorFollowUp: { count: jest.fn() },
   pastoralVisit: {
     count: jest.fn(),
     findMany: jest.fn(),
@@ -68,6 +69,7 @@ describe("PastoralAdapters", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPrismaClient.visitorFollowUp.count.mockResolvedValue(0);
     adapters = new PastoralAdapters();
     jest.useFakeTimers().setSystemTime(new Date("2026-08-25T12:00:00.000Z"));
   });
@@ -125,6 +127,7 @@ describe("PastoralAdapters", () => {
     expect(dashboard.stats).toEqual({
       upcomingCults: 1,
       pendingPrayers: 1,
+      visitorsToFollowUp: 0,
       absentMembers: 1,
       openVisits: 2,
     });
