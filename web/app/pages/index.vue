@@ -13,52 +13,45 @@
         </div>
       </div>
 
-      <v-skeleton-loader
-        v-if="!setupStateLoaded"
-        type="card"
-        class="app-surface mb-4"
-      />
-
       <DashboardGettingStartedCard
-        v-else-if="needsSetup"
+        v-if="showSetupCard"
         :members-count="churchMembersCount"
         :departments-count="churchDepartmentsCount"
+        @dismiss="dismissSetupCard"
       />
 
-      <template v-else>
-        <div class="dashboard-grid">
-          <main class="dashboard-primary">
-            <DashboardPastoralOverviewCard v-if="canSeePastoralDashboard" />
-            <section class="dashboard-routine" aria-labelledby="dashboard-routine-title">
-              <h2 id="dashboard-routine-title" class="dashboard-section-title">
-                Sua rotina
-              </h2>
-              <DashboardTodayCard />
-              <DashboardMyNextAssignmentCard />
-              <DashboardNextScheduleCard :schedule="nextSchedule" />
-            </section>
+      <div class="dashboard-grid">
+        <main class="dashboard-primary">
+          <DashboardPastoralOverviewCard v-if="canSeePastoralDashboard" />
+          <section class="dashboard-routine" aria-labelledby="dashboard-routine-title">
+            <h2 id="dashboard-routine-title" class="dashboard-section-title">
+              Sua rotina
+            </h2>
+            <DashboardTodayCard />
+            <DashboardMyNextAssignmentCard />
+            <DashboardNextScheduleCard :schedule="nextSchedule" />
+          </section>
 
-            <v-alert
-              v-if="schedulesError"
-              type="error"
-              variant="tonal"
-              density="compact"
-              class="mb-4"
-            >
-              {{ schedulesError }}
-            </v-alert>
+          <v-alert
+            v-if="schedulesError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+          >
+            {{ schedulesError }}
+          </v-alert>
 
-            <DashboardUpcomingEvents :schedules="upcomingSchedules" />
-          </main>
+          <DashboardUpcomingEvents :schedules="upcomingSchedules" />
+        </main>
 
-          <aside class="dashboard-secondary">
-            <DashboardQuickAccess />
-            <DashboardAnnouncementsSection />
-            <DashboardDailyVerseCard />
-            <DashboardPrayerPreviewCard />
-          </aside>
-        </div>
-      </template>
+        <aside class="dashboard-secondary">
+          <DashboardQuickAccess />
+          <DashboardAnnouncementsSection />
+          <DashboardDailyVerseCard />
+          <DashboardPrayerPreviewCard />
+        </aside>
+      </div>
     </template>
 
     <template v-else-if="isPastorWithoutChurch">
@@ -265,12 +258,44 @@ const schedulesError = ref("");
 const churchMembersCount = ref(0);
 const churchDepartmentsCount = ref(0);
 const setupStateLoaded = ref(false);
+const setupStateAvailable = ref(false);
+const setupDismissed = ref(false);
+const setupDismissalLoaded = ref(false);
+
+const canManageChurchSetup = computed(() => {
+  const currentUser = user.value;
+  return Boolean(
+    currentUser &&
+      (currentUser.is_admin ||
+        currentUser.isTitularPastor ||
+        ["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(currentUser.role ?? "")),
+  );
+});
+
+const setupStorageKey = computed(() => {
+  const userId = user.value?.id;
+  const churchId =
+    user.value?.activeChurchId ?? user.value?.activeChurch?.id ?? user.value?.church?.id;
+
+  return userId && churchId
+    ? `churchapp:pastor-setup-dismissed:${userId}:${churchId}`
+    : "";
+});
 
 const needsSetup = computed(
   () =>
     setupStateLoaded.value &&
-    churchMembersCount.value <= 1 &&
-    churchDepartmentsCount.value === 0,
+    setupStateAvailable.value &&
+    (churchMembersCount.value <= 1 || churchDepartmentsCount.value === 0),
+);
+
+const showSetupCard = computed(
+  () =>
+    hasChurch.value &&
+    canManageChurchSetup.value &&
+    setupDismissalLoaded.value &&
+    !setupDismissed.value &&
+    needsSetup.value,
 );
 
 const churchForm = reactive({
@@ -351,26 +376,77 @@ const loadSchedules = async () => {
 };
 
 const loadSetupState = async () => {
-  if (!hasChurch.value) return;
+  if (!hasChurch.value || !canManageChurchSetup.value) {
+    setupStateAvailable.value = false;
+    setupStateLoaded.value = true;
+    return;
+  }
 
-  const [membersResult, departmentsResult] = await Promise.all([
-    getMembers(),
-    getDepartments(),
-  ]);
+  setupStateLoaded.value = false;
+  setupStateAvailable.value = false;
 
-  churchMembersCount.value = membersResult.data?.length ?? 0;
-  churchDepartmentsCount.value = departmentsResult.data?.length ?? 0;
-  setupStateLoaded.value = true;
+  try {
+    const [membersResult, departmentsResult] = await Promise.all([
+      getMembers(),
+      getDepartments(),
+    ]);
+
+    if (membersResult.error || departmentsResult.error) return;
+
+    churchMembersCount.value = membersResult.data?.length ?? 0;
+    churchDepartmentsCount.value = departmentsResult.data?.length ?? 0;
+    setupStateAvailable.value = true;
+  } catch {
+    setupStateAvailable.value = false;
+  } finally {
+    setupStateLoaded.value = true;
+  }
 };
 
-watch(hasChurch, (value) => {
+const syncSetupDismissal = () => {
+  if (!import.meta.client) return;
+
+  try {
+    const key = setupStorageKey.value;
+    setupDismissed.value = key ? localStorage.getItem(key) === "dismissed" : false;
+  } catch {
+    setupDismissed.value = false;
+  } finally {
+    setupDismissalLoaded.value = true;
+  }
+};
+
+const dismissSetupCard = () => {
+  setupDismissed.value = true;
+  if (!import.meta.client || !setupStorageKey.value) return;
+
+  try {
+    localStorage.setItem(setupStorageKey.value, "dismissed");
+  } catch {
+    // A dispensa desta sessão continua valendo se o navegador bloquear o armazenamento local.
+  }
+};
+
+watch([hasChurch, canManageChurchSetup], ([value]) => {
   if (value) {
     loadSchedules();
-    loadSetupState();
   }
+  loadSetupState();
 });
 
+watch(
+  () => user.value?.activeChurchId,
+  (currentChurchId, previousChurchId) => {
+    if (currentChurchId && previousChurchId && currentChurchId !== previousChurchId) {
+      syncSetupDismissal();
+      loadSchedules();
+      loadSetupState();
+    }
+  },
+);
+
 onMounted(() => {
+  syncSetupDismissal();
   loadSchedules();
   loadSetupState();
 });

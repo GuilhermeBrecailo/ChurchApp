@@ -440,6 +440,10 @@ export function getBottomNavigationItems(user: RoleNavigationUser | null | undef
     }
 
     if (hasMemberManagementAccess(user)) {
+      if (hasMinistryAccess(user)) {
+        return [item("home"), item("team"), item("scale"), item("cults"), item("more")];
+      }
+
       return [item("home"), item("people"), item("scale"), item("cults"), item("more")];
     }
 
@@ -471,6 +475,10 @@ export function getQuickAccessItems(user: RoleNavigationUser | null | undefined)
 
   if (tier === "leader") {
     if (hasMemberManagementAccess(user)) {
+      if (hasMinistryAccess(user)) {
+        return [item("team"), item("people"), item("scale"), item("cults")];
+      }
+
       return [item("people"), item("scale"), item("cults"), item("prayer")];
     }
 
