@@ -1,5 +1,5 @@
 <template>
-  <div class="auth-page">
+  <main class="auth-page">
     <div class="auth-shell">
       <aside class="auth-promo" aria-label="Por que usar o ChurchApp">
         <NuxtLink to="/comece" class="auth-brand" aria-label="Voltar para o ChurchApp">
@@ -20,7 +20,7 @@
       <div class="auth-card-inner">
         <div class="flex flex-col items-center mb-8">
           <div class="auth-icon-circle mb-4">
-            <v-icon size="40" color="primary">mdi-account-lock</v-icon>
+            <LockKeyhole :size="40" class="auth-icon" aria-hidden="true" />
           </div>
           <h1 class="app-page-title auth-title">Entrar no ChurchApp</h1>
           <p class="auth-subtitle">Acesse sua conta para continuar</p>
@@ -32,7 +32,6 @@
             label="E-mail"
             type="email"
             autocomplete="off"
-            prepend-inner-icon="mdi-email-outline"
             variant="outlined"
             density="comfortable"
             :bg-color="isDark ? 'transparent' : 'white'"
@@ -40,15 +39,17 @@
             class="auth-input mb-4"
             hide-details="auto"
             :disabled="loading"
-          />
+          >
+            <template #prepend-inner>
+              <Mail :size="18" class="auth-field-icon" aria-hidden="true" />
+            </template>
+          </v-text-field>
 
           <v-text-field
             v-model="password"
             label="Senha"
             :type="showPassword ? 'text' : 'password'"
             autocomplete="off"
-            prepend-inner-icon="mdi-lock-outline"
-            :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
             variant="outlined"
             density="comfortable"
             :bg-color="isDark ? 'transparent' : 'white'"
@@ -56,8 +57,22 @@
             class="auth-input mb-6"
             hide-details="auto"
             :disabled="loading"
-            @click:append-inner="showPassword = !showPassword"
-          />
+          >
+            <template #prepend-inner>
+              <LockKeyhole :size="18" class="auth-field-icon" aria-hidden="true" />
+            </template>
+            <template #append-inner>
+              <button
+                type="button"
+                class="auth-password-toggle"
+                :aria-label="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                :aria-pressed="showPassword"
+                @click="showPassword = !showPassword"
+              >
+                <component :is="showPassword ? EyeOff : Eye" :size="18" aria-hidden="true" />
+              </button>
+            </template>
+          </v-text-field>
 
           <v-alert
             v-if="errorMessage"
@@ -99,19 +114,29 @@
           </p>
 
           <p class="auth-hint">
-            Se você é membro, peça para sua igreja criar seu acesso.
+            É membro? Use o código de convite que recebeu da sua igreja.
+            <NuxtLink to="/join" class="auth-link font-bold">Entrar com convite</NuxtLink>
           </p>
         </div>
       </div>
       </v-card>
       </MotionFadeInUp>
     </div>
-  </div>
+  </main>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { CalendarCheck, Church, ShieldCheck, UsersRound } from "lucide-vue-next";
+import {
+  CalendarCheck,
+  Church,
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  Mail,
+  ShieldCheck,
+  UsersRound,
+} from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 
 definePageMeta({
@@ -233,6 +258,12 @@ const handleLogin = async () => {
   background: var(--app-color-accent);
 }
 
+.auth-brand:focus-visible {
+  outline: 3px solid #fffaf4;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
 .auth-promo__eyebrow {
   margin: clamp(120px, 18vh, 190px) 0 16px;
   color: #f3b291;
@@ -306,6 +337,37 @@ const handleLogin = async () => {
   justify-content: center;
 }
 
+.auth-icon {
+  color: var(--app-color-accent);
+}
+
+.auth-field-icon {
+  color: var(--app-color-text-muted);
+}
+
+.auth-password-toggle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--app-color-text-muted);
+  cursor: pointer;
+}
+
+.auth-password-toggle:hover {
+  background: var(--app-color-surface-muted);
+  color: var(--app-color-text);
+}
+
+.auth-password-toggle:focus-visible {
+  outline: 2px solid var(--app-color-accent);
+  outline-offset: 2px;
+}
+
 .auth-title {
   font-size: 1.85rem;
   font-weight: 800;
@@ -334,6 +396,8 @@ const handleLogin = async () => {
 
 .auth-input :deep(.v-label) {
   font-size: 0.95rem;
+  color: var(--app-color-text-muted) !important;
+  opacity: 1 !important;
 }
 
 :global(.app-theme-dark) .auth-input :deep(input:-webkit-autofill),
@@ -348,6 +412,13 @@ const handleLogin = async () => {
   height: 54px !important;
   font-size: 1.05rem !important;
   letter-spacing: 0.01em !important;
+}
+
+.auth-link:focus-visible,
+.auth-btn:focus-visible,
+.auth-back-btn:focus-visible {
+  outline: 3px solid var(--app-color-accent) !important;
+  outline-offset: 3px;
 }
 
 :global(.app-theme-dark) .auth-btn.bg-primary {
@@ -397,17 +468,15 @@ const handleLogin = async () => {
   }
 
   .auth-promo__eyebrow {
-    margin-top: 48px;
+    margin: 24px 0 12px;
   }
 
   .auth-promo h2 {
-    font-size: 2rem;
+    font-size: 1.75rem;
   }
 
   .auth-promo__list {
-    grid-template-columns: 1fr;
-    gap: 9px;
-    margin-top: 20px;
+    display: none;
   }
 
   .auth-form-wrap {

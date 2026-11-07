@@ -114,6 +114,9 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: "ChurchApp",
+      htmlAttrs: {
+        lang: "pt-BR",
+      },
       meta: [
         { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
         { name: "theme-color", content: "#b5472a" },

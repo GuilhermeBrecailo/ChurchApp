@@ -15,12 +15,12 @@
           variant="outlined"
           color="primary"
           density="comfortable"
-          class="mb-4"
-          placeholder="Ex: A1B2C3D4"
+          class="join-code-field"
           hide-details="auto"
           :error-messages="error ? [error] : []"
           @keyup.enter="submitJoin"
         />
+        <p class="join-code-hint">Exemplo: A1B2C3D4</p>
 
         <v-alert v-if="success" type="success" variant="tonal" density="compact" class="mb-4">
           Você entrou em <strong>{{ churchName }}</strong>! Redirecionando…
@@ -54,13 +54,13 @@
             variant="outlined"
             color="primary"
             density="comfortable"
-            class="mb-4"
-            placeholder="Ex: A1B2C3D4"
+            class="join-code-field"
             hide-details="auto"
             :error-messages="codeError ? [codeError] : []"
             :loading="lookingUpCode"
             @keyup.enter="lookupCode"
           />
+          <p class="join-code-hint">Exemplo: A1B2C3D4</p>
 
           <v-btn
             color="primary"
@@ -84,72 +84,96 @@
               v-model="registerForm.name"
               label="Nome completo"
               autocomplete="off"
-              prepend-inner-icon="mdi-account-outline"
               variant="outlined"
               density="comfortable"
               color="primary"
               class="join-input mb-4"
               hide-details="auto"
               :disabled="registerLoading"
-            />
+            >
+              <template #prepend-inner>
+                <UserRound :size="18" class="join-field-icon" aria-hidden="true" />
+              </template>
+            </v-text-field>
 
             <v-text-field
               v-model="registerForm.email"
               label="E-mail"
               type="email"
               autocomplete="off"
-              prepend-inner-icon="mdi-email-outline"
               variant="outlined"
               density="comfortable"
               color="primary"
               class="join-input mb-4"
               hide-details="auto"
               :disabled="registerLoading"
-            />
+            >
+              <template #prepend-inner>
+                <Mail :size="18" class="join-field-icon" aria-hidden="true" />
+              </template>
+            </v-text-field>
 
             <v-text-field
               v-model="registerForm.phone"
               label="Telefone"
               type="tel"
               autocomplete="off"
-              prepend-inner-icon="mdi-phone-outline"
               variant="outlined"
               density="comfortable"
               color="primary"
               class="join-input mb-4"
               hide-details="auto"
               :disabled="registerLoading"
-            />
+            >
+              <template #prepend-inner>
+                <Phone :size="18" class="join-field-icon" aria-hidden="true" />
+              </template>
+            </v-text-field>
 
             <v-text-field
               v-model="registerForm.password"
               label="Senha"
               :type="showPassword ? 'text' : 'password'"
               autocomplete="off"
-              prepend-inner-icon="mdi-lock-outline"
-              :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
               variant="outlined"
               density="comfortable"
               color="primary"
               class="join-input mb-4"
               hide-details="auto"
               :disabled="registerLoading"
-              @click:append-inner="showPassword = !showPassword"
-            />
+            >
+              <template #prepend-inner>
+                <LockKeyhole :size="18" class="join-field-icon" aria-hidden="true" />
+              </template>
+              <template #append-inner>
+                <button
+                  type="button"
+                  class="join-password-toggle"
+                  :aria-label="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                  :aria-pressed="showPassword"
+                  @click="showPassword = !showPassword"
+                >
+                  <component :is="showPassword ? EyeOff : Eye" :size="18" aria-hidden="true" />
+                </button>
+              </template>
+            </v-text-field>
 
             <v-text-field
               v-model="registerForm.confirmPassword"
               label="Confirmar senha"
               :type="showPassword ? 'text' : 'password'"
               autocomplete="off"
-              prepend-inner-icon="mdi-lock-check-outline"
               variant="outlined"
               density="comfortable"
               color="primary"
               class="join-input mb-4"
               hide-details="auto"
               :disabled="registerLoading"
-            />
+            >
+              <template #prepend-inner>
+                <LockKeyhole :size="18" class="join-field-icon" aria-hidden="true" />
+              </template>
+            </v-text-field>
 
             <v-alert
               v-if="registerError"
@@ -213,6 +237,10 @@ import { useRouter, useRoute } from "vue-router";
 import { Church } from "lucide-vue-next";
 import { useChurchInvite } from "../../composables/useChurchInvite";
 import { useAuth } from "../../composables/useAuth";
+
+definePageMeta({
+  layout: "public",
+});
 
 const router = useRouter();
 const route = useRoute();
@@ -391,7 +419,41 @@ async function submitRegister() {
   width: 100%;
 }
 
+.join-code-hint {
+  margin: 4px 0 16px 12px;
+  color: var(--app-color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
 .join-input :deep(.v-field) {
   border-radius: 14px;
+}
+
+.join-card-wrap :deep(.v-label) {
+  color: var(--app-color-text-muted) !important;
+  opacity: 1 !important;
+}
+
+.join-field-icon {
+  color: var(--app-color-text-muted);
+}
+
+.join-password-toggle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--app-color-text-muted);
+  cursor: pointer;
+}
+
+.join-password-toggle:focus-visible {
+  outline: 2px solid var(--app-color-accent);
+  outline-offset: 2px;
 }
 </style>
