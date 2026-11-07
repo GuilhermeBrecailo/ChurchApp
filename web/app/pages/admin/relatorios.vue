@@ -25,29 +25,22 @@
       {{ departmentsError }}
     </v-alert>
 
-    <PlanLock feature="REPORTS" class="mb-8">
-      <AdminReports :departments="departments" />
-    </PlanLock>
-
     <section class="church-admin-section mb-8">
       <div class="section-heading mb-4">
         <div>
-          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
-            Relatório pastoral
-          </h2>
-          <p class="text-caption text-grey-darken-1 mb-0">
-            Visão geral de presença, respostas, liderança e atividade dos ministérios.
-          </p>
+          <span class="report-section-eyebrow">ACOMPANHAMENTO DA IGREJA</span>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Visão executiva</h2>
+          <p class="text-caption text-grey-darken-1 mb-0">Indicadores principais para acompanhar a rotina e decidir onde agir.</p>
         </div>
       </div>
 
       <div class="pastoral-report-grid mb-4">
         <v-card class="report-kpi-card app-surface pa-4 border-subtle" elevation="0">
-          <span>{{ churchReport.confirmationRate }}%</span>
+          <span>{{ churchReport.totalAssignments ? `${churchReport.confirmationRate}%` : "—" }}</span>
           <small>confirmação nas escalas</small>
         </v-card>
         <v-card class="report-kpi-card app-surface pa-4 border-subtle" elevation="0">
-          <span>{{ churchReport.attendanceRate }}%</span>
+          <span>{{ churchReport.attendanceTracked ? `${churchReport.attendanceRate}%` : "—" }}</span>
           <small>presença registrada</small>
         </v-card>
         <v-card class="report-kpi-card app-surface pa-4 border-subtle" elevation="0">
@@ -55,17 +48,15 @@
           <small>respostas pendentes</small>
         </v-card>
         <v-card class="report-kpi-card app-surface pa-4 border-subtle" elevation="0">
-          <span>{{ churchReport.openTasks }}</span>
-          <small>tarefas cadastradas</small>
+          <span>{{ churchReport.totalAssignments }}</span>
+          <small>participações nas escalas</small>
         </v-card>
-        <v-card class="report-kpi-card app-surface pa-4 border-subtle" elevation="0">
-          <span>{{ rosterReport.visitors }}</span>
-          <small>visitantes no rol</small>
-        </v-card>
-        <v-card class="report-kpi-card app-surface pa-4 border-subtle" elevation="0">
-          <span>{{ rosterReport.members }}</span>
-          <small>membros no rol</small>
-        </v-card>
+      </div>
+
+      <div class="report-context-strip mb-4" aria-label="Outros indicadores da igreja">
+        <div><span>Tarefas cadastradas</span><strong>{{ churchReport.openTasks }}</strong></div>
+        <div><span>Membros no rol</span><strong>{{ rosterReport.members }}</strong></div>
+        <div><span>Visitantes no rol</span><strong>{{ rosterReport.visitors }}</strong></div>
       </div>
 
       <div class="pastoral-report-layout">
@@ -82,13 +73,14 @@
             >
               <div class="report-row-top">
                 <strong>{{ row.name }}</strong>
-                <span>{{ row.confirmationRate }}%</span>
+                <span>{{ row.assignments ? `${row.confirmationRate}%` : "—" }}</span>
               </div>
-              <div class="report-track">
+              <div v-if="row.assignments" class="report-track" role="img" :aria-label="`${row.name}: ${row.confirmationRate}% de confirmação`">
                 <span :style="{ width: `${row.confirmationRate}%` }" />
               </div>
+              <div v-else class="report-track report-track--empty" aria-hidden="true" />
               <small>
-                {{ row.assignments }} escalados · {{ row.schedules }} escalas · {{ row.tasks }} tarefas
+                {{ row.assignments ? `${row.assignments} participações · ${row.schedules} escalas · ${row.tasks} tarefas` : "Sem participações registradas nas escalas carregadas" }}
               </small>
             </div>
           </div>
@@ -200,23 +192,47 @@
             </div>
           </div>
 
+          <div v-if="attendanceEntries.length > 0" class="attendance-chart-legend" aria-label="Legenda do gráfico de público">
+            <span><i class="attendance-dot attendance-dot--members" />Membros</span>
+            <span><i class="attendance-dot attendance-dot--visitors" />Visitantes</span>
+          </div>
+
           <p v-if="attendanceEntries.length === 0" class="text-caption text-grey-darken-1 mb-0">
             Nenhuma presença registrada nos últimos 30 dias.
           </p>
-          <div v-else class="attendance-list">
-            <div v-for="entry in attendanceEntries" :key="entry.id" class="attendance-row">
-              <div>
+          <div v-else class="attendance-chart">
+            <div v-for="entry in attendanceChartRows" :key="entry.id" class="attendance-chart-row">
+              <div class="attendance-chart-label">
                 <strong>{{ formatAttendanceDate(entry.date) }}</strong>
                 <small>{{ entry.serviceTime.label }}</small>
               </div>
-              <div class="attendance-counts">
-                <span>{{ entry.visitorCount }} visitantes</span>
-                <span>{{ entry.memberCount }} membros</span>
+              <div
+                class="attendance-chart-track"
+                role="img"
+                :aria-label="`${formatAttendanceDate(entry.date)} ${entry.serviceTime.label}: ${entry.memberCount} membros e ${entry.visitorCount} visitantes, total ${entry.total}`"
+              >
+                <div class="attendance-chart-bar" :style="{ width: `${entry.scalePercent}%` }">
+                  <span class="attendance-chart-bar__members" :style="{ width: `${entry.memberShare}%` }" />
+                  <span class="attendance-chart-bar__visitors" :style="{ width: `${entry.visitorShare}%` }" />
+                </div>
               </div>
+              <strong class="attendance-chart-total">{{ entry.total }}</strong>
             </div>
           </div>
         </template>
       </v-card>
+    </section>
+
+    <section class="church-admin-section mb-8 report-details-section">
+      <div class="section-heading mb-3">
+        <div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Relatórios detalhados</h2>
+          <p class="text-caption text-grey-darken-1 mb-0">Explore confirmações, presença e participação por período ou ministério.</p>
+        </div>
+      </div>
+      <PlanLock feature="REPORTS">
+        <AdminReports :departments="departments" />
+      </PlanLock>
     </section>
 
     <UtilsResponsiveOverlay v-model="isAttendanceDialogOpen" max-width="480" variant="detail" scrollable>
@@ -441,6 +457,7 @@ const churchReport = computed(() => {
 
   return {
     totalAssignments,
+    attendanceTracked,
     confirmationRate: percentage(confirmed, totalAssignments),
     attendanceRate: percentage(present, attendanceTracked),
     pendingResponses: assignments.filter(
@@ -557,6 +574,20 @@ const attendanceTotals = computed(() => {
   const visitors = attendanceEntries.value.reduce((sum, entry) => sum + entry.visitorCount, 0);
   const members = attendanceEntries.value.reduce((sum, entry) => sum + entry.memberCount, 0);
   return { visitors, members, total: visitors + members };
+});
+
+const attendanceChartRows = computed(() => {
+  const rows = [...attendanceEntries.value]
+    .map((entry) => ({ ...entry, total: entry.memberCount + entry.visitorCount }))
+    .sort((first, second) => first.date.localeCompare(second.date));
+  const maxAttendance = Math.max(0, ...rows.map((entry) => entry.total));
+
+  return rows.map((entry) => ({
+    ...entry,
+    scalePercent: maxAttendance > 0 ? (entry.total / maxAttendance) * 100 : 0,
+    memberShare: entry.total > 0 ? (entry.memberCount / entry.total) * 100 : 0,
+    visitorShare: entry.total > 0 ? (entry.visitorCount / entry.total) * 100 : 0,
+  }));
 });
 
 const loadAttendance = async () => {
@@ -721,6 +752,15 @@ onMounted(async () => {
   flex: 0 0 auto;
 }
 
+.report-section-eyebrow {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--app-color-accent);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
 .responsive-dialog-header {
   display: flex;
   align-items: flex-start;
@@ -738,10 +778,37 @@ onMounted(async () => {
   gap: 12px;
 }
 
+.report-context-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.report-context-strip > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: 12px;
+  background: var(--app-color-surface-soft);
+}
+
+.report-context-strip span {
+  color: var(--app-color-text-muted);
+  font-size: 0.75rem;
+}
+
+.report-context-strip strong {
+  color: var(--app-color-text);
+  font-size: 0.86rem;
+}
+
 .report-kpi-card {
   display: grid;
   gap: 6px;
-  border-radius: 8px !important;
+  border-radius: 14px !important;
 }
 
 .report-kpi-card span {
@@ -764,7 +831,7 @@ onMounted(async () => {
 }
 
 .report-panel {
-  border-radius: 8px !important;
+  border-radius: 14px !important;
 }
 
 .report-panel-title {
@@ -820,6 +887,10 @@ onMounted(async () => {
   height: 100%;
   border-radius: inherit;
   background: var(--app-color-accent, #B5472A);
+}
+
+.report-track--empty {
+  background: color-mix(in srgb, var(--app-color-surface-muted) 70%, transparent);
 }
 
 .report-row small,
@@ -941,47 +1012,99 @@ onMounted(async () => {
   font-weight: 700;
 }
 
-.attendance-list {
-  display: grid;
-  gap: 8px;
-}
-
-.attendance-row {
+.attendance-chart-legend {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0 0 12px;
+}
+
+.attendance-chart-legend span {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border: 1px solid var(--app-color-border);
-  border-radius: 8px;
-  background: var(--app-color-surface-soft);
-  padding: 10px 11px;
-  border-color: var(--app-color-border);
-}
-
-.attendance-row strong {
-  display: block;
-  color: var(--app-color-text);
-  font-size: 0.84rem;
-  font-weight: 800;
-}
-
-.attendance-row small {
+  gap: 7px;
   color: var(--app-color-text-muted);
   font-size: 0.74rem;
   font-weight: 700;
 }
 
-.attendance-counts {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+.attendance-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.attendance-dot--members,
+.attendance-chart-bar__members {
+  background: var(--app-color-success);
+}
+
+.attendance-dot--visitors,
+.attendance-chart-bar__visitors {
+  background: var(--app-color-accent);
+}
+
+.attendance-chart {
+  display: grid;
+  gap: 12px;
+}
+
+.attendance-chart-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.75fr) minmax(120px, 1fr) 42px;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.attendance-chart-label {
+  display: grid;
+  min-width: 0;
   gap: 2px;
 }
 
-.attendance-counts span {
-  color: var(--app-color-text-soft);
-  font-size: 0.76rem;
+.attendance-chart-label strong {
+  overflow: hidden;
+  color: var(--app-color-text);
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attendance-chart-label small {
+  overflow: hidden;
+  color: var(--app-color-text-muted);
+  font-size: 0.74rem;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attendance-chart-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--app-color-surface-muted);
+}
+
+.attendance-chart-bar {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.attendance-chart-bar__members,
+.attendance-chart-bar__visitors {
+  display: block;
+  height: 100%;
+}
+
+.attendance-chart-total {
+  color: var(--app-color-text);
+  font-size: 0.82rem;
+  text-align: right;
 }
 
 @media (min-width: 900px) {
@@ -1007,6 +1130,31 @@ onMounted(async () => {
 
   .section-heading .v-btn {
     width: 100%;
+  }
+
+  .report-context-strip > div {
+    align-items: flex-start;
+    flex-direction: column-reverse;
+    gap: 4px;
+    padding: 9px;
+  }
+
+  .attendance-chart-row {
+    grid-template-columns: minmax(0, 1fr) 36px;
+    gap: 7px 10px;
+  }
+
+  .attendance-chart-label {
+    grid-column: 1;
+  }
+
+  .attendance-chart-total {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .attendance-chart-track {
+    grid-column: 1 / -1;
   }
 }
 </style>
