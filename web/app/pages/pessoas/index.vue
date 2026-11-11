@@ -514,10 +514,6 @@ onMounted(load);
 }
 
 @media (max-width: 600px) {
-  .people-header-btn-label {
-    display: none;
-  }
-
   .people-filter-btn {
     min-width: 48px;
     padding: 0 12px;

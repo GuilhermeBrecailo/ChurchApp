@@ -216,6 +216,7 @@ export function formatChurch(church: DemoChurch) {
     complement: church.complement,
     document: church.document,
     logo: church.logo,
+    welcomeMessage: church.welcomeMessage,
     accentColor: church.accentColor,
     textColor: church.textColor,
     fontFamily: church.fontFamily,

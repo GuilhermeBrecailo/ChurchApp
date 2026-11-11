@@ -68,6 +68,26 @@ function assertManager(ctx: DemoContext) {
   if (!ctx.isPrivileged) throw new DemoError("Apenas o pastor pode configurar mensagens");
 }
 
+/** Visitante só recebe mensagem se autorizou contato (LGPD). */
+function canReceiveMessage(ctx: DemoContext, person: { id: string; status: string; contactConsent?: boolean }) {
+  if (person.status !== "VISITOR") return true;
+  const followUp = ctx.db.followUps.find((item) => item.rosterMemberId === person.id);
+  return followUp ? followUp.consentToContact : person.contactConsent === true;
+}
+
+function audienceOf(ctx: DemoContext, audience: string, recipientIds: string[] = []) {
+  const church = ctx.requireChurch();
+  return ctx.db.roster.filter(
+    (item) =>
+      item.churchId === church.id &&
+      (audience === "ALL"
+        ? item.status !== "FORMER"
+        : audience === "SELECTED"
+          ? recipientIds.includes(item.id)
+          : item.status === audience),
+  );
+}
+
 function birthdaysIn(ctx: DemoContext, range: string) {
   const church = ctx.requireChurch();
   const today = new Date(ctx.now);
@@ -86,6 +106,8 @@ function birthdaysIn(ctx: DemoContext, range: string) {
         name: item.name,
         phone: item.phone,
         birthDate: item.birthDate!,
+        status: item.status,
+        canReceiveMessage: canReceiveMessage(ctx, item),
         turningAge: next.getFullYear() - year!,
         daysUntil,
       }];
@@ -186,11 +208,8 @@ export default defineHandlers((r) => {
     if (!ctx.db.meta.whatsappConnected) throw new DemoError("Conecte o WhatsApp da igreja antes de enviar mensagens");
     const church = ctx.requireChurch();
     const audience = ctx.body?.audience ?? "ALL";
-    const people = ctx.db.roster.filter(
-      (item) =>
-        item.churchId === church.id &&
-        item.phone &&
-        (audience === "ALL" ? item.status !== "FORMER" : audience === "SELECTED" ? (ctx.body?.recipientIds ?? []).includes(item.id) : item.status === audience),
+    const people = audienceOf(ctx, audience, ctx.body?.recipientIds ?? []).filter(
+      (item) => item.phone && canReceiveMessage(ctx, item),
     );
     const log = {
       id: newId("ml"),
@@ -209,8 +228,24 @@ export default defineHandlers((r) => {
     return logView(ctx, log);
   });
 
+  r.post("/api/church/messages/preview", (ctx) => {
+    assertManager(ctx);
+    const audience = ctx.body?.audience ?? "ALL";
+    const ids: string[] = ctx.body?.recipientIds ?? [];
+    if (audience === "SELECTED" && !ids.length) return { recipients: 0, excludedWithoutConsent: 0, withoutPhone: 0 };
+    const people = audienceOf(ctx, audience, ids);
+    const allowed = people.filter((item) => canReceiveMessage(ctx, item));
+    return {
+      recipients: allowed.length,
+      excludedWithoutConsent: people.length - allowed.length,
+      withoutPhone: allowed.filter((item) => !item.phone).length,
+    };
+  });
+
   // ---- WhatsApp ------------------------------------------------------------------
-  r.get("/api/church/whatsapp/status", (ctx) => ({ connected: ctx.db.meta.whatsappConnected }));
+  r.get("/api/church/whatsapp/status", (ctx) =>
+    ctx.db.meta.whatsappConnected ? { connected: true, phone: "5541999998888" } : { connected: false },
+  );
 
   r.post("/api/church/whatsapp/connect", (ctx) => {
     assertManager(ctx);

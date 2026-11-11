@@ -49,7 +49,7 @@ export function formatMe(ctx: DemoContext) {
     .filter((item) => item.userId === user.id && !item.isActive)
     .map((item) => db.churches.find((church) => church.id === item.churchId))
     .filter(Boolean)
-    .map((item) => ({ id: item!.id, name: item!.name }));
+    .map((item) => ({ id: item!.id, name: item!.name, slug: item!.slug }));
 
   return {
     id: user.id,

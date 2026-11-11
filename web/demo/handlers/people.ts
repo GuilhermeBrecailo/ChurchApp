@@ -205,8 +205,27 @@ export default defineHandlers((r) => {
       createdAt: ctx.now.toISOString(),
     };
     ctx.db.memberships.push(membership);
-    ensureRosterFor(ctx, user, church.id);
-    return memberView(ctx, membership, user);
+    // Liga a conta ao registro que já existe no rol (por id, e-mail ou telefone).
+    const digits = (value: string | null | undefined) => (value ?? "").replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+    const linkable =
+      ctx.db.roster.find((item) => item.id === body.rosterMemberId && item.churchId === church.id && !item.userId) ??
+      ctx.db.roster.find(
+        (item) =>
+          item.churchId === church.id &&
+          !item.userId &&
+          ((item.email && item.email.toLowerCase() === user.email.toLowerCase()) ||
+            (user.phone && digits(item.phone) && digits(item.phone) === digits(user.phone))),
+      );
+    if (linkable) {
+      linkable.userId = user.id;
+      linkable.status = "MEMBER";
+      linkable.joinedAt = linkable.joinedAt ?? ctx.now.toISOString();
+    }
+    const person = linkable ?? ensureRosterFor(ctx, user, church.id);
+    const temporaryPassword = body.password
+      ? undefined
+      : Array.from({ length: 10 }, () => "abcdefghjkmnpqrstuvwxyz23456789"[Math.floor(Math.random() * 31)]).join("");
+    return { ...memberView(ctx, membership, user), mustChangePassword: true, rosterMemberId: person.id, ...(temporaryPassword ? { temporaryPassword } : {}) };
   });
 
   r.patch("/api/church/members/:id/permissions", (ctx) => {
@@ -223,7 +242,12 @@ export default defineHandlers((r) => {
     if (body.name !== undefined) user.name = body.name;
     if (body.email !== undefined) user.email = body.email;
     if (body.phone !== undefined) user.phone = body.phone;
-    if (body.role !== undefined && ctx.isPrivileged) membership.role = body.role;
+    if (body.role !== undefined && body.role !== membership.role && ctx.isPrivileged) {
+      if (membership.role === "ADMIN") {
+        throw new DemoError("O tipo de um administrador não pode ser alterado por este formulário");
+      }
+      membership.role = body.role;
+    }
     const person = ctx.db.roster.find((item) => item.userId === user.id);
     if (person) {
       person.name = user.name;
@@ -267,13 +291,14 @@ export default defineHandlers((r) => {
     const membership = findOr(ctx.db.memberships, (item) => item.id === ctx.params.id && !item.isActive, "Pedido não encontrado");
     membership.isActive = true;
     const user = ctx.db.users.find((item) => item.id === membership.userId);
+    let rosterMemberId: string | null = null;
     if (user) {
-      ensureRosterFor(ctx, user, membership.churchId);
+      rosterMemberId = ensureRosterFor(ctx, user, membership.churchId).id;
       ctx.db.notifications.push({
         id: newId("nt"),
         userId: user.id,
-        title: "Pedido aprovado!",
-        body: `Bem-vindo(a) à ${ctx.church?.name ?? "igreja"}.`,
+        title: "Você foi aprovado!",
+        body: `Agora você faz parte da ${ctx.church?.name ?? "igreja"}. Toque para entrar.`,
         url: "/",
         type: "membership_approved",
         scheduleId: null,
@@ -281,7 +306,7 @@ export default defineHandlers((r) => {
         createdAt: ctx.now.toISOString(),
       });
     }
-    return { success: true };
+    return { success: true, rosterMemberId };
   });
 
   r.patch("/api/church/members/pending/:id/reject", (ctx) => {
@@ -359,6 +384,19 @@ export default defineHandlers((r) => {
       contactConsent: Boolean(body.contactConsent),
     };
     ctx.db.roster.push(person);
+    if (person.status === "VISITOR" || body.contactConsent) {
+      ctx.db.followUps.push({
+        id: newId("fu"),
+        churchId: church.id,
+        rosterMemberId: person.id,
+        stage: person.status === "VISITOR" ? "NEW" : "INTEGRATED",
+        consentToContact: Boolean(body.contactConsent),
+        nextContactAt: null,
+        lastContactAt: null,
+        responsibleId: null,
+        activities: [],
+      });
+    }
     return rosterView(person);
   });
 

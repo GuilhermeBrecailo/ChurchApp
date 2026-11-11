@@ -150,8 +150,192 @@ function checklistView(ctx: DemoContext, item: (typeof ctx.db.checklistItems)[nu
   };
 }
 
+// ---- formato novo (redesign): lista paginada, permissões e equipe ---------
+const HEAVY_METADATA = ["lyrics", "chords", "keyboardChords"];
+
+function withPermissions(ctx: DemoContext, view: ReturnType<typeof scheduleView>) {
+  return {
+    ...view,
+    canManage: ctx.can("SCHEDULE_EDIT", view.departmentId),
+    canDelete: ctx.can("SCHEDULE_DELETE", view.departmentId),
+    canNotify: ctx.can("MINISTRY_NOTIFY", view.departmentId),
+  };
+}
+
+function lightView(ctx: DemoContext, schedule: DemoSchedule) {
+  const view = withPermissions(ctx, scheduleView(ctx.db, schedule));
+  return {
+    ...view,
+    mediaItems: view.mediaItems.map((item) => {
+      const metadata = { ...((item.mediaItem as { metadata?: Record<string, unknown> }).metadata ?? {}) };
+      for (const key of HEAVY_METADATA) delete metadata[key];
+      return { ...item, mediaItem: { ...item.mediaItem, metadata } };
+    }),
+  };
+}
+
+const dayStart = (value: string) => new Date(value.length === 10 ? `${value}T00:00:00` : value);
+const dayEnd = (value: string) => (value.length === 10 ? new Date(`${value}T23:59:59.999`) : new Date(value));
+
+function managesDepartment(ctx: DemoContext, departmentId: string) {
+  const department = ctx.db.departments.find((item) => item.id === departmentId);
+  return (
+    department?.leaderId === ctx.user?.id ||
+    ["SCHEDULE_CREATE", "SCHEDULE_EDIT", "SCHEDULE_DELETE"].some((permission) => ctx.can(permission, departmentId))
+  );
+}
+
+function listSchedulesPaged(ctx: DemoContext) {
+  const church = ctx.requireChurch();
+  const query = ctx.query;
+  const scope = query.scope || "all";
+  const me = ctx.user?.id;
+  const departments = new Set(ctx.db.departments.filter((item) => item.churchId === church.id).map((item) => item.id));
+  const order = query.order === "desc" || (query.to && !query.from) ? "desc" : "asc";
+  const limit = Math.min(Math.max(Number(query.limit) || 30, 1), 100);
+  const from = query.from ? dayStart(query.from).getTime() : null;
+  const to = query.to ? dayEnd(query.to).getTime() : null;
+
+  let list = ctx.db.schedules.filter((item) => departments.has(item.departmentId));
+  if (query.departmentId) list = list.filter((item) => item.departmentId === query.departmentId);
+  if (scope === "mine") {
+    const mine = new Set(ctx.db.assignments.filter((item) => item.userId === me).map((item) => item.scheduleId));
+    list = list.filter((item) => mine.has(item.id));
+  } else if (scope === "managed") {
+    list = list.filter((item) => managesDepartment(ctx, item.departmentId));
+  }
+  list = list
+    .filter((item) => {
+      const time = new Date(item.date).getTime();
+      return (from === null || time >= from) && (to === null || time <= to);
+    })
+    .sort((a, b) => (order === "asc" ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)) || a.id.localeCompare(b.id));
+
+  const start = query.cursor ? list.findIndex((item) => item.id === query.cursor) + 1 : 0;
+  const page = list.slice(start, start + limit);
+  const nextCursor = start + limit < list.length ? page[page.length - 1]?.id ?? null : null;
+  return { items: page.map((item) => lightView(ctx, item)), nextCursor };
+}
+
+/** Equipe enviada junto com a escala: linhas com id ficam (com resposta), as outras entram. */
+function replaceTeam(
+  ctx: DemoContext,
+  schedule: DemoSchedule,
+  incoming: Array<{ id?: string; userId: string; role?: string }>,
+) {
+  const previous = ctx.db.assignments.filter((item) => item.scheduleId === schedule.id);
+  const rows = incoming.flatMap((entry) =>
+    String(entry.role || "Voluntário")
+      .split(" · ")
+      .map((role, index) => ({ ...entry, id: index === 0 ? entry.id : undefined, role: role.trim() || "Voluntário" })),
+  );
+  removeWhere(ctx.db.assignments, (item) => item.scheduleId === schedule.id);
+  const used = new Set<string>();
+  for (const entry of rows) {
+    if (!entry.userId) continue;
+    const old =
+      previous.find((item) => entry.id && item.id === entry.id && !used.has(item.id)) ??
+      previous.find((item) => item.userId === entry.userId && item.role === entry.role && !used.has(item.id));
+    if (old) used.add(old.id);
+    const sameUser = previous.find((item) => item.userId === entry.userId);
+    ctx.db.assignments.push(
+      old
+        ? { ...old, role: entry.role }
+        : {
+            id: newId("as"),
+            scheduleId: schedule.id,
+            userId: entry.userId,
+            role: entry.role,
+            viewedAt: sameUser?.viewedAt ?? null,
+            confirmationStatus: sameUser?.confirmationStatus ?? "PENDING",
+            confirmedAt: sameUser?.confirmedAt ?? null,
+            declineReason: sameUser?.declineReason ?? null,
+            attendanceStatus: "PENDING",
+            attendedAt: null,
+          },
+    );
+  }
+  const before = new Set(previous.map((item) => item.userId));
+  const after = new Set(ctx.db.assignments.filter((item) => item.scheduleId === schedule.id).map((item) => item.userId));
+  return {
+    added: [...after].filter((id) => !before.has(id)),
+    removed: [...before].filter((id) => !after.has(id)),
+    kept: [...after].filter((id) => before.has(id)),
+  };
+}
+
+function announceTeam(
+  ctx: DemoContext,
+  schedule: DemoSchedule,
+  changes: { added: string[]; removed: string[]; kept: string[] },
+  keptMessage?: { title: string; body: string },
+) {
+  const department = ctx.db.departments.find((item) => item.id === schedule.departmentId);
+  const url = `/scale?schedule=${schedule.id}`;
+  notify(ctx, changes.added, {
+    title: "Nova escala publicada",
+    body: `${department?.name ?? "Ministério"} · ${schedule.description}. Confirme sua presença.`,
+    url,
+    type: "schedule-assignment",
+    scheduleId: schedule.id,
+  });
+  notify(ctx, changes.removed, {
+    title: "Você foi removido de uma escala",
+    body: `${department?.name ?? "Ministério"} · ${schedule.description}.`,
+    url: "/scale",
+    type: "schedule-removed",
+    scheduleId: schedule.id,
+  });
+  if (keptMessage) {
+    notify(ctx, changes.kept, { ...keptMessage, url, type: "schedule-updated", scheduleId: schedule.id });
+  }
+}
+
+function conflictsFor(
+  ctx: DemoContext,
+  input: { scheduleId?: string; departmentId?: string; serviceOccurrenceId?: string; date?: string; time?: string; userIds: string[] },
+) {
+  const reference = input.scheduleId ? ctx.db.schedules.find((item) => item.id === input.scheduleId) : null;
+  const occurrenceId = input.serviceOccurrenceId ?? reference?.serviceOccurrenceId ?? null;
+  const when = reference
+    ? new Date(reference.date)
+    : input.date
+      ? localDateTime(input.date, input.time)
+      : null;
+  const departmentId = input.departmentId ?? reference?.departmentId;
+  const others = ctx.db.schedules.filter((item) => {
+    if (item.id === input.scheduleId || item.departmentId === departmentId) return false;
+    if (occurrenceId) return item.serviceOccurrenceId === occurrenceId;
+    return when ? Math.abs(new Date(item.date).getTime() - when.getTime()) < 3 * 3600 * 1000 : false;
+  });
+  const conflicts = others.flatMap((other) => {
+    const department = ctx.db.departments.find((item) => item.id === other.departmentId);
+    return ctx.db.assignments
+      .filter((item) => item.scheduleId === other.id && input.userIds.includes(item.userId))
+      .map((item) => ({
+        userId: item.userId,
+        userName: userName(ctx.db, item.userId),
+        departmentName: department?.name ?? "",
+        role: item.role,
+        scheduleId: other.id,
+        scheduleDescription: other.description,
+      }));
+  });
+  const day = when
+    ? `${when.getFullYear()}-${String(when.getMonth() + 1).padStart(2, "0")}-${String(when.getDate()).padStart(2, "0")}`
+    : null;
+  const unavailable = day
+    ? ctx.db.users
+        .filter((user) => input.userIds.includes(user.id) && (user.unavailableDates ?? []).some((date) => date.slice(0, 10) === day))
+        .map((user) => ({ userId: user.id, userName: user.name }))
+    : [];
+  return { conflicts, unavailable };
+}
+
 export default defineHandlers((r) => {
   r.get("/api/church/schedules", (ctx) => {
+    const paged = ["scope", "from", "to", "cursor", "limit", "departmentId", "order"].some((key) => ctx.query[key] !== undefined);
+    if (paged) return listSchedulesPaged(ctx);
     const church = ctx.requireChurch();
     const departments = new Set(ctx.db.departments.filter((item) => item.churchId === church.id).map((item) => item.id));
     return ctx.db.schedules
@@ -160,7 +344,34 @@ export default defineHandlers((r) => {
       .map((item) => scheduleView(ctx.db, item));
   });
 
-  r.post("/api/church/schedules", (ctx) => createSchedule(ctx, ctx.body?.departmentId));
+  r.post("/api/church/schedules", (ctx) => {
+    const created = createSchedule(ctx, ctx.body?.departmentId);
+    const schedule = scheduleOf(ctx, created.id);
+    if (Array.isArray(ctx.body?.assignments)) {
+      announceTeam(ctx, schedule, replaceTeam(ctx, schedule, ctx.body.assignments));
+    }
+    return withPermissions(ctx, scheduleView(ctx.db, schedule));
+  });
+
+  // Rotas fixas antes de "/:id".
+  r.post("/api/church/schedules/assignment-conflicts", (ctx) =>
+    conflictsFor(ctx, {
+      scheduleId: ctx.body?.excludeScheduleId,
+      departmentId: ctx.body?.departmentId,
+      serviceOccurrenceId: ctx.body?.serviceOccurrenceId,
+      date: ctx.body?.date,
+      time: ctx.body?.time,
+      userIds: Array.isArray(ctx.body?.userIds) ? ctx.body.userIds : [],
+    }),
+  );
+
+  r.get("/api/church/schedules/:id", (ctx) => {
+    const schedule = ctx.db.schedules.find((item) => item.id === ctx.params.id);
+    const church = ctx.requireChurch();
+    const department = schedule ? ctx.db.departments.find((item) => item.id === schedule.departmentId) : null;
+    if (!schedule || department?.churchId !== church.id) throw new DemoError("Escala não encontrada nesta igreja");
+    return withPermissions(ctx, scheduleView(ctx.db, schedule));
+  });
 
   r.get("/api/church/departments/:id/schedules", (ctx) => {
     const church = ctx.requireChurch();
@@ -177,6 +388,7 @@ export default defineHandlers((r) => {
     const schedule = scheduleOf(ctx, ctx.params.id);
     ctx.assertCan("SCHEDULE_EDIT", schedule.departmentId, "Sem permissão para editar esta escala");
     const body = ctx.body ?? {};
+    const before = { date: schedule.date, arrivalAt: schedule.arrivalAt, rehearsalAt: schedule.rehearsalAt };
     if (body.title !== undefined || body.description !== undefined) {
       schedule.description = String(body.title ?? body.description).trim() || schedule.description;
     }
@@ -202,7 +414,32 @@ export default defineHandlers((r) => {
     if (body.isCommunionService !== undefined) schedule.isCommunionService = Boolean(body.isCommunionService);
     if (body.departmentId) schedule.departmentId = body.departmentId;
     setMedia(ctx, schedule, body.songIds, body.resourceIds);
-    return scheduleView(ctx.db, schedule);
+
+    const dateChanged = schedule.date !== before.date;
+    if (dateChanged) {
+      for (const row of ctx.db.assignments.filter((item) => item.scheduleId === schedule.id)) {
+        Object.assign(row, { confirmationStatus: "PENDING", viewedAt: null, declineReason: null, confirmedAt: null });
+      }
+    }
+    const team = Array.isArray(body.assignments)
+      ? replaceTeam(ctx, schedule, body.assignments)
+      : {
+          added: [],
+          removed: [],
+          kept: [...new Set(ctx.db.assignments.filter((item) => item.scheduleId === schedule.id).map((item) => item.userId))],
+        };
+    const detailsChanged = schedule.arrivalAt !== before.arrivalAt || schedule.rehearsalAt !== before.rehearsalAt;
+    announceTeam(
+      ctx,
+      schedule,
+      team,
+      dateChanged
+        ? { title: "Mudou a data da escala", body: `${schedule.description}: confira o novo dia e confirme de novo.` }
+        : detailsChanged
+          ? { title: "Escala atualizada", body: `${schedule.description}: horário de chegada ou ensaio mudou.` }
+          : undefined,
+    );
+    return withPermissions(ctx, scheduleView(ctx.db, schedule));
   });
 
   r.delete("/api/church/schedules/:id", (ctx) => {
@@ -282,23 +519,23 @@ export default defineHandlers((r) => {
     if (!["VIEWED", "CONFIRMED", "DECLINED", "MAYBE", "SWAP_REQUESTED"].includes(action)) {
       throw new DemoError("Acao da escala invalida");
     }
-    const assignment = ctx.db.assignments.find((item) => item.scheduleId === schedule.id && item.userId === user.id);
-    if (!assignment) throw new DemoError("Voce nao esta nesta escala");
+    const rows = ctx.db.assignments.filter((item) => item.scheduleId === schedule.id && item.userId === user.id);
+    const assignment = rows[0];
+    if (!assignment) throw new DemoError("Você não está nesta escala");
     const now = ctx.now.toISOString();
-    assignment.viewedAt = assignment.viewedAt || now;
-    if (action === "CONFIRMED") {
-      Object.assign(assignment, { confirmationStatus: "CONFIRMED", confirmedAt: now, declineReason: null });
-    } else if (action === "DECLINED") {
-      Object.assign(assignment, { confirmationStatus: "DECLINED", confirmedAt: null, declineReason: ctx.body?.declineReason?.trim() || null });
-    } else if (action !== "VIEWED") {
-      Object.assign(assignment, { confirmationStatus: action, confirmedAt: null, declineReason: null });
+    const reason = ctx.body?.declineReason?.trim() || null;
+    for (const row of rows) {
+      row.viewedAt = row.viewedAt || now;
+      if (action === "CONFIRMED") Object.assign(row, { confirmationStatus: "CONFIRMED", confirmedAt: now, declineReason: null });
+      else if (action === "DECLINED" || action === "SWAP_REQUESTED") Object.assign(row, { confirmationStatus: action, confirmedAt: null, declineReason: reason });
+      else if (action === "MAYBE") Object.assign(row, { confirmationStatus: "MAYBE", confirmedAt: null, declineReason: null });
     }
     if (action !== "VIEWED") {
       const department = ctx.db.departments.find((item) => item.id === schedule.departmentId);
       const church = ctx.church;
       const labels: Record<string, string> = {
-        CONFIRMED: "confirmou presenca",
-        DECLINED: assignment.declineReason ? `marcou que nao pode ir: ${assignment.declineReason}` : "marcou que nao pode ir",
+        CONFIRMED: "confirmou presença",
+        DECLINED: assignment.declineReason ? `marcou que não pode ir: ${assignment.declineReason}` : "marcou que não pode ir",
         MAYBE: "marcou talvez",
         SWAP_REQUESTED: "pediu troca",
       };
@@ -310,12 +547,16 @@ export default defineHandlers((r) => {
         scheduleId: schedule.id,
       });
     }
-    return assignmentView(ctx, assignment);
+    return { ...assignmentView(ctx, assignment), assignments: rows.map((row) => assignmentView(ctx, row)) };
   });
 
   r.post("/api/church/schedules/:id/reminders", (ctx) => {
     const schedule = scheduleOf(ctx, ctx.params.id);
-    const pending = ctx.db.assignments.filter((item) => item.scheduleId === schedule.id && item.confirmationStatus !== "CONFIRMED");
+    const rows = ctx.db.assignments.filter((item) => item.scheduleId === schedule.id);
+    const pending = ctx.body?.onlyPending
+      ? rows.filter((item) => rows.filter((row) => row.userId === item.userId).every((row) => row.confirmationStatus === "PENDING"))
+      : rows.filter((item) => item.confirmationStatus !== "CONFIRMED");
+    if (ctx.body?.onlyPending && !pending.length) throw new DemoError("Todos da equipe já responderam");
     notify(ctx, pending.map((item) => item.userId), {
       title: "Lembrete de escala",
       body: `Confirme sua presença em ${schedule.description}.`,

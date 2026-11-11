@@ -344,13 +344,22 @@ export default defineHandlers((r) => {
         createdAt: ctx.now.toISOString(),
       });
     }
-    return { success: true, churchName: church.name };
+    const membership = ctx.db.memberships.find((item) => item.userId === user.id && item.churchId === church.id);
+    return {
+      success: true,
+      churchId: church.id,
+      churchName: church.name,
+      churchSlug: church.slug,
+      membershipId: membership?.id ?? null,
+      alreadyMember: Boolean(existing),
+      pending: true,
+    };
   });
 
   r.get("/public/church/invite/:code", (ctx) => {
     const code = ctx.params.code!.trim().toUpperCase();
     const church = findOr(ctx.db.churches, (item) => item.inviteCode === code, "Convite inválido ou expirado");
-    return { name: church.name, logo: church.logo };
+    return { name: church.name, logo: church.logo, slug: church.slug };
   });
 
   r.post("/public/church/invite/:code/register", (ctx) => {

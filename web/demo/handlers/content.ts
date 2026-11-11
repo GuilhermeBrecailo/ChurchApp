@@ -372,6 +372,28 @@ export default defineHandlers((r) => {
     return { ...result, items: result.items.map((item) => prayerView(ctx, item)) };
   });
 
+  r.get("/api/church/prayer-requests/mine", (ctx) => {
+    const church = ctx.requireChurch();
+    const user = ctx.me();
+    return {
+      items: ctx.db.prayerRequests
+        .filter((item) => item.churchId === church.id && item.userId === user.id)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, 50)
+        .map((item) => ({
+          id: item.id,
+          title: item.title,
+          body: item.body,
+          isAnonymous: item.isAnonymous,
+          isAnswered: item.isAnswered,
+          status: item.status,
+          rejectionReason: item.rejectionReason,
+          reviewedAt: item.status === "PENDING" ? null : item.createdAt,
+          createdAt: item.createdAt,
+        })),
+    };
+  });
+
   r.get("/api/church/prayer-requests/pending", (ctx) => {
     if (!ctx.can("PRAYER_MANAGE")) throw new DemoError("Sem permissão para moderar pedidos de oração");
     const result = paginate(prayersOf(ctx, "PENDING"), Number(ctx.query.page) || 1);

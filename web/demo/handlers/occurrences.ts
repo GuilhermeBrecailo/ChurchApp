@@ -227,8 +227,25 @@ export default defineHandlers((r) => {
     };
   };
 
+  /** Culto (ocorrência) → horário + dia, para achar a contagem daquele culto. */
+  const occurrenceDay = (ctx: DemoContext, occurrenceId?: string | null, date?: string | null) => {
+    const occurrence = occurrenceId ? ctx.db.occurrences.find((item) => item.id === occurrenceId) : null;
+    if (occurrence) return { serviceTimeId: occurrence.serviceTimeId, day: occurrence.date.slice(0, 10) };
+    if (date) return { serviceTimeId: null, day: String(date).slice(0, 10) };
+    return null;
+  };
+
   r.get("/api/church/attendance", (ctx) => {
     const church = ctx.requireChurch();
+    if (ctx.query.occurrenceId || (ctx.query.serviceTimeId && ctx.query.date)) {
+      const target = occurrenceDay(ctx, ctx.query.occurrenceId, ctx.query.date);
+      const serviceTimeId = ctx.query.serviceTimeId || target?.serviceTimeId;
+      if (!target || !serviceTimeId) return [];
+      return ctx.db.serviceAttendance
+        .filter((item) => item.churchId === church.id && item.serviceTimeId === serviceTimeId && localYmd(new Date(item.date)) === target.day)
+        .slice(0, 1)
+        .map((item) => attendanceView(ctx, item));
+    }
     const days = Math.max(Number(ctx.query.days) || 30, 1);
     const from = ctx.now.getTime() - days * 24 * 3600 * 1000;
     return ctx.db.serviceAttendance
@@ -268,7 +285,8 @@ export default defineHandlers((r) => {
 
   r.post("/api/church/attendance/:serviceTimeId/finalize", (ctx) => {
     const church = ctx.requireChurch();
-    const todayKey = localYmd(ctx.now);
+    const target = occurrenceDay(ctx, ctx.body?.occurrenceId, ctx.body?.date);
+    const todayKey = target?.day ?? localYmd(ctx.now);
     let item = ctx.db.serviceAttendance.find(
       (entry) => entry.serviceTimeId === ctx.params.serviceTimeId && localYmd(new Date(entry.date)) === todayKey,
     );
@@ -277,7 +295,7 @@ export default defineHandlers((r) => {
         id: newId("sa"),
         churchId: church.id,
         serviceTimeId: ctx.params.serviceTimeId!,
-        date: ctx.now.toISOString(),
+        date: new Date(`${todayKey}T12:00:00`).toISOString(),
         visitorCount: 0,
         memberCount: 0,
         notes: null,

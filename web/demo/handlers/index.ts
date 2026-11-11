@@ -13,6 +13,7 @@ import messages from "./messages";
 import notifications from "./notifications";
 import occurrences from "./occurrences";
 import people from "./people";
+import peopleDirectory from "./peopleDirectory";
 import reports from "./reports";
 import schedules from "./schedules";
 
@@ -23,6 +24,7 @@ const AREAS = [
   schedules,
   occurrences,
   people,
+  peopleDirectory,
   content,
   notifications,
   messages,
