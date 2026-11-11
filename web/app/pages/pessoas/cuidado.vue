@@ -167,7 +167,7 @@ function itemLine(item: CareItem) {
     const time = new Date(item.date).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
     return `${item.title} · ${when}, ${time}`;
   }
-  return `${item.title} · ${diff !== null && diff < 0 ? `era para ${when}` : when}`;
+  return `${item.title} · ${diff !== null && diff < 0 ? `atrasado (${when})` : when}`;
 }
 
 async function load() {

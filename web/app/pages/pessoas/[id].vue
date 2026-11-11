@@ -2,14 +2,13 @@
   <div class="person-page app-operational-page app-page--narrow pa-4 pb-16">
     <UtilsPageHeader
       :title="profile?.person.name ?? 'Pessoa'"
-      :kicker="profile ? kindLabel : undefined"
       back="/pessoas"
       back-label="Voltar para Pessoas"
     >
       <template v-if="profile" #below-title>
         <div class="person-chips">
           <span class="person-chip" :class="`person-chip--${profile.person.status.toLowerCase()}`">
-            {{ statusChip }}
+            {{ kindLabel }}
           </span>
           <span v-if="profile.person.hasAccount" class="person-chip person-chip--account">
             <Smartphone size="14" aria-hidden="true" /> Tem conta no app
@@ -461,13 +460,6 @@ useHead(() => ({ title: profile.value?.person.name ?? "Pessoa" }));
 const firstName = computed(() => profile.value?.person.name.trim().split(/\s+/)[0] ?? "");
 
 const kindLabel = computed(() => (profile.value ? personKindLabel(profile.value.person) : ""));
-
-const statusChip = computed(() => {
-  const status = profile.value?.person.status;
-  if (status === "VISITOR") return "Visitante";
-  if (status === "FORMER") return "Desligado";
-  return "Membro";
-});
 
 const accountTypeLabel = computed(() => {
   const role = profile.value?.person.role;
@@ -1026,7 +1018,7 @@ onMounted(async () => {
 }
 
 .person-assignment-date {
-  flex: 0 0 64px;
+  flex: 0 0 76px;
   color: var(--app-color-accent);
   font-size: 0.9rem;
   font-weight: 800;
