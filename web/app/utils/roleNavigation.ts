@@ -1,591 +1,325 @@
-import type { AppPermission } from "../../composables/usePermissions";
+/**
+ * Navegação do app (barra inferior no celular, lateral no desktop).
+ *
+ * Regras (docs/redesign/proposta.md §2):
+ * - no máximo 5 abas, sem "Mais"; as abas não mudam de lugar entre papéis,
+ *   só a 4ª muda (Ministérios para o líder, Gestão para quem administra);
+ * - cada destino tem uma única porta de entrada: o que não é aba fica dentro
+ *   de uma aba (Igreja ou Gestão), nunca repetido em atalhos;
+ * - sem igreja, não há barra (só o admin da plataforma tem Plataforma).
+ *
+ * Quem pode o quê vem de `resolveChurchAccess` (utils/churchAccess.ts).
+ */
+import {
+  isChurchManager,
+  ministryIdsWithPermissions,
+  resolveChurchAccess,
+  type AccessUser,
+} from "./churchAccess";
+import { groupManagementItems, type ManagementGroup } from "./navigationGroups";
 
 export type RoleNavigationIcon =
-  | "book"
-  | "calendar"
-  | "church"
-  | "clipboard"
-  | "cog"
-  | "heart"
   | "home"
-  | "messages"
-  | "more"
-  | "pastoral"
-  | "reports"
   | "scale"
-  | "team"
-  | "user"
-  | "users";
+  | "church"
+  | "ministries"
+  | "management"
+  | "platform"
+  | "profile"
+  | "people"
+  | "care"
+  | "prayer"
+  | "cults"
+  | "communicate"
+  | "settings"
+  | "reports";
+
+export type PrimaryTabKey =
+  | "home"
+  | "scale"
+  | "church"
+  | "ministries"
+  | "management"
+  | "platform"
+  | "profile";
 
 export type RoleNavigationItem = {
   key: string;
   label: string;
+  /** Texto mais longo, para leitores de tela e para o desktop. */
   title: string;
   description: string;
   route: string;
   icon: RoleNavigationIcon;
-  matchPrefixes: string[];
-  iconColor: string;
-  bgColor: string;
-  iconColorDark: string;
-  bgColorDark: string;
 };
+
+export type PrimaryTab = RoleNavigationItem & { key: PrimaryTabKey };
+
+export type ManagementGroupKey = "people" | "ministries" | "communication" | "church" | "platform";
+
+export type ManagementItem = RoleNavigationItem & { group: ManagementGroupKey };
 
 export type NavPreviewRole = "MEMBRO" | "LIDER" | "PASTOR";
 
-export type RoleNavigationUser = {
-  hasChurch?: boolean;
-  role?: string;
-  is_admin?: boolean;
-  isTitularPastor?: boolean;
-  canManageMembers?: boolean;
-  roles?: Array<{
-    scope: string;
-    departmentId: string | null;
-    permissions: string[];
-  }>;
-  permissions?: string[];
-  // Preview-only: deixa pastor/admin ver a navegacao como outro papel veria,
-  // sem alterar permissoes reais - checagens de API continuam no papel real.
+export type RoleNavigationUser = AccessUser & {
+  // Só para pré-visualizar: o pastor/admin vê a navegação como outro papel
+  // veria. A API continua checando o papel real.
   navPreviewRole?: NavPreviewRole | null;
 };
 
-const homeItem: RoleNavigationItem = {
-  key: "home",
-  label: "Início",
-  title: "Início",
-  description: "Resumo da sua igreja, escalas e conteúdos recentes.",
-  route: "/",
-  icon: "home",
-  matchPrefixes: ["/"],
-  iconColor: "#B5472A",
-  bgColor: "#F7E2D3",
-  iconColorDark: "#f0975a",
-  bgColorDark: "rgba(240,151,90,0.16)",
-};
+export type NavTier = "none" | "member" | "leader" | "manager";
 
-const navCatalog: Record<string, RoleNavigationItem> = {
-  home: homeItem,
-  pastoral: {
-    key: "pastoral",
-    label: "Pastoral",
-    title: "Cuidado pastoral",
-    description: "Veja quem precisa de atenção, visitas e acompanhamento.",
-    route: "/pastoral",
-    icon: "pastoral",
-    matchPrefixes: ["/pastoral"],
-    iconColor: "#7C3AED",
-    bgColor: "#F3E8FF",
-    iconColorDark: "#c4b5fd",
-    bgColorDark: "rgba(196,181,253,0.14)",
-  },
-  visits: {
-    key: "visits",
-    label: "Visitas",
-    title: "Visitas",
-    description: "Minhas visitas pastorais e retornos pendentes.",
-    route: "/pastoral/visitas",
-    icon: "pastoral",
-    matchPrefixes: ["/pastoral/visitas"],
-    iconColor: "#7C3AED",
-    bgColor: "#F3E8FF",
-    iconColorDark: "#c4b5fd",
-    bgColorDark: "rgba(196,181,253,0.14)",
-  },
-  visitors: {
-    key: "visitors",
-    label: "Visitantes",
-    title: "Acompanhamento de visitantes",
-    description: "Acolha visitantes e acompanhe contatos e retornos.",
-    route: "/pastoral/visitantes",
-    icon: "users",
-    matchPrefixes: ["/pastoral/visitantes"],
-    iconColor: "#0F766E",
-    bgColor: "#CCFBF1",
-    iconColorDark: "#2dd4bf",
-    bgColorDark: "rgba(45,212,191,0.12)",
-  },
-  people: {
-    key: "people",
-    label: "Pessoas",
-    title: "Pessoas",
-    description: "Membros, visitantes, cargos e acompanhamento pastoral.",
-    route: "/admin/pessoas",
-    icon: "users",
-    matchPrefixes: ["/admin/pessoas"],
-    iconColor: "#0F766E",
-    bgColor: "#CCFBF1",
-    iconColorDark: "#2dd4bf",
-    bgColorDark: "rgba(45,212,191,0.12)",
-  },
-  messages: {
-    key: "messages",
-    label: "Mensagens",
-    title: "Mensagens",
-    description: "Mensagens pós-culto, aniversariantes e avisos por WhatsApp.",
-    route: "/admin/mensagens",
-    icon: "messages",
-    matchPrefixes: ["/admin/mensagens"],
-    iconColor: "#0891B2",
-    bgColor: "#CFFAFE",
-    iconColorDark: "#22d3ee",
-    bgColorDark: "rgba(34,211,238,0.14)",
-  },
-  rolesManagement: {
-    key: "rolesManagement",
-    label: "Cargos",
-    title: "Cargos e permissões",
-    description: "Crie cargos, defina permissões e delegue acessos com segurança.",
-    route: "/admin/pessoas?secao=cargos",
-    icon: "clipboard",
-    matchPrefixes: ["/admin/pessoas"],
-    iconColor: "#6D28D9",
-    bgColor: "#EDE9FE",
-    iconColorDark: "#c4b5fd",
-    bgColorDark: "rgba(196,181,253,0.14)",
-  },
-  churchAdmin: {
-    key: "churchAdmin",
-    label: "Administração",
-    title: "Administração da igreja",
-    description: "Membros, ministérios, cargos e dados operacionais.",
-    route: "/admin",
-    icon: "cog",
-    matchPrefixes: ["/admin"],
-    iconColor: "#475569",
-    bgColor: "#E2E8F0",
-    iconColorDark: "#cbd5e1",
-    bgColorDark: "rgba(203,213,225,0.12)",
-  },
-  cults: {
-    key: "cults",
-    label: "Cultos",
-    title: "Cultos",
-    description: "Agenda de cultos, presença e resumo de cada celebração.",
-    route: "/cultos",
-    icon: "calendar",
-    matchPrefixes: ["/cultos"],
-    iconColor: "#B5472A",
-    bgColor: "#F7E2D3",
-    iconColorDark: "#f0975a",
-    bgColorDark: "rgba(240,151,90,0.16)",
-  },
-  reports: {
-    key: "reports",
-    label: "Relatórios",
-    title: "Relatórios",
-    description: "Confirmações, presença, visitas e visão da liderança.",
-    route: "/admin/relatorios",
-    icon: "reports",
-    matchPrefixes: ["/admin/relatorios"],
-    iconColor: "#B45309",
-    bgColor: "#FEF3C7",
-    iconColorDark: "#fbbf24",
-    bgColorDark: "rgba(251,191,36,0.12)",
-  },
-  team: {
-    key: "team",
-    label: "Ministérios",
-    title: "Meus ministérios",
-    description: "Ministérios, escalas, tarefas e pessoas sob responsabilidade.",
-    route: "/ministery",
-    icon: "team",
-    matchPrefixes: ["/ministery"],
-    iconColor: "#7C3AED",
-    bgColor: "#F3E8FF",
-    iconColorDark: "#c4b5fd",
-    bgColorDark: "rgba(196,181,253,0.14)",
+const TABS: Record<PrimaryTabKey, PrimaryTab> = {
+  home: {
+    key: "home",
+    label: "Início",
+    title: "Início",
+    description: "O que fazer hoje, escalas da semana e avisos.",
+    route: "/",
+    icon: "home",
   },
   scale: {
     key: "scale",
     label: "Escalas",
     title: "Escalas",
-    description: "Suas próximas escalas e compromissos da igreja.",
+    description: "Suas escalas, as da igreja e os cultos.",
     route: "/scale",
     icon: "scale",
-    matchPrefixes: ["/scale"],
-    iconColor: "#2563EB",
-    bgColor: "#DBEAFE",
-    iconColorDark: "#93c5fd",
-    bgColorDark: "rgba(147,197,253,0.14)",
+  },
+  church: {
+    key: "church",
+    label: "Igreja",
+    title: "Igreja",
+    description: "Avisos, conteúdo, oração, ministérios e contatos.",
+    route: "/igreja",
+    icon: "church",
   },
   ministries: {
     key: "ministries",
     label: "Ministérios",
-    title: "Ministérios",
-    description: "Times, repertórios, escalas e atividades da igreja.",
+    title: "Meus ministérios",
+    description: "Os ministérios que você lidera.",
     route: "/ministery",
-    icon: "church",
-    matchPrefixes: ["/ministery"],
-    iconColor: "#7C3AED",
-    bgColor: "#F3E8FF",
-    iconColorDark: "#c4b5fd",
-    bgColorDark: "rgba(196,181,253,0.14)",
+    icon: "ministries",
   },
-  content: {
-    key: "content",
-    label: "Conteúdo",
-    title: "Conteúdo",
-    description: "Devocionais, Bíblia, versículo do dia e publicações.",
-    route: "/content",
-    icon: "book",
-    matchPrefixes: ["/content"],
-    iconColor: "#2563EB",
-    bgColor: "#DBEAFE",
-    iconColorDark: "#93c5fd",
-    bgColorDark: "rgba(147,197,253,0.14)",
+  management: {
+    key: "management",
+    label: "Gestão",
+    title: "Gestão da igreja",
+    description: "Pessoas, cuidado, ministérios, comunicação e configurações.",
+    route: "/admin",
+    icon: "management",
   },
-  prayer: {
-    key: "prayer",
-    label: "Oração",
-    title: "Oração",
-    description: "Pedidos de oração e cuidado espiritual da comunidade.",
-    route: "/prayer",
-    icon: "heart",
-    matchPrefixes: ["/prayer"],
-    iconColor: "#EF4444",
-    bgColor: "#FEF2F2",
-    iconColorDark: "#f87171",
-    bgColorDark: "rgba(248,113,113,0.13)",
+  platform: {
+    key: "platform",
+    label: "Plataforma",
+    title: "Administração da plataforma",
+    description: "Igrejas, planos e usuários do ChurchApp.",
+    route: "/platform-admin",
+    icon: "platform",
   },
   profile: {
     key: "profile",
     label: "Perfil",
     title: "Meu perfil",
-    description: "Dados pessoais, indisponibilidades e preferências.",
+    description: "Seus dados, ministérios, datas e preferências.",
     route: "/user",
-    icon: "user",
-    matchPrefixes: ["/user"],
-    iconColor: "#14B8A6",
-    bgColor: "#F0FDFA",
-    iconColorDark: "#2dd4bf",
-    bgColorDark: "rgba(45,212,191,0.12)",
-  },
-  settings: {
-    key: "settings",
-    label: "Integrações",
-    title: "Integrações e página pública",
-    description: "Holyrics, WhatsApp, convites, horários e presença online.",
-    route: "/admin/configuracoes",
-    icon: "cog",
-    matchPrefixes: ["/admin/configuracoes"],
-    iconColor: "#475569",
-    bgColor: "#E2E8F0",
-    iconColorDark: "#cbd5e1",
-    bgColorDark: "rgba(203,213,225,0.12)",
-  },
-  churchProfile: {
-    key: "churchProfile",
-    label: "Cadastro",
-    title: "Cadastro da igreja",
-    description: "Nome, endereço, documento e plano da igreja.",
-    route: "/settings",
-    icon: "church",
-    matchPrefixes: ["/settings"],
-    iconColor: "#B5472A",
-    bgColor: "#F7E2D3",
-    iconColorDark: "#f0975a",
-    bgColorDark: "rgba(240,151,90,0.16)",
-  },
-  churchHub: {
-    key: "churchHub",
-    label: "Igreja",
-    title: "Igreja",
-    description: "Todos os atalhos da sua igreja num grid único.",
-    route: "/igreja",
-    icon: "church",
-    matchPrefixes: ["/igreja"],
-    iconColor: "#B5472A",
-    bgColor: "#F7E2D3",
-    iconColorDark: "#f0975a",
-    bgColorDark: "rgba(240,151,90,0.16)",
-  },
-  platformAdmin: {
-    key: "platformAdmin",
-    label: "Admin",
-    title: "Admin",
-    description: "Administração da plataforma.",
-    route: "/platform-admin",
-    icon: "cog",
-    matchPrefixes: ["/platform-admin"],
-    iconColor: "#475569",
-    bgColor: "#E2E8F0",
-    iconColorDark: "#cbd5e1",
-    bgColorDark: "rgba(203,213,225,0.12)",
-  },
-  publications: {
-    key: "publications",
-    label: "Publicações",
-    title: "Publicações",
-    description: "Avisos, devocionais, posts e conteúdo da igreja.",
-    route: "/admin/publicacoes",
-    icon: "book",
-    matchPrefixes: ["/admin/publicacoes"],
-    iconColor: "#0F766E",
-    bgColor: "#CCFBF1",
-    iconColorDark: "#5eead4",
-    bgColorDark: "rgba(94,234,212,0.12)",
-  },
-  more: {
-    key: "more",
-    label: "Mais",
-    title: "Mais opções",
-    description: "Veja todos os atalhos disponíveis para o seu perfil.",
-    route: "",
-    icon: "more",
-    matchPrefixes: [],
-    iconColor: "#64748B",
-    bgColor: "#E2E8F0",
-    iconColorDark: "#cbd5e1",
-    bgColorDark: "rgba(203,213,225,0.12)",
+    icon: "profile",
   },
 };
 
-function hasPermission(user: RoleNavigationUser | null | undefined, permission: AppPermission) {
-  if (!user) return false;
-  if (isPrivilegedChurchUser(user)) return true;
-  if (user.permissions?.includes(permission)) return true;
+const MANAGEMENT_ITEMS: Record<string, ManagementItem> = {
+  people: {
+    key: "people",
+    group: "people",
+    label: "Pessoas",
+    title: "Pessoas",
+    description: "Membros, visitantes e pedidos para entrar.",
+    route: "/pessoas",
+    icon: "people",
+  },
+  care: {
+    key: "care",
+    group: "people",
+    label: "Cuidado",
+    title: "Cuidado pastoral",
+    description: "Visitas, retornos de visitantes e quem precisa de atenção.",
+    route: "/pessoas/cuidado",
+    icon: "care",
+  },
+  prayerReview: {
+    key: "prayerReview",
+    group: "people",
+    label: "Pedidos de oração",
+    title: "Revisar pedidos de oração",
+    description: "Aprove os pedidos antes de aparecerem para a igreja.",
+    route: "/prayer?aba=pendentes",
+    icon: "prayer",
+  },
+  ministries: {
+    key: "ministries",
+    group: "ministries",
+    label: "Ministérios",
+    title: "Ministérios",
+    description: "Equipes, líderes, escalas e repertório.",
+    route: "/ministery",
+    icon: "ministries",
+  },
+  cults: {
+    key: "cults",
+    group: "ministries",
+    label: "Cultos",
+    title: "Cultos",
+    description: "Agenda de cultos, presença e público.",
+    route: "/cultos",
+    icon: "cults",
+  },
+  communicate: {
+    key: "communicate",
+    group: "communication",
+    label: "Comunicar",
+    title: "Comunicar",
+    description: "Avisos no app, WhatsApp, versículo e devocionais.",
+    route: "/comunicar",
+    icon: "communicate",
+  },
+  churchSettings: {
+    key: "churchSettings",
+    group: "church",
+    label: "Configurações da igreja",
+    title: "Configurações da igreja",
+    description: "Cadastro, página pública, horários, convite e plano.",
+    route: "/configuracoes",
+    icon: "settings",
+  },
+  reports: {
+    key: "reports",
+    group: "church",
+    label: "Relatórios",
+    title: "Relatórios",
+    description: "Confirmações, presença e visão da liderança.",
+    route: "/admin/relatorios",
+    icon: "reports",
+  },
+  platform: {
+    key: "platform",
+    group: "platform",
+    label: "Plataforma",
+    title: "Administração da plataforma",
+    description: "Igrejas, planos e usuários do ChurchApp.",
+    route: "/platform-admin",
+    icon: "platform",
+  },
+};
 
-  return (user.roles ?? []).some((role) => role.permissions.includes(permission));
+/** Lidera algum ministério (cargo de ministério com permissão). */
+function leadsAnyMinistry(user: RoleNavigationUser | null | undefined) {
+  return resolveChurchAccess(user).leadsMinistry || ministryIdsWithPermissions(user).length > 0;
 }
 
-function hasAnyPermission(user: RoleNavigationUser | null | undefined, permissions: AppPermission[]) {
-  return permissions.some((permission) => hasPermission(user, permission));
-}
+/**
+ * Nível de navegação. Só um pastor/admin de verdade pode se colocar num nível
+ * menor para pré-visualizar o app (nunca muda permissão real).
+ */
+export function resolveNavTier(user: RoleNavigationUser | null | undefined): NavTier {
+  if (user?.hasChurch !== true) return "none";
 
-function isPrivilegedChurchUser(user: RoleNavigationUser | null | undefined) {
-  if (!user) return false;
-  return (
-    user.is_admin === true ||
-    user.isTitularPastor === true ||
-    user.role === "PASTOR" ||
-    user.role === "ADMIN" ||
-    user.role === "SUPER_ADMIN"
-  );
-}
-
-function hasMinistryAccess(user: RoleNavigationUser | null | undefined) {
-  if (!user) return false;
-  if (isPrivilegedChurchUser(user)) return true;
-  return (user.roles ?? []).some(
-    (role) => role.scope === "MINISTRY" && role.permissions.length > 0,
-  );
-}
-
-function hasMemberManagementAccess(user: RoleNavigationUser | null | undefined) {
-  return (
-    user?.canManageMembers === true ||
-    hasAnyPermission(user, ["MEMBER_CREATE", "MEMBER_EDIT", "MEMBER_DELETE"])
-  );
-}
-
-function hasContentPublishingAccess(user: RoleNavigationUser | null | undefined) {
-  return hasAnyPermission(user, ["CONTENT_PUBLISH", "ANNOUNCEMENT_PUBLISH"]);
-}
-
-function isLeaderUser(user: RoleNavigationUser | null | undefined) {
-  if (!user) return false;
-  if (isPrivilegedChurchUser(user)) return false;
-  return (
-    user.canManageMembers === true ||
-    (user.roles ?? []).some((role) => role.permissions.length > 0) ||
-    (user.permissions ?? []).length > 0
-  );
-}
-
-type NavTier = "privileged" | "leader" | "member";
-
-// So um pastor/admin de verdade pode se colocar num tier menor pra
-// pre-visualizar a navegacao - a API continua checando o papel real, isso
-// nunca afeta permissao de verdade, so o que aparece no menu.
-function resolveNavTier(user: RoleNavigationUser | null | undefined): NavTier {
-  const isReallyPrivileged = isPrivilegedChurchUser(user);
-
-  if (isReallyPrivileged && user?.navPreviewRole) {
+  if (isChurchManager(user) && user.navPreviewRole) {
     if (user.navPreviewRole === "MEMBRO") return "member";
     if (user.navPreviewRole === "LIDER") return "leader";
-    return "privileged";
+    return "manager";
   }
 
-  if (isReallyPrivileged) return "privileged";
-  if (isLeaderUser(user)) return "leader";
+  if (resolveChurchAccess(user).hasManagementArea) return "manager";
+  if (leadsAnyMinistry(user)) return "leader";
   return "member";
 }
 
-function canSeePastoralCareInPreview(user: RoleNavigationUser | null | undefined, tier: NavTier) {
-  if (tier !== "leader") return false;
-  // Previewing as lider (sem ser lider de verdade): mostra a variante mais
-  // completa (Visitas) em vez de tentar simular uma permissao especifica.
-  if (isPrivilegedChurchUser(user) && user?.navPreviewRole === "LIDER") return true;
-  return hasPermission(user, "PASTORAL_CARE_MANAGE");
+/** Rótulo do aviso "Vendo como …" quando a pré-visualização está ligada. */
+export function getNavPreviewLabel(user: RoleNavigationUser | null | undefined) {
+  if (!isChurchManager(user) || !user?.navPreviewRole || user.hasChurch !== true) return null;
+  if (user.navPreviewRole === "MEMBRO") return "Membro";
+  if (user.navPreviewRole === "LIDER") return "Líder";
+  return null;
 }
 
-function canSeeChurchAdminHub(user: RoleNavigationUser | null | undefined) {
-  return user?.hasChurch === true && (isPrivilegedChurchUser(user) || hasMemberManagementAccess(user));
-}
-
-function item(key: keyof typeof navCatalog) {
-  return navCatalog[key];
-}
-
-function compareNavigationTitle(a: RoleNavigationItem, b: RoleNavigationItem) {
-  return a.title.localeCompare(b.title, "pt-BR", { sensitivity: "base" });
-}
-
-export function getBottomNavigationItems(user: RoleNavigationUser | null | undefined) {
-  if (user?.is_admin === true && user.hasChurch !== true) {
-    return [item("home"), item("platformAdmin"), item("more")];
-  }
-
-  if (user?.hasChurch !== true) {
-    return [item("home"), item("more")];
-  }
-
+export function getPrimaryTabs(user: RoleNavigationUser | null | undefined): PrimaryTab[] {
   const tier = resolveNavTier(user);
 
-  if (tier === "privileged") {
-    return [item("home"), item("pastoral"), item("cults"), item("scale"), item("more")];
+  if (tier === "none") {
+    return user?.is_admin === true ? [TABS.home, TABS.platform, TABS.profile] : [];
   }
 
-  if (tier === "leader") {
-    if (isPrivilegedChurchUser(user) && user?.navPreviewRole === "LIDER") {
-      return [item("home"), item("team"), item("scale"), item("cults"), item("more")];
-    }
+  const fourth: PrimaryTab[] =
+    tier === "manager" ? [TABS.management] : tier === "leader" ? [TABS.ministries] : [];
 
-    if (hasMemberManagementAccess(user)) {
-      return [item("home"), item("people"), item("scale"), item("cults"), item("more")];
-    }
-
-    if (hasContentPublishingAccess(user) && !hasMinistryAccess(user) && !canSeePastoralCareInPreview(user, tier)) {
-      return [item("home"), item("content"), item("scale"), item("cults"), item("more")];
-    }
-
-    return [item("home"), item("team"), item("scale"), item("cults"), item("more")];
-  }
-
-  return [item("home"), item("cults"), item("scale"), item("ministries"), item("more")];
+  return [TABS.home, TABS.scale, TABS.church, ...fourth, TABS.profile];
 }
 
-export function getQuickAccessItems(user: RoleNavigationUser | null | undefined) {
-  if (user?.hasChurch !== true) {
-    return [item("profile")];
-  }
+/**
+ * Itens da aba Gestão, agrupados. Cada item só aparece se a pessoa pode
+ * usá-lo de verdade (acesso real, não o da pré-visualização).
+ */
+export function getManagementItems(user: RoleNavigationUser | null | undefined): ManagementGroup[] {
+  if (user?.hasChurch !== true) return [];
+  const access = resolveChurchAccess(user);
 
-  const tier = resolveNavTier(user);
+  const allowed: ManagementItem[] = [
+    access.canSeeRoster && MANAGEMENT_ITEMS.people,
+    access.canCare && MANAGEMENT_ITEMS.care,
+    access.canModeratePrayer && MANAGEMENT_ITEMS.prayerReview,
+    (access.isChurchManager || access.canCreateMinistry || access.leadsMinistry) &&
+      MANAGEMENT_ITEMS.ministries,
+    (access.canManageCults || access.canManageAttendance) && MANAGEMENT_ITEMS.cults,
+    (access.canPublish || access.canSendWhatsApp) && MANAGEMENT_ITEMS.communicate,
+    access.canEditChurchSettings && MANAGEMENT_ITEMS.churchSettings,
+    access.canSeeReports && MANAGEMENT_ITEMS.reports,
+    user.is_admin === true && MANAGEMENT_ITEMS.platform,
+  ].filter((entry): entry is ManagementItem => Boolean(entry));
 
-  if (tier === "privileged") {
-    return [
-      item("pastoral"),
-      item("scale"),
-      item("cults"),
-      item("people"),
-    ];
-  }
-
-  if (tier === "leader") {
-    if (hasMemberManagementAccess(user)) {
-      return [item("people"), item("team"), item("scale"), item("cults"), item("prayer")];
-    }
-
-    if (hasContentPublishingAccess(user) && !hasMinistryAccess(user) && !canSeePastoralCareInPreview(user, tier)) {
-      return [item("content"), item("scale"), item("cults"), item("prayer")];
-    }
-
-    return [
-      item("team"),
-      item("scale"),
-      item("cults"),
-      item("prayer"),
-    ];
-  }
-
-  return [item("cults"), item("scale"), item("ministries"), item("prayer")];
+  return groupManagementItems(allowed);
 }
 
-export function getChurchHubItems(user: RoleNavigationUser | null | undefined) {
-  if (user?.hasChurch !== true) {
-    return [];
-  }
+/**
+ * Dono de cada rota: qual aba fica acesa. A ordem dos donos é a preferência
+ * quando a pessoa tem mais de uma das abas candidatas (ex.: /ministery é da
+ * aba Ministérios para o líder, da Gestão para quem administra e da Igreja
+ * para o membro).
+ */
+const ROUTE_OWNERS: Array<{ prefix: string; owners: PrimaryTabKey[] }> = [
+  { prefix: "/", owners: ["home"] },
+  { prefix: "/notifications", owners: ["home"] },
+  { prefix: "/scale", owners: ["scale"] },
+  { prefix: "/cultos", owners: ["scale"] },
+  { prefix: "/igreja", owners: ["church"] },
+  { prefix: "/content", owners: ["church"] },
+  { prefix: "/prayer", owners: ["church"] },
+  { prefix: "/ministery", owners: ["ministries", "management", "church"] },
+  { prefix: "/admin", owners: ["management"] },
+  { prefix: "/pessoas", owners: ["management"] },
+  { prefix: "/pastoral", owners: ["management"] },
+  { prefix: "/comunicar", owners: ["management"] },
+  { prefix: "/configuracoes", owners: ["management"] },
+  { prefix: "/settings", owners: ["management"] },
+  { prefix: "/plans", owners: ["management"] },
+  { prefix: "/platform-admin", owners: ["platform", "management"] },
+  { prefix: "/user", owners: ["profile"] },
+  { prefix: "/perfil", owners: ["profile"] },
+];
 
-  const tier = resolveNavTier(user);
+const matchesPrefix = (path: string, prefix: string) =>
+  prefix === "/" ? path === "/" : path === prefix || path.startsWith(`${prefix}/`);
 
-  if (tier === "privileged") {
-    return [
-      { ...item("pastoral"), label: "Cuidado pastoral" },
-      item("visitors"),
-      item("people"),
-      item("messages"),
-      item("cults"),
-      item("reports"),
-      item("ministries"),
-      item("content"),
-      item("settings"),
-    ];
-  }
+export function getOwnerTab(
+  user: RoleNavigationUser | null | undefined,
+  fullPath: string,
+): PrimaryTabKey | null {
+  const path = (fullPath.split(/[?#]/)[0] || "/").replace(/\/+$/, "") || "/";
+  const tabs = new Set(getPrimaryTabs(user).map((tab) => tab.key));
 
-  if (tier === "leader") {
-    return [
-      item("team"),
-      ...(canSeePastoralCareInPreview(user, tier) ? [item("visits"), item("visitors")] : []),
-      item("scale"),
-      item("cults"),
-      item("content"),
-      item("prayer"),
-    ];
-  }
+  const rule = ROUTE_OWNERS.filter((entry) => matchesPrefix(path, entry.prefix)).sort(
+    (first, second) => second.prefix.length - first.prefix.length,
+  )[0];
 
-  return [item("cults"), item("scale"), item("ministries"), item("content"), item("prayer")];
-}
-
-// Lista completa (deduplicada) de tudo que o usuario tem acesso para o menu
-// "Mais". O hub antigo nao entra aqui: ele era uma camada extra de navegacao
-// que duplicava os atalhos principais.
-export function getAllNavigationItems(user: RoleNavigationUser | null | undefined) {
-  const hasChurch = user?.hasChurch === true;
-  const isPrivileged = isPrivilegedChurchUser(user);
-  const merged = [
-    homeItem,
-    ...getBottomNavigationItems(user),
-    ...getQuickAccessItems(user),
-    ...(canSeeChurchAdminHub(user) ? [item("churchAdmin"), item("settings")] : []),
-    // churchProfile (dados de cadastro: nome, endereco, documento) so pode
-    // ser editado por quem e de fato pastor/admin (ver canEditChurch em
-    // settings.vue) - um lider com apenas hasMemberManagementAccess veria o
-    // atalho e cairia num formulario praticamente todo desabilitado.
-    ...(hasChurch && isPrivileged ? [item("churchProfile")] : []),
-    ...(hasChurch && isPrivileged
-      ? [item("rolesManagement"), item("publications"), item("messages"), item("ministries"), item("reports")]
-      : []),
-    ...(hasChurch && hasAnyPermission(user, ["PASTORAL_CARE_MANAGE"])
-      ? [item("pastoral"), item("visits"), item("visitors")]
-      : []),
-    ...(hasChurch && hasContentPublishingAccess(user) ? [item("content")] : []),
-    ...(hasChurch ? [item("content"), item("prayer")] : []),
-    item("profile"),
-    ...(user?.is_admin === true ? [item("platformAdmin")] : []),
-  ];
-
-  const seen = new Set<string>();
-  return merged.filter((entry) => {
-    if (entry.key === "more") return false;
-    if (seen.has(entry.key)) return false;
-    seen.add(entry.key);
-    return true;
-  });
-}
-
-export function getMoreNavigationItems(user: RoleNavigationUser | null | undefined) {
-  // O menu Mais e uma segunda porta de entrada para todos os atalhos
-  // disponiveis. Um item tambem aparecer na barra inferior nao deve remove-lo
-  // daqui: no celular, o usuario precisa conseguir alcancar o mesmo destino
-  // pelos dois caminhos.
-  return getAllNavigationItems(user)
-    .sort(compareNavigationTitle);
-}
-
-export function isNavigationItemActive(item: RoleNavigationItem, path: string) {
-  if (item.route === "/") return path === "/";
-  if (item.key === "churchAdmin") return path === "/admin";
-
-  return item.matchPrefixes.some((prefix) => path.startsWith(prefix));
+  return rule?.owners.find((owner) => tabs.has(owner)) ?? null;
 }

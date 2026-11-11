@@ -130,6 +130,9 @@ export default defineNuxtConfig({
     // schema.org que useSeoMeta/useHead geram; sem isso cai na regra geral
     // "/**": ssr:false e vira uma casca vazia pra qualquer bot que nao roda JS.
     "/comece": { ssr: true },
+    // Navegação nova: o conteúdo (versículo, Bíblia, devocionais, playlist)
+    // fica dentro da aba Igreja.
+    "/content": { redirect: "/igreja" },
   },
   nitro: {
     compressPublicAssets: true,

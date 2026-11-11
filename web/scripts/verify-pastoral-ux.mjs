@@ -6,7 +6,6 @@ const root = resolve(import.meta.dirname, "..");
 const read = (relativePath) => readFileSync(resolve(root, relativePath), "utf8");
 const pastoralDashboard = read("app/pages/pastoral/index.vue");
 const pastoralPeople = read("app/pages/pastoral/pessoas.vue");
-const pastoralOverview = read("app/components/Dashboard/PastoralOverviewCard/index.vue");
 const navigation = read("app/utils/roleNavigation.ts");
 
 const checks = [
@@ -40,19 +39,11 @@ const checks = [
     /missedOccurrences[\s\S]*ausência/,
     pastoralPeople,
   ],
-  [
-    "card da home identifica acompanhamento pastoral",
-    /Acompanhamento pastoral/,
-    pastoralOverview,
-  ],
-  [
-    "card da home permite abrir diretamente a pessoa em atenção",
-    /pastoral\/pessoas\/\$\{member\.id\}/,
-    pastoralOverview,
-  ],
+  // O cartão pastoral do Início saiu (os alertas viraram itens de "Para
+  // você"); a área aparece como "Cuidado" dentro de Gestão.
   [
     "navegação identifica a área como cuidado pastoral",
-    /key: "pastoral"[\s\S]*label: "Cuidado pastoral"/,
+    /key: "care"[\s\S]*title: "Cuidado pastoral"/,
     navigation,
   ],
 ];

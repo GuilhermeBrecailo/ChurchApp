@@ -1,7 +1,8 @@
 <template>
   <LayoutsAppBar />
-  <!-- Desktop (≥960px): barra lateral com todos os atalhos. Celular/tablet:
-       barra inferior + menu "Mais". -->
+  <!-- Desktop (≥960px): barra lateral com as mesmas abas (Gestão abre os
+       grupos ali mesmo). Celular/tablet: barra inferior com 3 a 5 abas, sem
+       "Mais". Sem igreja, nenhuma das duas aparece. -->
   <LayoutsSideNavigation />
   <v-main class="app-main">
     <slot />

@@ -1,16 +1,6 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper app-operational-page">
-    <div class="content-page-header mb-4">
-      <div class="content-detail-title-group min-w-0">
-        <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
-          <ChevronLeft size="20" />
-        </v-btn>
-        <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-0">
-          Devocionais
-        </h1>
-      </div>
-      <UtilsPageHelpButton title="Devocionais" />
-    </div>
+    <UtilsPageHeader title="Devocionais" back="/igreja" back-label="Voltar para Igreja" help-title="Devocionais" />
 
     <v-btn
       v-if="canPublish"
@@ -51,14 +41,14 @@
       >
         <v-card class="app-surface rounded-xl pa-4 border-subtle devotional-card">
           <div class="d-flex align-center mb-3">
-            <v-avatar color="#FFF1F2" size="42" class="mr-3">
-              <Heart size="20" color="#F43F5E" />
+            <v-avatar size="42" class="accent-avatar mr-3">
+              <Heart size="20" />
             </v-avatar>
             <div class="min-w-0">
-              <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+              <h2 class="devotional-title text-truncate">
                 {{ devotional.title }}
               </h2>
-              <p class="text-caption text-grey-darken-1 mb-0">
+              <p class="devotional-meta mb-0">
                 {{ devotional._count?.chapters ?? devotional.chapters?.length ?? 0 }} capítulos
               </p>
             </div>
@@ -66,42 +56,48 @@
           <p class="devotional-description mb-4">
             {{ devotional.description || "Sem descrição." }}
           </p>
-          <v-progress-linear
-            :model-value="devotional.progresses?.length ? 50 : 0"
-            color="pink-darken-1"
-            height="6"
-            rounded
-          />
+          <div class="devotional-progress">
+            <v-progress-linear
+              v-if="progressOf(devotional).percent !== null"
+              :model-value="progressOf(devotional).percent ?? 0"
+              color="primary"
+              bg-color="primary"
+              height="6"
+              rounded
+              :aria-label="`Progresso: ${progressOf(devotional).label}`"
+            />
+            <span class="devotional-progress-label">{{ progressOf(devotional).label }}</span>
+          </div>
         </v-card>
       </NuxtLink>
     </div>
 
-    <v-card
+    <UtilsEmptyState
       v-else-if="devotionals.length"
-      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
-    >
-      <Heart size="34" color="#9CA3AF" class="mb-3" />
-      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-        Nenhum devocional encontrado
-      </p>
-    </v-card>
+      variant="no-results"
+      compact
+      :icon="Heart"
+      title="Nenhum devocional encontrado"
+      description="Tente buscar por outra palavra do título."
+    />
 
-    <v-card
+    <UtilsEmptyState
       v-else
-      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
-    >
-      <Heart size="34" color="#9CA3AF" class="mb-3" />
-      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-        Nenhum devocional publicado ainda
-      </p>
-    </v-card>
+      :icon="Heart"
+      title="Nenhum devocional publicado ainda"
+      :description="canPublish
+        ? 'Monte uma série com capítulos para a igreja ler durante a semana.'
+        : 'Quando a liderança publicar uma série de estudo, ela aparece aqui.'"
+      :action-label="canPublish ? 'Criar devocional' : undefined"
+      @action="openCreateDialog"
+    />
 
     <UtilsResponsiveOverlay v-model="isCreateDialogOpen" max-width="560" variant="form" scrollable>
       <v-card class="rounded-xl pa-6" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
-            <v-avatar color="#FFF1F2" size="44" class="mr-3">
-              <Heart size="20" color="#F43F5E" />
+            <v-avatar size="44" class="accent-avatar mr-3">
+              <Heart size="20" />
             </v-avatar>
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
               Novo devocional
@@ -282,13 +278,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { ChevronLeft, Heart, Plus } from "lucide-vue-next";
+import { Heart, Plus } from "lucide-vue-next";
 import { useDevotionals, type Devotional } from "../../../../composables/useDevotionals";
 import { usePermissions } from "../../../../composables/usePermissions";
 import { compareListText, normalizeListText } from "../../../utils/listOrdering";
+import { devotionalProgress } from "../../../utils/devotionalProgress";
 
-const router = useRouter();
-const { listDevotionals, createDevotional } = useDevotionals();
+const { listDevotionals, getDevotional, createDevotional } = useDevotionals();
 const { can } = usePermissions();
 
 const devotionals = ref<Devotional[]>([]);
@@ -392,6 +388,25 @@ const handleCreate = async () => {
   }
 };
 
+const progressOf = (devotional: Devotional) => devotionalProgress(devotional);
+
+// A lista não traz os capítulos; para mostrar o progresso de verdade busca
+// o detalhe só dos devocionais que a pessoa já começou (poucos).
+const MAX_PROGRESS_LOOKUPS = 12;
+const loadStartedChapters = async () => {
+  const started = devotionals.value
+    .filter((devotional) => devotional.progresses?.length && !devotional.chapters?.length)
+    .slice(0, MAX_PROGRESS_LOOKUPS);
+  const details = await Promise.all(started.map((devotional) => getDevotional(devotional.id)));
+  const chaptersById = new Map(
+    details.flatMap(({ data }) => (data?.chapters ? [[data.id, data.chapters] as const] : [])),
+  );
+  if (!chaptersById.size) return;
+  devotionals.value = devotionals.value.map((devotional) =>
+    chaptersById.has(devotional.id) ? { ...devotional, chapters: chaptersById.get(devotional.id) } : devotional,
+  );
+};
+
 const loadDevotionals = async () => {
   loading.value = true;
   errorMessage.value = "";
@@ -399,6 +414,7 @@ const loadDevotionals = async () => {
   devotionals.value = data ?? [];
   if (error) errorMessage.value = error;
   loading.value = false;
+  await loadStartedChapters();
 };
 
 onMounted(loadDevotionals);
@@ -413,24 +429,6 @@ onMounted(loadDevotionals);
 .chapter-card {
   background: var(--app-color-surface-soft);
   border: 1px solid var(--app-color-border);
-}
-
-.content-page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.content-detail-title-group {
-  display: flex;
-  align-items: center;
-}
-
-.content-page-header h1 {
-  /* sem isso o h1 herda a margem do reset e desalinha do botao de voltar */
-  line-height: 1.2;
-  margin: 0;
 }
 
 .devotional-grid {
@@ -454,12 +452,35 @@ onMounted(loadDevotionals);
   transform: translateY(-1px);
 }
 
+.devotional-title {
+  margin: 0;
+  color: var(--app-color-text);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.devotional-meta {
+  color: var(--app-color-text-muted);
+  font-size: 0.85rem;
+}
+
 .devotional-description {
-  color: #4b5563;
+  color: var(--app-color-text-soft);
   line-height: 1.5;
 }
 
+.devotional-progress {
+  display: grid;
+  gap: 6px;
+}
+
+.devotional-progress-label {
+  color: var(--app-color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
 }
 </style>

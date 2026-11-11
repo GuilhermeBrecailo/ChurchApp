@@ -4,7 +4,8 @@ import { describe, it } from "node:test";
 import { parse } from "@vue/compiler-sfc";
 import postcss from "postcss";
 
-const rootPagePath = new URL("../app/pages/index.vue", import.meta.url);
+// O formulário "Crie sua igreja" saiu do Início (pages/index.vue): o
+// primeiro uso mora em /onboarding/*.
 const onboardingPagePath = new URL("../app/pages/onboarding/church.vue", import.meta.url);
 const ministrySetupPath = new URL("../app/components/onboarding/ChurchMinistrySetup.vue", import.meta.url);
 
@@ -25,26 +26,18 @@ function getDeclarations(rule: postcss.Rule | undefined) {
 
 describe("formulário de criação da igreja", () => {
   it("separa os campos de endereço do campo de cidade e estado", async () => {
-    const rootPage = await readVueFile(rootPagePath);
     const onboardingPage = await readVueFile(onboardingPagePath);
-    const firstRootAddressGrid = rootPage.source.match(/<div class="responsive-grid[^"]*">[\s\S]*?label="Cidade"[\s\S]*?<\/div>/)?.[0];
     const firstOnboardingAddressGrid = onboardingPage.source.match(/<div class="grid grid-cols-1 gap-4 sm:grid-cols-2[^"]*">[\s\S]*?label="Cidade"[\s\S]*?<\/div>/)?.[0];
 
-    assert.ok(firstRootAddressGrid);
     assert.ok(firstOnboardingAddressGrid);
-    assert.match(firstRootAddressGrid, /class="responsive-grid mb-4"/);
     assert.match(firstOnboardingAddressGrid, /class="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-4"/);
   });
 
-  it("marca o nome da igreja como obrigatório nas duas telas", async () => {
-    const rootPage = await readVueFile(rootPagePath);
+  it("marca o nome da igreja como obrigatório", async () => {
     const onboardingPage = await readVueFile(onboardingPagePath);
-    const rootNameField = rootPage.source.match(/<v-text-field\s+v-model="churchForm\.name"[\s\S]*?\/>/)?.[0];
     const onboardingNameField = onboardingPage.source.match(/<v-text-field\s+v-model="form\.name"[\s\S]*?\/>/)?.[0];
 
-    assert.ok(rootNameField);
     assert.ok(onboardingNameField);
-    assert.match(rootNameField, /\brequired\b/);
     assert.match(onboardingNameField, /\brequired\b/);
   });
 

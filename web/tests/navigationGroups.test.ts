@@ -1,29 +1,42 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { groupNavigationItems } from "../app/utils/navigationGroups";
-import type { RoleNavigationItem } from "../app/utils/roleNavigation";
+import { groupManagementItems, MANAGEMENT_GROUPS } from "../app/utils/navigationGroups";
+import type { ManagementItem } from "../app/utils/roleNavigation";
 
-const nav = (key: string, label = key): RoleNavigationItem =>
-  ({ key, label, title: label, route: `/${key}`, matchPrefixes: [`/${key}`], icon: "home" }) as unknown as RoleNavigationItem;
+const entry = (key: string, group: ManagementItem["group"]): ManagementItem => ({
+  key,
+  group,
+  label: key,
+  title: key,
+  description: "",
+  route: `/${key}`,
+  icon: "people",
+});
 
-describe("agrupamento da navegação", () => {
-  it("separa os atalhos por assunto e remove grupos vazios", () => {
-    const groups = groupNavigationItems([nav("profile"), nav("scale"), nav("prayer")]);
+describe("grupos da Gestão", () => {
+  it("mantém a ordem dos grupos e dos itens, e tira grupos vazios", () => {
+    const groups = groupManagementItems([
+      entry("reports", "church"),
+      entry("people", "people"),
+      entry("care", "people"),
+      entry("settings", "church"),
+    ]);
 
     assert.deepEqual(
-      groups.map((group) => [group.key, group.items.map((item) => item.key)]),
-      [
-        ["routine", ["scale"]],
-        ["content", ["prayer"]],
-        ["account", ["profile"]],
-      ],
+      groups.map((group) => group.label),
+      ["Pessoas e cuidado", "Igreja"],
+    );
+    assert.deepEqual(
+      groups.map((group) => group.items.map((item) => item.key)),
+      [["people", "care"], ["reports", "settings"]],
     );
   });
 
-  it("manda atalhos desconhecidos para 'Outros atalhos'", () => {
-    const groups = groupNavigationItems([nav("novidade")]);
+  it("sem itens não há grupos", () => {
+    assert.deepEqual(groupManagementItems([]), []);
+  });
 
-    assert.equal(groups.length, 1);
-    assert.equal(groups[0]?.key, "other");
+  it("grupos têm chaves únicas", () => {
+    assert.equal(new Set(MANAGEMENT_GROUPS.map((group) => group.key)).size, MANAGEMENT_GROUPS.length);
   });
 });
