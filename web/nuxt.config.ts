@@ -13,13 +13,60 @@ const hasNuxtModule = (moduleName: string) => {
   }
 };
 
+// Modo demonstração (web/demo/README.md): NUXT_PUBLIC_DEMO=1 liga a API
+// falsa no navegador; DEMO_BUILD=1 gera um site estático (SPA, hash router,
+// caminhos relativos) que abre de qualquer pasta/subcaminho. Sem essas
+// variáveis nada abaixo muda o build normal.
+const isDemo = ["1", "true"].includes(String(process.env.NUXT_PUBLIC_DEMO ?? "").toLowerCase());
+const isDemoBuild = process.env.DEMO_BUILD === "1";
+
 const modules = [
   "@nuxtjs/tailwindcss",
   "vuetify-nuxt-module",
   "motion-v/nuxt",
-  ...(hasNuxtModule("@nuxtjs/sitemap") ? ["@nuxtjs/sitemap"] : []),
+  // Sitemap consulta a API real ao gerar - não faz sentido na demo.
+  ...(hasNuxtModule("@nuxtjs/sitemap") && !isDemo ? ["@nuxtjs/sitemap"] : []),
   deferVuetifyMdiStyles,
 ];
+
+// Na demo tudo roda no navegador (não há API para o SSR chamar).
+const demoOverrides = isDemo
+  ? {
+      ssr: false,
+      routeRules: { "/**": { ssr: false } },
+    }
+  : {};
+
+// Site estático: hash router (#/rota) e assets com caminho relativo ao
+// index.html, para funcionar servido de qualquer subcaminho. O HTML gerado
+// troca "/_nuxt/..." por "./_nuxt/..." e, antes do app iniciar, ajusta
+// app.baseURL para a pasta onde o index.html está - daí os chunks carregados
+// depois (buildAssetsURL) e o hash router usam o subcaminho certo.
+const DEMO_BASE_URL_SCRIPT =
+  "(function(){var c=window.__NUXT__&&window.__NUXT__.config;if(!c||!c.app)return;" +
+  "c.app.baseURL=location.pathname.replace(/[^/]*$/,'')||'/';c.app.cdnURL='';})();";
+
+const relativizeDemoHtml = (html: string) =>
+  html
+    .replace(/(href|src)="\/(?!\/)/g, '$1="./')
+    .replace("</body>", `<script>${DEMO_BASE_URL_SCRIPT}</script></body>`);
+
+const demoBuildOverrides = isDemoBuild
+  ? {
+      router: { options: { hashMode: true } },
+      nitro: {
+        // .br/.gz não servem para um site estático aberto de qualquer lugar.
+        compressPublicAssets: false,
+        hooks: {
+          "prerender:generate"(route: { fileName?: string; contents?: unknown }) {
+            if (route.fileName?.endsWith(".html") && typeof route.contents === "string") {
+              route.contents = relativizeDemoHtml(route.contents);
+            }
+          },
+        },
+      },
+    }
+  : {};
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
@@ -169,6 +216,8 @@ export default defineNuxtConfig({
       ],
     },
   },
+  ...demoOverrides,
+  ...demoBuildOverrides,
   runtimeConfig: {
     // Server-only: usado pelo SSR (middleware de auth) para chamar a API de
     // dentro do container. "localhost" dentro do container web NÃO alcança o
@@ -181,6 +230,8 @@ export default defineNuxtConfig({
       // publicas (c/[slug].vue, comece.vue) - precisa ser absoluta porque
       // WhatsApp/Instagram nao resolvem caminho relativo ao gerar preview.
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "https://churchapp.site",
+      // Modo demonstração: API falsa no navegador (web/demo). Padrão desligado.
+      DEMO: isDemo,
     },
   },
 });

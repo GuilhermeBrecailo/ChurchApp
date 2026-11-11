@@ -5,7 +5,9 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "demo": "NUXT_PUBLIC_DEMO=1 NUXT_PUBLIC_URL_BACKEND=https://demo.churchapp.local nuxt dev",
     "generate": "nuxt generate",
+    "build:demo": "DEMO_BUILD=1 NUXT_PUBLIC_DEMO=1 NUXT_PUBLIC_URL_BACKEND=https://demo.churchapp.local nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "test": "tsx --test tests/*.test.ts",
