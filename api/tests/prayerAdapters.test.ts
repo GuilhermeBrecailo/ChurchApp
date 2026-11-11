@@ -130,7 +130,7 @@ describe("PrayerAdapters", () => {
       });
       expect(mockSendToUsers).toHaveBeenCalledWith(
         ["pastor-1"],
-        expect.objectContaining({ type: "prayer_request_pending", url: "/prayer?tab=pending" }),
+        expect.objectContaining({ type: "prayer_request_pending", url: "/prayer?aba=aprovar" }),
       );
     });
 
@@ -171,6 +171,52 @@ describe("PrayerAdapters", () => {
       expect(mockPrismaClient.prayerRequest.count).toHaveBeenCalledWith({
         where: { crunchId: "church-1", status: "APPROVED" },
       });
+    });
+  });
+
+  describe("listMyPrayerRequests", () => {
+    it("devolve só os pedidos do próprio autor na igreja ativa, com status e motivo", async () => {
+      const rejected = {
+        id: "p1",
+        title: "Emprego",
+        body: "Orem por mim",
+        isAnonymous: false,
+        isAnswered: false,
+        status: "REJECTED",
+        rejectionReason: "Pedido com dados pessoais de terceiros",
+        reviewedAt: new Date("2026-11-01T10:00:00Z"),
+        createdAt: new Date("2026-10-30T10:00:00Z"),
+      };
+      mockPrismaClient.prayerRequest.findMany.mockResolvedValue([rejected]);
+
+      const result = await adapters.listMyPrayerRequests(
+        makeRequest({ userId: "user-1", churchContext: memberContext }),
+      );
+
+      expect(result).toEqual({ items: [rejected] });
+      const call = mockPrismaClient.prayerRequest.findMany.mock.calls[0][0];
+      expect(call.where).toEqual({ crunchId: "church-1", userId: "user-1" });
+      expect(call.orderBy).toEqual({ createdAt: "desc" });
+      // Não vaza quem revisou nem dados de outros usuários.
+      expect(call.select).not.toHaveProperty("reviewedBy");
+      expect(call.select).not.toHaveProperty("user");
+      expect(call.select).toMatchObject({ status: true, rejectionReason: true });
+    });
+
+    it("funciona para membro sem permissão de moderar", async () => {
+      mockPrismaClient.prayerRequest.findMany.mockResolvedValue([]);
+
+      await expect(
+        adapters.listMyPrayerRequests(makeRequest({ churchContext: memberContext })),
+      ).resolves.toEqual({ items: [] });
+    });
+
+    it("exige igreja ativa", async () => {
+      await expect(
+        adapters.listMyPrayerRequests(
+          makeRequest({ churchContext: { ...memberContext, activeChurchId: null } }),
+        ),
+      ).rejects.toThrow("Usuário não possui igreja vinculada");
     });
   });
 

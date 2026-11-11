@@ -9,6 +9,8 @@ export interface WhatsAppConnectResult {
 
 export interface WhatsAppStatus {
   connected: boolean;
+  /** Número conectado, quando o serviço de WhatsApp informar. */
+  phone?: string | null;
 }
 
 export const useWhatsApp = () => {

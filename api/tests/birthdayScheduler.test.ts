@@ -106,7 +106,7 @@ describe("checkBirthdays", () => {
     expect(mockSendToUsers).toHaveBeenCalledWith(["pastor-1"], {
       title: "1 aniversariante hoje",
       body: "Maria",
-      url: "/admin/mensagens",
+      url: "/comunicar?aba=automaticos",
       type: "birthday_today",
     });
   });
@@ -171,6 +171,48 @@ describe("checkBirthdays", () => {
       audience: "BIRTHDAY",
       recipients: [{ id: "m1", name: "Maria", phone: "11999998888" }],
     });
+  });
+
+  it("não manda WhatsApp para visitante sem autorização, mas avisa o pastor com todos os nomes", async () => {
+    const visitor = {
+      id: "v1",
+      name: "Visitante",
+      phone: "11900001111",
+      crunchId: "church-1",
+      birthDate: new Date("1999-08-19T00:00:00.000Z"),
+      status: "VISITOR",
+      visitorFollowUp: { consentToContact: false },
+    };
+    mockPrismaClient.rosterMember.findMany.mockResolvedValue([MARIA, visitor]);
+    mockPrismaClient.birthdayMessageSetting.upsert.mockResolvedValue(SETTING_ON);
+    mockPrismaClient.messageTemplate.findUnique.mockResolvedValue({
+      id: "t1",
+      crunchId: "church-1",
+      body: "Feliz aniversário, {nome}!",
+    });
+
+    await checkBirthdays(new Date("2026-08-19T08:00:00"));
+
+    expect(mockSendToUsers).toHaveBeenCalledWith(
+      ["pastor-1"],
+      expect.objectContaining({ body: "Maria, Visitante" }),
+    );
+    expect(mockCreateLogAndDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ recipients: [{ id: "m1", name: "Maria", phone: "11999998888" }] }),
+    );
+  });
+
+  it("não cria envio quando todos os aniversariantes do dia são visitantes sem autorização", async () => {
+    mockPrismaClient.rosterMember.findMany.mockResolvedValue([
+      { ...MARIA, status: "VISITOR", visitorFollowUp: null },
+    ]);
+    mockPrismaClient.birthdayMessageSetting.upsert.mockResolvedValue(SETTING_ON);
+    mockPrismaClient.messageTemplate.findUnique.mockResolvedValue({ id: "t1", crunchId: "church-1", body: "Oi" });
+
+    await checkBirthdays(new Date("2026-08-19T08:00:00"));
+
+    expect(mockSendToUsers).toHaveBeenCalled();
+    expect(mockCreateLogAndDispatch).not.toHaveBeenCalled();
   });
 
   it("skips the WhatsApp dispatch when the church's WhatsApp isn't connected", async () => {

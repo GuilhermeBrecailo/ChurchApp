@@ -28,7 +28,7 @@ const OUT_DIR = resolve(process.env.OUT_DIR || "screenshots");
 const API_ORIGIN = "http://mock.local";
 
 const PAGES = (process.env.PAGES ||
-  "/,/scale,/ministery,/ministery/demo,/igreja,/prayer,/notifications,/content/devotionals,/user,/admin,/admin/configuracoes,/admin/pessoas,/login")
+  "/,/scale,/ministery,/ministery/demo,/igreja,/prayer,/notifications,/content/devotionals,/user,/admin,/configuracoes,/comunicar,/pessoas,/login")
   .split(",")
   .map((page) => page.trim())
   .filter(Boolean);

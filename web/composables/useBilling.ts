@@ -15,6 +15,9 @@ export interface CanceledSubscription {
   trialEndsAt: string | null;
 }
 
+/** Tela para onde o Mercado Pago devolve a pessoa depois do checkout. */
+export const PLAN_RETURN_PATH = "/configuracoes/plano";
+
 export const useBilling = () => {
   const config = useRuntimeConfig();
   const { access_token } = useAuth();
@@ -24,7 +27,9 @@ export const useBilling = () => {
   };
 
   const createSubscriptionCheckout = async (
-    backUrl?: string,
+    backUrl: string | undefined = import.meta.client
+      ? `${window.location.origin}${PLAN_RETURN_PATH}`
+      : undefined,
   ): Promise<ApiResponse<SubscriptionCheckout>> => {
     return await $customFetch<SubscriptionCheckout>(
       `${config.public.URL_BACKEND}/api/church/subscription/checkout`,

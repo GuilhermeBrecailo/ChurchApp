@@ -15,6 +15,19 @@ export interface PrayerRequest {
   authorName: string;
 }
 
+/** Pedido do próprio autor ("Meus pedidos"). */
+export interface MyPrayerRequest {
+  id: string;
+  title: string;
+  body: string;
+  isAnonymous: boolean;
+  isAnswered: boolean;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
 export interface PrayerRequestsPage {
   items: PrayerRequest[];
   total: number;
@@ -44,6 +57,13 @@ export function usePrayerRequests() {
   const getPendingPrayerRequests = async (page = 1): Promise<ApiResponse<PrayerRequestsPage>> => {
     return await $customFetch<PrayerRequestsPage>(
       `${config.public.URL_BACKEND}/api/church/prayer-requests/pending?page=${page}`,
+      { method: "GET", headers: authHeaders() },
+    );
+  };
+
+  const getMyPrayerRequests = async (): Promise<ApiResponse<{ items: MyPrayerRequest[] }>> => {
+    return await $customFetch<{ items: MyPrayerRequest[] }>(
+      `${config.public.URL_BACKEND}/api/church/prayer-requests/mine`,
       { method: "GET", headers: authHeaders() },
     );
   };
@@ -83,6 +103,7 @@ export function usePrayerRequests() {
   return {
     getPrayerRequests,
     getPendingPrayerRequests,
+    getMyPrayerRequests,
     createPrayerRequest,
     markAsAnswered,
     approvePrayerRequest,

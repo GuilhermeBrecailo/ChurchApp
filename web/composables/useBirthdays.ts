@@ -13,6 +13,9 @@ export interface BirthdayMember {
   birthDate: string;
   turningAge: number;
   daysUntil: number;
+  status?: "VISITOR" | "MEMBER" | null;
+  /** Falso para visitante sem autorização de contato: não recebe o WhatsApp. */
+  canReceiveMessage?: boolean;
 }
 
 export interface BirthdayMessageSetting {

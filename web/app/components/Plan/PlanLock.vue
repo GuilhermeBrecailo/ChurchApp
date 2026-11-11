@@ -39,7 +39,7 @@ const locked = computed(() => !hasFeature(props.feature));
 const label = computed(() => PLAN_FEATURE_LABELS[props.feature]);
 
 function goToPlans() {
-  router.push("/plans");
+  router.push("/configuracoes/plano");
 }
 </script>
 

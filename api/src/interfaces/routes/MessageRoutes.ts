@@ -16,5 +16,6 @@ export async function MessageRoutes(app: FastifyInstance) {
   app.delete("/api/church/messages/rules/:id", controllerHandler(adapters.deleteRule.bind(adapters)));
 
   app.get("/api/church/messages/logs", controllerHandler(adapters.listLogs.bind(adapters)));
+  app.post("/api/church/messages/preview", controllerHandler(adapters.preview.bind(adapters)));
   app.post("/api/church/messages/send", controllerHandler(adapters.sendNow.bind(adapters)));
 }
