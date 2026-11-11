@@ -13,18 +13,18 @@
       class="mb-4"
     />
 
-    <div class="ministery-section-actions mb-4">
-      <v-btn
-        v-if="canManageSongs"
-        color="primary"
-        class="rounded-lg text-none"
-        @click="$emit('create')"
-      >
+    <div v-if="canManageSongs && songs.length" class="ministery-section-actions mb-4">
+      <v-btn color="primary" class="rounded-lg text-none font-weight-bold" @click="$emit('create')">
         <Plus size="18" class="mr-1" /> Nova música
       </v-btn>
+      <PlanLock feature="PDF_SONG_IMPORT">
+        <v-btn variant="tonal" color="primary" class="rounded-lg text-none" @click="$emit('import-pdf')">
+          <FileUp size="18" class="mr-1" /> Importar de PDF
+        </v-btn>
+      </PlanLock>
       <v-btn
-        v-if="canManageSongs && songs.length >= 2"
-        variant="tonal"
+        v-if="songs.length >= 2"
+        variant="text"
         color="primary"
         class="rounded-lg text-none"
         @click="$emit('create-mix')"
@@ -33,24 +33,25 @@
       </v-btn>
     </div>
 
-    <v-card
+    <UtilsEmptyState
       v-if="songs.length === 0 && !songsError"
-      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
+      :icon="Music"
+      title="Nenhuma música no repertório"
+      :description="canManageSongs
+        ? 'Cadastre as músicas que a equipe toca, com letra, cifra e tom. Tem a lista num PDF? Importe tudo de uma vez.'
+        : 'Quando o líder cadastrar as músicas, elas aparecem aqui com letra e cifra.'"
     >
-      <Music size="32" color="#9CA3AF" class="mb-3" />
-      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-        Nenhuma música no repertório
-      </p>
-      <v-btn
-        v-if="canManageSongs"
-        color="primary"
-        variant="tonal"
-        class="rounded-lg text-none mt-4"
-        @click="$emit('create')"
-      >
-        <Plus size="16" class="mr-1" /> Adicionar a primeira música
-      </v-btn>
-    </v-card>
+      <template v-if="canManageSongs">
+        <v-btn color="primary" variant="flat" class="text-none font-weight-bold" @click="$emit('create')">
+          Adicionar música
+        </v-btn>
+        <PlanLock feature="PDF_SONG_IMPORT">
+          <v-btn variant="text" color="primary" class="text-none" @click="$emit('import-pdf')">
+            Importar de PDF
+          </v-btn>
+        </PlanLock>
+      </template>
+    </UtilsEmptyState>
 
     <div v-else-if="visibleSongs.length" class="ministery-card-grid">
       <v-card
@@ -222,15 +223,14 @@
       </v-card>
     </div>
 
-    <v-card
+    <UtilsEmptyState
       v-else-if="songs.length"
-      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
-    >
-      <Music size="32" color="#9CA3AF" class="mb-3" />
-      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-        Nenhuma música encontrada
-      </p>
-    </v-card>
+      compact
+      variant="no-results"
+      :icon="Music"
+      title="Nenhuma música encontrada"
+      description="Tente outro nome ou artista."
+    />
 
     <v-alert
       v-if="songsError"
@@ -246,7 +246,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { BookOpen, Combine, ExternalLink, FileText, Maximize2, Music, Pencil, Plus, Trash2 } from "lucide-vue-next";
+import { BookOpen, Combine, ExternalLink, FileText, FileUp, Maximize2, Music, Pencil, Plus, Trash2 } from "lucide-vue-next";
 import type { DepartmentSong } from "../../../composables/useDepartments";
 import { compareListText, normalizeListText } from "../../utils/listOrdering";
 
@@ -270,6 +270,7 @@ const visibleSongs = computed(() => {
 defineEmits<{
   (event: "create"): void;
   (event: "create-mix"): void;
+  (event: "import-pdf"): void;
   (event: "open-viewer", song: DepartmentSong): void;
   (event: "edit", song: DepartmentSong): void;
   (event: "delete", song: DepartmentSong): void;
@@ -277,17 +278,14 @@ defineEmits<{
 </script>
 
 <style scoped>
-.border-subtle {
-  border: 1px solid #f3f4f6;
-}
 .ministery-section-actions,
 .ministery-card-actions {
   display: flex;
   align-items: center;
 }
 .ministery-section-actions {
-  justify-content: flex-end;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .ministery-card-grid {
   display: grid;
@@ -295,13 +293,13 @@ defineEmits<{
   gap: 12px;
 }
 .ministery-content-card {
-  border: 1px solid #eef2f7;
+  border: 1px solid var(--app-color-border-subtle);
   border-radius: 8px !important;
 }
 .ministery-card-actions {
   justify-content: flex-end;
   gap: 8px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--app-color-border-subtle);
   padding-top: 10px;
 }
 .song-click-card {
@@ -326,7 +324,7 @@ defineEmits<{
   gap: 2px;
 }
 .song-click-card:focus-visible {
-  outline: 3px solid rgba(181, 71, 42, 0.32);
+  outline: 3px solid var(--app-color-accent);
   outline-offset: 2px;
 }
 @media (max-width: 420px) {

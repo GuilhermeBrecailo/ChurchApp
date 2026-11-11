@@ -27,8 +27,8 @@
         density="comfortable"
         class="mb-4"
       >
-        Este ministério ainda não tem membros. Adicione membros na Visão geral antes de montar a
-        escala.
+        Este ministério ainda não tem pessoas. Adicione pessoas na aba Pessoas antes de montar a
+        equipe.
       </v-alert>
 
       <v-alert
