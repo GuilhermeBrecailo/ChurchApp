@@ -128,11 +128,11 @@
             :disabled="!newUnavailableDate"
             @click="addUnavailableDate"
           >
-            <Plus size="18" class="mr-1" aria-hidden="true" /> Bloquear
+            <Plus size="18" class="mr-1" aria-hidden="true" /> Adicionar data
           </v-btn>
         </div>
 
-        <p v-if="upcomingDates.length === 0" class="profile-hint mt-3 mb-0">Nenhuma data bloqueada.</p>
+        <p v-if="upcomingDates.length === 0" class="profile-hint mt-3 mb-0">Nenhuma data marcada.</p>
         <ul v-else class="unavailable-list">
           <li v-for="date in upcomingDates" :key="date" class="unavailable-item">
             <CalendarX size="18" aria-hidden="true" />
@@ -143,10 +143,10 @@
               class="text-none"
               min-height="44"
               :disabled="isSavingDates"
-              :aria-label="`Liberar ${formatLongDate(date)}`"
+              :aria-label="`Remover ${formatLongDate(date)}`"
               @click="removeUnavailableDate(date)"
             >
-              Liberar
+              Remover
             </v-btn>
           </li>
         </ul>
@@ -298,11 +298,11 @@ const addUnavailableDate = async () => {
   if (!date) return;
   newUnavailableDate.value = "";
   if (unavailableDates.value.includes(date)) {
-    toast.info("Essa data já está bloqueada");
+    toast.info("Essa data já está na lista");
     return;
   }
   if (await persistDates([...unavailableDates.value, date].sort())) {
-    toast.success(`${formatLongDate(date)} bloqueado`);
+    toast.success(`Anotado: você não pode servir em ${formatLongDate(date)}`);
   }
 };
 

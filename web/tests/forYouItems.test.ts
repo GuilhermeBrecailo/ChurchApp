@@ -78,15 +78,14 @@ describe("Para você: escalas", () => {
     assert.deepEqual(items, []);
   });
 
-  it("3 ou mais escalas para responder viram um item só", () => {
+  it("3 ou mais escalas: a próxima aparece com botões e as outras viram um item", () => {
     const schedules = [1, 2, 3, 4].map((day) =>
       schedule({ date: inDays(day), assignments: [{ userId: ME, role: "Vocal", confirmationStatus: "PENDING" }] }),
     );
     const items = buildForYouItems({ userId: ME, now: NOW, schedules });
-    assert.equal(items.length, 1);
-    assert.equal(items[0]?.kind, "schedule-responses");
-    assert.equal(items[0]?.title, "4 escalas para responder");
-    assert.equal(items[0]?.to, "/scale?aba=minhas");
+    assert.deepEqual(kinds(items), ["schedule-response", "schedule-responses"]);
+    assert.equal(items[1]?.title, "Mais 3 escalas para responder");
+    assert.equal(items[1]?.to, "/scale?aba=minhas");
 
     const two = buildForYouItems({ userId: ME, now: NOW, schedules: schedules.slice(0, 2) });
     assert.deepEqual(kinds(two), ["schedule-response", "schedule-response"]);

@@ -60,11 +60,11 @@
         </v-card>
         <v-card class="report-kpi-card app-surface pa-4 border-subtle" elevation="0">
           <span>{{ rosterReport.visitors }}</span>
-          <small>visitantes no rol</small>
+          <small>visitantes cadastrados</small>
         </v-card>
         <v-card class="report-kpi-card app-surface pa-4 border-subtle" elevation="0">
           <span>{{ rosterReport.members }}</span>
-          <small>membros no rol</small>
+          <small>membros cadastrados</small>
         </v-card>
       </div>
 

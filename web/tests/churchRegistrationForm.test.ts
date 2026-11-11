@@ -34,7 +34,7 @@ describe("criar a igreja: uma tela, menos de 30 segundos", () => {
 
     assert.match(source, /setupMode:\s*"later"/);
     assert.match(source, /initialDepartments:\s*\[\]/);
-    assert.doesNotMatch(source, /ChurchMinistrySetup/);
+    assert.doesNotMatch(source, /ChurchMinistrySetup/); // componente removido
     assert.doesNotMatch(source, /createDefaultChurchSetup/);
   });
 

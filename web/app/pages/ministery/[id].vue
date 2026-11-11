@@ -27,12 +27,14 @@
           </template>
           <template v-if="capabilities.canManage" #actions>
             <v-btn
-              icon
               variant="tonal"
-              aria-label="Configurar ministério"
+              color="primary"
+              class="text-none"
+              min-height="44"
               @click="isSettingsOpen = true"
             >
-              <Settings2 size="20" aria-hidden="true" />
+              <Settings2 size="18" class="mr-1" aria-hidden="true" />
+              Configurar
             </v-btn>
           </template>
         </UtilsPageHeader>

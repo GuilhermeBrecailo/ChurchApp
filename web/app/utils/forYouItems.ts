@@ -170,15 +170,25 @@ function scheduleItems(input: ForYouInput, now: Date): ForYouItem[] {
     });
   }
 
-  const responses = mergeIfMany(pending, (count) => ({
-    key: "schedule-responses",
-    kind: "schedule-responses",
-    priority: 1,
-    title: `${count} escalas para responder`,
-    description: "Confirme ou avise se não puder.",
-    to: "/scale?aba=minhas",
-    count,
-  }));
+  // A mais próxima aparece sempre com os botões (responde ali mesmo); com 3
+  // ou mais, as outras viram um item "Mais N escalas para responder".
+  const [nextPending, ...laterPending] = pending;
+  const responses: ForYouItem[] = !nextPending
+    ? []
+    : laterPending.length <= 1
+      ? pending
+      : [
+          nextPending,
+          {
+            key: "schedule-responses",
+            kind: "schedule-responses",
+            priority: 1,
+            title: `Mais ${laterPending.length} escalas para responder`,
+            description: "Confirme ou avise se não puder.",
+            to: "/scale?aba=minhas",
+            count: laterPending.length,
+          },
+        ];
 
   // 1b e 1c: só para quem organiza as escalas do ministério.
   const managed = schedules.filter((schedule) => canManageSchedule(schedule, input.managedMinistryIds));

@@ -390,6 +390,13 @@ async function rejectItem(item: PrayerRequest) {
 }
 
 onMounted(() => {
+  // "Fazer um pedido" (aba Igreja) chega com ?novo=1: já abre o formulário.
+  if (route.query.novo) {
+    showNewDialog.value = true;
+    const query = { ...route.query };
+    delete query.novo;
+    void router.replace({ query });
+  }
   void loadPrayers();
   void loadMine();
   void loadPending();
