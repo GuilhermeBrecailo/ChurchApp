@@ -40,6 +40,11 @@
           <strong>{{ dashboard.stats.openVisits }}</strong>
           <span>Visitas em aberto</span>
         </NuxtLink>
+        <NuxtLink to="/pastoral/visitantes" class="pastoral-stat">
+          <Users size="18" />
+          <strong>{{ dashboard.stats.visitorsToFollowUp ?? 0 }}</strong>
+          <span>Visitantes para acompanhar</span>
+        </NuxtLink>
       </div>
 
       <div class="pastoral-section">
@@ -125,6 +130,7 @@ import {
   ClipboardCheck,
   HandHeart,
   HeartPulse,
+  Users,
 } from "lucide-vue-next";
 import { usePastoral, type PastoralDashboard } from "../../../../composables/usePastoral";
 

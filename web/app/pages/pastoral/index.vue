@@ -214,6 +214,10 @@
                 Ações rápidas
               </h2>
               <div class="shortcut-list">
+                <v-btn to="/pastoral/visitantes" block variant="tonal" color="primary" class="text-none justify-start">
+                  <Users size="17" class="mr-2" />
+                  Acompanhar visitantes
+                </v-btn>
                 <v-btn to="/pastoral/visitas?new=1" block variant="tonal" color="primary" class="text-none justify-start">
                   <HandHeart size="17" class="mr-2" />
                   Registrar nova visita
@@ -298,6 +302,14 @@ const summaryActions = computed(() => [
     to: "/pastoral/pessoas",
     icon: Users,
     tone: "warning",
+  },
+  {
+    label: "Visitantes",
+    value: dashboard.value?.stats.visitorsToFollowUp ?? 0,
+    hint: "Acompanhar o retorno",
+    to: "/pastoral/visitantes",
+    icon: Users,
+    tone: "neutral",
   },
   {
     label: "Pedidos de oração",

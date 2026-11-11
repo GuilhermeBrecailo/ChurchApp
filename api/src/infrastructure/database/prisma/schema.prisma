@@ -90,6 +90,7 @@ model Crunch {
     serviceAttendances ServiceAttendance[]
     serviceOccurrences ServiceOccurrence[]
     pastoralVisits PastoralVisit[]
+    visitorFollowUps VisitorFollowUp[]
     instagramConnection InstagramConnection?
     instagramOAuthStates InstagramOAuthState[]
 }
@@ -308,6 +309,8 @@ model User {
     posts Post[]
     rosterMember RosterMember?
     assignedPastoralVisits PastoralVisit[] @relation("PastoralVisitResponsible")
+    assignedVisitorFollowUps VisitorFollowUp[] @relation("VisitorFollowUpResponsible")
+    visitorFollowUpActivities VisitorFollowUpActivity[] @relation("VisitorFollowUpActor")
 }
 
 model ChurchMembership {
@@ -369,6 +372,7 @@ model RosterMember {
     messageLogRecipients MessageLogRecipient[]
     serviceAttendances   ServiceOccurrenceAttendee[]
     pastoralVisits       PastoralVisit[]
+    visitorFollowUp      VisitorFollowUp?
     ministryChildProfiles MinistryChildProfile[] @relation("MinistryChildRosterMember")
     ministryChildGuardians MinistryChildGuardian[] @relation("MinistryChildGuardianRosterMember")
 
@@ -399,6 +403,47 @@ model PastoralVisit {
     @@index([crunchId, status, scheduledAt])
     @@index([rosterMemberId])
     @@index([responsibleId])
+}
+
+model VisitorFollowUp {
+    id               String   @id @default(uuid())
+    stage            String   @default("NEW")
+    consentToContact Boolean  @default(false)
+    nextContactAt    DateTime?
+    lastContactAt    DateTime?
+    createdAt        DateTime @default(now())
+    updatedAt        DateTime @updatedAt
+
+    crunchId String
+    crunch   Crunch @relation(fields: [crunchId], references: [id], onDelete: Cascade)
+
+    rosterMemberId String       @unique
+    rosterMember   RosterMember @relation(fields: [rosterMemberId], references: [id], onDelete: Cascade)
+
+    responsibleId String?
+    responsible   User? @relation("VisitorFollowUpResponsible", fields: [responsibleId], references: [id], onDelete: SetNull)
+
+    activities VisitorFollowUpActivity[]
+
+    @@index([crunchId, stage, nextContactAt])
+    @@index([responsibleId])
+}
+
+model VisitorFollowUpActivity {
+    id         String   @id @default(uuid())
+    action     String
+    note       String?
+    stage      String?
+    createdAt  DateTime @default(now())
+
+    followUpId String
+    followUp   VisitorFollowUp @relation(fields: [followUpId], references: [id], onDelete: Cascade)
+
+    actorId String?
+    actor   User? @relation("VisitorFollowUpActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+    @@index([followUpId, createdAt])
+    @@index([actorId])
 }
 
 model DailyVerse {

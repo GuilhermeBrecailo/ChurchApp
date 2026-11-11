@@ -172,6 +172,19 @@
         auto-grow
       />
 
+      <v-checkbox
+        v-if="!editingRosterId"
+        v-model="rosterForm.contactConsent"
+        label="A pessoa autorizou contato por WhatsApp ou e-mail"
+        color="primary"
+        density="comfortable"
+        hide-details
+        class="mb-1"
+      />
+      <p v-if="!editingRosterId" class="text-caption text-medium-emphasis mb-4">
+        Sem autorização, o acompanhamento continua disponível, mas o atalho de contato digital ficará bloqueado.
+      </p>
+
       <div v-if="rosterEditingMember && rosterEditingMember.phone" class="roster-status-actions mb-4">
         <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">WhatsApp</p>
         <div class="d-flex flex-wrap align-center gap-2">
@@ -336,6 +349,7 @@ const rosterForm = reactive({
   phone: "",
   birthDate: "",
   notes: "",
+  contactConsent: false,
 });
 const rosterActionLoadingId = ref("");
 // Resultado do "Verificar WhatsApp" por pessoa (id -> existe ou nao no
@@ -382,6 +396,7 @@ const resetRosterForm = () => {
   rosterForm.phone = "55";
   rosterForm.birthDate = "";
   rosterForm.notes = "";
+  rosterForm.contactConsent = false;
   rosterFormError.value = "";
 };
 
@@ -417,6 +432,7 @@ const handleSaveRoster = async () => {
     phone: rosterForm.phone,
     birthDate: rosterForm.birthDate,
     notes: rosterForm.notes,
+    contactConsent: rosterForm.contactConsent,
   };
 
   const { error } = editingRosterId.value

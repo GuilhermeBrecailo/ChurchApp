@@ -92,6 +92,19 @@ const navCatalog: Record<string, RoleNavigationItem> = {
     iconColorDark: "#c4b5fd",
     bgColorDark: "rgba(196,181,253,0.14)",
   },
+  visitors: {
+    key: "visitors",
+    label: "Visitantes",
+    title: "Acompanhamento de visitantes",
+    description: "Acolha visitantes e acompanhe contatos e retornos.",
+    route: "/pastoral/visitantes",
+    icon: "users",
+    matchPrefixes: ["/pastoral/visitantes"],
+    iconColor: "#0F766E",
+    bgColor: "#CCFBF1",
+    iconColorDark: "#2dd4bf",
+    bgColorDark: "rgba(45,212,191,0.12)",
+  },
   people: {
     key: "people",
     label: "Pessoas",
@@ -499,6 +512,7 @@ export function getChurchHubItems(user: RoleNavigationUser | null | undefined) {
   if (tier === "privileged") {
     return [
       { ...item("pastoral"), label: "Cuidado pastoral" },
+      item("visitors"),
       item("people"),
       item("messages"),
       item("cults"),
@@ -512,7 +526,7 @@ export function getChurchHubItems(user: RoleNavigationUser | null | undefined) {
   if (tier === "leader") {
     return [
       item("team"),
-      ...(canSeePastoralCareInPreview(user, tier) ? [item("visits")] : []),
+      ...(canSeePastoralCareInPreview(user, tier) ? [item("visits"), item("visitors")] : []),
       item("scale"),
       item("cults"),
       item("content"),
@@ -542,7 +556,9 @@ export function getAllNavigationItems(user: RoleNavigationUser | null | undefine
     ...(hasChurch && isPrivileged
       ? [item("rolesManagement"), item("publications"), item("messages"), item("ministries"), item("reports")]
       : []),
-    ...(hasChurch && hasAnyPermission(user, ["PASTORAL_CARE_MANAGE"]) ? [item("pastoral"), item("visits")] : []),
+    ...(hasChurch && hasAnyPermission(user, ["PASTORAL_CARE_MANAGE"])
+      ? [item("pastoral"), item("visits"), item("visitors")]
+      : []),
     ...(hasChurch && hasContentPublishingAccess(user) ? [item("content")] : []),
     ...(hasChurch ? [item("content"), item("prayer")] : []),
     item("profile"),

@@ -25,6 +25,7 @@ export interface RosterFormDTO {
   phone?: string;
   birthDate?: string;
   notes?: string;
+  contactConsent?: boolean;
 }
 
 export const useRoster = () => {

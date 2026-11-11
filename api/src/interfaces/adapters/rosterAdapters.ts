@@ -30,9 +30,10 @@ const createSchema = z.object({
   phone: z.string().trim().optional().or(z.literal("")),
   birthDate: z.string().trim().optional().or(z.literal("")),
   notes: z.string().trim().optional().or(z.literal("")),
+  contactConsent: z.boolean().default(false),
 });
 
-const updateSchema = createSchema.partial();
+const updateSchema = createSchema.omit({ contactConsent: true }).partial();
 
 export class RosterAdapters {
   private async getCurrentUser(request: FastifyRequest): Promise<CurrentUser> {
@@ -139,6 +140,22 @@ export class RosterAdapters {
         birthDate: body.birthDate ? new Date(body.birthDate) : null,
         notes: body.notes || null,
         status: "VISITOR",
+        visitorFollowUp: {
+          create: {
+            crunchId: user.crunchId,
+            consentToContact: body.contactConsent,
+            activities: {
+              create: {
+                action: "FOLLOW_UP_STARTED",
+                stage: "NEW",
+                note: body.contactConsent
+                  ? "Consentimento para contato confirmado no cadastro."
+                  : "Contato digital ainda não autorizado.",
+                actorId: user.id,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -178,9 +195,34 @@ export class RosterAdapters {
     const { id } = request.params as { id: string };
     const member = await this.findOwned(id, user.crunchId);
 
-    return await $prismaClient.rosterMember.update({
-      where: { id: member.id },
-      data: { status: "MEMBER", joinedAt: new Date(), leftAt: null },
+    return await $prismaClient.$transaction(async (tx) => {
+      const promoted = await tx.rosterMember.update({
+        where: { id: member.id },
+        data: { status: "MEMBER", joinedAt: new Date(), leftAt: null },
+      });
+
+      const followUp = await tx.visitorFollowUp.upsert({
+        where: { rosterMemberId: member.id },
+        create: {
+          crunchId: user.crunchId,
+          rosterMemberId: member.id,
+          stage: "INTEGRATED",
+        },
+        update: { stage: "INTEGRATED", nextContactAt: null },
+        select: { id: true, stage: true },
+      });
+
+      await tx.visitorFollowUpActivity.create({
+        data: {
+          followUpId: followUp.id,
+          action: "BECAME_MEMBER",
+          stage: "INTEGRATED",
+          note: "Visitante integrado ao rol de membros.",
+          actorId: user.id,
+        },
+      });
+
+      return promoted;
     });
   }
 
