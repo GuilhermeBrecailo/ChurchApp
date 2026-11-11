@@ -340,7 +340,6 @@ const HELP_PAGES: HelpPage[] = [
   { pageKey: "/admin", label: "Administração" },
   { pageKey: "/admin/relatorios", label: "Relatórios" },
   { pageKey: "/admin/pessoas", label: "Pessoas" },
-  { pageKey: "/admin/ministerios", label: "Gestão de ministérios" },
   { pageKey: "/admin/publicacoes", label: "Publicações" },
   { pageKey: "/admin/mensagens", label: "Mensagens" },
   { pageKey: "/admin/configuracoes", label: "Configurações" },

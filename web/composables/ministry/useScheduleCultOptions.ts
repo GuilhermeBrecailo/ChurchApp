@@ -3,11 +3,11 @@ import { useServiceOccurrences, type UpcomingOccurrence } from "../useServiceOcc
 import { getScheduleCultOptions } from "../../app/utils/scaleSchedule";
 
 /**
- * Cultos dos próximos 180 dias para vincular a uma escala nova
- * (pages/ministery/[id].vue). Carrega ao montar a página; se falhar, a escala
- * ainda pode ser criada sem vínculo.
+ * Cultos dos próximos 180 dias para vincular a uma escala nova (editor de
+ * escala do ministério). Carrega ao montar, ou só quando pedido com
+ * `{ lazy: true }`; se falhar, a escala ainda pode ser criada sem vínculo.
  */
-export function useScheduleCultOptions() {
+export function useScheduleCultOptions(options: { lazy?: boolean } = {}) {
   const { listOccurrences } = useServiceOccurrences();
   const upcomingOccurrences = ref<UpcomingOccurrence[]>([]);
   const cultOptionsError = ref("");
@@ -26,9 +26,11 @@ export function useScheduleCultOptions() {
     cultOptionsError.value = "";
   };
 
-  onMounted(() => {
-    void loadCultOptions();
-  });
+  if (!options.lazy) {
+    onMounted(() => {
+      void loadCultOptions();
+    });
+  }
 
   return { upcomingOccurrences, cultOptions, cultOptionsError, loadCultOptions };
 }

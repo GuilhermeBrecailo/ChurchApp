@@ -20,9 +20,6 @@ const directDialogMigrations = [
 }));
 
 const legacyDialogMigrations = [
-  "app/components/Ministery/DetailsView/index.vue",
-  "app/components/Ministery/NewMusicModal.vue",
-  "app/components/Ministery/NewReferenceModal.vue",
   "app/pages/cultos/index.vue",
   "app/pages/cultos/[id].vue",
   "app/pages/pastoral/visitas.vue",
@@ -34,18 +31,19 @@ const legacyDialogMigrations = [
 const longFormOverlays = [
   "app/components/Ministery/ActivityFormDialog.vue",
   "app/components/Ministery/AssignmentsDialog.vue",
+  "app/components/Ministery/CreateWizard.vue",
+  "app/components/Ministery/PeopleSheet.vue",
   "app/components/Ministery/ResourceFormDialog.vue",
   "app/components/Ministery/ScheduleFormDialog.vue",
+  "app/components/Ministery/SettingsSheet.vue",
   "app/components/Ministery/SongFormDialog.vue",
   "app/components/Ministery/TaskFormDialog.vue",
   "app/components/Scale/AssignmentsDialog.vue",
   "app/components/Scale/FormDialog.vue",
   "app/pages/admin/configuracoes.vue",
   "app/pages/admin/mensagens.vue",
-  "app/pages/admin/ministerios.vue",
   "app/pages/admin/pessoas.vue",
   "app/pages/admin/relatorios.vue",
-  "app/pages/ministery/index.vue",
   "app/pages/user.vue",
 ].map((relativePath) => ({
   relativePath,
