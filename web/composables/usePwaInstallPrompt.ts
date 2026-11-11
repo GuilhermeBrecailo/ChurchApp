@@ -8,9 +8,10 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: InstallChoice; platform: string }>;
 }
 
+// Mesma chave que app/utils/promptGate.ts usa para o tempo de espera depois
+// de "Agora não" (ver PROMPT_DISMISSED_KEYS em useFirstRunPrompts.ts).
 const DISMISSED_AT_KEY = "churchapp:pwa-install-dismissed-at";
 const DISMISS_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
-const BANNER_DELAY_MS = 3500;
 
 const platform = ref<InstallPlatform>(null);
 const visible = ref(false);
@@ -84,18 +85,27 @@ if (import.meta.client) {
   document.addEventListener("visibilitychange", syncInstalledState);
 }
 
+// Quando o banner aparece não é mais decidido aqui (antes: 3,5 s depois de
+// abrir qualquer tela). Quem decide é o PwaInstallPrompt.vue com a regra dos
+// avisos (app/utils/promptGate.ts): nunca no primeiro minuto, só depois de
+// uma ação concluída ou na segunda visita, e nunca nas telas de entrada.
 const initialize = () => {
   if (!import.meta.client || initialized.value) return;
 
   initialized.value = true;
   platform.value ||= detectPlatform();
   syncInstalledState();
+};
 
-  if (!platform.value || installed.value || dismissedRecently()) return;
+/** Dá para oferecer a instalação neste aparelho (celular e ainda não instalado). */
+const available = computed(() => initialized.value && Boolean(platform.value) && !installed.value);
 
-  setTimeout(() => {
-    if (!installed.value) visible.value = true;
-  }, BANNER_DELAY_MS);
+const show = () => {
+  if (available.value && !dismissedRecently()) visible.value = true;
+};
+
+const hide = () => {
+  visible.value = false;
 };
 
 const dismiss = () => {
@@ -149,7 +159,10 @@ export const usePwaInstallPrompt = () => ({
   instructionsOpen,
   installed,
   hasNativePrompt: computed(() => Boolean(deferredPrompt.value)),
+  available,
   initialize,
+  show,
+  hide,
   install,
   dismiss,
   openInstructions,

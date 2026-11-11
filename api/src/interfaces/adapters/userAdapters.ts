@@ -20,6 +20,7 @@ import { hasPermission } from "../../application/Services/Auth/AuthorizationServ
 import { PermissionKey } from "../../domain/permissions";
 import { PLAN_FEATURES, resolveEffectivePlan, pastDueGraceDaysLeft } from "../../domain/planConfig";
 import { CommercialLeadRepository } from "./commercialLeadRepository";
+import { pushNotificationService } from "../../infrastructure/notifications/PushNotificationService";
 import { z } from "zod";
 
 const TRIAL_PERIOD_DAYS = 90;
@@ -350,11 +351,14 @@ export class UserAdapters {
     // acabar destravando acesso indevido antes da aprovacao.
     const pendingMemberships = await $prismaClient.churchMembership.findMany({
       where: { userId: user.id, isActive: false },
-      select: { crunch: { select: { id: true, name: true } } },
+      select: { crunch: { select: { id: true, name: true, slug: true } } },
     });
+    // slug: a tela "Aguardando aprovacao" oferece "Ver a pagina da igreja"
+    // (/c/:slug) enquanto o pedido nao e aprovado.
     const pendingChurches = pendingMemberships.map((membership) => ({
       id: membership.crunch.id,
       name: membership.crunch.name,
+      slug: membership.crunch.slug,
     }));
 
     return {
@@ -1456,7 +1460,31 @@ export class UserAdapters {
       data: { isActive: true },
     });
 
+    await this.notifyMembershipApproved(membership.userId, manager.crunchId);
+
     return { success: true };
+  }
+
+  // Avisa quem pediu para entrar (in-app + push) que o pedido foi aprovado.
+  // Falha no aviso nao desfaz a aprovacao.
+  private async notifyMembershipApproved(userId: string, crunchId: string) {
+    try {
+      const church = await $prismaClient.crunch.findUnique({
+        where: { id: crunchId },
+        select: { name: true },
+      });
+
+      await pushNotificationService.sendToUsers([userId], {
+        title: "Você foi aprovado!",
+        body: church?.name
+          ? `Agora você faz parte da ${church.name}. Toque para entrar.`
+          : "Toque para entrar.",
+        url: "/",
+        type: "membership_approved",
+      });
+    } catch (error) {
+      console.error("Erro ao notificar aprovação de membro", error);
+    }
   }
 
   // So remove o vinculo pendente com essa igreja - a conta em si (e outras

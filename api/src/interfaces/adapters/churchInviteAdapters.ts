@@ -1,10 +1,71 @@
-import { FastifyRequest } from "fastify";
+import { FastifyReply, FastifyRequest } from "fastify";
 import crypto from "node:crypto";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { resolveActiveChurchContext, RoleContext } from "../utils/churchContext";
 import { hasPermission } from "../../application/Services/Auth/AuthorizationService";
 import { KeycloakProvider } from "../../infrastructure/identity/KeycloakProvider";
+import { pushNotificationService } from "../../infrastructure/notifications/PushNotificationService";
+
+// Codigo estavel (alem da mensagem) para o front distinguir "ja existe conta
+// com esse e-mail" e mandar a pessoa entrar com a senha dela, continuando o
+// pedido depois do login (web/app/pages/join.vue).
+export const ACCOUNT_EXISTS_CODE = "ACCOUNT_EXISTS";
+const ACCOUNT_EXISTS_MESSAGE =
+  "Você já tem conta com esse e-mail. Entre com sua senha para continuar o pedido.";
+
+// Para onde a notificacao de "pediu para participar" leva quem aprova.
+export const MEMBERSHIP_REQUEST_URL = "/pessoas?filtro=pendentes";
+
+// Avisa quem pode aprovar cadastros (pastor/admin, gestor de membros legado e
+// cargo de igreja com MEMBER_CREATE - o mesmo criterio de
+// userAdapters.ts#approveMember) que alguem pediu para entrar. Falha aqui nao
+// derruba o pedido: ele ja foi gravado e aparece na lista de pendentes.
+export async function notifyMembershipRequest(
+  crunchId: string,
+  requesterName: string,
+) {
+  try {
+    const managers = await $prismaClient.churchMembership.findMany({
+      where: {
+        crunchId,
+        isActive: true,
+        OR: [
+          { role: { in: ["PASTOR", "ADMIN"] } },
+          { canManageMembers: true },
+          {
+            membershipRoles: {
+              some: {
+                churchRole: {
+                  scope: "CHURCH",
+                  permissions: { has: "MEMBER_CREATE" },
+                },
+              },
+            },
+          },
+        ],
+      },
+      select: { userId: true },
+    });
+
+    if (managers.length === 0) return;
+
+    const fullName = requesterName.trim() || "Alguém";
+    const firstName = fullName.split(/\s+/)[0];
+
+    await pushNotificationService.sendToUsers(
+      managers.map((manager) => manager.userId),
+      {
+        title: `${firstName} pediu para participar`,
+        body: `${fullName} quer entrar na igreja. Toque para aprovar ou recusar.`,
+        url: MEMBERSHIP_REQUEST_URL,
+        type: "membership_request",
+      },
+    );
+  } catch (error) {
+    console.error("Erro ao notificar pedido de entrada na igreja", error);
+  }
+}
 
 type InviteManagerContext = {
   role: string;
@@ -101,6 +162,10 @@ export class ChurchInviteAdapters {
     return { inviteCode };
   }
 
+  // Toda entrada por convite passa por aprovacao (proposta do redesign,
+  // decisao 2): mesmo logado, o vinculo nasce isActive:false e user.crunchId
+  // nao e preenchido - igual a registerByCode. Quem aprova recebe uma
+  // notificacao; a pessoa ve "Aguardando aprovacao" ate la.
   async joinByCode(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
 
@@ -130,7 +195,7 @@ export class ChurchInviteAdapters {
         return { membership: existingMembership, alreadyMember: true };
       }
 
-      const hasMembership = await tx.churchMembership.findFirst({
+      const hasActiveMembership = await tx.churchMembership.findFirst({
         where: {
           userId: user.id,
           isActive: true,
@@ -143,30 +208,26 @@ export class ChurchInviteAdapters {
           crunchId: church.id,
           role: "MEMBER",
           canManageMembers: false,
-          isPrimary: !hasMembership && !user.crunchId,
+          isPrimary: !hasActiveMembership && !user.crunchId,
+          isActive: false,
         },
       });
 
-      if (!user.crunchId) {
-        await tx.user.update({
-          where: { id: user.id },
-          data: {
-            crunchId: church.id,
-            role: "MEMBER",
-            canManageMembers: false,
-          },
-        });
-      }
-
       return { membership: createdMembership, alreadyMember: false };
     });
+
+    if (!result.alreadyMember) {
+      await notifyMembershipRequest(church.id, user.name);
+    }
 
     return {
       success: true,
       churchId: church.id,
       churchName: church.name,
+      churchSlug: church.slug,
       membershipId: result.membership.id,
       alreadyMember: result.alreadyMember,
+      pending: result.membership.isActive === false,
     };
   }
 
@@ -179,7 +240,7 @@ export class ChurchInviteAdapters {
 
     const church = await $prismaClient.crunch.findFirst({
       where: { inviteCode: code.trim().toUpperCase(), isActive: true },
-      select: { name: true, logo: true },
+      select: { name: true, logo: true, slug: true },
     });
 
     if (!church) throw new DomainError("Código de convite inválido ou expirado");
@@ -196,7 +257,7 @@ export class ChurchInviteAdapters {
   // user.crunchId aqui de proposito: esse campo e' o fallback que
   // resolveActiveChurchContext usa quando nao ha nenhuma membership ativa -
   // setar isso destravaria acesso indevido antes da aprovacao.
-  async registerByCode(request: FastifyRequest) {
+  async registerByCode(request: FastifyRequest, reply?: FastifyReply) {
     const { code } = request.params as { code?: string };
     if (!code?.trim()) throw new DomainError("Código de convite é obrigatório");
 
@@ -226,9 +287,18 @@ export class ChurchInviteAdapters {
     });
 
     if (existingUser) {
-      throw new DomainError(
-        "Já existe uma conta com esse email. Faça login e use o código de convite pela tela Entrar em uma igreja.",
-      );
+      // Mesmo contrato do controllerHandler para DomainError (HTTP 200 com
+      // status 409 no corpo), mais um `code` estavel para o front.
+      if (reply) {
+        reply.code(200).send({
+          error: ACCOUNT_EXISTS_MESSAGE,
+          code: ACCOUNT_EXISTS_CODE,
+          status: 409,
+        });
+        return { success: false, code: ACCOUNT_EXISTS_CODE };
+      }
+
+      throw new DomainError(ACCOUNT_EXISTS_MESSAGE);
     }
 
     const identityProvider = new KeycloakProvider();
@@ -267,6 +337,8 @@ export class ChurchInviteAdapters {
       throw error;
     }
 
-    return { success: true, churchName: church.name };
+    await notifyMembershipRequest(church.id, body.name.trim());
+
+    return { success: true, churchName: church.name, churchSlug: church.slug };
   }
 }

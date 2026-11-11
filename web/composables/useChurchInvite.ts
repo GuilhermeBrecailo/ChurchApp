@@ -3,6 +3,32 @@ import type { ApiResponse } from "./useTypes";
 import { useNuxtApp, useRuntimeConfig } from "#app";
 import { useAuth } from "./useAuth";
 
+export interface JoinByCodeResult {
+  success: boolean;
+  churchId?: string;
+  churchName: string;
+  churchSlug?: string | null;
+  membershipId?: string;
+  alreadyMember?: boolean;
+  /** Todo convite passa por aprovação: true enquanto o pastor não aprovar. */
+  pending?: boolean;
+}
+
+export interface InviteChurchPreview {
+  name: string;
+  logo: string | null;
+  slug?: string | null;
+}
+
+export interface RegisterByCodeResult {
+  success: boolean;
+  churchName?: string;
+  churchSlug?: string | null;
+}
+
+/** `code: "ACCOUNT_EXISTS"` quando o e-mail já tem conta (ver app/utils/joinFlow.ts). */
+export type RegisterByCodeResponse = ApiResponse<RegisterByCodeResult> & { code?: string };
+
 export function useChurchInvite() {
   const { $customFetch } = useNuxtApp() as unknown as { $customFetch: CustomFetch };
   const config = useRuntimeConfig();
@@ -39,8 +65,8 @@ export function useChurchInvite() {
     );
   };
 
-  const joinByCode = async (inviteCode: string): Promise<ApiResponse<{ success: boolean; churchName: string }>> => {
-    return await $customFetch<{ success: boolean; churchName: string }>(
+  const joinByCode = async (inviteCode: string): Promise<ApiResponse<JoinByCodeResult>> => {
+    return await $customFetch<JoinByCodeResult>(
       `${config.public.URL_BACKEND}/api/church/join`,
       { method: "POST", headers: authHeaders(), body: { inviteCode } },
     );
@@ -49,8 +75,8 @@ export function useChurchInvite() {
   // Publicas - sem token, quem esta chamando ainda nao tem conta.
   const getChurchByCode = async (
     code: string,
-  ): Promise<ApiResponse<{ name: string; logo: string | null }>> => {
-    return await $customFetch<{ name: string; logo: string | null }>(
+  ): Promise<ApiResponse<InviteChurchPreview>> => {
+    return await $customFetch<InviteChurchPreview>(
       `${config.public.URL_BACKEND}/public/church/invite/${encodeURIComponent(code)}`,
       { method: "GET" },
     );
@@ -59,11 +85,11 @@ export function useChurchInvite() {
   const registerByCode = async (
     code: string,
     member: { name: string; email: string; phone: string; password: string },
-  ): Promise<ApiResponse<{ success: boolean; churchName: string }>> => {
-    return await $customFetch<{ success: boolean; churchName: string }>(
+  ): Promise<RegisterByCodeResponse> => {
+    return (await $customFetch<RegisterByCodeResult>(
       `${config.public.URL_BACKEND}/public/church/invite/${encodeURIComponent(code)}/register`,
       { method: "POST", headers: { "Content-Type": "application/json" }, body: member },
-    );
+    )) as RegisterByCodeResponse;
   };
 
   return {

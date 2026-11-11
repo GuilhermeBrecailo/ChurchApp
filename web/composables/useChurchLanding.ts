@@ -192,7 +192,7 @@ export const useChurchLanding = () => {
       ]);
 
       if (churchResponse.error || !churchResponse.data?.church) {
-        error.value = churchResponse.error || "Igreja nao encontrada.";
+        error.value = churchResponse.error || "Igreja não encontrada.";
         return;
       }
 

@@ -1,101 +1,222 @@
 <template>
-  <div class="auth-page flex items-center justify-center min-h-screen p-4">
-    <MotionFadeInUp class="w-full max-w-md">
-    <v-card class="auth-card w-full max-w-md" elevation="0">
-      <div class="auth-card-inner">
-        <div class="flex flex-col items-center mb-8 text-center">
-          <div class="auth-icon-circle mb-4">
-            <v-icon size="40" color="primary">mdi-lock-reset</v-icon>
-          </div>
-          <h1 class="app-page-title auth-title">Recuperar senha</h1>
-          <p class="auth-subtitle mt-2">
-            Fale com a liderança da sua igreja para redefinir seu acesso.
-          </p>
-        </div>
+  <OnboardingAuthShell
+    title="Esqueci minha senha"
+    subtitle="Escolha quem é você para ver como recuperar o acesso."
+    :icon="KeyRound"
+    back="/login"
+    back-label="Voltar para o login"
+  >
+    <div class="forgot-choice" role="radiogroup" aria-label="Quem é você?">
+      <button
+        v-for="option in options"
+        :key="option.value"
+        type="button"
+        role="radio"
+        class="forgot-option"
+        :class="{ 'is-selected': who === option.value }"
+        :aria-checked="who === option.value"
+        @click="who = option.value"
+      >
+        <span class="forgot-option__icon accent-avatar" aria-hidden="true">
+          <component :is="option.icon" :size="20" />
+        </span>
+        <span class="forgot-option__copy">
+          <strong>{{ option.title }}</strong>
+          <small>{{ option.caption }}</small>
+        </span>
+      </button>
+    </div>
 
-        <v-alert type="info" variant="tonal" density="comfortable" class="mb-6">
-          A recuperação automática de senha ainda não está disponível neste ambiente.
-        </v-alert>
+    <section v-if="who" class="forgot-help" aria-live="polite">
+      <template v-if="who === 'member'">
+        <h2 class="forgot-help__title">Peça uma senha temporária ao pastor</h2>
+        <ol class="forgot-steps">
+          <li>O pastor (ou quem cuida dos cadastros) abre seu perfil no app e toca em <strong>Gerar senha temporária</strong>.</li>
+          <li>Você entra com essa senha.</li>
+          <li>O app pede para você criar uma senha nova, só sua.</li>
+        </ol>
+      </template>
 
-        <MotionPressableScale>
-        <v-btn
-          to="/login"
-          block
-          color="primary"
-          size="x-large"
-          class="auth-btn text-none font-bold"
-          rounded="xl"
-          elevation="2"
-        >
-          Voltar para login
-        </v-btn>
-        </MotionPressableScale>
-      </div>
-    </v-card>
-    </MotionFadeInUp>
-  </div>
+      <template v-else>
+        <h2 class="forgot-help__title">Fale com o suporte do ChurchApp</h2>
+        <p class="forgot-help__copy">
+          Mande uma mensagem no WhatsApp com o e-mail da sua conta. A gente confirma que é você e
+          libera um novo acesso.
+        </p>
+      </template>
+
+      <v-text-field
+        v-model="email"
+        label="Seu e-mail no app (opcional)"
+        type="email"
+        autocomplete="email"
+        inputmode="email"
+        autocapitalize="off"
+        spellcheck="false"
+        variant="outlined"
+        density="comfortable"
+        color="primary"
+        hide-details="auto"
+        hint="Vai junto na mensagem, para facilitar."
+        persistent-hint
+      />
+
+      <v-btn
+        :href="whatsAppLink"
+        target="_blank"
+        rel="noopener noreferrer"
+        block
+        color="primary"
+        size="x-large"
+        rounded="xl"
+        class="auth-submit"
+      >
+        <MessageCircle :size="19" class="mr-2" aria-hidden="true" />
+        {{ who === "member" ? "Pedir ajuda no WhatsApp" : "Chamar o suporte no WhatsApp" }}
+      </v-btn>
+
+      <p v-if="who === 'member'" class="forgot-help__note">
+        O WhatsApp abre com a mensagem pronta. É só escolher o contato do seu pastor.
+      </p>
+    </section>
+
+    <template #footer>
+      <p class="mb-0">
+        Lembrou a senha?
+        <NuxtLink to="/login">Entrar</NuxtLink>
+      </p>
+    </template>
+  </OnboardingAuthShell>
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from "vue";
+import { Church, KeyRound, MessageCircle, UsersRound } from "lucide-vue-next";
+import {
+  buildWhatsAppLink,
+  memberPasswordHelpMessage,
+  pastorPasswordHelpMessage,
+  SUPPORT_WHATSAPP,
+} from "../utils/supportContact";
+
 definePageMeta({
   layout: "not-app-bottom",
 });
+
+useHead({ title: "Esqueci minha senha · ChurchApp" });
+
+type Who = "member" | "pastor";
+
+const options: { value: Who; title: string; caption: string; icon: typeof Church }[] = [
+  { value: "member", title: "Sou membro", caption: "Participo de uma igreja no app", icon: UsersRound },
+  { value: "pastor", title: "Sou pastor", caption: "Criei a conta da igreja", icon: Church },
+];
+
+const who = ref<Who | null>(null);
+const email = ref("");
+
+const whatsAppLink = computed(() =>
+  who.value === "pastor"
+    ? buildWhatsAppLink(SUPPORT_WHATSAPP, pastorPasswordHelpMessage(email.value))
+    : buildWhatsAppLink(null, memberPasswordHelpMessage(email.value)),
+);
 </script>
 
 <style scoped>
-.auth-page {
-  width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
-  background: var(--app-color-background) !important;
-  background-image: none !important;
+.forgot-choice {
+  display: grid;
+  gap: 10px;
 }
 
-.auth-card {
-  border-radius: 28px !important;
-  border: 1px solid rgba(229, 231, 235, 0.9) !important;
-  box-shadow: 0 24px 64px rgba(33, 30, 27, 0.12), 0 4px 16px rgba(33, 30, 27, 0.06) !important;
-  background: var(--app-color-surface) !important;
-  overflow: hidden;
-  border-color: var(--app-color-border) !important;
-}
-
-.auth-card-inner {
-  padding: 40px 32px 32px;
-}
-
-.auth-icon-circle {
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  background: rgba(240, 151, 90, 0.16) !important;
+.forgot-option {
   display: flex;
   align-items: center;
-  justify-content: center;
-}
-
-.auth-title {
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  gap: 14px;
+  width: 100%;
+  min-height: 68px;
+  padding: 12px 14px;
+  border: 1px solid var(--app-color-border);
+  border-radius: 16px;
+  background: var(--app-color-surface);
   color: var(--app-color-text);
-  margin: 0 0 6px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--app-motion-duration-fast) ease, background-color var(--app-motion-duration-fast) ease;
 }
 
-.auth-subtitle {
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--app-color-accent-soft);
+.forgot-option:hover {
+  border-color: var(--app-color-border-strong);
+}
+
+.forgot-option:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-color-accent) 34%, transparent);
+  outline-offset: 2px;
+}
+
+.forgot-option.is-selected {
+  border-color: var(--app-color-accent);
+  background: var(--app-color-accent-tint);
+}
+
+.forgot-option__icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+}
+
+.forgot-option__copy {
+  display: grid;
+  gap: 2px;
+}
+
+.forgot-option__copy strong {
+  font-size: 1.02rem;
+  font-weight: 750;
+}
+
+.forgot-option__copy small {
+  color: var(--app-color-text-muted);
+  font-size: 0.9rem;
+}
+
+.forgot-help {
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--app-color-border-subtle);
+}
+
+.forgot-help__title {
   margin: 0;
+  color: var(--app-color-text);
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.3;
 }
 
-.auth-btn {
-  height: 54px !important;
-  font-size: 1.05rem !important;
-  letter-spacing: 0.01em !important;
+.forgot-help__copy,
+.forgot-steps {
+  margin: 0;
+  color: var(--app-color-text-soft);
+  font-size: 1rem;
+  line-height: 1.55;
 }
 
-:global(.app-theme-dark .auth-btn.bg-primary) {
-  box-shadow: 0 4px 16px rgba(240, 151, 90, 0.3) !important;
+.forgot-steps {
+  display: grid;
+  gap: 8px;
+  padding-left: 22px;
+}
+
+.forgot-help__note {
+  margin: -4px 0 0;
+  color: var(--app-color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  text-align: center;
 }
 </style>

@@ -5,6 +5,7 @@ const mockTx = {
 
 const mockPrismaClient = {
   user: { findUnique: jest.fn() },
+  churchMembership: { findMany: jest.fn() },
   crunch: { findUnique: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
   $transaction: jest.fn(async (cb: (tx: typeof mockTx) => unknown) => cb(mockTx)),
 };
@@ -23,7 +24,15 @@ jest.mock("../src/infrastructure/identity/KeycloakProvider", () => ({
   })),
 }));
 
-import { FastifyRequest } from "fastify";
+const mockSendToUsers = jest.fn();
+
+jest.mock("../src/infrastructure/notifications/PushNotificationService", () => ({
+  pushNotificationService: {
+    sendToUsers: (...args: unknown[]) => mockSendToUsers(...args),
+  },
+}));
+
+import { FastifyReply, FastifyRequest } from "fastify";
 import { ChurchInviteAdapters } from "../src/interfaces/adapters/churchInviteAdapters";
 import { DomainError } from "../src/domain/value-objects/utils/DomainError";
 
@@ -65,6 +74,11 @@ describe("ChurchInviteAdapters", () => {
       crunchId: "church-1",
     });
     mockDeleteUser.mockResolvedValue(undefined);
+    mockSendToUsers.mockResolvedValue(undefined);
+    mockPrismaClient.churchMembership.findMany.mockResolvedValue([
+      { userId: "pastor-1" },
+      { userId: "manager-1" },
+    ]);
   });
 
   describe("getInviteCode", () => {
@@ -129,12 +143,20 @@ describe("ChurchInviteAdapters", () => {
       await expect(adapters.joinByCode(request)).rejects.toThrow(DomainError);
     });
 
-    it("creates a new membership for a first-time joiner", async () => {
-      mockPrismaClient.crunch.findFirst.mockResolvedValue({ id: "church-2", name: "Igreja B" });
+    it("creates a PENDING membership for a logged-in user without church", async () => {
+      mockPrismaClient.crunch.findFirst.mockResolvedValue({
+        id: "church-2",
+        name: "Igreja B",
+        slug: "igreja-b",
+      });
       mockTx.churchMembership.findUnique.mockResolvedValue(null);
       mockTx.churchMembership.findFirst.mockResolvedValue(null);
-      mockTx.churchMembership.create.mockResolvedValue({ id: "membership-new" });
-      mockPrismaClient.user.findUnique.mockResolvedValue({ id: "user-1", crunchId: null });
+      mockTx.churchMembership.create.mockResolvedValue({ id: "membership-new", isActive: false });
+      mockPrismaClient.user.findUnique.mockResolvedValue({
+        id: "user-1",
+        name: "Maria Souza",
+        crunchId: null,
+      });
 
       const request = makeRequest({ body: { inviteCode: "abcd" } });
       const result = await adapters.joinByCode(request);
@@ -143,21 +165,95 @@ describe("ChurchInviteAdapters", () => {
         success: true,
         churchId: "church-2",
         churchName: "Igreja B",
+        churchSlug: "igreja-b",
         membershipId: "membership-new",
         alreadyMember: false,
+        pending: true,
       });
-      expect(mockTx.user.update).toHaveBeenCalled();
+      expect(mockTx.churchMembership.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          userId: "user-1",
+          crunchId: "church-2",
+          isActive: false,
+          isPrimary: true,
+        }),
+      });
+      // Nao destrava acesso antes da aprovacao.
+      expect(mockTx.user.update).not.toHaveBeenCalled();
+    });
+
+    it("notifies the church managers that someone asked to join", async () => {
+      mockPrismaClient.crunch.findFirst.mockResolvedValue({ id: "church-2", name: "Igreja B" });
+      mockTx.churchMembership.findUnique.mockResolvedValue(null);
+      mockTx.churchMembership.findFirst.mockResolvedValue({ id: "other-active" });
+      mockTx.churchMembership.create.mockResolvedValue({ id: "membership-new", isActive: false });
+      mockPrismaClient.user.findUnique.mockResolvedValue({
+        id: "user-1",
+        name: "Maria Souza",
+        crunchId: "church-1",
+      });
+
+      await adapters.joinByCode(makeRequest({ body: { inviteCode: "abcd" } }));
+
+      expect(mockTx.churchMembership.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ isActive: false, isPrimary: false }),
+      });
+      expect(mockPrismaClient.churchMembership.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ crunchId: "church-2", isActive: true }),
+        }),
+      );
+      expect(mockSendToUsers).toHaveBeenCalledWith(
+        ["pastor-1", "manager-1"],
+        expect.objectContaining({
+          title: "Maria pediu para participar",
+          type: "membership_request",
+          url: "/pessoas?filtro=pendentes",
+        }),
+      );
+    });
+
+    it("keeps the request even when the notification fails", async () => {
+      mockPrismaClient.crunch.findFirst.mockResolvedValue({ id: "church-2", name: "Igreja B" });
+      mockTx.churchMembership.findUnique.mockResolvedValue(null);
+      mockTx.churchMembership.findFirst.mockResolvedValue(null);
+      mockTx.churchMembership.create.mockResolvedValue({ id: "membership-new", isActive: false });
+      mockSendToUsers.mockRejectedValueOnce(new Error("push down"));
+      const consoleError = jest.spyOn(console, "error").mockImplementation(() => undefined);
+
+      const result = await adapters.joinByCode(makeRequest({ body: { inviteCode: "abcd" } }));
+
+      expect(result.pending).toBe(true);
+      consoleError.mockRestore();
     });
 
     it("short-circuits when the user is already a member of that church", async () => {
       mockPrismaClient.crunch.findFirst.mockResolvedValue({ id: "church-2", name: "Igreja B" });
-      mockTx.churchMembership.findUnique.mockResolvedValue({ id: "membership-existing" });
+      mockTx.churchMembership.findUnique.mockResolvedValue({
+        id: "membership-existing",
+        isActive: true,
+      });
 
       const request = makeRequest({ body: { inviteCode: "abcd" } });
       const result = await adapters.joinByCode(request);
 
       expect(result.alreadyMember).toBe(true);
+      expect(result.pending).toBe(false);
       expect(mockTx.churchMembership.create).not.toHaveBeenCalled();
+      expect(mockSendToUsers).not.toHaveBeenCalled();
+    });
+
+    it("reports a request that is still waiting for approval", async () => {
+      mockPrismaClient.crunch.findFirst.mockResolvedValue({ id: "church-2", name: "Igreja B" });
+      mockTx.churchMembership.findUnique.mockResolvedValue({
+        id: "membership-existing",
+        isActive: false,
+      });
+
+      const result = await adapters.joinByCode(makeRequest({ body: { inviteCode: "abcd" } }));
+
+      expect(result).toEqual(expect.objectContaining({ alreadyMember: true, pending: true }));
+      expect(mockSendToUsers).not.toHaveBeenCalled();
     });
   });
 
@@ -214,13 +310,32 @@ describe("ChurchInviteAdapters", () => {
       ).rejects.toThrow(DomainError);
     });
 
-    it("throws DomainError when the email is already registered", async () => {
+    it("throws DomainError when the email is already registered (no reply)", async () => {
       mockPrismaClient.crunch.findFirst.mockResolvedValue({ id: "church-1" });
       mockPrismaClient.user.findUnique.mockResolvedValue({ id: "existing-user" });
 
       await expect(
         adapters.registerByCode(makeRequest({ params: { code: "abcd" }, body: validBody })),
       ).rejects.toThrow(DomainError);
+    });
+
+    it("answers ACCOUNT_EXISTS (HTTP 200, status 409) when the email is already registered", async () => {
+      mockPrismaClient.crunch.findFirst.mockResolvedValue({ id: "church-1" });
+      mockPrismaClient.user.findUnique.mockResolvedValue({ id: "existing-user" });
+      const send = jest.fn();
+      const reply = { code: jest.fn(() => ({ send })) } as unknown as FastifyReply;
+
+      const result = await adapters.registerByCode(
+        makeRequest({ params: { code: "abcd" }, body: validBody }),
+        reply,
+      );
+
+      expect(reply.code).toHaveBeenCalledWith(200);
+      expect(send).toHaveBeenCalledWith(
+        expect.objectContaining({ code: "ACCOUNT_EXISTS", status: 409, error: expect.any(String) }),
+      );
+      expect(result).toEqual({ success: false, code: "ACCOUNT_EXISTS" });
+      expect(mockCreateUser).not.toHaveBeenCalled();
     });
 
     it("creates the user in Keycloak and a pending (inactive) membership", async () => {
@@ -232,7 +347,7 @@ describe("ChurchInviteAdapters", () => {
         makeRequest({ params: { code: "abcd" }, body: validBody }),
       );
 
-      expect(result).toEqual({ success: true, churchName: "Igreja A" });
+      expect(result).toEqual({ success: true, churchName: "Igreja A", churchSlug: undefined });
       expect(mockCreateUser).toHaveBeenCalledWith(
         "fulano@example.com",
         "Fulano",
@@ -242,6 +357,10 @@ describe("ChurchInviteAdapters", () => {
         data: expect.objectContaining({ isActive: false, userId: "keycloak-id-1" }),
       });
       expect(mockDeleteUser).not.toHaveBeenCalled();
+      expect(mockSendToUsers).toHaveBeenCalledWith(
+        ["pastor-1", "manager-1"],
+        expect.objectContaining({ title: "Fulano pediu para participar" }),
+      );
     });
 
     it("rolls back the Keycloak user when the DB transaction fails", async () => {
