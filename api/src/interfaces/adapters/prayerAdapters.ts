@@ -128,6 +128,32 @@ export class PrayerAdapters {
     return { items: this.maskItems(items), total, page, pageSize };
   }
 
+  // "Meus pedidos": o autor acompanha os proprios pedidos (pendente,
+  // aprovado ou nao aprovado, com o motivo quando o moderador deixou um).
+  // Nunca expoe quem revisou - so o resultado.
+  async listMyPrayerRequests(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+
+    const items = await $prismaClient.prayerRequest.findMany({
+      where: { crunchId: user.crunchId!, userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        title: true,
+        body: true,
+        isAnonymous: true,
+        isAnswered: true,
+        status: true,
+        rejectionReason: true,
+        reviewedAt: true,
+        createdAt: true,
+      },
+    });
+
+    return { items };
+  }
+
   async createPrayerRequest(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
     const body = request.body as { title?: string; body?: string; isAnonymous?: boolean };

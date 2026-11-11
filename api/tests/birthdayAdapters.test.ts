@@ -96,7 +96,14 @@ describe("birthdayMembersInRange", () => {
 
     expect(mockPrismaClient.rosterMember.findMany).toHaveBeenCalledWith({
       where: { crunchId: "church-1", status: { in: ["VISITOR", "MEMBER"] }, birthDate: { not: null } },
-      select: { id: true, name: true, phone: true, birthDate: true },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        birthDate: true,
+        status: true,
+        visitorFollowUp: { select: { consentToContact: true } },
+      },
     });
     expect(result).toEqual([
       expect.objectContaining({ id: "m1", name: "Maria", turningAge: 36, daysUntil: 0 }),
@@ -142,7 +149,14 @@ describe("BirthdayAdapters - listBirthdays", () => {
 
     expect(mockPrismaClient.rosterMember.findMany).toHaveBeenCalledWith({
       where: { crunchId: "church-1", status: { in: ["VISITOR", "MEMBER"] }, birthDate: { not: null } },
-      select: { id: true, name: true, phone: true, birthDate: true },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        birthDate: true,
+        status: true,
+        visitorFollowUp: { select: { consentToContact: true } },
+      },
     });
   });
 
@@ -258,5 +272,55 @@ describe("BirthdayAdapters - sendNow", () => {
       audience: "BIRTHDAY",
       recipients: [],
     });
+  });
+});
+
+describe("Aniversariantes - autorização de contato dos visitantes (LGPD)", () => {
+  const visitorWithoutConsent = {
+    id: "v1",
+    name: "Visitante",
+    phone: "11911112222",
+    birthDate: new Date("1995-08-19T00:00:00.000Z"),
+    status: "VISITOR",
+    visitorFollowUp: { consentToContact: false },
+  };
+  const visitorWithConsent = {
+    ...visitorWithoutConsent,
+    id: "v2",
+    name: "Visitante Autorizou",
+    visitorFollowUp: { consentToContact: true },
+  };
+  const member = { ...MARIA_TODAY, status: "MEMBER", visitorFollowUp: null };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("marca na lista quem pode receber a mensagem", async () => {
+    mockPrismaClient.rosterMember.findMany.mockResolvedValue([visitorWithoutConsent, visitorWithConsent, member]);
+
+    const result = await birthdayMembersInRange("church-1", "today", TODAY);
+
+    const byId = Object.fromEntries(result.map((item) => [item.id, item.canReceiveMessage]));
+    expect(byId).toEqual({ v1: false, v2: true, m1: true });
+  });
+
+  it("o envio manual do dia não manda WhatsApp para visitante sem autorização", async () => {
+    jest.useFakeTimers({ doNotFake: ["nextTick", "setImmediate"] });
+    jest.setSystemTime(TODAY);
+    mockPrismaClient.birthdayMessageSetting.findUnique.mockResolvedValue({ templateId: "t1" });
+    mockPrismaClient.messageTemplate.findUnique.mockResolvedValue({ id: "t1", crunchId: "church-1", body: "Oi" });
+    mockIsConnected.mockResolvedValue(true);
+    mockPrismaClient.rosterMember.findMany.mockResolvedValue([visitorWithoutConsent, visitorWithConsent, member]);
+    mockCreateLogAndDispatch.mockResolvedValue({ id: "log-1" });
+
+    await new BirthdayAdapters().sendNow(makeRequest("PASTOR"));
+
+    const { recipients } = mockCreateLogAndDispatch.mock.calls[0][0];
+    expect(recipients.map((recipient: { id: string }) => recipient.id).sort()).toEqual(["m1", "v2"]);
   });
 });

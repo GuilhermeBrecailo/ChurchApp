@@ -52,7 +52,7 @@ export async function sendTrialReminders(
         {
           title: "Seu período de teste está acabando",
           body: `Faltam ${daysLeft} ${daysLeft === 1 ? "dia" : "dias"} do seu teste grátis do plano Pro em ${church.name}. Assine para não perder o acesso.`,
-          url: "/plans",
+          url: "/configuracoes/plano",
           type: "TRIAL_ENDING",
         },
       );

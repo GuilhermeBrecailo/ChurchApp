@@ -6,6 +6,7 @@ import { resolveActiveChurchContext, RoleContext } from "../utils/churchContext"
 import { isPrivilegedRole } from "../../application/Services/Auth/AuthorizationService";
 import { WhatsAppServiceClient } from "../../infrastructure/whatsapp/WhatsAppServiceClient";
 import { createLogAndDispatch } from "./messageAdapters";
+import { canReceiveBulkMessage, CONTACT_CONSENT_SELECT } from "../utils/contactConsent";
 
 type CurrentUser = {
   id: string;
@@ -69,6 +70,8 @@ type BirthdayRosterMember = {
   name: string;
   phone: string | null;
   birthDate: Date;
+  status?: string | null;
+  visitorFollowUp?: { consentToContact: boolean } | null;
 };
 
 // Standalone (nao metodo de classe) de proposito - assim da pra testar a
@@ -81,7 +84,7 @@ export async function birthdayMembersInRange(crunchId: string, range: BirthdayRa
       status: { in: ["VISITOR", "MEMBER"] },
       birthDate: { not: null },
     },
-    select: { id: true, name: true, phone: true, birthDate: true },
+    select: { id: true, name: true, phone: true, birthDate: true, ...CONTACT_CONSENT_SELECT },
   })) as BirthdayRosterMember[];
 
   return members
@@ -97,6 +100,10 @@ export async function birthdayMembersInRange(crunchId: string, range: BirthdayRa
         name: member.name,
         phone: member.phone,
         birthDate: member.birthDate,
+        status: member.status ?? null,
+        // Visitante sem autorizacao de contato aparece na lista (o pastor
+        // pode dar parabens pessoalmente), mas nao recebe o WhatsApp.
+        canReceiveMessage: canReceiveBulkMessage(member),
         turningAge: occurrence.getFullYear() - member.birthDate.getUTCFullYear(),
         daysUntil: daysUntil(occurrence, now),
       };
@@ -210,7 +217,9 @@ export class BirthdayAdapters {
       throw new DomainError("WhatsApp não conectado - conecte a igreja antes de enviar mensagens");
     }
 
-    const recipients = await birthdayMembersInRange(user.crunchId, "today", new Date());
+    const recipients = (await birthdayMembersInRange(user.crunchId, "today", new Date())).filter(
+      (member) => member.canReceiveMessage,
+    );
 
     return createLogAndDispatch({
       crunchId: user.crunchId,

@@ -5,6 +5,7 @@ import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { resolveActiveChurchContext, RoleContext } from "../utils/churchContext";
 import { isPrivilegedRole } from "../../application/Services/Auth/AuthorizationService";
 import { WhatsAppServiceClient } from "../../infrastructure/whatsapp/WhatsAppServiceClient";
+import { CONTACT_CONSENT_SELECT, splitByContactConsent } from "../utils/contactConsent";
 
 type CurrentUser = {
   id: string;
@@ -63,6 +64,13 @@ const sendNowSchema = z
     (body) => body.audience !== "SELECTED" || (body.recipientIds && body.recipientIds.length > 0),
     { message: "Selecione ao menos um destinatário", path: ["recipientIds"] },
   );
+
+// Previa do "Novo comunicado" (contagem ao vivo) - mesma regra de publico do
+// envio, mas SELECTED sem ninguem marcado ainda so devolve zero.
+const previewSchema = z.object({
+  audience: sendNowAudienceSchema,
+  recipientIds: z.array(z.string().trim().min(1)).optional(),
+});
 
 // Delay entre cada envio individual - reduz risco de a conta de WhatsApp da
 // igreja ser marcada como spam por mandar muitas mensagens de uma vez.
@@ -152,6 +160,44 @@ export async function createLogAndDispatch(params: {
   return log;
 }
 
+type Recipient = { id: string; name: string; phone: string | null };
+
+// Monta a lista de destinatarios de um envio por publico, ja tirando os
+// visitantes que nao autorizaram contato (LGPD). Usado pelo envio manual,
+// pelas regras automaticas e pela previa do "Novo comunicado".
+export async function resolveMessageRecipients(params: {
+  crunchId: string;
+  audience: string;
+  recipientIds?: string[];
+}): Promise<{ recipients: Recipient[]; excludedWithoutConsent: number }> {
+  const select = { id: true, name: true, phone: true, ...CONTACT_CONSENT_SELECT };
+  let members: (Recipient & { status?: string | null; visitorFollowUp?: { consentToContact: boolean } | null })[];
+
+  if (params.audience === "SELECTED") {
+    const recipientIds = params.recipientIds ?? [];
+    members = await $prismaClient.rosterMember.findMany({
+      // Filtro por crunchId (nao so id) e o que impede um recipientId de
+      // outra igreja ser "smuggled" num envio SELECTED - ver design.md.
+      where: { id: { in: recipientIds }, crunchId: params.crunchId },
+      select,
+    });
+    if (members.length !== recipientIds.length) {
+      throw new DomainError("Um ou mais destinatários selecionados não pertencem ao rol desta igreja");
+    }
+  } else {
+    members = await $prismaClient.rosterMember.findMany({
+      where: { crunchId: params.crunchId, status: { in: statusesForAudience(params.audience) } },
+      select,
+    });
+  }
+
+  const { allowed, excluded } = splitByContactConsent(members);
+  return {
+    recipients: allowed.map((member) => ({ id: member.id, name: member.name, phone: member.phone })),
+    excludedWithoutConsent: excluded.length,
+  };
+}
+
 export async function dispatchMessageSend(params: {
   crunchId: string;
   templateId: string;
@@ -166,25 +212,11 @@ export async function dispatchMessageSend(params: {
     throw new DomainError("Modelo de mensagem não encontrado");
   }
 
-  let recipients: { id: string; name: string; phone: string | null }[];
-
-  if (params.audience === "SELECTED") {
-    const recipientIds = params.recipientIds ?? [];
-    recipients = await $prismaClient.rosterMember.findMany({
-      // Filtro por crunchId (nao so id) e o que impede um recipientId de
-      // outra igreja ser "smuggled" num envio SELECTED - ver design.md.
-      where: { id: { in: recipientIds }, crunchId: params.crunchId },
-      select: { id: true, name: true, phone: true },
-    });
-    if (recipients.length !== recipientIds.length) {
-      throw new DomainError("Um ou mais destinatários selecionados não pertencem ao rol desta igreja");
-    }
-  } else {
-    recipients = await $prismaClient.rosterMember.findMany({
-      where: { crunchId: params.crunchId, status: { in: statusesForAudience(params.audience) } },
-      select: { id: true, name: true, phone: true },
-    });
-  }
+  const { recipients } = await resolveMessageRecipients({
+    crunchId: params.crunchId,
+    audience: params.audience,
+    recipientIds: params.recipientIds,
+  });
 
   return createLogAndDispatch({
     crunchId: params.crunchId,
@@ -393,6 +425,30 @@ export class MessageAdapters {
       audience: body.audience,
       recipientIds: body.recipientIds,
     });
+  }
+
+  // --- Prévia (contagem do "Novo comunicado") ---
+
+  async preview(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    this.assertCanManageMessages(user);
+    const body = previewSchema.parse(request.body ?? {});
+
+    if (body.audience === "SELECTED" && !body.recipientIds?.length) {
+      return { recipients: 0, excludedWithoutConsent: 0, withoutPhone: 0 };
+    }
+
+    const { recipients, excludedWithoutConsent } = await resolveMessageRecipients({
+      crunchId: user.crunchId,
+      audience: body.audience,
+      recipientIds: body.recipientIds,
+    });
+
+    return {
+      recipients: recipients.length,
+      excludedWithoutConsent,
+      withoutPhone: recipients.filter((recipient) => !recipient.phone).length,
+    };
   }
 
   // --- Histórico ---

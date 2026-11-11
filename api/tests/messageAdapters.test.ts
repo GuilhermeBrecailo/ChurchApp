@@ -42,6 +42,16 @@ jest.mock("../src/infrastructure/whatsapp/WhatsAppServiceClient", () => ({
 import { FastifyRequest } from "fastify";
 import { MessageAdapters, runSendLoop, dispatchMessageSend } from "../src/interfaces/adapters/messageAdapters";
 
+// Campos lidos do rol em todo envio: os de contato + o necessario pra checar
+// a autorizacao do visitante (LGPD).
+const RECIPIENT_SELECT = {
+  id: true,
+  name: true,
+  phone: true,
+  status: true,
+  visitorFollowUp: { select: { consentToContact: true } },
+};
+
 function fakeToken(userId: string) {
   const header = Buffer.from(JSON.stringify({ alg: "none" })).toString("base64url");
   const payload = Buffer.from(JSON.stringify({ sub: userId })).toString("base64url");
@@ -98,6 +108,7 @@ describe("MessageAdapters - privilege gate (7.4)", () => {
       "sendNow",
       () => adapters.sendNow(makeRequest("MEMBRO", { body: { templateId: "t1", audience: "ALL" } })),
     ],
+    ["preview", () => adapters.preview(makeRequest("MEMBRO", { body: { audience: "ALL" } }))],
   ];
 
   it.each(cases)("%s rejects a non-privileged MEMBRO", async (_name, call) => {
@@ -317,7 +328,7 @@ describe("dispatchMessageSend / runSendLoop (7.1, 7.3)", () => {
     expect(log.id).toBe("log-1");
     expect(mockPrismaClient.rosterMember.findMany).toHaveBeenCalledWith({
       where: { crunchId: "church-1", status: { in: ["MEMBER"] } },
-      select: { id: true, name: true, phone: true },
+      select: RECIPIENT_SELECT,
     });
     expect(mockPrismaClient.messageLog.create).toHaveBeenCalledWith({
       data: {
@@ -402,7 +413,7 @@ describe("dispatchMessageSend / runSendLoop (7.1, 7.3)", () => {
 
     expect(mockPrismaClient.rosterMember.findMany).toHaveBeenCalledWith({
       where: { crunchId: "church-1", status: { in: ["VISITOR", "MEMBER"] } },
-      select: { id: true, name: true, phone: true },
+      select: RECIPIENT_SELECT,
     });
   });
 
@@ -437,7 +448,7 @@ describe("dispatchMessageSend / runSendLoop (7.1, 7.3)", () => {
 
     expect(mockPrismaClient.rosterMember.findMany).toHaveBeenCalledWith({
       where: { id: { in: ["roster-1", "roster-2"] }, crunchId: "church-1" },
-      select: { id: true, name: true, phone: true },
+      select: RECIPIENT_SELECT,
     });
     expect(mockPrismaClient.messageLog.create).toHaveBeenCalledWith({
       data: {
@@ -538,5 +549,141 @@ describe("MessageAdapters - rule ownership validation", () => {
         isActive: true,
       },
     });
+  });
+});
+
+describe("Autorização de contato dos visitantes (LGPD)", () => {
+  const visitorWithoutConsent = {
+    id: "v1",
+    name: "Visitante Sem Ok",
+    phone: "111",
+    status: "VISITOR",
+    visitorFollowUp: { consentToContact: false },
+  };
+  const visitorWithoutFollowUp = {
+    id: "v2",
+    name: "Visitante Sem Ficha",
+    phone: "222",
+    status: "VISITOR",
+    visitorFollowUp: null,
+  };
+  const visitorWithConsent = {
+    id: "v3",
+    name: "Visitante Ok",
+    phone: "333",
+    status: "VISITOR",
+    visitorFollowUp: { consentToContact: true },
+  };
+  const member = { id: "m1", name: "Membro", phone: null, status: "MEMBER", visitorFollowUp: null };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    mockPrismaClient.messageTemplate.findUnique.mockResolvedValue({
+      id: "t1",
+      crunchId: "church-1",
+      body: "Oi {nome}",
+    });
+    mockPrismaClient.messageLog.create.mockImplementation(async ({ data }) => ({ id: "log-x", ...data }));
+    mockCheckNumberExists.mockResolvedValue(true);
+    mockSendText.mockResolvedValue(undefined);
+  });
+
+  afterEach(async () => {
+    // Drena o envio em segundo plano (delay entre mensagens).
+    await jest.runAllTimersAsync();
+    jest.useRealTimers();
+  });
+
+  it("dispatchMessageSend (envio manual e regras) deixa de fora visitantes sem autorização", async () => {
+    mockPrismaClient.rosterMember.findMany.mockResolvedValue([
+      visitorWithoutConsent,
+      visitorWithoutFollowUp,
+      visitorWithConsent,
+      member,
+    ]);
+
+    const log = await dispatchMessageSend({
+      crunchId: "church-1",
+      templateId: "t1",
+      audience: "ALL",
+      ruleId: "rule-1",
+    });
+
+    expect(log.totalCount).toBe(2);
+    expect(mockPrismaClient.messageLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ ruleId: "rule-1", totalCount: 2 }),
+    });
+  });
+
+  it("SELECTED também ignora o visitante sem autorização, mesmo escolhido a dedo", async () => {
+    mockPrismaClient.rosterMember.findMany.mockResolvedValue([visitorWithoutConsent, visitorWithConsent]);
+
+    await dispatchMessageSend({
+      crunchId: "church-1",
+      templateId: "t1",
+      audience: "SELECTED",
+      recipientIds: ["v1", "v3"],
+    });
+
+    expect(mockPrismaClient.messageLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        totalCount: 1,
+        recipients: { create: [{ rosterMemberId: "v3" }] },
+      }),
+    });
+  });
+
+  it("preview devolve a contagem de quem recebe e de quem ficou de fora", async () => {
+    mockPrismaClient.rosterMember.findMany.mockResolvedValue([
+      visitorWithoutConsent,
+      visitorWithoutFollowUp,
+      visitorWithConsent,
+      member,
+    ]);
+    const adapters = new MessageAdapters();
+
+    const result = await adapters.preview(makeRequest("PASTOR", { body: { audience: "ALL" } }));
+
+    expect(result).toEqual({ recipients: 2, excludedWithoutConsent: 2, withoutPhone: 1 });
+    expect(mockPrismaClient.rosterMember.findMany).toHaveBeenCalledWith({
+      where: { crunchId: "church-1", status: { in: ["VISITOR", "MEMBER"] } },
+      select: RECIPIENT_SELECT,
+    });
+    expect(mockPrismaClient.messageLog.create).not.toHaveBeenCalled();
+    expect(mockSendText).not.toHaveBeenCalled();
+  });
+
+  it("preview usa a igreja ativa e só o público pedido", async () => {
+    mockPrismaClient.rosterMember.findMany.mockResolvedValue([visitorWithConsent]);
+    const adapters = new MessageAdapters();
+
+    const result = await adapters.preview(
+      makeRequest("ADMIN", { body: { audience: "VISITOR" }, activeChurchId: "church-2" }),
+    );
+
+    expect(result).toEqual({ recipients: 1, excludedWithoutConsent: 0, withoutPhone: 0 });
+    expect(mockPrismaClient.rosterMember.findMany).toHaveBeenCalledWith({
+      where: { crunchId: "church-2", status: { in: ["VISITOR"] } },
+      select: RECIPIENT_SELECT,
+    });
+  });
+
+  it("preview de SELECTED sem ninguém marcado devolve zero sem consultar o banco", async () => {
+    const adapters = new MessageAdapters();
+
+    const result = await adapters.preview(
+      makeRequest("PASTOR", { body: { audience: "SELECTED", recipientIds: [] } }),
+    );
+
+    expect(result).toEqual({ recipients: 0, excludedWithoutConsent: 0, withoutPhone: 0 });
+    expect(mockPrismaClient.rosterMember.findMany).not.toHaveBeenCalled();
+  });
+
+  it("preview rejeita público inválido", async () => {
+    const adapters = new MessageAdapters();
+    await expect(
+      adapters.preview(makeRequest("PASTOR", { body: { audience: "BIRTHDAY" } })),
+    ).rejects.toThrow();
   });
 });

@@ -15,6 +15,11 @@ export async function PrayerRoutes(app: FastifyInstance) {
     controllerHandler(adapters.listPendingPrayerRequests.bind(adapters)),
   );
 
+  app.get(
+    "/api/church/prayer-requests/mine",
+    controllerHandler(adapters.listMyPrayerRequests.bind(adapters)),
+  );
+
   app.post(
     "/api/church/prayer-requests",
     controllerHandler(adapters.createPrayerRequest.bind(adapters)),
