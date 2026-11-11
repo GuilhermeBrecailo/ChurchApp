@@ -47,6 +47,17 @@
           :can-record-consent="profile.permissions.canRecordConsent"
           @record-consent="consentOpen = true"
         />
+        <v-btn
+          v-if="access.isChurchManager && profile.person.phone"
+          variant="text"
+          size="small"
+          color="primary"
+          class="text-none mt-1"
+          :loading="checkingWhatsApp"
+          @click="checkWhatsApp"
+        >
+          Verificar se o número tem WhatsApp
+        </v-btn>
       </section>
 
       <!-- Situação -->
@@ -142,6 +153,14 @@
                   Concluir visita
                 </v-btn>
                 <v-btn size="small" variant="text" class="text-none" @click="editVisit(visit)">Editar</v-btn>
+                <v-btn size="small" variant="text" color="error" class="text-none" @click="visitToDelete = visit">
+                  Excluir
+                </v-btn>
+              </div>
+              <div v-else class="person-visit-actions">
+                <v-btn size="small" variant="text" color="error" class="text-none" @click="visitToDelete = visit">
+                  Excluir
+                </v-btn>
               </div>
             </div>
           </li>
@@ -285,6 +304,17 @@
         :responsibles="profile.responsibles"
         @saved="load"
       />
+      <UtilsConfirmDialog
+        :model-value="Boolean(visitToDelete)"
+        title="Excluir visita"
+        :message="visitToDelete ? `A visita “${visitToDelete.reason}” sai do histórico de ${profile.person.name}. Isso não pode ser desfeito.` : ''"
+        confirm-text="Excluir visita"
+        :loading="deletingVisit"
+        @update:model-value="(open: boolean) => !open && (visitToDelete = null)"
+        @cancel="visitToDelete = null"
+        @confirm="confirmDeleteVisit"
+      />
+
       <PeopleVisitSheet
         v-model="visitOpen"
         :fixed-person="{ id: profile.person.id, name: profile.person.name }"
@@ -422,8 +452,43 @@ const access = useChurchAccess();
 const { user } = useAuth();
 const toast = useAppToast();
 const { getPerson } = usePeople();
-const { updateVisit } = usePastoral();
-const { updateRosterConsent, deleteRosterMember } = useRoster();
+const { updateVisit, deleteVisit } = usePastoral();
+const { updateRosterConsent, deleteRosterMember, checkRosterMemberWhatsApp } = useRoster();
+
+// Ações que existiam nas telas antigas (Rol e Visitas) e continuam aqui.
+const checkingWhatsApp = ref(false);
+const checkWhatsApp = async () => {
+  if (!profile.value) return;
+  checkingWhatsApp.value = true;
+  try {
+    const { data, error } = await checkRosterMemberWhatsApp(profile.value.person.id);
+    if (error) toast.error(error);
+    else if (data?.exists) toast.success("Esse número tem WhatsApp.");
+    else toast.info("Esse número não tem WhatsApp. Confira o telefone com a pessoa.");
+  } finally {
+    checkingWhatsApp.value = false;
+  }
+};
+
+const visitToDelete = ref<PastoralVisit | null>(null);
+const deletingVisit = ref(false);
+const confirmDeleteVisit = async () => {
+  const visit = visitToDelete.value;
+  if (!visit || !profile.value) return;
+  deletingVisit.value = true;
+  try {
+    const { error } = await deleteVisit(visit.id);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    profile.value.visits = profile.value.visits.filter((item) => item.id !== visit.id);
+    toast.success("Visita excluída.");
+    visitToDelete.value = null;
+  } finally {
+    deletingVisit.value = false;
+  }
+};
 const { resetMemberPassword, deleteMember } = useMembers();
 const { getRoles, addMemberRole, removeMemberRole } = useChurchRoles();
 const { getDepartments } = useDepartments();
