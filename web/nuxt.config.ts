@@ -83,6 +83,8 @@ export default defineNuxtConfig({
     // schema.org que useSeoMeta/useHead geram; sem isso cai na regra geral
     // "/**": ssr:false e vira uma casca vazia pra qualquer bot que nao roda JS.
     "/comece": { ssr: true },
+    // A agenda de cultos virou a aba "Cultos" de Escalas (/cultos/[id] continua).
+    "/cultos": { redirect: "/scale?aba=cultos" },
   },
   nitro: {
     compressPublicAssets: true,

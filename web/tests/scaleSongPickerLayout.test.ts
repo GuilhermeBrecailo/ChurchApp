@@ -5,7 +5,7 @@ import { parse } from "@vue/compiler-sfc";
 import postcss from "postcss";
 
 const componentPath = new URL("../app/components/Scale/SongPickerPanel.vue", import.meta.url);
-const dialogPath = new URL("../app/components/Scale/FormDialog.vue", import.meta.url);
+const dialogPath = new URL("../app/components/Schedule/Editor.vue", import.meta.url);
 
 async function readComponent() {
   const source = await readFile(componentPath, "utf8");
@@ -57,9 +57,14 @@ describe("layout do seletor de músicas da escala", () => {
     const panel = await readComponent();
     const dialog = await readDialog();
     const stylesheet = postcss.parse(panel.styles[0]?.content ?? "");
-    const scrollableBinding = dialog.template?.ast.children
-      .find((node: any) => node.type === 1 && node.tag === "UtilsResponsiveOverlay")
-      ?.props.find((prop: any) => prop.type === 7 && prop.name === "bind" && prop.arg?.content === "scrollable");
+    // O editor único abre o seletor numa janela própria (antes trocava o
+    // conteúdo do formulário e desligava o scroll dele).
+    const pickerOverlay = dialog.template?.ast.children.find(
+      (node: any) =>
+        node.type === 1 &&
+        node.tag === "UtilsResponsiveOverlay" &&
+        node.props.some((prop: any) => prop.type === 7 && prop.name === "model" && prop.exp?.content === "isSongPickerOpen"),
+    );
     const listRule = stylesheet.nodes.find(
       (node): node is postcss.Rule => node.type === "rule" && node.selector === ".song-picker-list",
     );
@@ -72,6 +77,6 @@ describe("layout do seletor de músicas da escala", () => {
     assert.equal(declarations.get("overflow-y"), "auto");
     assert.equal(declarations.get("min-height"), "0");
     assert.equal(declarations.has("max-height"), false);
-    assert.equal(scrollableBinding?.exp?.content, "!isSongPickerOpen");
+    assert.ok(pickerOverlay, "o seletor de músicas abre numa janela própria");
   });
 });

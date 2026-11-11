@@ -11,7 +11,7 @@ const theme = readFileSync(resolve(root, "app/assets/css/theme.css"), "utf8");
 const directDialogMigrations = [
   "app/components/utils/ConfirmDialog.vue",
   "app/components/Admin/ChurchPlanDialog.vue",
-  "app/components/Scale/DeclineDialog.vue",
+  "app/components/Schedule/DeclineSheet.vue",
   "app/pages/plans.vue",
   "app/pages/prayer.vue",
 ].map((relativePath) => ({
@@ -23,8 +23,8 @@ const legacyDialogMigrations = [
   "app/components/Ministery/DetailsView/index.vue",
   "app/components/Ministery/NewMusicModal.vue",
   "app/components/Ministery/NewReferenceModal.vue",
-  "app/pages/cultos/index.vue",
   "app/pages/cultos/[id].vue",
+  "app/components/Schedule/ServicesAgenda.vue",
   "app/pages/pastoral/visitas.vue",
 ].map((relativePath) => ({
   relativePath,
@@ -38,8 +38,9 @@ const longFormOverlays = [
   "app/components/Ministery/ScheduleFormDialog.vue",
   "app/components/Ministery/SongFormDialog.vue",
   "app/components/Ministery/TaskFormDialog.vue",
-  "app/components/Scale/AssignmentsDialog.vue",
-  "app/components/Scale/FormDialog.vue",
+  "app/components/Schedule/Editor.vue",
+  "app/components/Schedule/Sheet.vue",
+  "app/components/Schedule/AttendanceSheet.vue",
   "app/pages/admin/configuracoes.vue",
   "app/pages/admin/mensagens.vue",
   "app/pages/admin/ministerios.vue",
@@ -72,14 +73,13 @@ const stableFilterOverlaySources = [
   content: readFileSync(resolve(root, relativePath), "utf8"),
 }));
 const scaleSelectSources = [
-  "app/components/Scale/FormDialog.vue",
-  "app/components/Scale/AssignmentsDialog.vue",
+  "app/components/Schedule/Editor.vue",
 ].map((relativePath) => ({
   relativePath,
   content: readFileSync(resolve(root, relativePath), "utf8"),
 }));
-const scaleDetails = readFileSync(
-  resolve(root, "app/components/Scale/DetailSheet.vue"),
+const scheduleSheet = readFileSync(
+  resolve(root, "app/components/Schedule/Sheet.vue"),
   "utf8",
 );
 const pdfImportDialog = readFileSync(
@@ -169,14 +169,14 @@ const checks = [
     content,
   ]),
   [
-    "ScaleDetailSheet usa estrutura flexível e altura estável",
-    /display:\s*flex;[\s\S]*?height:\s*min\(92svh,\s*920px\);/,
-    scaleDetails,
+    "Folha da escala usa o miolo padrão (UtilsOverlayCard)",
+    /<UtilsOverlayCard[\s\S]*<\/UtilsOverlayCard>/,
+    scheduleSheet,
   ],
   [
-    "ScaleDetailSheet usa tokens de superfície",
-    /background:\s*var\(--app-color-surface\)/,
-    scaleDetails,
+    "Folha da escala usa tokens de superfície",
+    /background:\s*var\(--app-color-surface-muted\)/,
+    scheduleSheet,
   ],
   ...scaleSelectSources.map(({ relativePath, content }) => [
     `${relativePath} configura menu de select fora do sheet`,

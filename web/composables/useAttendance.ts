@@ -65,18 +65,36 @@ export const useAttendance = () => {
     });
   };
 
+  /**
+   * "Finalizar culto" grava no dia do culto (ocorrência ou data), não no dia
+   * de hoje. Sem `target` mantém o comportamento antigo (hoje).
+   */
   const finalizeService = async (
     serviceTimeId: string,
+    target?: { occurrenceId?: string; date?: string },
   ): Promise<ApiResponse<ServiceAttendance>> => {
     return await $customFetch<ServiceAttendance>(`${base}/${serviceTimeId}/finalize`, {
       method: "POST",
-      headers: authHeadersNoBody(),
+      headers: target ? authHeaders() : authHeadersNoBody(),
+      ...(target ? { body: target } : {}),
     });
+  };
+
+  /** Registro de público de um culto só (em vez de carregar um ano inteiro). */
+  const getOccurrenceAttendance = async (
+    occurrenceId: string,
+  ): Promise<ApiResponse<ServiceAttendance | null>> => {
+    const response = await $customFetch<ServiceAttendance[]>(
+      `${base}?occurrenceId=${encodeURIComponent(occurrenceId)}`,
+      { method: "GET", headers: authHeadersNoBody() },
+    );
+    return { ...response, data: response.data ? response.data[0] ?? null : undefined };
   };
 
   return {
     listAttendance,
     saveAttendance,
     finalizeService,
+    getOccurrenceAttendance,
   };
 };
