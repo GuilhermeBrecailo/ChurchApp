@@ -1,4 +1,9 @@
 <script setup lang="ts">
+/**
+ * Transição entre telas. A chave é o caminho (sem a query): trocar só a
+ * query (?aba=, ?schedule=, ?criar=) não pode recriar a página, senão cada
+ * troca de aba recarrega tudo e fecha as janelas abertas.
+ */
 import { motion } from "motion-v";
 </script>
 
@@ -6,7 +11,7 @@ import { motion } from "motion-v";
   <NuxtPage v-slot="{ Component, route }">
     <AnimatePresence mode="wait">
       <motion.div
-        :key="route.fullPath"
+        :key="route.path"
         :initial="{ opacity: 0, y: 8 }"
         :animate="{ opacity: 1, y: 0 }"
         :exit="{ opacity: 0, y: -8 }"

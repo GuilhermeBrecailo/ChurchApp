@@ -77,7 +77,7 @@
           </button>
         </fieldset>
 
-        <fieldset v-if="configVisibility.showCommunionSettings" class="schedule-config-group">
+        <fieldset v-if="configVisibility.showChecklistItems" class="schedule-config-group">
           <legend>Tarefas para conferir</legend>
           <div
             v-for="(item, index) in modelValue.checklistItems"
@@ -113,7 +113,7 @@
           </button>
         </fieldset>
 
-        <fieldset v-if="modelValue.fields.checklist" class="schedule-config-group">
+        <fieldset v-if="configVisibility.showCommunionSettings" class="schedule-config-group">
           <legend>Santa Ceia</legend>
           <label class="schedule-config-toggle">
             <input

@@ -1,552 +1,403 @@
 <template>
   <div class="pa-4 min-vh-100 app-operational-page">
-    <div class="app-help-header mb-5">
-      <div class="min-w-0">
-        <div class="app-help-title-row">
-          <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">
-            Ministérios
-          </h1>
-          <div class="ministery-header-actions">
-            <v-btn
-              v-if="canCreateDepartment"
-              color="primary"
-              class="rounded-lg text-none px-4"
-              elevation="2"
-              @click="isDepartmentDialogOpen = true"
-            >
-              <Plus size="18" class="mr-1" /> Novo
-            </v-btn>
-            <UtilsPageHelpButton title="Ministérios" />
-          </div>
-        </div>
-        <p class="text-body-2 text-grey-darken-1 mb-0">
-          Organize equipes, escalas e repertórios
-        </p>
-      </div>
-    </div>
+    <div class="app-page--narrow">
+      <UtilsPageHeader title="Ministérios" :subtitle="pageSubtitle" help-title="Ministérios">
+        <template v-if="access.canCreateMinistry && departments.length" #actions>
+          <v-btn color="primary" class="text-none font-weight-bold" @click="openWizard">
+            <Plus size="18" class="mr-1" aria-hidden="true" /> Novo ministério
+          </v-btn>
+        </template>
+      </UtilsPageHeader>
 
-    <div v-if="visibleDepartments.length" class="tabs-row mb-5">
-      <v-chip
-        v-for="tab in listTabs"
-        :key="tab.value"
-        :variant="activeTab === tab.value ? 'flat' : 'outlined'"
-        :color="activeTab === tab.value ? 'primary' : 'grey-darken-1'"
-        class="tab-chip font-weight-medium cursor-pointer"
-        @click="activeTab = tab.value"
-      >
-        <component :is="tab.icon" size="16" class="tab-chip-icon" />
-        <span class="tab-chip-label">{{ tab.label }}</span>
-      </v-chip>
-    </div>
-
-    <div
-      v-if="visibleDepartments.length && activeTab === 'overview'"
-      class="ministery-summary mb-5"
-    >
-      <div class="ministery-summary-item">
-        <span>{{ visibleDepartments.length }}</span>
-        <small>ministérios</small>
-      </div>
-      <div class="ministery-summary-item">
-        <span>{{ activeDepartmentsCount }}</span>
-        <small>ativos</small>
-      </div>
-      <div class="ministery-summary-item">
-        <span>{{ worshipDepartmentsCount }}</span>
-        <small>louvor</small>
-      </div>
-    </div>
-
-    <div v-if="isLoadingDepartments" class="ministery-loading">
-      <v-skeleton-loader type="card" class="mb-3" />
-      <v-skeleton-loader type="card" />
-    </div>
-
-    <v-card
-      v-else-if="visibleDepartments.length === 0 && !departmentsError"
-      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
-    >
-      <Building size="32" color="#9CA3AF" class="mb-3" />
-      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-        {{ isChurchWideManager ? "Nenhum ministério cadastrado ainda" : "Você ainda não participa de nenhum ministério" }}
-      </p>
-      <v-btn
-        v-if="canCreateDepartment"
-        color="primary"
-        variant="tonal"
-        class="rounded-lg text-none mt-4"
-        @click="isDepartmentDialogOpen = true"
-      >
-        <Plus size="16" class="mr-1" /> Criar o primeiro ministério
-      </v-btn>
-    </v-card>
-
-    <v-card
-      v-else-if="activeTab === 'overview'"
-      class="app-surface rounded-xl pa-4 border-subtle"
-    >
-      <p class="text-caption font-weight-bold text-grey-darken-1 mb-3">
-        Por tipo
-      </p>
-      <div class="ministery-type-list">
-        <div
-          v-for="item in departmentsByType"
-          :key="item.label"
-          class="ministery-type-row"
-        >
-          <span class="text-body-2 font-weight-bold text-grey-darken-4">
-            {{ item.label }}
-          </span>
-          <v-chip size="small" variant="tonal" color="primary">
-            {{ item.total }}
+      <div v-if="showFilters" class="hub-filters">
+        <v-text-field
+          v-model="search"
+          label="Buscar ministério"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="comfortable"
+          hide-details
+          clearable
+        />
+        <div class="hub-filter-chips" role="group" aria-label="Filtrar por tipo">
+          <v-chip
+            v-for="option in typeFilterOptions"
+            :key="option.value"
+            :variant="typeFilter === option.value ? 'flat' : 'outlined'"
+            :color="typeFilter === option.value ? 'primary' : undefined"
+            :aria-pressed="typeFilter === option.value"
+            @click="typeFilter = option.value"
+          >
+            {{ option.label }}
           </v-chip>
         </div>
       </div>
-      <v-btn
-        variant="text"
-        color="primary"
-        class="text-none font-weight-bold mt-2"
-        @click="activeTab = 'departments'"
-      >
-        Ver todos os ministérios
-      </v-btn>
-    </v-card>
 
-    <div v-else class="ministery-grid">
-      <div
-        v-for="department in visibleDepartments"
-        :key="department.id"
-        class="ministery-list-shell"
-      >
-        <MinisteryListItem
-          :ministerio="{
-            nome: department.name,
-            lider: department.leader.name,
-            tipo: departmentTypeLabel(department.type),
-            membros: department.membersCount || 0,
-            escalas: department.schedulesCount || 0,
-            musicas: department.songsCount || 0,
-          }"
-          @click="goToMinisterio(department.id)"
+      <div v-if="isLoading" class="app-card-grid">
+        <v-skeleton-loader v-for="index in 3" :key="index" type="list-item-avatar-three-line" class="rounded-xl" />
+      </div>
+
+      <v-alert v-else-if="loadError" type="error" variant="tonal" density="compact" class="mb-4">
+        {{ loadError }}
+        <template #append>
+          <v-btn variant="text" size="small" class="text-none" @click="load">Tentar de novo</v-btn>
+        </template>
+      </v-alert>
+
+      <UtilsEmptyState
+        v-else-if="!visibleDepartments.length && access.canCreateMinistry"
+        :icon="Building"
+        title="Nenhum ministério ainda"
+        description="Ministérios reúnem as equipes que servem na igreja: louvor, recepção, crianças… Crie o primeiro e já dá para montar as escalas."
+        action-label="Criar ministério"
+        :secondary-label="isCreatingCommon ? 'Criando…' : 'Criar Louvor, Recepção e Infantil'"
+        @action="openWizard"
+        @secondary="createCommonMinistries"
+      />
+
+      <UtilsEmptyState
+        v-else-if="!visibleDepartments.length"
+        :icon="Building"
+        title="Você ainda não serve em nenhum ministério"
+        description="Quando o líder adicionar você a um ministério, ele aparece aqui com as suas escalas."
+      />
+
+      <UtilsEmptyState
+        v-else-if="!filteredDepartments.length"
+        variant="no-results"
+        :icon="Search"
+        title="Nenhum ministério encontrado"
+        description="Tente outro nome ou tire o filtro de tipo."
+        action-label="Limpar busca"
+        @action="clearFilters"
+      />
+
+      <div v-else class="app-card-grid">
+        <MinisteryHubCard
+          v-for="department in filteredDepartments"
+          :key="department.id"
+          :department="department"
+          :capabilities="capabilitiesFor(department)"
+          :user-id="user?.id"
+          :refresh-key="refreshKeys[department.id] ?? 0"
+          @new-schedule="openScheduleEditor(department.id)"
+          @people="openPeople"
+          @more="openMore"
         />
-        <v-btn
-          v-if="canDeleteDepartment"
-          icon
-          variant="text"
-          color="red-darken-2"
-      size="small"
-      class="ministery-delete-btn"
-      :aria-label="`Excluir ministério ${department.name}`"
-      :disabled="isDeletingDepartment"
-          @click.stop="handleDeleteDepartment(department)"
-        >
-          <Trash2 size="17" />
-        </v-btn>
       </div>
     </div>
 
-    <v-alert
-      v-if="departmentsError"
-      type="error"
-      variant="tonal"
-      density="compact"
-      class="mt-4"
-    >
-      {{ departmentsError }}
-    </v-alert>
+    <MinisteryCreateWizard
+      v-model="isWizardOpen"
+      @created="handleCreated"
+      @add-people="openPeople"
+      @open-ministry="(department) => router.push(`/ministery/${department.id}`)"
+    />
 
-    <UtilsResponsiveOverlay v-model="isDepartmentDialogOpen" max-width="520" variant="form" scrollable>
-      <v-card class="app-surface rounded-xl pa-6" elevation="0">
-        <div class="responsive-dialog-header mb-5">
-          <div class="d-flex align-center min-w-0">
-            <v-avatar size="44" class="mr-3 accent-avatar">
-              <Building size="20" />
-            </v-avatar>
-            <div class="min-w-0">
-              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-                Novo ministério
-              </h2>
-              <p class="text-body-2 text-grey-darken-1 mb-0">
-                Cadastre um ministério e defina um líder.
-              </p>
-            </div>
-          </div>
-          <v-btn
-            icon
-            variant="text"
-            color="grey-darken-1"
-            size="small"
-            :disabled="isCreatingDepartment"
-            @click="closeDepartmentDialog"
-          >
-            <v-icon size="20">mdi-close</v-icon>
-          </v-btn>
-        </div>
+    <MinisteryPeopleSheet
+      v-model="isPeopleOpen"
+      :department="selectedDepartment"
+      :can-give-cargo="selectedCapabilities.canGiveCargo"
+      @changed="handlePeopleChanged"
+    />
 
-        <v-form autocomplete="off" @submit.prevent="handleCreateDepartment">
-          <v-text-field
-            v-model="departmentForm.name"
-            label="Nome do ministério"
-            prepend-inner-icon="mdi-domain"
-            variant="outlined"
-            density="comfortable"
-            color="primary"
-            bg-color="white"
-            class="ministery-input mb-4"
-            hide-details="auto"
-            autocomplete="off"
-            :disabled="isCreatingDepartment"
-          />
+    <MinisterySettingsSheet
+      v-model="isSettingsOpen"
+      :department="selectedDepartment"
+      :capabilities="selectedCapabilities"
+      @saved="replaceDepartment"
+    />
 
-          <v-select
-            v-model="departmentForm.type"
-            label="Tipo"
-            :items="departmentTypes"
-            item-title="label"
-            item-value="value"
-            prepend-inner-icon="mdi-shape-outline"
-            variant="outlined"
-            density="comfortable"
-            color="primary"
-            bg-color="white"
-            class="ministery-input mb-4"
-            hide-details="auto"
-            :disabled="isCreatingDepartment"
-          />
+    <MinisteryQuickActionsSheet
+      v-model="isMoreOpen"
+      :department="selectedDepartment"
+      :capabilities="selectedCapabilities"
+      @people="openPeople"
+      @settings="openSettings"
+      @toggle-active="toggleActive"
+      @delete="requestDelete"
+    />
 
-          <v-select
-            v-model="departmentForm.leaderId"
-            label="Líder"
-            :items="leaderOptions"
-            item-title="label"
-            item-value="value"
-            prepend-inner-icon="mdi-account-star-outline"
-            variant="outlined"
-            density="comfortable"
-            color="primary"
-            bg-color="white"
-            class="ministery-input mb-4"
-            hide-details="auto"
-            :disabled="isCreatingDepartment"
-          />
-
-          <MinisteryDepartmentScheduleConfigFields
-            v-model="departmentForm.scheduleConfig"
-            :department-type="departmentForm.type"
-            :disabled="isCreatingDepartment"
-          />
-
-          <p class="text-caption font-weight-bold text-grey-darken-1 mb-1">
-            Módulos ativos
-          </p>
-          <p class="text-caption text-grey-darken-1 mb-2">
-            Só aparece na tela do ministério o que estiver marcado aqui.
-          </p>
-          <div class="module-chip-row mb-4">
-            <v-chip
-              v-for="module in moduleOptions"
-              :key="module.value"
-              :variant="
-                departmentForm.modules.includes(module.value)
-                  ? 'flat'
-                  : 'outlined'
-              "
-              :color="
-                departmentForm.modules.includes(module.value)
-                  ? 'primary'
-                  : 'grey-darken-1'
-              "
-              class="cursor-pointer font-weight-medium"
-              :disabled="isCreatingDepartment"
-              :aria-pressed="departmentForm.modules.includes(module.value)"
-              @click="toggleModule(module.value)"
-            >
-              <Check
-                v-if="departmentForm.modules.includes(module.value)"
-                size="14"
-                class="mr-1"
-              />
-              {{ module.label }}
-            </v-chip>
-          </div>
-
-          <v-alert
-            v-if="createDepartmentError"
-            type="error"
-            variant="tonal"
-            density="compact"
-            class="mb-4"
-          >
-            {{ createDepartmentError }}
-          </v-alert>
-
-          <div class="d-flex justify-end ga-3">
-            <v-btn
-              variant="text"
-              color="grey-darken-1"
-              class="text-none"
-              :disabled="isCreatingDepartment"
-              @click="closeDepartmentDialog"
-            >
-              Cancelar
-            </v-btn>
-            <v-btn
-              type="submit"
-              color="primary"
-              class="text-none font-weight-bold"
-              :loading="isCreatingDepartment"
-              :disabled="isCreatingDepartment"
-            >
-              Criar ministério
-            </v-btn>
-          </div>
-        </v-form>
-      </v-card>
-    </UtilsResponsiveOverlay>
+    <MinisteryScheduleEditor ref="scheduleEditor" @saved="handleScheduleSaved" />
 
     <UtilsConfirmDialog
-      v-model="isDeleteDepartmentDialogOpen"
-      title="Remover ministério"
-      :message="deleteDepartmentMessage"
-      :loading="isDeletingDepartment"
-      @cancel="closeDeleteDepartmentDialog"
-      @confirm="confirmDeleteDepartment"
+      v-model="isDeleteOpen"
+      title="Excluir ministério"
+      :message="deleteMessage"
+      confirm-text="Excluir ministério"
+      :loading="isDeleting"
+      @cancel="isDeleteOpen = false"
+      @confirm="confirmDelete"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, watch } from "vue";
-import { Building, Check, List, Plus, Trash2, BarChart3 } from "lucide-vue-next";
+/**
+ * Lista de ministérios = centro de comando: cada cartão mostra a próxima
+ * escala e já tem "Nova escala", "Pessoas" e "⋯" (configurar, ativar,
+ * excluir) sem precisar entrar no ministério. Membro vê só os ministérios
+ * dele e toca no cartão para abrir. /ministery?criar=1 abre o assistente.
+ */
+import { computed, onMounted, reactive, ref } from "vue";
+import { Building, Plus, Search } from "lucide-vue-next";
 import {
   useDepartments,
-  DEPARTMENT_MODULE_OPTIONS,
   type ChurchDepartment,
+  type DepartmentSchedule,
 } from "../../../composables/useDepartments";
-import { useMembers, type ChurchMember } from "../../../composables/useMembers";
-import { useAuth } from "../../../composables/useAuth";
-import {
-  DEPARTMENT_TYPE_OPTIONS,
-  departmentTypeLabel,
-  getDepartmentSchedulePreset,
-} from "../../utils/departmentScheduleConfig";
+import { ministryIdsWithPermissions } from "../../utils/churchAccess";
 import { getVisibleDepartments } from "../../utils/departmentVisibility";
+import {
+  resolveMinistryCapabilities,
+  type MinistryCapabilities,
+} from "../../utils/ministryCapabilities";
+import {
+  COMMON_MINISTRY_TYPES,
+  MINISTRY_TYPES,
+  buildCreateMinistryPayload,
+  canonicalMinistryType,
+} from "../../utils/ministryTypes";
+import { normalizeListText } from "../../utils/listOrdering";
 
+type ScheduleEditorHandle = {
+  openCreate: (department: ChurchDepartment) => Promise<void>;
+};
+
+const route = useRoute();
 const router = useRouter();
 const { user } = useAuth();
-const { getDepartments, createDepartment, deleteDepartment } = useDepartments();
-const { getMembers } = useMembers();
+const access = useChurchAccess();
+const toast = useAppToast();
+const { getDepartments, createDepartment, updateDepartment, deleteDepartment } = useDepartments();
 
 const departments = ref<ChurchDepartment[]>([]);
-const members = ref<ChurchMember[]>([]);
-const departmentsError = ref("");
-const isLoadingDepartments = ref(true);
-const createDepartmentError = ref("");
-const isDepartmentDialogOpen = ref(false);
-const isCreatingDepartment = ref(false);
-const isDeletingDepartment = ref(false);
-const pendingDeleteDepartment = ref<ChurchDepartment | null>(null);
+const isLoading = ref(true);
+const loadError = ref("");
+const search = ref("");
+const typeFilter = ref("ALL");
+const refreshKeys = reactive<Record<string, number>>({});
 
-const activeTab = ref("overview");
-const listTabs = [
-  { label: "Visão geral", value: "overview", icon: BarChart3 },
-  { label: "Ministérios", value: "departments", icon: List },
-];
-const moduleOptions = DEPARTMENT_MODULE_OPTIONS;
+const selectedDepartment = ref<ChurchDepartment | null>(null);
+const isWizardOpen = ref(false);
+const isPeopleOpen = ref(false);
+const isSettingsOpen = ref(false);
+const isMoreOpen = ref(false);
+const isDeleteOpen = ref(false);
+const isDeleting = ref(false);
+const isCreatingCommon = ref(false);
+const scheduleEditor = ref<ScheduleEditorHandle | null>(null);
 
-const departmentForm = reactive({
-  name: "",
-  type: "OTHER",
-  leaderId: "",
-  scheduleConfig: getDepartmentSchedulePreset("OTHER"),
-  modules: DEPARTMENT_MODULE_OPTIONS.map((module) => module.value),
+const capabilitiesFor = (department: ChurchDepartment | null): MinistryCapabilities =>
+  resolveMinistryCapabilities(user.value as never, department);
+
+const selectedCapabilities = computed(() => capabilitiesFor(selectedDepartment.value));
+
+const visibleDepartments = computed(() => {
+  const visible = getVisibleDepartments(
+    departments.value,
+    access.value.isChurchManager,
+    ministryIdsWithPermissions(user.value as never),
+  );
+  // Inativos no fim, o resto na ordem da API (por nome).
+  return [...visible].sort((first, second) => Number(second.isActive) - Number(first.isActive));
 });
 
-const toggleModule = (module: string) => {
-  departmentForm.modules = departmentForm.modules.includes(module)
-    ? departmentForm.modules.filter((item) => item !== module)
-    : [...departmentForm.modules, module];
+const pageSubtitle = computed(() =>
+  access.value.isChurchManager ||
+  visibleDepartments.value.some((department) => capabilitiesFor(department).hasAnyManagement)
+    ? "Escalas, pessoas e configurações de cada ministério"
+    : "Os ministérios em que você serve",
+);
+
+const showFilters = computed(() => visibleDepartments.value.length > 6);
+
+const typeFilterOptions = computed(() => {
+  const present = new Set(visibleDepartments.value.map((item) => canonicalMinistryType(item.type)));
+  return [
+    { value: "ALL", label: "Todos" },
+    ...MINISTRY_TYPES.filter((type) => present.has(type.value)).map((type) => ({
+      value: type.value,
+      label: type.label,
+    })),
+  ];
+});
+
+const filteredDepartments = computed(() => {
+  if (!showFilters.value) return visibleDepartments.value;
+  const term = normalizeListText(search.value);
+  return visibleDepartments.value.filter(
+    (department) =>
+      (typeFilter.value === "ALL" || canonicalMinistryType(department.type) === typeFilter.value) &&
+      (!term || normalizeListText(`${department.name} ${department.leader?.name ?? ""}`).includes(term)),
+  );
+});
+
+const clearFilters = () => {
+  search.value = "";
+  typeFilter.value = "ALL";
 };
 
-const departmentTypes = DEPARTMENT_TYPE_OPTIONS;
-watch(
-  () => departmentForm.type,
-  (type) => {
-    departmentForm.scheduleConfig = getDepartmentSchedulePreset(type);
-  },
-);
-
-const isChurchWideManager = computed(
-  () =>
-    user.value?.role === "PASTOR" ||
-    user.value?.role === "ADMIN" ||
-    user.value?.role === "SUPER_ADMIN" ||
-    user.value?.is_admin === true,
-);
-const canCreateDepartment = computed(() => isChurchWideManager.value);
-const canDeleteDepartment = computed(() => isChurchWideManager.value);
-const visibleDepartments = computed(() =>
-  getVisibleDepartments(departments.value, isChurchWideManager.value),
-);
-const isDeleteDepartmentDialogOpen = computed({
-  get: () => Boolean(pendingDeleteDepartment.value),
-  set: (value: boolean) => {
-    if (!value && !isDeletingDepartment.value) {
-      pendingDeleteDepartment.value = null;
+const load = async () => {
+  isLoading.value = true;
+  loadError.value = "";
+  try {
+    const { data, error } = await getDepartments();
+    if (error) {
+      loadError.value = error;
+      return;
     }
-  },
-});
-const deleteDepartmentMessage = computed(() =>
-  pendingDeleteDepartment.value
-    ? `O ministério ${pendingDeleteDepartment.value.name} será removido com suas escalas, tarefas, recursos e músicas.`
-    : "Essa ação não pode ser desfeita.",
-);
-const activeDepartmentsCount = computed(
-  () => visibleDepartments.value.filter((department) => department.isActive).length,
-);
-const worshipDepartmentsCount = computed(
-  () =>
-    visibleDepartments.value.filter((department) =>
-      ["WORSHIP", "MUSIC"].includes(department.type),
-    ).length,
-);
-const departmentsByType = computed(() => {
-  const totals = new Map<string, number>();
-
-  visibleDepartments.value.forEach((department) => {
-    const label = departmentTypeLabel(department.type);
-    totals.set(label, (totals.get(label) || 0) + 1);
-  });
-
-  return [...totals.entries()]
-    .map(([label, total]) => ({ label, total }))
-    .sort((first, second) => second.total - first.total);
-});
-const leaderOptions = computed(() =>
-  members.value.map((member) => ({
-    label: `${member.name} (${member.email})`,
-    value: member.id,
-  })),
-);
-
-const goToMinisterio = (id: string) => {
-  router.push(`/ministery/${id}`);
-};
-
-const loadDepartments = async () => {
-  departmentsError.value = "";
-  isLoadingDepartments.value = true;
-
-  const { data, error } = await getDepartments();
-
-  if (error) {
-    departmentsError.value = error;
-    isLoadingDepartments.value = false;
-    return;
+    departments.value = data ?? [];
+  } finally {
+    isLoading.value = false;
   }
-
-  departments.value = data ?? [];
-  isLoadingDepartments.value = false;
 };
 
-const loadMembers = async () => {
-  const { data } = await getMembers();
-  members.value = data ?? [];
+const replaceDepartment = (updated: ChurchDepartment) => {
+  departments.value = departments.value.map((item) => (item.id === updated.id ? updated : item));
+  if (selectedDepartment.value?.id === updated.id) selectedDepartment.value = updated;
 };
 
-const resetDepartmentForm = () => {
-  departmentForm.name = "";
-  departmentForm.type = "OTHER";
-  departmentForm.leaderId = "";
-  departmentForm.scheduleConfig = getDepartmentSchedulePreset("OTHER");
-  departmentForm.modules = DEPARTMENT_MODULE_OPTIONS.map(
-    (module) => module.value,
+const openWizard = () => {
+  isWizardOpen.value = true;
+};
+
+const handleCreated = (department: ChurchDepartment) => {
+  departments.value = [...departments.value, department].sort((first, second) =>
+    first.name.localeCompare(second.name, "pt-BR"),
   );
 };
 
-const closeDepartmentDialog = () => {
-  isDepartmentDialogOpen.value = false;
-  createDepartmentError.value = "";
-  resetDepartmentForm();
-};
-
-const handleCreateDepartment = async () => {
-  createDepartmentError.value = "";
-  const name = departmentForm.name.trim();
-
-  if (!name || !departmentForm.leaderId) {
-    createDepartmentError.value = "Informe o nome e o líder do ministério.";
-    return;
-  }
-
-  if (!departmentForm.modules.length) {
-    createDepartmentError.value =
-      "Selecione ao menos um módulo para o ministério.";
-    return;
-  }
-
-  isCreatingDepartment.value = true;
-
+const createCommonMinistries = async () => {
+  if (isCreatingCommon.value || !user.value?.id) return;
+  isCreatingCommon.value = true;
+  const createdNames: string[] = [];
   try {
-    const { data, error } = await createDepartment({
-      name,
-      type: departmentForm.type,
-      leaderId: departmentForm.leaderId,
-      scheduleConfig: departmentForm.scheduleConfig,
-      modules: [...departmentForm.modules],
-    });
-
-    if (error || !data) {
-      createDepartmentError.value =
-        error || "Não foi possível criar o ministério.";
-      return;
+    for (const type of COMMON_MINISTRY_TYPES) {
+      const { data, error } = await createDepartment(
+        buildCreateMinistryPayload({ type, leaderId: user.value.id }),
+      );
+      if (error || !data) {
+        toast.error(error || "Não foi possível criar os ministérios.");
+        break;
+      }
+      createdNames.push(data.name);
+      handleCreated({ ...data, isMember: true, canManageSchedule: true, canManageSongs: true });
     }
-
-    departments.value = [...departments.value, data].sort((first, second) =>
-      first.name.localeCompare(second.name),
-    );
-    closeDepartmentDialog();
+    if (createdNames.length) {
+      toast.success(`${createdNames.join(", ")} criados. Agora adicione as pessoas.`);
+    }
   } finally {
-    isCreatingDepartment.value = false;
+    isCreatingCommon.value = false;
   }
 };
 
-const handleDeleteDepartment = (department: ChurchDepartment) => {
-  pendingDeleteDepartment.value = department;
+/** Único ponto que abre o editor de escala a partir da lista. */
+const openScheduleEditor = (departmentId: string) => {
+  const department = departments.value.find((item) => item.id === departmentId);
+  if (department) void scheduleEditor.value?.openCreate(department);
 };
 
-const closeDeleteDepartmentDialog = () => {
-  if (!isDeletingDepartment.value) {
-    pendingDeleteDepartment.value = null;
+const handleScheduleSaved = (schedule: DepartmentSchedule) => {
+  const departmentId = schedule.departmentId;
+  refreshKeys[departmentId] = (refreshKeys[departmentId] ?? 0) + 1;
+};
+
+const openPeople = (department: ChurchDepartment) => {
+  selectedDepartment.value = department;
+  isPeopleOpen.value = true;
+};
+
+const handlePeopleChanged = (count: number) => {
+  if (!selectedDepartment.value) return;
+  replaceDepartment({ ...selectedDepartment.value, membersCount: count });
+};
+
+const openMore = (department: ChurchDepartment) => {
+  selectedDepartment.value = department;
+  isMoreOpen.value = true;
+};
+
+const openSettings = (department: ChurchDepartment) => {
+  selectedDepartment.value = department;
+  isSettingsOpen.value = true;
+};
+
+const setActive = async (department: ChurchDepartment, isActive: boolean) => {
+  const { data, error } = await updateDepartment(department.id, { isActive });
+  if (error || !data) {
+    toast.error(error || "Não foi possível salvar o ministério.");
+    return false;
   }
+  replaceDepartment({ ...department, isActive: data.isActive });
+  return true;
 };
 
-const confirmDeleteDepartment = async () => {
-  if (!pendingDeleteDepartment.value) return;
+const toggleActive = async (department: ChurchDepartment) => {
+  const nextActive = !department.isActive;
+  if (!(await setActive(department, nextActive))) return;
 
-  departmentsError.value = "";
-  isDeletingDepartment.value = true;
-  const departmentId = pendingDeleteDepartment.value.id;
+  if (nextActive) {
+    toast.success(`${department.name} está ativo de novo.`);
+    return;
+  }
+  toast.info(`${department.name} foi desativado. Nada foi apagado.`, {
+    actionLabel: "Desfazer",
+    onAction: () => {
+      const current = departments.value.find((item) => item.id === department.id) ?? department;
+      void setActive(current, true);
+    },
+  });
+};
 
+const plural = (count: number, one: string, many: string) =>
+  `${count} ${count === 1 ? one : many}`;
+
+const deleteMessage = computed(() => {
+  const department = selectedDepartment.value;
+  if (!department) return "";
+  const parts = [
+    plural(department.schedulesCount ?? 0, "escala", "escalas"),
+    plural(department.tasksCount ?? 0, "tarefa", "tarefas"),
+    plural(department.songsCount ?? 0, "música", "músicas"),
+    plural(department.resourcesCount ?? 0, "material", "materiais"),
+  ];
+  return `${department.name} será apagado com ${parts.join(", ")}. As pessoas continuam na igreja. Isso não pode ser desfeito; para só parar de usar, prefira desativar.`;
+});
+
+const requestDelete = (department: ChurchDepartment) => {
+  selectedDepartment.value = department;
+  isDeleteOpen.value = true;
+};
+
+const confirmDelete = async () => {
+  const department = selectedDepartment.value;
+  if (!department) return;
+  isDeleting.value = true;
   try {
-    const { error } = await deleteDepartment(departmentId);
-
+    const { error } = await deleteDepartment(department.id);
     if (error) {
-      departmentsError.value = error;
+      toast.error(error);
       return;
     }
-
-    departments.value = departments.value.filter(
-      (department) => department.id !== departmentId,
-    );
-    pendingDeleteDepartment.value = null;
+    departments.value = departments.value.filter((item) => item.id !== department.id);
+    isDeleteOpen.value = false;
+    selectedDepartment.value = null;
+    toast.success(`${department.name} foi excluído.`);
   } finally {
-    isDeletingDepartment.value = false;
+    isDeleting.value = false;
   }
 };
 
 onMounted(async () => {
-  await Promise.all([loadDepartments(), loadMembers()]);
+  await load();
+  if (route.query.criar && access.value.canCreateMinistry) {
+    // Tira o ?criar=1 para o "voltar" e o recarregar não reabrirem o assistente.
+    const query = { ...route.query };
+    delete query.criar;
+    await router.replace({ query });
+    isWizardOpen.value = true;
+  }
 });
 </script>
 
@@ -554,108 +405,16 @@ onMounted(async () => {
 .min-vh-100 {
   min-height: 100vh;
 }
-.gap-3 {
-  gap: 12px;
-}
-.ministery-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
-}
-.ministery-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-.ministery-summary-item {
-  display: grid;
-  min-height: 72px;
-  align-content: center;
-  gap: 5px;
-  border: 1px solid var(--app-color-border-subtle);
-  border-radius: 8px;
-  background: var(--app-color-surface);
-  padding: 14px;
-}
-.ministery-summary-item span {
-  color: var(--app-color-text);
-  font-size: 1.3rem;
-  font-weight: 900;
-  line-height: 1;
-}
-.ministery-summary-item small {
-  color: var(--app-color-text-muted);
-  font-size: 0.82rem;
-  font-weight: 750;
-}
-.tabs-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.tab-chip-icon {
-  margin-right: 6px;
-}
-.cursor-pointer {
-  cursor: pointer;
-}
-.module-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.ministery-type-list {
-  display: grid;
-  gap: 8px;
-}
-.ministery-type-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border: 1px solid var(--app-color-border-subtle);
-  border-radius: 8px;
-  padding: 10px 12px;
-}
-.ministery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 12px;
-}
-.ministery-list-shell {
-  position: relative;
-}
-.ministery-delete-btn {
-  position: absolute;
-  right: 8px;
-  top: 8px;
-  z-index: 2;
-}
-.border-subtle {
-  border: 1px solid var(--app-color-border-subtle);
-}
-.ministery-input :deep(.v-field) {
-  border-radius: 14px;
-}
-.ministery-input :deep(.v-field__input) {
-  min-height: 48px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
-.responsive-dialog-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-@media (max-width: 520px) {
-  .ministery-summary {
-    grid-template-columns: 1fr;
-  }
 
-  .ministery-grid {
-    grid-template-columns: 1fr;
-  }
+.hub-filters {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.hub-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 </style>

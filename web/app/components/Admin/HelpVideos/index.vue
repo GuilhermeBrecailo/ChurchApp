@@ -342,7 +342,6 @@ const HELP_PAGES: HelpPage[] = [
   { pageKey: "/pessoas", label: "Pessoas" },
   { pageKey: "/pessoas/cuidado", label: "Cuidado pastoral" },
   { pageKey: "/pessoas/cargos", label: "Cargos" },
-  { pageKey: "/admin/ministerios", label: "Gestão de ministérios" },
   { pageKey: "/comunicar", label: "Comunicar" },
   { pageKey: "/configuracoes", label: "Configurações da igreja" },
   { pageKey: "/platform-admin", label: "Admin Master" },

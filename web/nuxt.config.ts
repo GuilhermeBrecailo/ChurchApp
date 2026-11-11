@@ -154,6 +154,8 @@ export default defineNuxtConfig({
     "/pastoral/pessoas": { redirect: "/pessoas?filtro=cuidado" },
     "/pastoral/visitas": { redirect: "/pessoas/cuidado" },
     "/pastoral/visitantes": { redirect: "/pessoas?filtro=visitantes" },
+    // Gestão de ministérios foi para a própria lista (/ministery).
+    "/admin/ministerios": { redirect: "/ministery" },
   },
   nitro: {
     compressPublicAssets: true,

@@ -1,16 +1,19 @@
-import { computed, reactive, ref, type Ref } from "vue";
+import { computed, reactive, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from "vue";
 import { useChurchRoles, type ChurchRole, type MemberRole } from "../useChurchRoles";
 import type { ChurchMember } from "../useMembers";
 
 /**
  * Cargos de ministério deste departamento, para o líder delegar aos membros
- * (aba "Líder" de pages/ministery/[id].vue).
+ * (janela "Pessoas" do ministério).
  *
  * `members` são os membros da igreja já carregados pela página: os cargos de
  * cada um vêm de lá até a primeira alteração, quando passam a vir da resposta
  * da API (memberCargoOverride).
  */
-export function useMinistryCargos(departmentId: string, members: Ref<ChurchMember[]>) {
+export function useMinistryCargos(
+  departmentIdSource: MaybeRefOrGetter<string>,
+  members: Ref<ChurchMember[]>,
+) {
   const { getRoles, addMemberRole, removeMemberRole } = useChurchRoles();
 
   const churchRolesList = ref<ChurchRole[]>([]);
@@ -19,9 +22,18 @@ export function useMinistryCargos(departmentId: string, members: Ref<ChurchMembe
   const selectedCargo = reactive<Record<string, string | null>>({});
   const memberCargoOverride = reactive<Record<string, MemberRole[]>>({});
 
+  const departmentId = computed(() => toValue(departmentIdSource));
+
+  // As alterações guardadas valem só para o ministério aberto.
+  watch(departmentId, () => {
+    for (const key of Object.keys(memberCargoOverride)) delete memberCargoOverride[key];
+    for (const key of Object.keys(selectedCargo)) delete selectedCargo[key];
+    cargoError.value = "";
+  });
+
   const ministryRoles = computed(() =>
     churchRolesList.value.filter(
-      (role) => role.scope === "MINISTRY" && role.departmentId === departmentId,
+      (role) => role.scope === "MINISTRY" && role.departmentId === departmentId.value,
     ),
   );
 
@@ -29,7 +41,7 @@ export function useMinistryCargos(departmentId: string, members: Ref<ChurchMembe
     if (memberCargoOverride[memberId]) return memberCargoOverride[memberId];
     const churchMember = members.value.find((item) => item.id === memberId);
     return (churchMember?.roles ?? []).filter(
-      (role) => role.scope === "MINISTRY" && role.departmentId === departmentId,
+      (role) => role.scope === "MINISTRY" && role.departmentId === departmentId.value,
     );
   };
 
@@ -47,7 +59,7 @@ export function useMinistryCargos(departmentId: string, members: Ref<ChurchMembe
 
   const thisMinistryRoles = (roles: MemberRole[]) =>
     roles.filter(
-      (role) => role.scope === "MINISTRY" && role.departmentId === departmentId,
+      (role) => role.scope === "MINISTRY" && role.departmentId === departmentId.value,
     );
 
   const assignCargo = async (memberId: string) => {
