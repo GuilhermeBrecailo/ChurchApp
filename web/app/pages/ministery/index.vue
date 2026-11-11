@@ -204,7 +204,8 @@ const visibleDepartments = computed(() => {
 });
 
 const pageSubtitle = computed(() =>
-  access.value.isChurchManager || access.value.leadsMinistry
+  access.value.isChurchManager ||
+  visibleDepartments.value.some((department) => capabilitiesFor(department).hasAnyManagement)
     ? "Escalas, pessoas e configurações de cada ministério"
     : "Os ministérios em que você serve",
 );

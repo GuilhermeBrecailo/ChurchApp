@@ -2,7 +2,7 @@
   <UtilsResponsiveOverlay v-model="isOpen" max-width="440" variant="base">
     <UtilsOverlayCard
       :title="department?.name ?? 'Ministério'"
-      :subtitle="department ? ministryTypeInfo(department.type).label : undefined"
+      :subtitle="subtitle"
       @close="isOpen = false"
     >
       <v-list v-if="department" class="quick-actions-list" bg-color="transparent">
@@ -61,6 +61,16 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
+
+// "Louvor · Louvor" não diz nada: o tipo só aparece quando o nome é outro.
+const subtitle = computed(() => {
+  const department = props.department;
+  if (!department) return undefined;
+  const label = ministryTypeInfo(department.type).label;
+  return label.toLocaleLowerCase("pt-BR") === department.name.trim().toLocaleLowerCase("pt-BR")
+    ? undefined
+    : label;
+});
 
 const items = computed(() => {
   const department = props.department;

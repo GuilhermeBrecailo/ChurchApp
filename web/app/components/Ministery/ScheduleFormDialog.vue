@@ -219,7 +219,7 @@
         <v-select
           v-if="scheduleFormDefinition.visibleFields.materials && resourceOptions.length"
           v-model="scheduleForm.resourceIds"
-          label="Recursos"
+          label="Materiais"
           :items="resourceOptions"
           item-title="label"
           item-value="value"

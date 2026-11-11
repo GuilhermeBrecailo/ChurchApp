@@ -33,15 +33,18 @@
 
       <ul v-else class="tasks-list" aria-label="Tarefas abertas">
         <li v-for="task in openTasks" :key="task.id" class="tasks-row app-surface">
-          <v-checkbox-btn
+          <button
             v-if="canComplete(task)"
-            :model-value="false"
-            color="primary"
+            type="button"
+            role="checkbox"
+            aria-checked="false"
             class="tasks-check"
             :disabled="togglingId === task.id"
             :aria-label="`Marcar ${task.title} como feita`"
-            @update:model-value="$emit('toggle', task, true)"
-          />
+            @click="$emit('toggle', task, true)"
+          >
+            <Square size="24" aria-hidden="true" />
+          </button>
           <span v-else class="tasks-check-placeholder" aria-hidden="true" />
           <div class="tasks-main">
             <p class="tasks-title">{{ task.title }}</p>
@@ -102,15 +105,18 @@
         </v-btn>
         <ul v-if="showDone" class="tasks-list" aria-label="Tarefas concluídas">
           <li v-for="task in doneTasks" :key="task.id" class="tasks-row tasks-row--done app-surface">
-            <v-checkbox-btn
+            <button
               v-if="canComplete(task)"
-              :model-value="true"
-              color="primary"
-              class="tasks-check"
+              type="button"
+              role="checkbox"
+              aria-checked="true"
+              class="tasks-check tasks-check--done"
               :disabled="togglingId === task.id"
               :aria-label="`Reabrir ${task.title}`"
-              @update:model-value="$emit('toggle', task, false)"
-            />
+              @click="$emit('toggle', task, false)"
+            >
+              <SquareCheck size="24" aria-hidden="true" />
+            </button>
             <span v-else class="tasks-check-placeholder" aria-hidden="true" />
             <div class="tasks-main">
               <p class="tasks-title">{{ task.title }}</p>
@@ -137,7 +143,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { CheckCircle2, CheckSquare, ChevronDown, Pencil, Plus, Trash2 } from "lucide-vue-next";
+import { CheckCircle2, CheckSquare, ChevronDown, Pencil, Plus, Square, SquareCheck, Trash2 } from "lucide-vue-next";
 import type { DepartmentTask } from "../../../composables/useDepartments";
 import { formatTaskDueDate, isTaskOverdue } from "../../utils/ministrySchedules";
 
@@ -183,7 +189,34 @@ const hasAny = computed(() => props.openTasks.length + props.doneTasks.length > 
 }
 
 .tasks-check {
+  display: grid;
   flex: 0 0 auto;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--app-color-text-muted);
+  cursor: pointer;
+}
+
+.tasks-check:hover {
+  color: var(--app-color-accent);
+}
+
+.tasks-check:focus-visible {
+  outline: 2px solid var(--app-color-accent);
+  outline-offset: 2px;
+}
+
+.tasks-check:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.tasks-check--done {
+  color: var(--app-color-success);
 }
 
 .tasks-check-placeholder {
@@ -194,7 +227,7 @@ const hasAny = computed(() => props.openTasks.length + props.doneTasks.length > 
 .tasks-main {
   flex: 1 1 auto;
   min-width: 0;
-  padding-top: 8px;
+  padding-top: 9px;
 }
 
 .tasks-title {

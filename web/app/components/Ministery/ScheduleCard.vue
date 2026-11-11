@@ -68,26 +68,27 @@
           <BellRing size="16" class="mr-1" aria-hidden="true" /> Lembrar
         </v-btn>
       </PlanLock>
-      <span class="schedule-card-spacer" />
-      <v-btn
-        icon
-        variant="text"
-        size="small"
-        :aria-label="`Editar escala ${schedule.description}`"
-        @click="$emit('edit', schedule)"
-      >
-        <Pencil size="16" aria-hidden="true" />
-      </v-btn>
-      <v-btn
-        icon
-        variant="text"
-        size="small"
-        color="error"
-        :aria-label="`Excluir escala ${schedule.description}`"
-        @click="$emit('delete', schedule)"
-      >
-        <Trash2 size="16" aria-hidden="true" />
-      </v-btn>
+      <span class="schedule-card-icons">
+        <v-btn
+          icon
+          variant="text"
+          size="small"
+          :aria-label="`Editar escala ${schedule.description}`"
+          @click="$emit('edit', schedule)"
+        >
+          <Pencil size="16" aria-hidden="true" />
+        </v-btn>
+        <v-btn
+          icon
+          variant="text"
+          size="small"
+          color="error"
+          :aria-label="`Excluir escala ${schedule.description}`"
+          @click="$emit('delete', schedule)"
+        >
+          <Trash2 size="16" aria-hidden="true" />
+        </v-btn>
+      </span>
     </footer>
   </article>
 </template>
@@ -221,7 +222,9 @@ const team = computed(() => scheduleTeamSummary(props.schedule));
   border-top: 1px solid var(--app-color-border-subtle);
 }
 
-.schedule-card-spacer {
-  flex: 1 1 auto;
+.schedule-card-icons {
+  display: inline-flex;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 </style>

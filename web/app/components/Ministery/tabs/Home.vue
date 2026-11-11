@@ -32,7 +32,11 @@
       </section>
 
       <!-- Líder: pendências, cada uma com um botão -->
-      <section v-if="capabilities.hasAnyManagement" class="home-section" aria-labelledby="home-pending-title">
+      <section
+        v-if="capabilities.hasAnyManagement && (pendencies.length || store.upcoming.value.length)"
+        class="home-section"
+        aria-labelledby="home-pending-title"
+      >
         <UtilsSectionHeader id="home-pending-title" title="Pendências" :count="pendencies.length || null" />
         <UtilsEmptyState
           v-if="!pendencies.length"
@@ -108,7 +112,7 @@
           :icon="CalendarDays"
           title="Nenhuma escala marcada"
           :description="capabilities.canManageSchedules ? 'Monte a primeira escala e a equipe recebe o aviso.' : 'Quando o líder montar, elas aparecem aqui.'"
-          :action-label="capabilities.canManageSchedules ? 'Nova escala' : undefined"
+          :action-label="capabilities.canManageSchedules && !checklistAsksSchedule ? 'Nova escala' : undefined"
           @action="emit('create-schedule')"
         />
         <ul v-else class="home-rows app-surface home-rows--card">
@@ -240,6 +244,10 @@ const setupSteps = computed<MinistrySetupStep[]>(() => {
     hasSongs: modules.value.includes("SONGS") && canonicalMinistryType(props.department.type) === "WORSHIP",
   });
 });
+// O checklist já tem "Criar" para a primeira escala: não repete o botão.
+const checklistAsksSchedule = computed(
+  () => showChecklist.value && setupSteps.value.some((step) => step.key === "schedule" && !step.done),
+);
 const doneSteps = computed(() => setupSteps.value.filter((step) => step.done).length);
 const showChecklist = computed(
   () => props.capabilities.canManage && doneSteps.value < setupSteps.value.length,

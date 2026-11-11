@@ -39,10 +39,10 @@
         </v-autocomplete>
 
         <v-btn
+          v-if="selectedToAdd.length"
           color="primary"
           class="text-none font-weight-bold people-add-btn"
           :loading="people.isAdding.value"
-          :disabled="!selectedToAdd.length"
           @click="addSelected"
         >
           <UserPlus size="18" class="mr-2" aria-hidden="true" />

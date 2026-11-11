@@ -18,7 +18,7 @@
         <UtilsPageHeader
           back="/ministery"
           back-label="Voltar para Ministérios"
-          :kicker="typeInfo.label"
+          :kicker="kicker"
           :title="department.name"
           :subtitle="`Líder: ${department.leader?.name || '—'}`"
         >
@@ -160,6 +160,11 @@ provideMinistrySchedules(store);
 
 const capabilities = computed(() => resolveMinistryCapabilities(user.value as never, department.value));
 const typeInfo = computed(() => ministryTypeInfo(department.value?.type));
+// O tipo vai acima do nome só quando acrescenta algo ("Louvor / Louvor" não).
+const kicker = computed(() => {
+  const name = department.value?.name.trim().toLocaleLowerCase("pt-BR");
+  return typeInfo.value.label.toLocaleLowerCase("pt-BR") === name ? undefined : typeInfo.value.label;
+});
 
 const tabs = computed(() => {
   const current = department.value;
