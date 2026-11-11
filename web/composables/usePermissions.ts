@@ -333,3 +333,17 @@ export const usePermissions = () => {
 
   return { can, canRef, isPrivileged };
 };
+
+// Resumo em palavras simples de cada modelo pronto de cargo - aparece no
+// "Dar cargo" do perfil da pessoa, para o pastor escolher sem abrir a lista
+// de permissões.
+export const ROLE_PRESET_SUMMARIES: Record<string, string> = {
+  MINISTER: "Cuida de tudo no ministério: escalas, músicas, pessoas e avisos",
+  SONG_EDITOR: "Adiciona e edita as músicas do ministério",
+  SCHEDULE_MANAGER: "Monta e ajusta as escalas do ministério",
+  SECRETARY: "Cadastra, edita e remove pessoas da igreja",
+  COMMUNICATION: "Publica avisos, versículo do dia e devocionais",
+  CULT_MANAGER: "Cria cultos e marca a presença",
+  PASTORAL_CARE: "Acompanha visitantes, visitas e quem está faltando",
+  PRAYER_TEAM: "Aprova e acompanha os pedidos de oração",
+};

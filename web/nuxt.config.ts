@@ -83,6 +83,17 @@ export default defineNuxtConfig({
     // schema.org que useSeoMeta/useHead geram; sem isso cai na regra geral
     // "/**": ssr:false e vira uma casca vazia pra qualquer bot que nao roda JS.
     "/comece": { ssr: true },
+    // Pessoas num lugar só (redesign): as telas antigas de Admin › Pessoas
+    // e do painel pastoral viraram /pessoas, /pessoas/[id] e /pessoas/cuidado.
+    // /admin/pessoas?secao=cargos chega em /pessoas?secao=cargos e a página
+    // manda para /pessoas/cargos; /pastoral/pessoas/:id fica no middleware
+    // legacy-people-routes (o redirect com ** não funciona na navegação do
+    // lado do cliente).
+    "/admin/pessoas": { redirect: "/pessoas" },
+    "/pastoral": { redirect: "/pessoas/cuidado" },
+    "/pastoral/pessoas": { redirect: "/pessoas?filtro=cuidado" },
+    "/pastoral/visitas": { redirect: "/pessoas/cuidado" },
+    "/pastoral/visitantes": { redirect: "/pessoas?filtro=visitantes" },
   },
   nitro: {
     compressPublicAssets: true,

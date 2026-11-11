@@ -7,7 +7,7 @@
           O que precisa da sua atenção
         </h2>
       </div>
-      <v-btn to="/pastoral" size="small" color="primary" class="text-none">
+      <v-btn to="/pessoas/cuidado" size="small" color="primary" class="text-none">
         <HandHeart size="15" class="mr-1" /> Abrir painel
       </v-btn>
     </div>
@@ -30,17 +30,17 @@
           <strong>{{ dashboard.stats.pendingPrayers }}</strong>
           <span>Pedidos de oração</span>
         </NuxtLink>
-        <NuxtLink to="/pastoral/pessoas" class="pastoral-stat">
+        <NuxtLink to="/pessoas?filtro=cuidado" class="pastoral-stat">
           <AlertTriangle size="18" />
           <strong>{{ dashboard.stats.absentMembers }}</strong>
           <span>Pessoas em alerta</span>
         </NuxtLink>
-        <NuxtLink to="/pastoral/visitas" class="pastoral-stat">
+        <NuxtLink to="/pessoas/cuidado" class="pastoral-stat">
           <ClipboardCheck size="18" />
           <strong>{{ dashboard.stats.openVisits }}</strong>
           <span>Visitas em aberto</span>
         </NuxtLink>
-        <NuxtLink to="/pastoral/visitantes" class="pastoral-stat">
+        <NuxtLink to="/pessoas?filtro=visitantes" class="pastoral-stat">
           <Users size="18" />
           <strong>{{ dashboard.stats.visitorsToFollowUp ?? 0 }}</strong>
           <span>Visitantes para acompanhar</span>
@@ -75,7 +75,7 @@
         <div class="pastoral-section">
           <div class="pastoral-section-title">
             <span>Atenção pastoral</span>
-            <NuxtLink to="/pastoral/pessoas">Ver pessoas</NuxtLink>
+            <NuxtLink to="/pessoas?filtro=cuidado">Ver pessoas</NuxtLink>
           </div>
           <div v-if="dashboard.absentMembers.length === 0" class="pastoral-empty">
             Sem alertas de ausência pelos últimos cultos.
@@ -84,7 +84,7 @@
             <NuxtLink
               v-for="member in dashboard.absentMembers.slice(0, 4)"
               :key="member.id"
-              :to="`/pastoral/pessoas/${member.id}`"
+              :to="`/pessoas/${member.id}`"
               class="pastoral-row"
               :aria-label="`Abrir acompanhamento de ${member.name}`"
             >
