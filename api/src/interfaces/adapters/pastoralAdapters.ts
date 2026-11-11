@@ -261,7 +261,9 @@ export class PastoralAdapters {
       attendanceByMember.set(attendee.rosterMemberId, current);
     }
 
-    const absentMembers = occurrenceIds.length
+    // So conta falta em igreja que marca presenca nome a nome: sem nenhuma
+    // presenca marcada nesses cultos, a igreja inteira apareceria "ausente".
+    const absentMembers = occurrenceIds.length && recentAttendees.length
       ? rosterMembers
           .filter((member) => !attendanceByMember.has(member.id))
           .slice(0, 8)

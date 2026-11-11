@@ -1,4 +1,5 @@
-const mockPrismaClient = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock recursivo ($transaction recebe o próprio mock)
+const mockPrismaClient: Record<string, any> = {
   user: { findUnique: jest.fn() },
   crunch: { findUnique: jest.fn() },
   churchMembership: {
@@ -6,7 +7,13 @@ const mockPrismaClient = {
     findMany: jest.fn(),
     update: jest.fn(),
   },
+  // A aprovação roda numa transação (ativa o vínculo e liga a conta ao rol).
+  $transaction: jest.fn((callback: (tx: unknown) => unknown): unknown => callback(mockPrismaClient)),
 };
+
+jest.mock("../src/interfaces/utils/rosterLink", () => ({
+  ensureRosterMemberForUser: jest.fn().mockResolvedValue({ id: "roster-1" }),
+}));
 
 jest.mock("../config/database", () => ({
   $prismaClient: mockPrismaClient,
@@ -76,7 +83,7 @@ describe("UserAdapters.approveMember notifies the new member", () => {
 
     const result = await adapters.approveMember(makeRequest({ params: { id: "pending-1" } }));
 
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ success: true, rosterMemberId: "roster-1" });
     expect(mockPrismaClient.churchMembership.findFirst).toHaveBeenCalledWith({
       where: { id: "pending-1", crunchId: "church-1", isActive: false },
     });
@@ -104,7 +111,7 @@ describe("UserAdapters.approveMember notifies the new member", () => {
 
     await expect(
       adapters.approveMember(makeRequest({ params: { id: "pending-1" } })),
-    ).resolves.toEqual({ success: true });
+    ).resolves.toEqual({ success: true, rosterMemberId: "roster-1" });
     expect(mockPrismaClient.churchMembership.update).toHaveBeenCalled();
     consoleError.mockRestore();
   });

@@ -143,6 +143,17 @@ export default defineNuxtConfig({
     "/plans": { redirect: "/configuracoes/plano" },
     "/admin/mensagens": { redirect: "/comunicar" },
     "/admin/publicacoes": { redirect: "/comunicar" },
+    // Pessoas num lugar só (redesign): as telas antigas de Admin › Pessoas
+    // e do painel pastoral viraram /pessoas, /pessoas/[id] e /pessoas/cuidado.
+    // /admin/pessoas?secao=cargos chega em /pessoas?secao=cargos e a página
+    // manda para /pessoas/cargos; /pastoral/pessoas/:id fica no middleware
+    // legacy-people-routes (o redirect com ** não funciona na navegação do
+    // lado do cliente).
+    "/admin/pessoas": { redirect: "/pessoas" },
+    "/pastoral": { redirect: "/pessoas/cuidado" },
+    "/pastoral/pessoas": { redirect: "/pessoas?filtro=cuidado" },
+    "/pastoral/visitas": { redirect: "/pessoas/cuidado" },
+    "/pastoral/visitantes": { redirect: "/pessoas?filtro=visitantes" },
   },
   nitro: {
     compressPublicAssets: true,

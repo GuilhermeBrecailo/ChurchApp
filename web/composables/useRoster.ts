@@ -26,6 +26,8 @@ export interface RosterFormDTO {
   birthDate?: string;
   notes?: string;
   contactConsent?: boolean;
+  /** Visitante (padrão) ou membro sem conta no app. */
+  status?: "VISITOR" | "MEMBER";
 }
 
 export const useRoster = () => {
@@ -115,6 +117,17 @@ export const useRoster = () => {
     );
   };
 
+  // "Registrar autorização" de contato digital (WhatsApp/e-mail).
+  const updateRosterConsent = async (
+    id: string,
+    consentToContact: boolean,
+  ): Promise<ApiResponse<{ rosterMemberId: string; consentToContact: boolean }>> => {
+    return await $customFetch<{ rosterMemberId: string; consentToContact: boolean }>(
+      `${config.public.URL_BACKEND}/api/church/roster/${id}/consent`,
+      { method: "POST", headers: authHeaders(), body: { consentToContact } },
+    );
+  };
+
   const getRosterReport = async (): Promise<
     ApiResponse<{ visitors: number; members: number }>
   > => {
@@ -133,6 +146,7 @@ export const useRoster = () => {
     restoreRosterMember,
     deleteRosterMember,
     checkRosterMemberWhatsApp,
+    updateRosterConsent,
     getRosterReport,
   };
 };

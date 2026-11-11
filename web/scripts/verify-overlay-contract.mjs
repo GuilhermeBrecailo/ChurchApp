@@ -25,7 +25,7 @@ const legacyDialogMigrations = [
   "app/components/Ministery/NewReferenceModal.vue",
   "app/pages/cultos/index.vue",
   "app/pages/cultos/[id].vue",
-  "app/pages/pastoral/visitas.vue",
+  "app/components/People/VisitSheet.vue",
 ].map((relativePath) => ({
   relativePath,
   content: readFileSync(resolve(root, relativePath), "utf8"),
@@ -45,7 +45,7 @@ const longFormOverlays = [
   "app/components/Comunicar/TemplateDialog.vue",
   "app/components/Comunicar/RuleDialog.vue",
   "app/pages/admin/ministerios.vue",
-  "app/pages/admin/pessoas.vue",
+  "app/components/People/RoleEditorSheet.vue",
   "app/pages/ministery/index.vue",
   "app/pages/perfil/preferencias.vue",
 ].map((relativePath) => ({
