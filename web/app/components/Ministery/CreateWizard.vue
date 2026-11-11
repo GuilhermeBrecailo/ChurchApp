@@ -218,7 +218,6 @@ const isCreating = ref(false);
 const error = ref("");
 const created = ref<ChurchDepartment | null>(null);
 const members = ref<ChurchMember[]>([]);
-const modulesTouched = ref(false);
 const configTouched = ref(false);
 
 const form = reactive({
@@ -277,7 +276,6 @@ const reset = () => {
   step.value = "type";
   error.value = "";
   created.value = null;
-  modulesTouched.value = false;
   configTouched.value = false;
   form.type = "WORSHIP";
   form.name = "";
@@ -314,7 +312,6 @@ const chooseType = (type: string) => {
   if (!form.name.trim() || form.name.trim() === previousSuggestion) form.name = info.suggestedName;
   form.modules = [...info.defaultModules];
   form.scheduleConfig = getDepartmentSchedulePreset(type);
-  modulesTouched.value = false;
   configTouched.value = false;
   step.value = "details";
 };
@@ -324,7 +321,6 @@ const toggleModule = (module: MinistryModule) => {
   if (next.has(module)) next.delete(module);
   else next.add(module);
   if (!next.size) return;
-  modulesTouched.value = true;
   form.modules = resolveMinistryModules([...next]);
 };
 
