@@ -86,7 +86,6 @@ const pdfImportDialog = readFileSync(
   resolve(root, "app/components/Ministery/SongPdfImportDialog.vue"),
   "utf8",
 );
-const onboarding = readFileSync(resolve(root, "app/components/OnboardingModal/index.vue"), "utf8");
 
 const checks = [
   [
@@ -213,16 +212,6 @@ const checks = [
     /MoreOptionsOverlay/,
     content,
   ]),
-  [
-    "onboarding usa dots acionáveis",
-    /<button[\s\S]*class="onboarding-dot"[\s\S]*aria-label=/,
-    onboarding,
-  ],
-  [
-    "onboarding respeita reduced motion",
-    /prefers-reduced-motion:\s*reduce/,
-    onboarding,
-  ],
 ];
 
 const failures = checks

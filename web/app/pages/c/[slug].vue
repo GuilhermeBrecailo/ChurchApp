@@ -7,17 +7,13 @@
 
     <section v-else-if="notFound" class="not-found-state">
       <div class="not-found-mark">C</div>
-      <p class="landing-kicker">Pagina publica</p>
-      <h1>Igreja nao encontrada</h1>
-      <p>Confira o endereco recebido ou peca um novo link para a igreja.</p>
+      <p class="landing-kicker">Página pública</p>
+      <h1>Igreja não encontrada</h1>
+      <p>Confira o endereço recebido ou peça um novo link para a igreja.</p>
     </section>
 
     <template v-else-if="church">
       <MotionFadeInUp tag="header" class="landing-hero">
-        <div class="prompt-slot">
-          <PublicNotificationPrompt :slug="slug" />
-        </div>
-
         <div class="hero-logo-wrap">
           <img
             v-if="church.logo"
@@ -33,10 +29,10 @@
         <p v-if="churchLocation" class="landing-kicker">{{ churchLocation }}</p>
         <h1>{{ church.name }}</h1>
         <p class="hero-copy">
-          {{ church.welcomeMessage || "Uma igreja para visitar, acompanhar os proximos cultos e receber as palavras publicadas pela lideranca." }}
+          {{ church.welcomeMessage || "Uma igreja para visitar, acompanhar os próximos cultos e receber as palavras publicadas pela liderança." }}
         </p>
         <a href="#proximos-cultos" class="hero-action">
-          Ver proximos cultos
+          Ver próximos cultos
           <ArrowDown size="16" />
         </a>
       </MotionFadeInUp>
@@ -82,7 +78,7 @@
       <main class="landing-main">
         <MotionFadeInUp id="proximos-cultos" tag="section" class="schedule-board-section" in-view>
           <div class="section-rule-heading">
-            <span>Proximos cultos</span>
+            <span>Próximos cultos</span>
           </div>
 
           <div class="schedule-board">
@@ -99,11 +95,11 @@
               </MotionStaggerItem>
             </MotionStaggerGroup>
             <p v-else class="board-empty">
-              Ainda nao ha horarios publicados. Volte em breve.
+              Ainda não há horários publicados. Volte em breve.
             </p>
           </div>
 
-          <div class="period-toggle" role="tablist" aria-label="Periodo dos cultos">
+          <div class="period-toggle" role="tablist" aria-label="Período dos cultos">
             <button
               type="button"
               :class="{ active: period === 'week' }"
@@ -116,7 +112,7 @@
               :class="{ active: period === 'month' }"
               @click="period = 'month'"
             >
-              Este mes
+              Este mês
             </button>
           </div>
         </MotionFadeInUp>
@@ -124,7 +120,7 @@
         <MotionFadeInUp tag="section" class="feed-section" in-view>
           <div class="section-heading-copy">
             <p class="landing-kicker">Mural da igreja</p>
-            <h2>Avisos, palavras e oracoes</h2>
+            <h2>Avisos, palavras e orações</h2>
           </div>
 
           <MotionStaggerGroup v-if="feedItems.length" class="feed-list">
@@ -159,7 +155,7 @@
           </MotionStaggerGroup>
 
           <p v-else class="feed-empty">
-            Ainda nao ha avisos publicados. Volte em breve.
+            Ainda não há avisos publicados. Volte em breve.
           </p>
         </MotionFadeInUp>
 
@@ -171,7 +167,7 @@
         >
           <div class="section-heading-copy">
             <p class="landing-kicker">Palavra</p>
-            <h2>Versiculos publicados</h2>
+            <h2>Versículos publicados</h2>
           </div>
 
           <MotionStaggerGroup class="feed-list">
@@ -230,7 +226,7 @@
                 loading="lazy"
               />
               <div class="feed-card-meta">
-                <span>{{ devotional.chapters?.length || 0 }} capitulos</span>
+                <span>{{ chapterLabel(devotional.chapters?.length || 0) }}</span>
                 <time>{{ relativeDate(devotional.publishedAt) }}</time>
               </div>
               <h3>{{ devotional.title }}</h3>
@@ -243,6 +239,38 @@
               />
             </MotionStaggerItem>
           </MotionStaggerGroup>
+        </MotionFadeInUp>
+        <MotionFadeInUp tag="section" class="join-card" in-view aria-labelledby="participe-titulo">
+          <span class="join-card-icon" aria-hidden="true"><UsersRound :size="22" /></span>
+          <div class="join-card-copy">
+            <p class="landing-kicker">Faz parte desta igreja?</p>
+            <h2 id="participe-titulo">Participe pelo app</h2>
+            <p>
+              Pelo app você recebe suas escalas, os avisos e os pedidos de oração da
+              {{ church.name }}. O link de convite vem do pastor ou da liderança: peça
+              pelo WhatsApp e, ao abrir o link, é só criar seu acesso.
+            </p>
+          </div>
+          <div class="join-card-actions">
+            <a
+              v-if="joinWhatsAppLink"
+              :href="joinWhatsAppLink"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="join-card-btn join-card-btn--primary"
+            >
+              <MessageCircle :size="18" aria-hidden="true" />
+              Pedir o convite no WhatsApp
+            </a>
+            <NuxtLink
+              to="/join"
+              class="join-card-btn"
+              :class="{ 'join-card-btn--primary': !joinWhatsAppLink }"
+            >
+              <Ticket :size="18" aria-hidden="true" />
+              Já tenho o código
+            </NuxtLink>
+          </div>
         </MotionFadeInUp>
       </main>
 
@@ -321,6 +349,10 @@
           <p class="footer-legal">© {{ currentYear }} {{ church.name }}</p>
         </div>
       </footer>
+
+      <ClientOnly>
+        <PublicNotificationPrompt :slug="slug" />
+      </ClientOnly>
     </template>
   </div>
 </template>
@@ -336,11 +368,14 @@ import {
   Facebook,
   Youtube,
   Globe,
+  Ticket,
+  UsersRound,
 } from "lucide-vue-next";
 import { computed, onMounted, ref, watch } from "vue";
 import type { PublicAnnouncementKind, PublicServiceOccurrence } from "../../../composables/useChurchLanding";
 import { fontCssValue } from "../../../composables/useChurchAppearance";
 import { getInitials } from "../../utils/initials";
+import { buildWhatsAppLink, churchJoinHelpMessage } from "../../utils/supportContact";
 
 definePageMeta({
   layout: "public",
@@ -476,7 +511,7 @@ const occurrenceKey = (occurrence: PublicServiceOccurrence) =>
 const kindLabel = (kind?: PublicAnnouncementKind) => ({
   ANNOUNCEMENT: "AVISO",
   PASTOR_MESSAGE: "PALAVRA DO PASTOR",
-  PRAYER: "ORACAO",
+  PRAYER: "ORAÇÃO",
 }[kind || "ANNOUNCEMENT"]);
 
 const relativeDate = (value: string) => {
@@ -488,7 +523,7 @@ const relativeDate = (value: string) => {
 
   if (Math.abs(days) < 1) return "Hoje";
   if (days === -1) return "Ontem";
-  if (days < 0 && days > -7) return `${Math.abs(days)} dias atras`;
+  if (days < 0 && days > -7) return `${Math.abs(days)} dias atrás`;
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
@@ -497,6 +532,16 @@ const relativeDate = (value: string) => {
 };
 
 const currentYear = new Date().getFullYear();
+
+const chapterLabel = (count: number) => (count === 1 ? "1 capítulo" : `${count} capítulos`);
+
+// "Participe pelo app" (v1): o convite vem do pastor; o botão abre o
+// WhatsApp da igreja com a mensagem pronta, quando a igreja tem WhatsApp.
+const joinWhatsAppLink = computed(() => {
+  const whatsapp = footer.value?.contacts?.whatsapp;
+  if (!whatsapp || !church.value) return "";
+  return buildWhatsAppLink(whatsapp, churchJoinHelpMessage(church.value.name));
+});
 
 const onlyDigits = (value?: string | null) => (value || "").replace(/\D/g, "");
 
@@ -677,13 +722,6 @@ watch(slug, (nextSlug, previousSlug) => {
   min-height: min(780px, 86vh);
   padding: 24px max(20px, calc((100vw - 1120px) / 2));
   position: relative;
-}
-
-.prompt-slot {
-  position: absolute;
-  right: max(20px, calc((100vw - 1120px) / 2));
-  top: 22px;
-  z-index: 2;
 }
 
 .hero-logo-wrap {
@@ -1284,6 +1322,80 @@ watch(slug, (nextSlug, previousSlug) => {
   .schedule-board-row {
     grid-template-columns: 82px minmax(0, 1fr) 38px;
     gap: 10px;
+  }
+}
+
+/* --- Participe pelo app --- */
+.join-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px 16px;
+  align-items: start;
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--church-accent) 26%, var(--line));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--church-accent) 7%, var(--card));
+}
+
+.join-card-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--church-accent) 16%, transparent);
+  color: var(--church-accent);
+}
+
+.join-card-copy h2 {
+  margin: 2px 0 6px;
+  font-family: var(--church-display);
+  font-size: clamp(1.4rem, 1.1rem + 1.2vw, 1.8rem);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.join-card-copy p:last-child {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.join-card-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.join-card-btn {
+  display: inline-flex;
+  flex: 1 1 220px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 0.98rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.join-card-btn--primary {
+  border-color: var(--church-accent);
+  background: var(--church-accent);
+  color: #ffffff;
+}
+
+@media (max-width: 600px) {
+  .join-card {
+    grid-template-columns: 1fr;
+    padding: 18px;
   }
 }
 </style>

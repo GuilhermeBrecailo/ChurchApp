@@ -28,7 +28,7 @@
             type="button"
             aria-label="Agora não"
             title="Agora não"
-            @click="dismiss"
+            @click="handleDismiss"
           >
             <X size="19" aria-hidden="true" />
           </button>
@@ -94,18 +94,48 @@
 import { Download, Share2, Smartphone, X } from "lucide-vue-next";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { usePwaInstallPrompt } from "../../../composables/usePwaInstallPrompt";
+import { useFirstRunPrompts } from "../../../composables/useFirstRunPrompts";
 
 const route = useRoute();
 const {
   platform,
   visible,
+  available,
   instructionsOpen,
   hasNativePrompt,
   initialize,
   install,
   dismiss,
+  show,
+  hide,
   closeInstructions,
 } = usePwaInstallPrompt();
+const prompts = useFirstRunPrompts();
+prompts.watchActivity();
+
+// Regra única dos avisos (app/utils/promptGate.ts): fora das telas de
+// entrada e da página pública, depois do primeiro minuto, só com uma ação
+// concluída ou na segunda visita, e no máximo um aviso por visita.
+const allowed = computed(() => available.value && prompts.canShow("pwa-install"));
+
+watch(
+  allowed,
+  (canShow) => {
+    if (canShow) {
+      show();
+      if (visible.value) prompts.markShown("pwa-install");
+      return;
+    }
+    // Mudou para uma tela sem avisos: esconde sem contar como "Agora não".
+    hide();
+  },
+  { immediate: true },
+);
+
+const handleDismiss = () => {
+  prompts.markDismissed("pwa-install");
+  dismiss();
+};
 
 const guideDialog = ref<HTMLDialogElement | null>(null);
 const hasBottomNavigation = computed(() => (route.meta.layout ?? "default") === "default");

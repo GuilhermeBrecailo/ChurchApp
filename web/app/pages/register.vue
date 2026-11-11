@@ -1,355 +1,176 @@
 <template>
-  <div class="auth-page">
-    <div class="auth-shell">
-      <aside class="auth-promo" aria-label="Comece a organizar sua igreja">
-        <NuxtLink to="/comece" class="auth-brand" aria-label="Voltar para o ChurchApp">
-          <span class="auth-brand__mark"><Church :size="17" aria-hidden="true" /></span>
-          ChurchApp
-        </NuxtLink>
-        <p class="auth-promo__eyebrow">Primeiro passo simples</p>
-        <h2>
-          {{ signupRole === "PASTOR" ? "Comece a organizar sua igreja." : "Entre para fazer parte da sua igreja." }}
-        </h2>
-        <ul class="auth-promo__list">
-          <li>
-            <CheckCircle2 :size="17" aria-hidden="true" />
-            {{ signupRole === "PASTOR" ? "Crie a conta e cadastre sua igreja" : "Acesse sua igreja pelo código de convite" }}
-          </li>
-          <li v-if="signupRole === 'PASTOR'">
-            <CheckCircle2 :size="17" aria-hidden="true" /> Configure ministérios no primeiro acesso
-          </li>
-          <li v-else>
-            <CheckCircle2 :size="17" aria-hidden="true" /> A liderança aprova sua solicitação de acesso
-          </li>
-          <li v-if="signupRole === 'PASTOR'">
-            <CheckCircle2 :size="17" aria-hidden="true" /> Três meses de Pro para experimentar
-          </li>
-        </ul>
-      </aside>
+  <OnboardingAuthShell
+    title="Crie sua conta"
+    subtitle="Depois você cadastra sua igreja em menos de um minuto."
+    :icon="UserPlus"
+    eyebrow="Para pastores"
+    headline="Comece a organizar sua igreja hoje."
+    :points="[
+      'Crie a conta e cadastre sua igreja',
+      'Convide a equipe pelo WhatsApp',
+      'Três meses de Pro para experimentar',
+    ]"
+    promo-label="Comece a organizar sua igreja"
+    back="/comece"
+  >
+    <v-form class="auth-form" @submit.prevent="handleRegister">
+      <v-text-field
+        v-model="form.name"
+        label="Seu nome"
+        name="name"
+        autocomplete="name"
+        autocapitalize="words"
+        variant="outlined"
+        density="comfortable"
+        color="primary"
+        hide-details="auto"
+        :disabled="loading"
+      />
 
-      <MotionFadeInUp class="auth-form-wrap">
-      <v-card class="auth-card w-full max-w-md my-8" elevation="0">
-      <div class="auth-card-inner">
-        <v-btn
-          icon
-          variant="text"
-          size="small"
-          class="auth-back-btn"
-          aria-label="Voltar"
-          @click="router.back()"
-        >
-          <ChevronLeft size="20" />
-        </v-btn>
-        <div class="flex flex-col items-center mb-8">
-          <div class="auth-icon-circle mb-4">
-            <v-icon size="40" color="primary">
-              mdi-account-plus-outline
-            </v-icon>
-          </div>
-          <h1 class="app-page-title auth-title">
-            {{ signupRole === "PASTOR" ? "Crie sua conta" : "Cadastre-se como membro" }}
-          </h1>
-          <p class="auth-subtitle text-center">
-            {{ signupRole === "PASTOR" ? "Depois, você já segue para cadastrar sua igreja." : "Use o código de convite enviado pela sua igreja." }}
-          </p>
-        </div>
+      <v-text-field
+        v-model="form.email"
+        label="E-mail"
+        type="email"
+        name="email"
+        autocomplete="email"
+        inputmode="email"
+        autocapitalize="off"
+        spellcheck="false"
+        variant="outlined"
+        density="comfortable"
+        color="primary"
+        hide-details="auto"
+        :disabled="loading"
+      />
 
-        <div class="auth-role-picker" role="group" aria-label="Como você vai usar o ChurchApp?">
-          <button
-            type="button"
-            class="auth-role-option"
-            :class="{ 'is-selected': signupRole === 'PASTOR' }"
-            :aria-pressed="signupRole === 'PASTOR'"
-            :disabled="loading"
-            @click="selectSignupRole('PASTOR')"
-          >
-            <span class="auth-role-option__icon"><v-icon icon="mdi-church" aria-hidden="true" /></span>
-            <span class="auth-role-option__copy">
-              <strong>Sou pastor</strong>
-              <small>Vou criar uma igreja</small>
-            </span>
-            <v-icon
-              class="auth-role-option__check"
-              :icon="signupRole === 'PASTOR' ? 'mdi-check-circle' : 'mdi-circle-outline'"
-              aria-hidden="true"
-            />
-          </button>
-          <button
-            type="button"
-            class="auth-role-option"
-            :class="{ 'is-selected': signupRole === 'MEMBER' }"
-            :aria-pressed="signupRole === 'MEMBER'"
-            :disabled="loading"
-            @click="selectSignupRole('MEMBER')"
-          >
-            <span class="auth-role-option__icon"><v-icon icon="mdi-account-group-outline" aria-hidden="true" /></span>
-            <span class="auth-role-option__copy">
-              <strong>Sou membro</strong>
-              <small>Tenho um código de convite</small>
-            </span>
-            <v-icon
-              class="auth-role-option__check"
-              :icon="signupRole === 'MEMBER' ? 'mdi-check-circle' : 'mdi-circle-outline'"
-              aria-hidden="true"
-            />
-          </button>
-        </div>
+      <v-text-field
+        v-model="form.phone"
+        label="WhatsApp"
+        type="tel"
+        name="tel"
+        autocomplete="tel"
+        inputmode="tel"
+        placeholder="(11) 99999-9999"
+        variant="outlined"
+        density="comfortable"
+        color="primary"
+        hide-details="auto"
+        :disabled="loading"
+      />
 
-        <v-alert
-          v-if="memberRegistrationSent"
-          type="success"
-          variant="tonal"
-          density="compact"
-          class="mt-5"
-        >
-          Solicitação enviada para <strong>{{ memberChurchName }}</strong>. Assim que a liderança aprovar, você poderá entrar normalmente.
-        </v-alert>
+      <OnboardingPasswordField
+        v-model="form.password"
+        label="Crie uma senha"
+        autocomplete="new-password"
+        name="new-password"
+        hint="Pelo menos 6 caracteres."
+        :disabled="loading"
+      />
 
-        <v-form v-else autocomplete="off" class="mt-5" @submit.prevent="handleRegister">
-          <v-text-field
-            v-model="form.name"
-            label="Nome completo"
-            autocomplete="off"
-            prepend-inner-icon="mdi-account-outline"
-            variant="outlined"
-            density="comfortable"
-            :bg-color="isDark ? 'transparent' : 'white'"
-            color="primary"
-            class="auth-input mb-4"
-            hide-details="auto"
-            :disabled="loading"
-          />
+      <v-alert
+        v-if="errorMessage"
+        type="error"
+        variant="tonal"
+        density="compact"
+        role="alert"
+      >
+        {{ errorMessage }}
+      </v-alert>
 
-          <v-text-field
-            v-model="form.email"
-            label="E-mail"
-            type="email"
-            autocomplete="off"
-            prepend-inner-icon="mdi-email-outline"
-            variant="outlined"
-            density="comfortable"
-            :bg-color="isDark ? 'transparent' : 'white'"
-            color="primary"
-            class="auth-input mb-4"
-            hide-details="auto"
-            :disabled="loading"
-          />
+      <p class="register-terms">
+        Ao continuar, você concorda com os
+        <NuxtLink to="/termos" target="_blank">Termos de Uso</NuxtLink>
+        e a
+        <NuxtLink to="/privacidade" target="_blank">Política de Privacidade</NuxtLink>.
+      </p>
 
-          <v-text-field
-            v-model="form.phone"
-            label="Telefone"
-            type="tel"
-            autocomplete="off"
-            prepend-inner-icon="mdi-phone-outline"
-            variant="outlined"
-            density="comfortable"
-            :bg-color="isDark ? 'transparent' : 'white'"
-            color="primary"
-            class="auth-input mb-4"
-            hide-details="auto"
-            :disabled="loading"
-          />
+      <v-btn
+        type="submit"
+        block
+        color="primary"
+        size="x-large"
+        rounded="xl"
+        class="auth-submit"
+        :loading="loading"
+        :disabled="loading"
+      >
+        Criar conta e continuar
+      </v-btn>
+    </v-form>
 
-          <v-text-field
-            v-if="signupRole === 'MEMBER'"
-            v-model="form.inviteCode"
-            label="Código de convite da igreja"
-            autocomplete="off"
-            prepend-inner-icon="mdi-ticket-confirmation-outline"
-            variant="outlined"
-            density="comfortable"
-            :bg-color="isDark ? 'transparent' : 'white'"
-            color="primary"
-            class="auth-input mb-4"
-            hide-details="auto"
-            :disabled="loading"
-          />
-
-          <v-text-field
-            v-model="form.password"
-            label="Senha"
-            :type="showPassword ? 'text' : 'password'"
-            autocomplete="off"
-            prepend-inner-icon="mdi-lock-outline"
-            :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
-            variant="outlined"
-            density="comfortable"
-            :bg-color="isDark ? 'transparent' : 'white'"
-            color="primary"
-            class="auth-input mb-4"
-            hide-details="auto"
-            :disabled="loading"
-            @click:append-inner="showPassword = !showPassword"
-          />
-
-          <v-text-field
-            v-model="form.confirmPassword"
-            label="Confirmar senha"
-            :type="showPassword ? 'text' : 'password'"
-            autocomplete="off"
-            prepend-inner-icon="mdi-lock-check-outline"
-            variant="outlined"
-            density="comfortable"
-            :bg-color="isDark ? 'transparent' : 'white'"
-            color="primary"
-            class="auth-input mb-8"
-            hide-details="auto"
-            :disabled="loading"
-          />
-
-          <v-alert
-            v-if="errorMessage"
-            type="error"
-            variant="tonal"
-            density="compact"
-            class="mb-4"
-          >
-            {{ errorMessage }}
-          </v-alert>
-
-          <p class="auth-terms-hint text-center mb-4">
-            Ao se cadastrar, você concorda com os
-            <NuxtLink to="/termos" target="_blank">Termos de Uso</NuxtLink>
-            e a
-            <NuxtLink to="/privacidade" target="_blank">Política de Privacidade</NuxtLink>
-            do ChurchApp.
-          </p>
-
-          <MotionPressableScale>
-          <v-btn
-            type="submit"
-            block
-            color="primary"
-            size="x-large"
-            class="auth-btn text-none font-bold"
-            rounded="xl"
-            elevation="2"
-            :loading="loading"
-            :disabled="loading"
-          >
-            {{ signupRole === "PASTOR" ? "Criar conta e continuar" : "Solicitar acesso à igreja" }}
-          </v-btn>
-          </MotionPressableScale>
-        </v-form>
-
-        <div class="mt-6 text-center">
-          <p v-if="signupRole === 'PASTOR'" class="auth-hint mb-3">
-            Se você já tem uma conta de membro, faça login normalmente.
-          </p>
-          <p v-else-if="!memberRegistrationSent" class="auth-hint mb-3">
-            Peça o código de convite ao pastor ou líder da sua igreja.
-          </p>
-          <span class="auth-meta">Já tem uma conta? </span>
-          <NuxtLink to="/login" class="auth-link font-bold">Faça login</NuxtLink>
-        </div>
-      </div>
-      </v-card>
-      </MotionFadeInUp>
-    </div>
-  </div>
+    <template #footer>
+      <p class="mb-0">
+        Recebeu um convite da sua igreja?
+        <NuxtLink to="/join">Entre por aqui</NuxtLink>
+      </p>
+      <p class="mb-0">
+        Já tem conta?
+        <NuxtLink to="/login">Entrar</NuxtLink>
+      </p>
+    </template>
+  </OnboardingAuthShell>
 </template>
 
 <script setup lang="ts">
 import { reactive, ref } from "vue";
-import { useRouter } from "vue-router";
-import { CheckCircle2, ChevronLeft, Church } from "lucide-vue-next";
+import { UserPlus } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
-import { useChurchInvite } from "../../composables/useChurchInvite";
+import { normalizeInviteCode, onlyDigits } from "../utils/joinFlow";
 
 definePageMeta({
   layout: "not-app-bottom",
+  // O cadastro de membro mora no /join (uma entrada só). Links antigos
+  // "/register?role=MEMBER&code=X" continuam funcionando.
+  middleware: [
+    (to) => {
+      if (to.query.role !== "MEMBER") return;
+      const code = normalizeInviteCode(to.query.code);
+      return navigateTo({ path: "/join", query: code ? { code } : {} }, { replace: true });
+    },
+  ],
 });
+
+useHead({ title: "Criar conta · ChurchApp" });
 
 const router = useRouter();
 const route = useRoute();
 const { registerPastor, login, setSessionFromToken, fetchMe, session, access_token } = useAuth();
-const { registerByCode } = useChurchInvite();
-const { isDark } = useThemeMode();
-
-type SignupRole = "PASTOR" | "MEMBER";
-const signupRole = ref<SignupRole>(route.query.role === "MEMBER" ? "MEMBER" : "PASTOR");
 
 const form = reactive({
   name: "",
   email: "",
   phone: "",
-  inviteCode: typeof route.query.code === "string" ? route.query.code : "",
   password: "",
-  confirmPassword: "",
 });
 
-const showPassword = ref(false);
 const loading = ref(false);
 const errorMessage = ref("");
-const memberRegistrationSent = ref(false);
-const memberChurchName = ref("sua igreja");
 
-const selectSignupRole = (role: SignupRole) => {
-  signupRole.value = role;
-  errorMessage.value = "";
-  memberRegistrationSent.value = false;
+const validate = () => {
+  if (!form.name.trim()) return "Escreva seu nome.";
+  if (!form.email.trim()) return "Informe seu e-mail.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return "Confira o e-mail.";
+  const phone = onlyDigits(form.phone);
+  if (!phone) return "Informe seu WhatsApp.";
+  if (phone.length < 10 || phone.length > 13) return "Confira o WhatsApp: use DDD + número.";
+  if (form.password.length < 6) return "A senha precisa ter pelo menos 6 caracteres.";
+  return "";
 };
 
 const handleRegister = async () => {
-  errorMessage.value = "";
+  errorMessage.value = validate();
+  if (errorMessage.value) return;
 
-  const normalizedName = form.name.trim();
   const normalizedEmail = form.email.trim().toLowerCase();
-  const normalizedPhone = form.phone.trim();
-
-  if (!normalizedName || !normalizedEmail || !normalizedPhone || !form.password) {
-    errorMessage.value = "Preencha todos os campos obrigatórios.";
-    return;
-  }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-    errorMessage.value = "Informe um e-mail válido.";
-    return;
-  }
-
-  if (form.password.length < 6) {
-    errorMessage.value = "A senha deve ter pelo menos 6 caracteres.";
-    return;
-  }
-
-  if (form.password !== form.confirmPassword) {
-    errorMessage.value = "As senhas não coincidem.";
-    return;
-  }
-
-  if (signupRole.value === "MEMBER" && !form.inviteCode.trim()) {
-    errorMessage.value = "Informe o código de convite da sua igreja.";
-    return;
-  }
-
-  loading.value = true;
-
-  if (signupRole.value === "MEMBER") {
-    const { data, error } = await registerByCode(form.inviteCode.trim().toUpperCase(), {
-      name: normalizedName,
-      email: normalizedEmail,
-      phone: normalizedPhone,
-      password: form.password,
-    });
-
-    loading.value = false;
-    if (error) {
-      errorMessage.value = error;
-      return;
-    }
-
-    memberChurchName.value = data?.churchName || "sua igreja";
-    memberRegistrationSent.value = true;
-    return;
-  }
-
   const commercialLeadToken =
     typeof route.query.lead === "string" ? route.query.lead.trim() : "";
 
+  loading.value = true;
+
   const { error } = await registerPastor({
-    name: normalizedName,
+    name: form.name.trim(),
     email: normalizedEmail,
-    phone: normalizedPhone,
+    phone: form.phone.trim(),
     role: "PASTOR",
     password: form.password,
     ...(commercialLeadToken ? { commercialLeadToken } : {}),
@@ -362,15 +183,15 @@ const handleRegister = async () => {
   }
 
   if (commercialLeadToken && import.meta.client) {
-    window.localStorage.setItem(
-      "churchapp_commercial_lead_token",
-      commercialLeadToken,
-    );
+    try {
+      window.localStorage.setItem("churchapp_commercial_lead_token", commercialLeadToken);
+    } catch {
+      // Sem storage o lead só não é vinculado; o cadastro segue.
+    }
   }
 
-  // Loga automaticamente com as mesmas credenciais do cadastro, pra nao
-  // fazer o pastor digitar tudo de novo na tela seguinte - mesmo padrao de
-  // login.vue (setSessionFromToken + fetchMe, com session() de fallback).
+  // Entra sozinho com as mesmas credenciais, para o pastor não digitar tudo
+  // de novo. Mesmo padrão do login (setSessionFromToken + fetchMe).
   const { data: loginData } = await login({
     email: normalizedEmail,
     password: form.password,
@@ -385,350 +206,23 @@ const handleRegister = async () => {
 
   loading.value = false;
 
-  // Cadastro deu certo mesmo se o login automatico falhar aqui (rede,
-  // token expirado na hora, etc.) - cai pra tela de login de novo em vez
-  // de mandar pra "/" sem sessao (o middleware jogaria pra /comece).
-  await router.push(access_token.value ? "/" : "/login");
+  // A conta existe mesmo se o login automático falhar (rede etc.): nesse
+  // caso, cai no login em vez de mandar para uma tela sem sessão.
+  await router.push(access_token.value ? "/onboarding/church" : "/login?redirect=/onboarding/church");
 };
 </script>
 
 <style scoped>
-.auth-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
-  padding: 28px 20px;
-  background: var(--app-color-background) !important;
-  background-image: none !important;
-}
-
-.auth-shell {
-  display: grid;
-  grid-template-columns: minmax(280px, 0.86fr) minmax(380px, 1fr);
-  width: min(1020px, 100%);
-  overflow: hidden;
-  border: 1px solid var(--app-color-border-subtle);
-  border-radius: 20px;
-  background: var(--app-color-surface);
-  box-shadow: var(--app-shadow-lg);
-}
-
-.auth-promo {
-  display: flex;
-  min-height: 700px;
-  flex-direction: column;
-  padding: 34px;
-  background: var(--app-color-text);
-  color: #fffaf4;
-}
-
-.auth-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  width: max-content;
-  color: #fffaf4;
-  font-size: 1rem;
-  font-weight: 850;
-  letter-spacing: -0.035em;
-  text-decoration: none;
-}
-
-.auth-brand__mark {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: var(--app-color-accent);
-}
-
-.auth-promo__eyebrow {
-  margin: clamp(120px, 18vh, 190px) 0 16px;
-  color: #f3b291;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.auth-promo h2 {
-  max-width: 360px;
-  color: #fffaf4;
-  font-family: "Fraunces", Georgia, serif;
-  font-size: clamp(2rem, 3.4vw, 3rem);
-  font-weight: 650;
-  letter-spacing: -0.05em;
-  line-height: 1.04;
-}
-
-.auth-promo__list {
-  display: grid;
-  gap: 14px;
-  margin: 28px 0 0;
-  padding: 0;
-  list-style: none;
-  color: #d8cdc5;
-  font-size: 0.82rem;
-  line-height: 1.45;
-}
-
-.auth-promo__list li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.auth-promo__list svg {
-  flex: 0 0 auto;
-  margin-top: 1px;
-  color: #f3b291;
-}
-
-.auth-form-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 22px;
-}
-
-.auth-card {
-  border-radius: 14px !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  background: var(--app-color-surface) !important;
-  overflow: hidden;
-  border-color: var(--app-color-border) !important;
-}
-
-.auth-card-inner {
-  padding: 40px 32px 32px;
-  position: relative;
-}
-
-.auth-back-btn {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-}
-
-.auth-icon-circle {
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  background: rgba(240, 151, 90, 0.16) !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.auth-title {
-  font-size: 1.85rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: var(--app-color-text);
-  margin: 0 0 6px;
-}
-
-.auth-subtitle {
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--app-color-accent-soft);
+.register-terms {
   margin: 0;
-}
-
-.auth-role-picker {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 9px;
-}
-
-.auth-role-option {
-  display: flex;
-  min-width: 0;
-  min-height: 72px;
-  align-items: center;
-  gap: 9px;
-  padding: 10px;
-  border: 1px solid var(--app-color-border-subtle);
-  border-radius: 12px;
-  background: var(--app-color-surface);
-  color: var(--app-color-text);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 140ms ease, background-color 140ms ease;
-}
-
-.auth-role-option:hover {
-  border-color: var(--app-color-accent);
-}
-
-.auth-role-option:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--app-color-accent) 35%, transparent);
-  outline-offset: 2px;
-}
-
-.auth-role-option.is-selected {
-  border-color: var(--app-color-accent);
-  background: color-mix(in srgb, var(--app-color-accent) 7%, var(--app-color-surface));
-}
-
-.auth-role-option:disabled {
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-.auth-role-option__icon {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  place-items: center;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--app-color-accent) 12%, var(--app-color-surface));
-  color: var(--app-color-accent);
-}
-
-.auth-role-option__copy {
-  display: grid;
-  min-width: 0;
-  flex: 1;
-  gap: 3px;
-}
-
-.auth-role-option__copy strong {
-  font-size: 0.82rem;
-  line-height: 1.2;
-}
-
-.auth-role-option__copy small {
   color: var(--app-color-text-muted);
-  font-size: 0.68rem;
-  line-height: 1.3;
-}
-
-.auth-role-option__check {
-  flex: 0 0 auto;
-  color: var(--app-color-accent);
-}
-
-.auth-input :deep(.v-field) {
-  border-radius: 14px;
-}
-
-.auth-input :deep(.v-field__input) {
-  min-height: 52px;
-  padding-top: 12px;
-  padding-bottom: 12px;
-  font-size: 1rem;
-}
-
-.auth-input :deep(.v-label) {
-  font-size: 0.95rem;
-}
-
-/* Seletor inteiro dentro de :global(): com ":global(.app-theme-dark) .auth-input"
-   o compilador do Vue descartava o resto e a regra virava ".app-theme-dark {}",
-   pintando TODO texto do app no tema escuro com a cor padrão (abas ativas,
-   links e avisos perdiam a cor) e aplicando uma sombra interna na raiz. */
-:global(.app-theme-dark .auth-input input:-webkit-autofill),
-:global(.app-theme-dark .auth-input input:-webkit-autofill:hover),
-:global(.app-theme-dark .auth-input input:-webkit-autofill:focus) {
-  -webkit-box-shadow: 0 0 0 1000px var(--app-color-surface-soft) inset !important;
-  -webkit-text-fill-color: var(--app-color-text) !important;
-  caret-color: var(--app-color-text);
-}
-
-.auth-btn {
-  height: 54px !important;
-  font-size: 1.05rem !important;
-  letter-spacing: 0.01em !important;
-}
-
-:global(.app-theme-dark .auth-btn.bg-primary) {
-  box-shadow: 0 4px 16px rgba(240, 151, 90, 0.3) !important;
-}
-
-.auth-link {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--app-color-accent);
-  text-decoration: none;
-  transition: color 0.15s ease;
-}
-
-.auth-link:hover {
-  color: var(--app-color-accent-soft);
-}
-
-.auth-meta {
-  font-size: 0.95rem;
-  color: var(--app-color-text-muted);
-}
-
-.auth-hint {
-  font-size: 0.85rem;
-  color: var(--app-color-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
   text-align: center;
-  line-height: 1.5;
 }
 
-.auth-terms-hint {
-  font-size: 0.78rem;
-  color: var(--app-color-text-muted);
-  line-height: 1.5;
-}
-
-.auth-terms-hint a {
+.register-terms a {
   color: var(--app-color-accent);
-  font-weight: 600;
-}
-
-@media (max-width: 720px) {
-  .auth-page {
-    align-items: flex-start;
-    padding: 14px;
-  }
-
-  .auth-shell {
-    display: block;
-    border-radius: 16px;
-  }
-
-  .auth-promo {
-    min-height: 0;
-    padding: 22px;
-  }
-
-  .auth-promo__eyebrow {
-    margin-top: 48px;
-  }
-
-  .auth-promo h2 {
-    font-size: 2rem;
-  }
-
-  .auth-promo__list {
-    gap: 9px;
-    margin-top: 20px;
-  }
-
-  .auth-form-wrap {
-    padding: 8px;
-  }
-
-  .auth-card-inner {
-    padding: 40px 20px 28px;
-  }
-}
-
-@media (max-width: 380px) {
-  .auth-role-picker {
-    grid-template-columns: 1fr;
-  }
+  font-weight: 650;
 }
 </style>
