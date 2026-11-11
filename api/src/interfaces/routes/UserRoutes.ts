@@ -84,6 +84,11 @@ export async function UserRoutes(app: FastifyInstance) {
     controllerHandler(adapters.updateChurchMemberPermissions.bind(adapters)),
   );
 
+  app.post(
+    "/api/church/members/:id/reset-password",
+    controllerHandler(adapters.resetChurchMemberPassword.bind(adapters)),
+  );
+
   app.patch(
     "/api/church/members/:id",
     controllerHandler(adapters.updateChurchMember.bind(adapters)),
