@@ -7,13 +7,23 @@
     <v-skeleton-loader v-if="loading" type="article, list-item-three-line@4" />
 
     <template v-else-if="devotional && currentChapter">
-      <div class="content-page-header mb-5">
-        <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
-          {{ devotional.title }}
-        </h1>
-        <p class="text-body-2 text-grey-darken-1 mb-0">
-          {{ devotional.description }}
-        </p>
+      <UtilsPageHeader
+        :title="devotional.title"
+        :subtitle="devotional.description || undefined"
+        back="/content/devotionals"
+        back-label="Voltar para Devocionais"
+      />
+
+      <div class="reader-progress mb-4">
+        <v-progress-linear
+          :model-value="progress.percent ?? 0"
+          color="primary"
+          bg-color="primary"
+          height="6"
+          rounded
+          :aria-label="`Progresso: ${progress.label}`"
+        />
+        <span class="reader-progress-label">{{ progress.label }}</span>
       </div>
 
       <div class="reader-layout">
@@ -137,6 +147,7 @@ import {
   type DevotionalComment,
 } from "../../../../composables/useDevotionals";
 import { useAuth } from "../../../../composables/useAuth";
+import { devotionalProgress } from "../../../utils/devotionalProgress";
 
 const route = useRoute();
 const { getDevotional, updateProgress, listComments, createComment, deleteComment } =
@@ -162,6 +173,13 @@ const currentChapter = computed(() =>
   chapters.value.find((chapter) => chapter.id === currentChapterId.value) ?? chapters.value[0],
 );
 const lastChapterId = computed(() => devotional.value?.progresses?.[0]?.lastChapterId ?? "");
+// O capítulo aberto é o progresso salvo (updateProgress roda a cada troca).
+const progress = computed(() =>
+  devotionalProgress({
+    chapters: chapters.value,
+    progresses: currentChapterId.value ? [{ lastChapterId: currentChapterId.value }] : [],
+  }),
+);
 
 const openChapter = (chapterId: string) => {
   currentChapterId.value = chapterId;
@@ -253,6 +271,18 @@ onMounted(async () => {
   min-height: 100%;
 }
 
+.reader-progress {
+  display: grid;
+  gap: 6px;
+  max-width: 420px;
+}
+
+.reader-progress-label {
+  color: var(--app-color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
 .reader-layout {
   display: grid;
   grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
@@ -269,7 +299,7 @@ onMounted(async () => {
   border: 0;
   background: transparent;
   border-radius: 8px;
-  color: #374151;
+  color: var(--app-color-text-soft);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -279,19 +309,19 @@ onMounted(async () => {
 }
 
 .chapter-button-active {
-  background: var(--app-color-accent-tint, #F7E2D3);
-  color: var(--app-color-accent, #B5472A);
+  background: var(--app-color-accent-tint);
+  color: var(--app-color-accent);
   font-weight: 700;
 }
 
 .chapter-content {
-  color: #1f2937;
+  color: var(--app-color-text);
   line-height: 1.8;
   white-space: pre-line;
 }
 
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
 }
 
 .gap-3 {
@@ -305,7 +335,7 @@ onMounted(async () => {
 
 .comment-item {
   padding-bottom: 12px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--app-color-border-subtle);
 }
 
 .comment-item:last-child {
