@@ -130,7 +130,7 @@ describe("PrayerAdapters", () => {
       });
       expect(mockSendToUsers).toHaveBeenCalledWith(
         ["pastor-1"],
-        expect.objectContaining({ type: "prayer_request_pending", url: "/prayer?tab=pending" }),
+        expect.objectContaining({ type: "prayer_request_pending", url: "/prayer?aba=aprovar" }),
       );
     });
 

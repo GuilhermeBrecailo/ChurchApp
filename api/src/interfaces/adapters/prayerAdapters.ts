@@ -67,7 +67,7 @@ export class PrayerAdapters {
       {
         title: `Novo pedido de oração: ${prayer.title}`,
         body: prayer.body,
-        url: "/prayer?tab=pending",
+        url: "/prayer?aba=aprovar",
         type: "prayer_request_pending",
       },
     );

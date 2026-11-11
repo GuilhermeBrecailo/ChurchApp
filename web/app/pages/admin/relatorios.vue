@@ -1,21 +1,21 @@
 <template>
   <div
-    v-if="canAccessChurchAdmin && isChurchWideManager"
+    v-if="access.canSeeReports"
     class="church-admin-page app-operational-page pa-4 min-vh-100 pb-20"
   >
-    <div class="relatorios-header mb-4">
-      <div class="content-detail-title-group min-w-0">
-        <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
-          <ChevronLeft size="20" />
-        </v-btn>
-        <div class="flex-1 min-w-0">
-          <h1 class="text-h5 font-weight-bold">Relatórios</h1>
-          <p class="text-caption text-grey-darken-1 mb-0">
-            Confirmações, presença e participação por período.
-          </p>
-        </div>
-      </div>
-      <UtilsPageHelpButton title="Relatórios" />
+    <UtilsPageHeader
+      title="Relatórios"
+      subtitle="Confirmações, presença e participação por período"
+      back="/admin"
+      back-label="Voltar para Gestão"
+      help-title="Relatórios"
+    />
+
+    <div class="stats-grid mb-5">
+      <AdminStatCard title="Membros" :value="members.length" :icon="Users" icon-color="#B5472A" bg-color="#F7E2D3" />
+      <AdminStatCard title="Ministérios" :value="departments.length" :icon="Building" icon-color="#C2542C" bg-color="#F7E2D3" />
+      <AdminStatCard title="Escalas" :value="churchTotals.schedules" :icon="Calendar" icon-color="#14B8A6" bg-color="#F0FDFA" />
+      <AdminStatCard title="Músicas" :value="churchTotals.songs" :icon="Music" icon-color="#EAB308" bg-color="#FEFCE8" />
     </div>
 
     <v-alert v-if="membersError" type="error" variant="tonal" density="compact" class="mb-4">
@@ -139,47 +139,22 @@
             <h3>Público do culto</h3>
           </div>
           <v-btn
+            to="/scale?aba=cultos"
             color="primary"
-            class="rounded-lg text-none px-4"
-            size="small"
-            elevation="1"
-            @click="openAttendanceDialog"
+            variant="tonal"
+            class="text-none font-weight-bold"
+            min-height="44"
           >
-            <Plus size="16" class="mr-2" /> Registrar presença
+            <CalendarCheck size="16" class="mr-2" aria-hidden="true" /> Registrar no culto
           </v-btn>
         </div>
+        <p class="text-body-2 text-grey-darken-1 mb-3">
+          O público é registrado na tela de cada culto, em Escalas › Cultos. Aqui fica o resumo dos últimos 30 dias.
+        </p>
 
         <v-alert v-if="attendanceError" type="error" variant="tonal" density="compact" class="mb-3">
           {{ attendanceError }}
         </v-alert>
-        <v-alert v-if="finalizeError" type="error" variant="tonal" density="compact" class="mb-3">
-          {{ finalizeError }}
-        </v-alert>
-
-        <div v-if="sortedServiceTimes.length" class="finalize-service-list mb-4">
-          <div v-for="serviceTime in sortedServiceTimes" :key="serviceTime.id" class="finalize-service-row">
-            <div class="min-w-0">
-              <strong>{{ weekdayName(serviceTime.weekday) }} {{ serviceTime.time }}</strong>
-              <small>{{ serviceTime.label }}</small>
-            </div>
-            <div class="d-flex align-center ga-2">
-              <span v-if="todaysAttendanceByServiceTime.get(serviceTime.id)?.endedAt" class="finalize-service-time">
-                Finalizado às {{ formatEndedAtTime(todaysAttendanceByServiceTime.get(serviceTime.id)!.endedAt!) }}
-              </span>
-              <v-btn
-                variant="tonal"
-                color="primary"
-                size="small"
-                class="text-none"
-                :loading="finalizingServiceTimeId === serviceTime.id"
-                @click="handleFinalizeService(serviceTime.id)"
-              >
-                <CalendarCheck size="16" class="mr-1" /> Finalizar culto
-              </v-btn>
-            </div>
-          </div>
-        </div>
-
         <div v-if="attendanceLoading" class="d-flex justify-center pa-6">
           <v-progress-circular indeterminate size="28" color="primary" />
         </div>
@@ -219,169 +194,36 @@
       </v-card>
     </section>
 
-    <UtilsResponsiveOverlay v-model="isAttendanceDialogOpen" max-width="480" variant="detail" scrollable>
-      <v-card class="app-surface rounded-xl pa-6" elevation="0">
-        <div class="responsive-dialog-header mb-5">
-          <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-            Registrar presença
-          </h2>
-          <v-btn icon variant="text" color="grey-darken-1" size="small" aria-label="Fechar relatório de presença" @click="isAttendanceDialogOpen = false">
-            <v-icon size="20">mdi-close</v-icon>
-          </v-btn>
-        </div>
-
-        <v-alert
-          v-if="sortedServiceTimes.length === 0"
-          type="info"
-          variant="tonal"
-          density="compact"
-          class="mb-3"
-        >
-          Nenhum culto cadastrado ainda. <NuxtLink to="/admin/configuracoes?secao=horarios" class="config-inline-link">Configure um horário de culto</NuxtLink> antes de registrar presença.
-        </v-alert>
-        <v-select
-          v-else
-          v-model="attendanceForm.serviceTimeId"
-          label="Culto"
-          :items="sortedServiceTimes"
-          :item-title="ruleServiceTimeLabel"
-          item-value="id"
-          variant="outlined"
-          density="comfortable"
-          color="primary"
-          class="mb-3"
-          hide-details="auto"
-        />
-        <v-text-field
-          v-model="attendanceForm.date"
-          label="Data do culto"
-          type="date"
-          variant="outlined"
-          density="comfortable"
-          color="primary"
-          class="mb-3"
-          hide-details="auto"
-        />
-        <v-text-field
-          v-model.number="attendanceForm.visitorCount"
-          label="Visitantes"
-          type="number"
-          min="0"
-          variant="outlined"
-          density="comfortable"
-          color="primary"
-          class="mb-3"
-          hide-details="auto"
-        />
-        <v-text-field
-          v-model.number="attendanceForm.memberCount"
-          label="Membros"
-          type="number"
-          min="0"
-          variant="outlined"
-          density="comfortable"
-          color="primary"
-          class="mb-3"
-          hide-details="auto"
-        />
-        <v-textarea
-          v-model="attendanceForm.notes"
-          label="Observação (opcional)"
-          variant="outlined"
-          density="comfortable"
-          color="primary"
-          class="mb-3"
-          hide-details="auto"
-          rows="2"
-          auto-grow
-        />
-
-        <v-alert v-if="attendanceFormError" type="error" variant="tonal" density="compact" class="mb-3">
-          {{ attendanceFormError }}
-        </v-alert>
-
-        <div class="d-flex justify-end gap-2">
-          <v-btn variant="text" color="grey-darken-1" class="text-none" @click="isAttendanceDialogOpen = false">
-            Cancelar
-          </v-btn>
-          <v-btn
-            color="primary"
-            variant="flat"
-            class="text-none font-weight-bold"
-            :disabled="sortedServiceTimes.length === 0"
-            :loading="isSavingAttendance"
-            @click="handleSaveAttendance"
-          >
-            Salvar
-          </v-btn>
-        </div>
-      </v-card>
-    </UtilsResponsiveOverlay>
   </div>
 
   <div v-else class="pa-4 app-operational-page min-vh-100 pb-20">
-    <v-card
-      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle permission-empty"
-    >
-      <UserCheck size="34" color="#9CA3AF" class="mb-3" />
-      <h1 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
-        Administração indisponível
-      </h1>
-      <p class="text-body-2 text-grey-darken-1 mb-0 text-center">
-        Esta área é liberada para pastores, admins ou membros com permissão de gestão.
-      </p>
-    </v-card>
+    <UtilsEmptyState
+      variant="no-permission"
+      :icon="UserCheck"
+      title="Relatórios são do pastor"
+      description="Peça ao pastor ou a um administrador da igreja se precisar destes números."
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
-import { BarChart3, CalendarCheck, ChevronLeft, Plus, UserCheck, Users } from "lucide-vue-next";
-import { useAuth } from "../../../composables/useAuth";
-import { usePermissions } from "../../../composables/usePermissions";
+import { computed, onMounted, ref } from "vue";
+import { BarChart3, Building, Calendar, CalendarCheck, Music, UserCheck, Users } from "lucide-vue-next";
 import { useMembers, type ChurchMember } from "../../../composables/useMembers";
 import {
   useDepartments,
   type ChurchDepartment,
   type DepartmentSchedule,
 } from "../../../composables/useDepartments";
-import { useServiceTimes, type ServiceTime } from "../../../composables/useServiceTimes";
 import { useAttendance, type ServiceAttendance } from "../../../composables/useAttendance";
 import { useRoster } from "../../../composables/useRoster";
 import { groupScheduleAssignments } from "../../utils/scaleSchedule";
 
-const router = useRouter();
-
-const { user } = useAuth();
-const { can } = usePermissions();
-
-const isPlatformAdmin = computed(
-  () =>
-    user.value?.role === "ADMIN" ||
-    user.value?.role === "SUPER_ADMIN" ||
-    user.value?.is_admin === true,
-);
-const isChurchWideManager = computed(
-  () => user.value?.role === "PASTOR" || isPlatformAdmin.value,
-);
-const canManageMembersByRole = computed(
-  () =>
-    isChurchWideManager.value ||
-    user.value?.canManageMembers === true ||
-    can("MEMBER_CREATE") ||
-    can("MEMBER_EDIT") ||
-    can("MEMBER_DELETE"),
-);
-const canAccessChurchAdmin = computed(
-  () =>
-    user.value?.hasChurch === true &&
-    canManageMembersByRole.value,
-);
+const access = useChurchAccess();
+const isChurchWideManager = computed(() => access.value.canSeeReports);
 
 const { getMembers } = useMembers();
 const { getDepartments, getChurchSchedules } = useDepartments();
-const { serviceTimes, loadServiceTimes } = useServiceTimes();
 
 const members = ref<ChurchMember[]>([]);
 const departments = ref<ChurchDepartment[]>([]);
@@ -425,6 +267,11 @@ const churchAssignments = computed(() =>
     groupScheduleAssignments(schedule.assignments || []),
   ),
 );
+
+const churchTotals = computed(() => ({
+  schedules: departments.value.reduce((total, department) => total + (department.schedulesCount || 0), 0),
+  songs: departments.value.reduce((total, department) => total + (department.songsCount || 0), 0),
+}));
 
 const percentage = (value: number, total: number) =>
   total > 0 ? Math.round((value / total) * 100) : 0;
@@ -514,40 +361,11 @@ const pastoralLeadership = computed(() => {
   };
 });
 
-const { listAttendance, saveAttendance, finalizeService } = useAttendance();
+const { listAttendance } = useAttendance();
 
 const attendanceEntries = ref<ServiceAttendance[]>([]);
 const attendanceLoading = ref(false);
 const attendanceError = ref("");
-
-const finalizingServiceTimeId = ref("");
-const finalizeError = ref("");
-
-const handleFinalizeService = async (serviceTimeId: string) => {
-  finalizingServiceTimeId.value = serviceTimeId;
-  finalizeError.value = "";
-  const { error } = await finalizeService(serviceTimeId);
-  finalizingServiceTimeId.value = "";
-  if (error) {
-    finalizeError.value = error;
-    return;
-  }
-  await loadAttendance();
-};
-
-// Registro de hoje por culto - so pra saber se ja foi finalizado e mostrar o
-// horario junto do botao (mesma chave de dia do backend: UTC da data corrente).
-const todaysAttendanceByServiceTime = computed(() => {
-  const todayKey = new Date().toISOString().slice(0, 10);
-  const map = new Map<string, ServiceAttendance>();
-  for (const entry of attendanceEntries.value) {
-    if (entry.date.slice(0, 10) === todayKey) map.set(entry.serviceTimeId, entry);
-  }
-  return map;
-});
-
-const formatEndedAtTime = (value: string) =>
-  new Date(value).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
 const { getRosterReport } = useRoster();
 const rosterReport = ref<{ visitors: number; members: number }>({ visitors: 0, members: 0 });
@@ -582,101 +400,17 @@ const formatAttendanceDate = (value: string) => {
   return `${day}/${month}/${year}`;
 };
 
-const isAttendanceDialogOpen = ref(false);
-const isSavingAttendance = ref(false);
-const attendanceFormError = ref("");
-const attendanceForm = reactive<{
-  serviceTimeId: string;
-  date: string;
-  visitorCount: number | null;
-  memberCount: number | null;
-  notes: string;
-}>({
-  serviceTimeId: "",
-  date: "",
-  visitorCount: null,
-  memberCount: null,
-  notes: "",
-});
-
-const openAttendanceDialog = () => {
-  attendanceForm.serviceTimeId = sortedServiceTimes.value[0]?.id ?? "";
-  attendanceForm.date = new Date().toISOString().slice(0, 10);
-  attendanceForm.visitorCount = null;
-  attendanceForm.memberCount = null;
-  attendanceForm.notes = "";
-  attendanceFormError.value = "";
-  isAttendanceDialogOpen.value = true;
-};
-
-const handleSaveAttendance = async () => {
-  if (!attendanceForm.serviceTimeId || !attendanceForm.date) {
-    attendanceFormError.value = "Culto e data são obrigatórios";
-    return;
-  }
-  if (attendanceForm.visitorCount === null || attendanceForm.memberCount === null) {
-    attendanceFormError.value = "Informe visitantes e membros (pode ser 0)";
-    return;
-  }
-
-  isSavingAttendance.value = true;
-  attendanceFormError.value = "";
-
-  const { error } = await saveAttendance({
-    serviceTimeId: attendanceForm.serviceTimeId,
-    date: attendanceForm.date,
-    visitorCount: attendanceForm.visitorCount,
-    memberCount: attendanceForm.memberCount,
-    notes: attendanceForm.notes,
-  });
-
-  isSavingAttendance.value = false;
-
-  if (error) {
-    attendanceFormError.value = error;
-    return;
-  }
-
-  isAttendanceDialogOpen.value = false;
-  await loadAttendance();
-};
-
-const weekdayOptions = [
-  { label: "Domingo", value: 0 },
-  { label: "Segunda", value: 1 },
-  { label: "Terca", value: 2 },
-  { label: "Quarta", value: 3 },
-  { label: "Quinta", value: 4 },
-  { label: "Sexta", value: 5 },
-  { label: "Sabado", value: 6 },
-];
-
-const weekdayName = (weekday: number) =>
-  weekdayOptions.find((day) => day.value === weekday)?.label ?? "-";
-
-const sortedServiceTimes = computed(() =>
-  [...serviceTimes.value].sort(
-    (a, b) => a.weekday - b.weekday || a.time.localeCompare(b.time),
-  ),
-);
-
-const ruleServiceTimeLabel = (item: ServiceTime | string) => {
-  if (!item || typeof item !== "object") return "";
-  return `${weekdayName(item.weekday)} · ${item.time} · ${item.label}`;
-};
-
 const loadRelatoriosData = async () => {
   await Promise.all([
     loadMembers(),
     loadDepartments(),
     loadChurchSchedules(),
-    loadServiceTimes(),
   ]);
 };
 
 onMounted(async () => {
   await Promise.all([
-    canAccessChurchAdmin.value ? loadRelatoriosData() : Promise.resolve(),
+    access.value.canSeeReports ? loadRelatoriosData() : Promise.resolve(),
     loadAttendance(),
     loadRosterReport(),
   ]);
@@ -697,6 +431,18 @@ onMounted(async () => {
 .church-admin-page {
   max-width: 1120px;
   margin: 0 auto;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (min-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .relatorios-header {
