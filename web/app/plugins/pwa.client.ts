@@ -1,7 +1,7 @@
-import { defineNuxtPlugin } from "#app";
+import { defineNuxtPlugin, useRuntimeConfig } from "#app";
 
 export default defineNuxtPlugin(() => {
-  if (!("serviceWorker" in navigator)) return;
+  if (useRuntimeConfig().public.DEMO || !("serviceWorker" in navigator)) return;
 
   const register = () => {
     navigator.serviceWorker

@@ -6,6 +6,7 @@
     </NuxtLayout>
     <ClientOnly>
       <PwaInstallPrompt />
+      <LazyDemoBar v-if="$config.public.DEMO" />
     </ClientOnly>
   </MotionConfig>
 </template>
