@@ -3,6 +3,7 @@
     <v-container fluid class="public-page-wrapper pa-0">
       <MotionPageTransition />
     </v-container>
+    <UtilsToastHost />
   </v-app>
 </template>
 <script setup lang="ts">

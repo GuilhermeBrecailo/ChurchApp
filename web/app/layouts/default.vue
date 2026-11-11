@@ -11,6 +11,7 @@
           <MotionPageTransition />
         </v-container>
       </LayoutsMain>
+      <UtilsToastHost />
     </v-locale-provider>
   </v-app>
 </template>
