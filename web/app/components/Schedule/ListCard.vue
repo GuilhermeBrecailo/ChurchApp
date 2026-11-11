@@ -8,34 +8,36 @@
     @keydown.enter.self="openSheet"
     @keydown.space.self.prevent="openSheet"
   >
-    <div class="schedule-list-card-when" aria-hidden="true">
-      <span class="when-day">{{ dayNumber }}</span>
-      <span class="when-month">{{ monthShort }}</span>
-    </div>
-
-    <div class="schedule-list-card-body">
-      <p class="schedule-list-card-kicker">
-        {{ view.shortDateLabel }} · {{ view.timeLabel }}
-        <template v-if="view.arrivalLabel"> · chegar {{ view.arrivalLabel }}</template>
-      </p>
-      <h3 class="schedule-list-card-title">{{ view.title }}</h3>
-      <p class="schedule-list-card-meta">
-        <span class="font-weight-bold">{{ view.departmentName }}</span>
-        <template v-if="view.me"> · Você: {{ view.me.roles.join(", ") }}</template>
-      </p>
-
-      <p v-if="showHealth" class="schedule-list-card-health" :class="{ 'is-attention': needsAttention }">
-        <Users :size="15" aria-hidden="true" />
-        <span>{{ view.health.text }}</span>
-      </p>
-
-      <ScheduleResponseBar v-if="view.me && !view.hasStarted" :view="view" compact class="mt-3" />
-      <div v-else-if="view.me" class="mt-2">
-        <ScheduleStatusPill :status="view.me.status" />
+    <div class="schedule-list-card-top">
+      <div class="schedule-list-card-when" aria-hidden="true">
+        <span class="when-day">{{ dayNumber }}</span>
+        <span class="when-month">{{ monthShort }}</span>
       </div>
+
+      <div class="schedule-list-card-body">
+        <p class="schedule-list-card-kicker">
+          {{ view.shortDateLabel }} · {{ view.timeLabel }}
+          <template v-if="view.arrivalLabel"> · chegar {{ view.arrivalLabel }}</template>
+        </p>
+        <h3 class="schedule-list-card-title">{{ view.title }}</h3>
+        <p class="schedule-list-card-meta">
+          <span class="font-weight-bold">{{ view.departmentName }}</span>
+          <template v-if="view.me"> · Você: {{ view.me.roles.join(", ") }}</template>
+        </p>
+
+        <p v-if="showHealth" class="schedule-list-card-health" :class="{ 'is-attention': needsAttention }">
+          <Users :size="15" aria-hidden="true" />
+          <span>{{ view.health.text }}</span>
+        </p>
+        <div v-else-if="view.me && view.hasStarted" class="mt-2">
+          <ScheduleStatusPill :status="view.me.status" />
+        </div>
+      </div>
+
+      <ChevronRight :size="18" class="schedule-list-card-chevron" aria-hidden="true" />
     </div>
 
-    <ChevronRight :size="18" class="schedule-list-card-chevron" aria-hidden="true" />
+    <ScheduleResponseBar v-if="view.me && !view.hasStarted" :view="view" compact class="schedule-list-card-response" />
   </article>
 </template>
 
@@ -62,12 +64,19 @@ const openSheet = () => sheet.open(props.view.id);
 
 <style scoped>
 .schedule-list-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
   padding: 14px;
   border-radius: var(--app-radius-card);
   cursor: pointer;
+}
+
+.schedule-list-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.schedule-list-card-response {
+  margin-top: 12px;
 }
 
 .schedule-list-card-when {

@@ -244,19 +244,23 @@
           />
           <ul class="sheet-checklist">
             <li v-for="item in checklist" :key="item.id">
-              <v-checkbox
+              <button
                 v-if="canCheck"
-                :model-value="item.isComplete"
-                :label="item.title"
-                color="primary"
-                hide-details
-                density="comfortable"
+                type="button"
+                role="checkbox"
+                :aria-checked="item.isComplete"
+                class="sheet-checklist-item"
+                :class="{ 'is-complete': item.isComplete }"
                 :disabled="togglingId === item.id"
-                @update:model-value="toggleChecklist(item.id, Boolean($event))"
-              />
-              <p v-else class="sheet-checklist-readonly">
-                <CheckCircle2 v-if="item.isComplete" :size="18" aria-hidden="true" class="is-done" />
-                <Circle v-else :size="18" aria-hidden="true" />
+                @click="toggleChecklist(item.id, !item.isComplete)"
+              >
+                <CheckCircle2 v-if="item.isComplete" :size="22" aria-hidden="true" class="is-done" />
+                <Circle v-else :size="22" aria-hidden="true" />
+                <span>{{ item.title }}</span>
+              </button>
+              <p v-else class="sheet-checklist-item">
+                <CheckCircle2 v-if="item.isComplete" :size="22" aria-hidden="true" class="is-done" />
+                <Circle v-else :size="22" aria-hidden="true" />
                 <span>{{ item.title }}</span>
               </p>
             </li>
@@ -712,16 +716,32 @@ const confirmDelete = async () => {
   text-decoration: none;
 }
 
-.sheet-checklist-readonly {
+.sheet-checklist-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 44px;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
   margin: 0;
+  padding: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--app-color-border-subtle);
+  background: none;
   color: var(--app-color-text);
+  font: inherit;
+  text-align: left;
 }
 
-.sheet-checklist-readonly .is-done {
+button.sheet-checklist-item {
+  cursor: pointer;
+}
+
+.sheet-checklist-item.is-complete span {
+  color: var(--app-color-text-muted);
+  text-decoration: line-through;
+}
+
+.sheet-checklist-item .is-done {
   color: var(--app-color-success);
 }
 </style>

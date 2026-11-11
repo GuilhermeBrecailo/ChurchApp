@@ -19,6 +19,7 @@
           :variant="selectedChip === chip ? 'flat' : 'outlined'"
           :color="selectedChip === chip ? 'primary' : undefined"
           :aria-pressed="selectedChip === chip"
+          tag="button"
           class="decline-chip"
           @click="selectedChip = selectedChip === chip ? null : chip"
         >
@@ -50,11 +51,11 @@
           : "A liderança vê que você não pode ir." }}
       </p>
 
-      <v-checkbox
+      <v-switch
         v-model="markUnavailable"
         color="primary"
+        inset
         hide-details
-        density="comfortable"
         label="Marcar esta data como indisponível"
       />
       <p class="decline-hint mb-0">

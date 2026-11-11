@@ -11,7 +11,7 @@
           :disabled="Boolean(busy)"
           @click="answer('CONFIRMED')"
         >
-          <CheckCircle2 :size="16" class="mr-1" aria-hidden="true" /> Confirmar
+          <CheckCircle2 v-if="!compact" :size="16" class="mr-1" aria-hidden="true" /> Confirmar
         </v-btn>
         <v-btn
           color="amber-darken-3"

@@ -57,6 +57,9 @@
             <Users :size="16" aria-hidden="true" /> {{ selectedDepartment?.name ?? "Ministério" }}
           </p>
 
+          <p v-if="!draft.departmentId" class="editor-hint">Escolha o ministério para montar a escala.</p>
+
+          <template v-if="draft.departmentId">
           <div v-if="lockedOccurrence" class="editor-fixed">
             <Church :size="16" aria-hidden="true" />
             <span>{{ lockedOccurrence.label }}</span>
@@ -118,7 +121,10 @@
             label="Este culto terá Santa Ceia"
             @update:model-value="setCommunion(Boolean($event))"
           />
+          </template>
         </section>
+
+        <template v-if="draft.departmentId">
 
         <!-- Equipe -->
         <section
@@ -144,6 +150,7 @@
               <v-combobox
                 v-model="row.role"
                 :items="roleOptions"
+                menu-icon=""
                 label="Função"
                 variant="outlined"
                 hide-details="auto"
@@ -159,7 +166,6 @@
                 variant="outlined"
                 hide-details="auto"
                 density="comfortable"
-                clearable
                 :disabled="!memberOptions.length"
                 :menu-props="scaleSelectMenuProps"
                 @update:model-value="row.userId = $event ?? ''"
@@ -284,6 +290,7 @@
             <li v-for="item in checklistPreview" :key="item.templateKey">{{ item.title }}</li>
           </ul>
         </section>
+        </template>
       </v-form>
 
       <template v-if="!isPreparing && departmentOptions.length" #actions>
@@ -884,7 +891,7 @@ const save = async () => {
 
 .editor-role-fields {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   gap: 8px;
 }
 
@@ -951,9 +958,4 @@ const save = async () => {
   font-size: 0.86rem;
 }
 
-@media (max-width: 600px) {
-  .editor-role-fields {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
 </style>

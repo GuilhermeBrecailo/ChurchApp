@@ -227,7 +227,9 @@ export const useSchedules = () => {
       body: payload,
     });
     if (response.data) {
-      cache.value = invalidateScheduleCache(storeSchedules(cache.value, [response.data]), response.data.id);
+      // A resposta do POST/PATCH já é a escala completa: guarda como tal e só
+      // marca as listas para buscar de novo (a escala pode ter mudado de data).
+      cache.value = invalidateScheduleCache(storeSchedules(cache.value, [response.data], { full: true }));
     }
     return response;
   };

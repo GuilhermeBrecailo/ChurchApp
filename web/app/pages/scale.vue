@@ -50,6 +50,7 @@
           :variant="ministryFilter === option.value ? 'flat' : 'outlined'"
           :color="ministryFilter === option.value ? 'primary' : undefined"
           :aria-pressed="ministryFilter === option.value"
+          tag="button"
           class="scale-chip"
           @click="setMinistryFilter(option.value)"
         >
@@ -109,6 +110,7 @@
           :variant="ministryFilter === option.value ? 'flat' : 'outlined'"
           :color="ministryFilter === option.value ? 'primary' : undefined"
           :aria-pressed="ministryFilter === option.value"
+          tag="button"
           class="scale-chip"
           @click="setMinistryFilter(option.value)"
         >
@@ -250,14 +252,10 @@ const organizerTiles = computed(() => [
   { filter: "nao-viram" as const, value: stats.value.notViewed, label: "Não viram" },
 ]);
 
-const pendingMine = computed(
-  () => mineViews.value.filter((view) => view.me?.status === "PENDING" && !view.hasStarted).length,
-);
-
 const tabItems = computed(() => [
-  { value: "minhas", label: "Minhas", badge: pendingMine.value || null },
+  { value: "minhas", label: "Minhas" },
   { value: "igreja", label: "Igreja" },
-  ...(managesAny.value ? [{ value: "organizar", label: "Organizar", badge: stats.value.swaps || null }] : []),
+  ...(managesAny.value ? [{ value: "organizar", label: "Organizar" }] : []),
   { value: "cultos", label: "Cultos" },
 ]);
 
