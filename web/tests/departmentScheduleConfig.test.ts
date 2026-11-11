@@ -93,6 +93,7 @@ describe("department schedule presets", () => {
     config.fields.checklist = false;
 
     assert.deepEqual(module?.getDepartmentScheduleConfigVisibility?.(config), {
+      showChecklistItems: false,
       showCommunionSettings: true,
       showCommunionRoles: true,
       showCommunionChecklist: false,
@@ -109,5 +110,17 @@ describe("department schedule presets", () => {
     ]);
     assert.deepEqual(module?.resolveDepartmentScheduleConfig?.(undefined, "MUSIC"),
       module?.getDepartmentSchedulePreset?.("WORSHIP"));
+  });
+
+  it("mostra \"Tarefas para conferir\" só com o checklist ligado e a Santa Ceia sempre", async () => {
+    const module = await loadScheduleConfigModule();
+    const worship = module?.getDepartmentSchedulePreset?.("WORSHIP");
+    const deaconate = module?.getDepartmentSchedulePreset?.("DEACONATE");
+
+    assert.equal(worship.fields.checklist, false);
+    assert.equal(module?.getDepartmentScheduleConfigVisibility?.(worship).showChecklistItems, false);
+    assert.equal(module?.getDepartmentScheduleConfigVisibility?.(worship).showCommunionSettings, true);
+    assert.equal(module?.getDepartmentScheduleConfigVisibility?.(deaconate).showChecklistItems, true);
+    assert.equal(module?.getDepartmentScheduleConfigVisibility?.(deaconate).showCommunionSettings, true);
   });
 });

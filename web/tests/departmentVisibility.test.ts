@@ -15,6 +15,13 @@ test("mostra somente os ministérios do usuário quando ele não é gestor da ig
   );
 });
 
+test("mostra também o ministério em que a pessoa tem cargo sem ser membro", () => {
+  assert.deepEqual(
+    getVisibleDepartments(departments, false, ["diaconato"]).map((department) => department.id),
+    ["louvor", "diaconato"],
+  );
+});
+
 test("mantém todos os ministérios para gestores da igreja", () => {
   assert.deepEqual(
     getVisibleDepartments(departments, true).map((department) => department.id),
