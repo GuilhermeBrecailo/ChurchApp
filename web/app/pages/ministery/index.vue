@@ -50,7 +50,7 @@
         title="Nenhum ministério ainda"
         description="Ministérios reúnem as equipes que servem na igreja: louvor, recepção, crianças… Crie o primeiro e já dá para montar as escalas."
         action-label="Criar ministério"
-        :secondary-label="isCreatingCommon ? 'Criando…' : 'Criar os mais comuns (Louvor, Recepção e Infantil)'"
+        :secondary-label="isCreatingCommon ? 'Criando…' : 'Criar Louvor, Recepção e Infantil'"
         @action="openWizard"
         @secondary="createCommonMinistries"
       />
@@ -391,10 +391,11 @@ const confirmDelete = async () => {
 onMounted(async () => {
   await load();
   if (route.query.criar && access.value.canCreateMinistry) {
-    isWizardOpen.value = true;
+    // Tira o ?criar=1 para o "voltar" e o recarregar não reabrirem o assistente.
     const query = { ...route.query };
     delete query.criar;
-    void router.replace({ query });
+    await router.replace({ query });
+    isWizardOpen.value = true;
   }
 });
 </script>
