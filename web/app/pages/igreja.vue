@@ -442,6 +442,11 @@ onMounted(async () => {
 }
 
 @media (min-width: 720px) {
+  .igreja-prayer-btn {
+    justify-self: start;
+    padding-inline: 28px !important;
+  }
+
   .igreja-tiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
