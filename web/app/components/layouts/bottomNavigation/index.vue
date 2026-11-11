@@ -1,123 +1,38 @@
 <template>
   <v-bottom-navigation
+    v-if="tabs.length"
     class="bottom-nav"
     aria-label="Navegação principal"
     height="68"
-    :bg-color="isDark ? 'transparent' : 'transparent'"
+    bg-color="transparent"
     app
   >
     <v-btn
-      v-for="item in navigationItems"
-      :key="item.key"
+      v-for="tab in tabs"
+      :key="tab.key"
       class="flex-col custom-btn"
-      :active="isItemActive(item)"
-      @click="handleNavClick(item)"
+      :active="tab.key === ownerTab"
+      :aria-current="tab.key === ownerTab ? 'page' : undefined"
+      :to="tab.route"
     >
-      <component :is="iconComponents[item.icon]" class="nav-icon" />
-      <span class="nav-label">{{ item.label }}</span>
+      <component :is="navigationIcons[tab.icon]" class="nav-icon" aria-hidden="true" />
+      <span class="nav-label">{{ tab.label }}</span>
     </v-btn>
   </v-bottom-navigation>
-
-  <LayoutsMoreOptionsOverlay
-    v-model="showMore"
-    :items="moreItems"
-    :pinned-keys="bottomBarKeys"
-    :subtitle="moreSubtitle"
-    @select="handleMoreSelect"
-  />
 </template>
 
 <script setup lang="ts">
-import {
-  BarChart3,
-  BookOpen,
-  CalendarCheck,
-  CalendarDays,
-  Church,
-  ClipboardList,
-  Cog,
-  HandHeart,
-  Heart,
-  House,
-  MessageCircle,
-  MoreHorizontal,
-  User,
-  Users,
-} from "lucide-vue-next";
-import { computed, ref } from "vue";
-import { useRouter, useRoute } from "vue-router";
+import { computed } from "vue";
+import { useRoute } from "vue-router";
 import { useAuth } from "../../../../composables/useAuth";
-import {
-  getBottomNavigationItems,
-  getMoreNavigationItems,
-  isNavigationItemActive,
-  type RoleNavigationItem,
-  type RoleNavigationIcon,
-} from "../../../utils/roleNavigation";
+import { getOwnerTab, getPrimaryTabs } from "../../../utils/roleNavigation";
+import { navigationIcons } from "../../../utils/navigationIcons";
 
 const { user } = useAuth();
-const { isDark } = useThemeMode();
-const router = useRouter();
 const route = useRoute();
 
-const navigationItems = computed(() => getBottomNavigationItems(user.value));
-const moreItems = computed(() => getMoreNavigationItems(user.value));
-const bottomBarKeys = computed(() =>
-  navigationItems.value.map((entry) => entry.key).filter((key) => key !== "more"),
-);
-const showMore = ref(false);
-const moreSubtitle = computed(() =>
-  user.value?.is_admin === true || user.value?.role === "PASTOR"
-    ? "Administração, pessoas e configurações ficam aqui."
-    : "Atalhos disponíveis para o seu perfil.",
-);
-const iconComponents: Record<RoleNavigationIcon, unknown> = {
-  book: BookOpen,
-  calendar: CalendarCheck,
-  church: Church,
-  clipboard: ClipboardList,
-  cog: Cog,
-  heart: Heart,
-  home: House,
-  messages: MessageCircle,
-  more: MoreHorizontal,
-  pastoral: HandHeart,
-  reports: BarChart3,
-  scale: CalendarDays,
-  team: Church,
-  user: User,
-  users: Users,
-};
-
-const isItemActive = (item: RoleNavigationItem) => {
-  if (item.key === "more") {
-    // O menu "Mais" repete atalhos que já estão na barra (Início, Escalas...):
-    // só destaca "Mais" quando nenhum item visível da barra já está ativo.
-    const primaryActive = navigationItems.value.some(
-      (entry) => entry.key !== "more" && isNavigationItemActive(entry, route.path),
-    );
-
-    return !primaryActive && moreItems.value.some((entry) => isNavigationItemActive(entry, route.path));
-  }
-
-  return isNavigationItemActive(item, route.path);
-};
-
-const handleNavClick = (item: RoleNavigationItem) => {
-  if (item.key === "more") {
-    showMore.value = true;
-    return;
-  }
-
-  router.push(item.route);
-};
-
-const handleMoreSelect = (route: string) => {
-  if (!route) return;
-
-  showMore.value = false;
-  router.push(route);
-};
+const tabs = computed(() => getPrimaryTabs(user.value));
+const ownerTab = computed(() => getOwnerTab(user.value, route.path));
 </script>
 
 <style scoped>

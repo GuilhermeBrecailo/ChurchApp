@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
@@ -52,21 +52,10 @@ const longFormOverlays = [
   content: readFileSync(resolve(root, relativePath), "utf8"),
 }));
 
-// O acesso rápido do Início deixou de abrir o menu "Mais" (055388b); só a
-// barra inferior usa o MoreOptionsOverlay.
-const moreOptionsSources = [
-  "app/components/layouts/bottomNavigation/index.vue",
-].map((relativePath) => ({
-  relativePath,
-  content: readFileSync(resolve(root, relativePath), "utf8"),
-}));
-const moreOptionsComponentPath = resolve(root, "app/components/layouts/MoreOptionsOverlay.vue");
-const moreOptionsComponent = existsSync(moreOptionsComponentPath)
-  ? readFileSync(moreOptionsComponentPath, "utf8")
-  : "";
+// O menu "Mais" (MoreOptionsOverlay) saiu no redesign da navegação: a barra
+// tem no máximo 5 abas e nada fica escondido num menu extra.
 const stableFilterOverlaySources = [
   "app/components/Ministery/SongPickerDialog.vue",
-  "app/components/layouts/MoreOptionsOverlay.vue",
 ].map((relativePath) => ({
   relativePath,
   content: readFileSync(resolve(root, relativePath), "utf8"),
@@ -158,11 +147,6 @@ const checks = [
     /\bscrollable\b/,
     content,
   ]),
-  [
-    "MoreOptionsOverlay existe como componente compartilhado",
-    /UtilsResponsiveOverlay/,
-    moreOptionsComponent,
-  ],
   ...stableFilterOverlaySources.map(({ relativePath, content }) => [
     `${relativePath} preserva altura durante filtros`,
     /height:\s*auto;/,
@@ -208,11 +192,6 @@ const checks = [
     /pdf-import-actions/,
     pdfImportDialog,
   ],
-  ...moreOptionsSources.map(({ relativePath, content }) => [
-    `${relativePath} usa MoreOptionsOverlay`,
-    /MoreOptionsOverlay/,
-    content,
-  ]),
   [
     "onboarding usa dots acionáveis",
     /<button[\s\S]*class="onboarding-dot"[\s\S]*aria-label=/,
