@@ -140,8 +140,29 @@ export class TaskAdapters {
       throw new DomainError("Tarefa nao informada");
     }
 
-    await this.context.assertCanManageDepartment(user, departmentId);
-    await this.getTaskFromCurrentChurch(taskId, departmentId, user.crunchId!);
+    // Quem gerencia o ministerio edita tudo. Quem recebeu a tarefa pode
+    // apenas concluir/reabrir a propria tarefa (mudar so o status).
+    let managerError: DomainError | null = null;
+    try {
+      await this.context.assertCanManageDepartment(user, departmentId);
+    } catch (error) {
+      if (!(error instanceof DomainError)) throw error;
+      managerError = error;
+    }
+
+    const task = await this.getTaskFromCurrentChurch(taskId, departmentId, user.crunchId!);
+
+    if (managerError) {
+      const changesOnlyStatus =
+        body.status !== undefined &&
+        Object.entries(body ?? {}).every(
+          ([key, value]) => key === "status" || value === undefined,
+        );
+
+      if (!changesOnlyStatus || !task.assigneeId || task.assigneeId !== user.id) {
+        throw managerError;
+      }
+    }
 
     if (body.assigneeId) {
       const assignee = await $prismaClient.user.findFirst({
