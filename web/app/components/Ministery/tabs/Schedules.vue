@@ -91,29 +91,6 @@
       </div>
     </template>
 
-    <MinisteryAssignmentsDialog
-      v-model="assignments.isOpen.value"
-      :is-dark="isDark"
-      :selected-schedule="assignments.schedule.value"
-      :member-options="assignments.memberOptions.value"
-      :assignment-form="assignments.form"
-      :assignment-role-options="roleOptions"
-      :is-saving-assignments="assignments.isSaving.value"
-      :draft-assignments="assignments.drafts.value"
-      :unavailable-member-ids="assignments.unavailableMemberIds.value"
-      :assignments-error="assignments.error.value"
-      :assignment-conflicts="assignments.conflicts.value"
-      :assignment-conflict-check-error="assignments.conflictCheckError.value"
-      :is-checking-assignment-conflicts="assignments.isCheckingConflicts.value"
-      :response-status-color="responseStatusColor"
-      :response-status-label="responseStatusLabel"
-      :attendance-status-label="attendanceStatusLabel"
-      @close="assignments.close"
-      @save="saveTeam"
-      @add-draft-assignment="assignments.addDraft"
-      @remove-draft-assignment="assignments.removeDraft"
-      @mark-attendance="assignments.markAttendance"
-    />
 
     <MinisterySongViewerDialog
       v-model="viewer.isOpen.value"
@@ -148,7 +125,7 @@
  * Aba Escalas: Próximas (a mais perto primeiro) e Anteriores recolhidas,
  * 10 de cada vez. Antes mostrava só 1 escala, na ordem em que foram criadas.
  */
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { CalendarDays, CalendarPlus, ChevronDown } from "lucide-vue-next";
 import {
   useDepartments,
@@ -159,10 +136,7 @@ import {
   type DepartmentSong,
 } from "../../../../composables/useDepartments";
 import { SONG_KEY_OPTIONS } from "../../../../composables/useSongChords";
-import {
-  useMinistrySchedules,
-  useScheduleAssignments,
-} from "../../../../composables/ministry/useMinistrySchedules";
+import { useMinistrySchedules } from "../../../../composables/ministry/useMinistrySchedules";
 import { useSongViewer } from "../../../../composables/ministry/useMinistrySongs";
 import { getDepartmentAssignmentRoleOptions } from "../../../utils/scaleSchedule";
 import { scheduleStatusInfo } from "../../../utils/scheduleStatus";
@@ -187,7 +161,6 @@ const toast = useAppToast();
 const { getDepartmentMembers } = useDepartments();
 const store = useMinistrySchedules();
 const people = ref<DepartmentMember[]>([]);
-const assignments = useScheduleAssignments(store, people);
 const viewer = useSongViewer();
 
 const showPast = ref(false);
@@ -225,11 +198,18 @@ const openMedia = (item: DepartmentResource | DepartmentSong) => {
   else if (item.url) window.open(item.url, "_blank", "noopener");
 };
 
-const openTeam = (schedule: DepartmentSchedule) => assignments.open(schedule);
+// "Montar equipe" abre o editor único de escala já na seção Equipe.
+const scheduleEditor = useScheduleEditor();
+const openTeam = (schedule: DepartmentSchedule) =>
+  scheduleEditor.open({ departmentId: props.department.id, scheduleId: schedule.id, startAt: "team" });
 
-const saveTeam = async () => {
-  if (await assignments.save()) toast.success("Equipe salva.");
-};
+// Equipe salva no editor (aqui ou em outra tela): recarrega a lista.
+watch(
+  () => scheduleEditor.lastSaved.value,
+  (saved) => {
+    if (saved) void store.load();
+  },
+);
 
 const remind = async (schedule: DepartmentSchedule) => {
   const result = await store.sendReminder(schedule);

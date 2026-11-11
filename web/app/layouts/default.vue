@@ -11,6 +11,7 @@
         </v-container>
       </LayoutsMain>
       <UtilsToastHost />
+      <ScheduleSheetHost />
     </v-locale-provider>
   </v-app>
 </template>

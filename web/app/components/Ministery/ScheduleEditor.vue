@@ -1,66 +1,69 @@
 <template>
-  <MinisteryScheduleFormDialog
-    v-model="editor.isOpen.value"
-    :is-dark="isDark"
-    :editing-schedule-id="editor.editingScheduleId.value"
-    :schedule-form="editor.form"
-    :department-type="editor.department.value?.type ?? ''"
-    :schedule-config="editor.department.value?.scheduleConfig ?? null"
-    :member-options="editor.memberOptions.value"
-    :song-options="editor.songOptions.value"
-    :resource-options="editor.resourceOptions.value"
-    :cult-options="editor.cultOptions.value"
-    :cult-options-error="editor.cultOptionsError.value"
-    :locked-cult-label="editor.lockedCultLabel.value"
-    :create-schedule-error="editor.error.value"
-    :is-creating-schedule="editor.isSaving.value"
-    @close="handleClose"
-    @submit="editor.save"
-    @cult-change="editor.handleCultChange"
-    @clear-cult="editor.clearCult"
-  />
+  <!-- O editor fica no layout (Schedule/SheetHost); aqui só fazemos a ponte. -->
+  <span v-if="false" />
 </template>
 
 <script setup lang="ts">
 /**
- * Editor de escala de um ministério, aberto de qualquer tela:
- *   editorRef.value.openCreate(department)            → nova escala
+ * Ponte do ministério para o editor único de escala (Schedule/Editor):
+ *   editorRef.value.openCreate(department)              → nova escala
  *   editorRef.value.openCreate(department, { cultoId }) → presa a um culto
- *   editorRef.value.openEdit(department, schedule)    → editar / montar equipe
- * Ponto único para trocar pelo editor único de escalas (Fase 3).
+ *   editorRef.value.openEdit(department, schedule)      → editar / montar equipe
+ * O mesmo editor abre em Escalas, no culto e aqui, com as mesmas regras.
  */
-import { watch } from "vue";
+import { ref, watch } from "vue";
 import type { DepartmentSchedule } from "../../../composables/useDepartments";
-import { useMinistryScheduleEditor } from "../../../composables/ministry/useMinistryScheduleEditor";
+
+type DepartmentRef = { id: string };
 
 const emit = defineEmits<{
   saved: [schedule: DepartmentSchedule, context: { created: boolean }];
   closed: [];
 }>();
 
-const { isDark } = useThemeMode();
-const toast = useAppToast();
-
-const editor = useMinistryScheduleEditor((schedule, context) => {
-  emit("saved", schedule, context);
-  if (!editor.isOpen.value) {
-    toast.success(context.created ? "Escala criada." : "Escala salva.");
-  }
-});
-
-const handleClose = () => {
-  editor.close();
-};
+const editor = useScheduleEditor();
+const schedules = useSchedules();
+const pendingCreate = ref(false);
+const isOpen = ref(false);
 
 watch(
-  () => editor.isOpen.value,
-  (open) => {
-    if (!open) emit("closed");
+  () => editor.lastSaved.value,
+  async (saved) => {
+    if (!saved || !isOpen.value) return;
+    const { data } = await schedules.get(saved.id, { force: true });
+    if (data) emit("saved", data as unknown as DepartmentSchedule, { created: pendingCreate.value });
   },
 );
 
-defineExpose({
-  openCreate: editor.openCreate,
-  openEdit: editor.openEdit,
-});
+watch(
+  () => editor.request.value,
+  (request) => {
+    if (!request && isOpen.value) {
+      isOpen.value = false;
+      emit("closed");
+    }
+  },
+);
+
+const openCreate = (department: DepartmentRef, options: { cultoId?: string } = {}) => {
+  pendingCreate.value = true;
+  isOpen.value = true;
+  editor.open({ departmentId: department.id, occurrenceId: options.cultoId });
+};
+
+const openEdit = (
+  department: DepartmentRef,
+  schedule: { id: string },
+  options: { team?: boolean } = {},
+) => {
+  pendingCreate.value = false;
+  isOpen.value = true;
+  editor.open({
+    departmentId: department.id,
+    scheduleId: schedule.id,
+    startAt: options.team ? "team" : undefined,
+  });
+};
+
+defineExpose({ openCreate, openEdit });
 </script>

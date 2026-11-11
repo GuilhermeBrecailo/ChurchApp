@@ -296,7 +296,7 @@ describe("ChurchDepartmentAdapters - escalas", () => {
       );
     });
 
-    it("notifica voluntarios ja atribuidos quando a escala muda", async () => {
+    it("não manda push quando só o título muda", async () => {
       const schedule = scheduleRow({ assignments: [{ userId: "vol-1" }] });
       mockPrismaClient.schedule.findFirst
         .mockResolvedValueOnce(schedule)
@@ -307,10 +307,125 @@ describe("ChurchDepartmentAdapters - escalas", () => {
         makeRequest({ params: { id: "schedule-1" }, body: { title: "Culto especial" } }),
       );
 
+      expect(mockSendToUsers).not.toHaveBeenCalled();
+      expect(mockPrismaClient.scheduleAssignment.updateMany).not.toHaveBeenCalled();
+    });
+
+    it("avisa 'Escala atualizada' quando muda o horário de chegada", async () => {
+      const schedule = scheduleRow({ arrivalAt: null, assignments: [{ userId: "vol-1" }] });
+      mockPrismaClient.schedule.findFirst
+        .mockResolvedValueOnce(schedule)
+        .mockResolvedValueOnce(schedule);
+      mockPrismaClient.schedule.update.mockResolvedValue(schedule);
+
+      await adapters.updateChurchSchedule(
+        makeRequest({ params: { id: "schedule-1" }, body: { arrivalTime: "18:30" } }),
+      );
+
+      expect(mockSendToUsers).toHaveBeenCalledTimes(1);
       expect(mockSendToUsers).toHaveBeenCalledWith(
         ["vol-1"],
-        expect.objectContaining({ type: "schedule-updated" }),
+        expect.objectContaining({ title: "Escala atualizada", type: "schedule-updated" }),
       );
+      expect(mockPrismaClient.scheduleAssignment.updateMany).not.toHaveBeenCalled();
+    });
+
+    it("quando a data muda, volta as respostas para Pendente e avisa 'Mudou a data' uma vez", async () => {
+      const before = scheduleRow({
+        assignments: [
+          { userId: "vol-1", confirmationStatus: "CONFIRMED" },
+          { userId: "vol-1", confirmationStatus: "CONFIRMED" },
+        ],
+      });
+      const after = scheduleRow({
+        date: new Date("2026-08-27T19:00:00.000"),
+        assignments: [
+          { userId: "vol-1", confirmationStatus: "PENDING" },
+          { userId: "vol-1", confirmationStatus: "PENDING" },
+        ],
+      });
+      mockPrismaClient.schedule.findFirst.mockResolvedValueOnce(before).mockResolvedValueOnce(after);
+      mockPrismaClient.schedule.update.mockResolvedValue(after);
+
+      await adapters.updateChurchSchedule(
+        makeRequest({ params: { id: "schedule-1" }, body: { date: "2026-08-27" } }),
+      );
+
+      expect(mockPrismaClient.scheduleAssignment.updateMany).toHaveBeenCalledWith({
+        where: { scheduleId: "schedule-1" },
+        data: { confirmationStatus: "PENDING", confirmedAt: null, declineReason: null, viewedAt: null },
+      });
+      expect(mockSendToUsers).toHaveBeenCalledTimes(1);
+      expect(mockSendToUsers).toHaveBeenCalledWith(
+        ["vol-1"],
+        expect.objectContaining({
+          title: "Mudou a data da escala",
+          body: expect.stringContaining("27/08 às 19:00"),
+        }),
+      );
+    });
+
+    it("salva a equipe junto com a escala: um push por pessoa, sem 'Escala atualizada' duplicado", async () => {
+      const before = scheduleRow({ assignments: [{ id: "a-1", userId: "vol-1", role: "Vocal" }] });
+      const after = scheduleRow({
+        date: new Date("2026-08-27T19:00:00.000"),
+        assignments: [
+          { id: "a-1", userId: "vol-1", role: "Vocal" },
+          { id: "a-2", userId: "vol-2", role: "Baixo" },
+        ],
+      });
+      mockPrismaClient.schedule.findFirst.mockResolvedValueOnce(before).mockResolvedValueOnce(after);
+      mockPrismaClient.schedule.update.mockResolvedValue(after);
+      mockPrismaClient.scheduleAssignment.findMany.mockResolvedValue([
+        { id: "a-1", userId: "vol-1", role: "Vocal" },
+      ]);
+      mockPrismaClient.user.findMany.mockResolvedValue([{ id: "vol-1" }, { id: "vol-2" }]);
+      mockPrismaClient.userDepartmentMembership.findMany.mockResolvedValue([
+        { userId: "vol-1" },
+        { userId: "vol-2" },
+      ]);
+      mockPrismaClient.$transaction.mockResolvedValue(undefined);
+
+      await adapters.updateChurchSchedule(
+        makeRequest({
+          params: { id: "schedule-1" },
+          body: {
+            date: "2026-08-27",
+            assignments: [
+              { id: "a-1", userId: "vol-1", role: "Vocal" },
+              { userId: "vol-2", role: "Baixo" },
+            ],
+          },
+        }),
+      );
+
+      const recipients = mockSendToUsers.mock.calls.flatMap((call) => call[0]);
+      expect(recipients.sort()).toEqual(["vol-1", "vol-2"]);
+      expect(mockSendToUsers).toHaveBeenCalledWith(
+        ["vol-2"],
+        expect.objectContaining({ type: "schedule-assigned", body: expect.stringContaining("como Baixo") }),
+      );
+      expect(mockSendToUsers).toHaveBeenCalledWith(
+        ["vol-1"],
+        expect.objectContaining({ title: "Mudou a data da escala" }),
+      );
+    });
+
+    it("não grava nada quando a equipe enviada tem alguém de fora do ministério", async () => {
+      mockPrismaClient.schedule.findFirst.mockResolvedValue(scheduleRow());
+      mockPrismaClient.scheduleAssignment.findMany.mockResolvedValue([]);
+      mockPrismaClient.user.findMany.mockResolvedValue([{ id: "outsider" }]);
+      mockPrismaClient.userDepartmentMembership.findMany.mockResolvedValue([]);
+
+      await expect(
+        adapters.updateChurchSchedule(
+          makeRequest({
+            params: { id: "schedule-1" },
+            body: { date: "2026-08-27", assignments: [{ userId: "outsider", role: "Baixo" }] },
+          }),
+        ),
+      ).rejects.toThrow("Um ou mais voluntários não pertencem a este ministério");
+      expect(mockPrismaClient.schedule.update).not.toHaveBeenCalled();
     });
 
     it("rejeita titulo vazio quando enviado", async () => {
@@ -420,8 +535,11 @@ describe("ChurchDepartmentAdapters - escalas", () => {
       );
     });
 
-    it("agrupa funções diferentes da mesma pessoa numa linha e envia uma notificação", async () => {
-      prepareAssignmentSave([], [{ id: "new-vol-1", userId: "vol-1", role: "Teclado · Vocal" }]);
+    it("guarda funções diferentes da mesma pessoa em linhas separadas e envia uma notificação", async () => {
+      prepareAssignmentSave([], [
+        { id: "new-teclado", userId: "vol-1", role: "Teclado" },
+        { id: "new-vocal", userId: "vol-1", role: "Vocal" },
+      ]);
 
       await adapters.updateChurchScheduleAssignments(
         makeRequest({
@@ -435,15 +553,35 @@ describe("ChurchDepartmentAdapters - escalas", () => {
         }),
       );
 
-      expect(mockPrismaClient.scheduleAssignment.create).toHaveBeenCalledTimes(1);
+      expect(mockPrismaClient.scheduleAssignment.create).toHaveBeenCalledTimes(2);
       expect(mockPrismaClient.scheduleAssignment.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ role: "Teclado · Vocal" }) }),
+        expect.objectContaining({ data: expect.objectContaining({ role: "Teclado" }) }),
+      );
+      expect(mockPrismaClient.scheduleAssignment.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ role: "Vocal" }) }),
       );
       expect(mockSendToUsers).toHaveBeenCalledTimes(1);
       expect(mockSendToUsers).toHaveBeenCalledWith(
         ["vol-1"],
-        expect.objectContaining({ body: expect.stringContaining("como Teclado · Vocal") }),
+        expect.objectContaining({ body: expect.stringContaining("como Teclado e Vocal") }),
       );
+    });
+
+    it("separa o formato antigo 'Teclado · Vocal' em duas linhas", async () => {
+      prepareAssignmentSave([], [
+        { id: "n-1", userId: "vol-1", role: "Teclado" },
+        { id: "n-2", userId: "vol-1", role: "Vocal" },
+      ]);
+
+      await adapters.updateChurchScheduleAssignments(
+        makeRequest({
+          params: { id: "schedule-1" },
+          body: { assignments: [{ userId: "vol-1", role: "Teclado · Vocal" }] },
+        }),
+      );
+
+      const roles = mockPrismaClient.scheduleAssignment.create.mock.calls.map((call) => call[0].data.role);
+      expect(roles).toEqual(["Teclado", "Vocal"]);
     });
 
     it("remove uma função pela identidade da linha e mantém confirmação e presença da outra", async () => {
@@ -535,16 +673,20 @@ describe("ChurchDepartmentAdapters - escalas", () => {
         }),
       );
 
-      // Uma linha por pessoa: a primeira linha existente de vol-1 é reaproveitada
-      // com as funções agrupadas, e a outra linha antiga é apagada.
+      // Uma linha por função: cada função reaproveita a linha antiga da mesma
+      // pessoa na mesma função (mantém resposta e presença).
       expect(mockPrismaClient.scheduleAssignment.create).not.toHaveBeenCalled();
-      expect(mockPrismaClient.scheduleAssignment.update).toHaveBeenCalledTimes(1);
+      expect(mockPrismaClient.scheduleAssignment.update).toHaveBeenCalledTimes(2);
+      expect(mockPrismaClient.scheduleAssignment.update).toHaveBeenCalledWith({
+        where: { id: "assign-vocal" },
+        data: { role: "vocal" },
+      });
       expect(mockPrismaClient.scheduleAssignment.update).toHaveBeenCalledWith({
         where: { id: "assign-teclado" },
-        data: { role: "vocal · TECLADO" },
+        data: { role: "TECLADO" },
       });
       expect(mockPrismaClient.scheduleAssignment.deleteMany).toHaveBeenCalledWith({
-        where: { scheduleId: "schedule-1", id: { notIn: ["assign-teclado"] } },
+        where: { scheduleId: "schedule-1", id: { notIn: ["assign-vocal", "assign-teclado"] } },
       });
     });
 
@@ -594,7 +736,7 @@ describe("ChurchDepartmentAdapters - escalas", () => {
       ).rejects.toThrow("Um ou mais voluntários não pertencem a este ministério");
     });
 
-    it("notifica separadamente quem entrou, quem saiu e quem ficou", async () => {
+    it("notifica quem entrou e quem saiu, sem repetir push para quem ficou", async () => {
       mockPrismaClient.schedule.findFirst
         .mockResolvedValueOnce(scheduleRow())
         .mockResolvedValueOnce(
@@ -624,9 +766,8 @@ describe("ChurchDepartmentAdapters - escalas", () => {
       );
 
       const calledTypes = mockSendToUsers.mock.calls.map((call) => call[1].type);
-      expect(calledTypes).toEqual(
-        expect.arrayContaining(["schedule-assigned", "schedule-removed", "schedule-updated"]),
-      );
+      expect(calledTypes.sort()).toEqual(["schedule-assigned", "schedule-removed"]);
+      expect(mockSendToUsers).not.toHaveBeenCalledWith(["vol-1"], expect.anything());
     });
   });
 
@@ -663,10 +804,10 @@ describe("ChurchDepartmentAdapters - escalas", () => {
       // Confirmar vale para todas as linhas da pessoa na escala (updateMany)
       // e a resposta é relida em seguida.
       mockPrismaClient.scheduleAssignment.updateMany.mockResolvedValue({ count: 1 });
-      mockPrismaClient.scheduleAssignment.findFirstOrThrow.mockResolvedValue({
-        id: "assign-1",
-        confirmationStatus: "CONFIRMED",
-      });
+      mockPrismaClient.scheduleAssignment.findMany.mockResolvedValue([
+        { id: "assign-1", role: "Vocal", confirmationStatus: "CONFIRMED" },
+        { id: "assign-2", role: "Teclado", confirmationStatus: "CONFIRMED" },
+      ]);
       mockPrismaClient.user.findMany.mockResolvedValue([]);
       mockPrismaClient.user.findUnique.mockResolvedValue({
         id: "user-1",
@@ -681,6 +822,9 @@ describe("ChurchDepartmentAdapters - escalas", () => {
       );
 
       expect(result.confirmationStatus).toBe("CONFIRMED");
+      // Devolve todas as linhas da pessoa: quem tem duas funções não fica com
+      // uma linha desatualizada na tela.
+      expect(result.assignments.map((row: { id: string }) => row.id)).toEqual(["assign-1", "assign-2"]);
       expect(mockPrismaClient.scheduleAssignment.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { scheduleId: "schedule-1", userId: "user-1" },
@@ -697,13 +841,38 @@ describe("ChurchDepartmentAdapters - escalas", () => {
         viewedAt: null,
       });
       mockPrismaClient.scheduleAssignment.updateMany.mockResolvedValue({ count: 1 });
-      mockPrismaClient.scheduleAssignment.findFirstOrThrow.mockResolvedValue({ id: "assign-1" });
+      mockPrismaClient.scheduleAssignment.findMany.mockResolvedValue([{ id: "assign-1" }]);
 
       await adapters.updateMyChurchScheduleAssignment(
         makeRequest({ params: { id: "schedule-1" }, body: { action: "VIEWED" } }),
       );
 
       expect(mockSendToUsers).not.toHaveBeenCalled();
+    });
+
+    it("pedir troca guarda o motivo", async () => {
+      mockPrismaClient.schedule.findFirst.mockResolvedValue(scheduleRow());
+      mockPrismaClient.scheduleAssignment.findFirst.mockResolvedValue({ id: "assign-1", viewedAt: null });
+      mockPrismaClient.scheduleAssignment.updateMany.mockResolvedValue({ count: 1 });
+      mockPrismaClient.scheduleAssignment.findMany.mockResolvedValue([{ id: "assign-1" }]);
+      mockPrismaClient.user.findMany.mockResolvedValue([]);
+
+      await adapters.updateMyChurchScheduleAssignment(
+        makeRequest({
+          params: { id: "schedule-1" },
+          body: { action: "SWAP_REQUESTED", declineReason: " Viagem " },
+        }),
+      );
+
+      expect(mockPrismaClient.scheduleAssignment.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ confirmationStatus: "SWAP_REQUESTED", declineReason: "Viagem" }),
+        }),
+      );
+      expect(mockSendToUsers).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ body: expect.stringContaining("pediu troca: Viagem") }),
+      );
     });
   });
 

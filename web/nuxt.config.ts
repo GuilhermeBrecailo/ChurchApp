@@ -156,6 +156,8 @@ export default defineNuxtConfig({
     "/pastoral/visitantes": { redirect: "/pessoas?filtro=visitantes" },
     // Gestão de ministérios foi para a própria lista (/ministery).
     "/admin/ministerios": { redirect: "/ministery" },
+    // A agenda de cultos virou a aba "Cultos" de Escalas (/cultos/[id] continua).
+    "/cultos": { redirect: "/scale?aba=cultos" },
   },
   nitro: {
     compressPublicAssets: true,

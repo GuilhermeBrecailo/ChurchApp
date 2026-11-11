@@ -8,6 +8,7 @@ import { CurrentUser } from "./types";
 import { DepartmentContext } from "./context";
 import { createScheduleChecklistSnapshot } from "./scheduleChecklist";
 import { resolveDepartmentScheduleConfig } from "../../../application/Services/Department/DepartmentScheduleConfig";
+import { hasPermission } from "../../../application/Services/Auth/AuthorizationService";
 
 const scheduleSelect = {
   id: true,
@@ -82,8 +83,100 @@ const scheduleSelect = {
   },
 };
 
+type ScheduleRow = Prisma.ScheduleGetPayload<{ select: typeof scheduleSelect }>;
+
+type AssignmentInput = { id?: unknown; userId?: unknown; role?: unknown };
+
+type NormalizedAssignment = { id?: string; userId: string; role: string };
+
+type PlannedAssignment = NormalizedAssignment & { assignmentId?: string };
+
+type AssignmentChanges = {
+  newlyAssignedUserIds: string[];
+  removedUserIds: string[];
+  retainedUserIds: string[];
+  rolesByUser: Map<string, string[]>;
+};
+
+// Campos pesados da musica (letra e cifras) ficam fora das listas: a folha da
+// escala busca a escala inteira por id quando abre.
+const HEAVY_SONG_METADATA_KEYS = ["lyrics", "chords", "keyboardChords"];
+
+export const SCHEDULE_LIST_DEFAULT_LIMIT = 30;
+export const SCHEDULE_LIST_MAX_LIMIT = 100;
+
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+const sameInstant = (a?: Date | null, b?: Date | null) =>
+  (a ? a.getTime() : null) === (b ? b.getTime() : null);
+
+const formatRoles = (roles: string[]) =>
+  roles.length <= 1
+    ? roles[0] ?? ""
+    : `${roles.slice(0, -1).join(", ")} e ${roles[roles.length - 1]}`;
+
 export class ScheduleAdapters {
   constructor(private context: DepartmentContext) {}
+
+  private scheduleCapabilities(
+    user: CurrentUser,
+    department: { id: string; leaderId: string },
+  ) {
+    const isDepartmentLeader = department.leaderId === user.id;
+    const on = (permission: "SCHEDULE_EDIT" | "SCHEDULE_DELETE" | "MINISTRY_NOTIFY") =>
+      hasPermission(user, permission, { departmentId: department.id, isDepartmentLeader });
+
+    return {
+      canManage: on("SCHEDULE_EDIT"),
+      canDelete: on("SCHEDULE_DELETE"),
+      canNotify: on("MINISTRY_NOTIFY"),
+    };
+  }
+
+  private toLightSchedule<T extends ScheduleRow>(schedule: T): T {
+    return {
+      ...schedule,
+      mediaItems: schedule.mediaItems.map((item) => {
+        const metadata = item.mediaItem.metadata;
+        if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return item;
+
+        const light = Object.fromEntries(
+          Object.entries(metadata as Record<string, unknown>).filter(
+            ([key]) => !HEAVY_SONG_METADATA_KEYS.includes(key),
+          ),
+        );
+        return { ...item, mediaItem: { ...item.mediaItem, metadata: light } };
+      }),
+    };
+  }
+
+  private parseListDate(raw: unknown, kind: "from" | "to") {
+    if (typeof raw !== "string" || !raw.trim()) return undefined;
+    const value = raw.trim();
+
+    if (DATE_ONLY.test(value)) {
+      const date = new Date(`${value}T00:00:00.000`);
+      if (Number.isNaN(date.getTime())) throw new DomainError("Período inválido");
+      // "to" com só o dia inclui o dia inteiro.
+      if (kind === "to") date.setDate(date.getDate() + 1);
+      return date;
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) throw new DomainError("Período inválido");
+    return date;
+  }
+
+  private async getManagedDepartmentIds(user: CurrentUser) {
+    const departments = await $prismaClient.department.findMany({
+      where: { crunchId: user.crunchId! },
+      select: { id: true, leaderId: true },
+    });
+
+    return departments
+      .filter((department) => this.scheduleCapabilities(user, department).canManage)
+      .map((department) => department.id);
+  }
 
   private async getScheduleFromCurrentChurch(scheduleId: string, crunchId: string) {
     const schedule = await $prismaClient.schedule.findFirst({
@@ -236,18 +329,105 @@ export class ScheduleAdapters {
 
   async getChurchSchedules(request: FastifyRequest) {
     const user = await this.context.getCurrentUser(request);
+    const query = (request.query ?? {}) as Record<string, unknown>;
+    const usesListParams = ["scope", "from", "to", "cursor", "limit", "departmentId", "order"].some(
+      (key) => query[key] !== undefined && query[key] !== "",
+    );
 
-    return await $prismaClient.schedule.findMany({
-      where: {
-        department: {
-          crunchId: user.crunchId!,
+    // Sem parâmetros: resposta antiga (array com o histórico todo), usada
+    // pelo Início, Relatórios e telas que ainda não migraram.
+    if (!usesListParams) {
+      return await $prismaClient.schedule.findMany({
+        where: {
+          department: {
+            crunchId: user.crunchId!,
+          },
         },
-      },
-      orderBy: {
-        date: "desc",
-      },
+        orderBy: {
+          date: "desc",
+        },
+        select: scheduleSelect,
+      });
+    }
+
+    return await this.listChurchSchedules(user, query);
+  }
+
+  private async listChurchSchedules(user: CurrentUser, query: Record<string, unknown>) {
+    const scope = typeof query.scope === "string" && query.scope ? query.scope : "all";
+    if (!["mine", "managed", "all"].includes(scope)) {
+      throw new DomainError("Visão de escalas inválida");
+    }
+
+    const from = this.parseListDate(query.from, "from");
+    const to = this.parseListDate(query.to, "to");
+    const order: "asc" | "desc" =
+      query.order === "asc" || query.order === "desc"
+        ? query.order
+        : to && !from
+          ? "desc"
+          : "asc";
+    const parsedLimit = Number(query.limit);
+    const limit = Number.isFinite(parsedLimit) && parsedLimit > 0
+      ? Math.min(Math.floor(parsedLimit), SCHEDULE_LIST_MAX_LIMIT)
+      : SCHEDULE_LIST_DEFAULT_LIMIT;
+    const cursor = typeof query.cursor === "string" && query.cursor.trim() ? query.cursor.trim() : undefined;
+    const departmentId =
+      typeof query.departmentId === "string" && query.departmentId.trim()
+        ? query.departmentId.trim()
+        : undefined;
+
+    const where: Prisma.ScheduleWhereInput = {
+      department: { crunchId: user.crunchId! },
+    };
+
+    if (from || to) {
+      where.date = { ...(from ? { gte: from } : {}), ...(to ? { lt: to } : {}) };
+    }
+
+    if (scope === "mine") {
+      where.assignments = { some: { userId: user.id } };
+    }
+
+    const departmentFilters: string[][] = [];
+    if (departmentId) departmentFilters.push([departmentId]);
+    if (scope === "managed" && !this.context.isChurchWideManager(user)) {
+      departmentFilters.push(await this.getManagedDepartmentIds(user));
+    }
+    if (departmentFilters.length) {
+      const allowed = departmentFilters.reduce((acc, ids) => acc.filter((id) => ids.includes(id)));
+      where.departmentId = { in: allowed };
+    }
+
+    const rows = await $prismaClient.schedule.findMany({
+      where,
+      orderBy: [{ date: order }, { id: order }],
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       select: scheduleSelect,
     });
+
+    const page = rows.slice(0, limit);
+
+    return {
+      items: page.map((schedule) => ({
+        ...this.toLightSchedule(schedule),
+        ...this.scheduleCapabilities(user, schedule.department),
+      })),
+      nextCursor: rows.length > limit ? page[page.length - 1]?.id ?? null : null,
+    };
+  }
+
+  async getChurchScheduleById(request: FastifyRequest) {
+    const user = await this.context.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+
+    if (!id) {
+      throw new DomainError("Escala não informada");
+    }
+
+    const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    return { ...schedule, ...this.scheduleCapabilities(user, schedule.department) };
   }
 
   async createChurchDepartmentSchedule(request: FastifyRequest) {
@@ -290,6 +470,7 @@ export class ScheduleAdapters {
       arrivalTime?: string | null;
       serviceOccurrenceId?: string | null;
       isCommunionService?: boolean;
+      assignments?: unknown;
     };
 
     if (!body.title?.trim()) {
@@ -355,6 +536,16 @@ export class ScheduleAdapters {
     await this.assertMediaItemsFromDepartment(songIds, departmentId, "MUSIC");
     await this.assertMediaItemsFromDepartment(resourceIds, departmentId, "RESOURCE");
 
+    // Equipe junto com a escala: um salvamento, um push por pessoa. Valida
+    // tudo antes de criar para não sobrar escala pela metade.
+    const normalizedAssignments = this.normalizeAssignmentInputs(body.assignments);
+    const plannedAssignments = this.planAssignments(normalizedAssignments, []);
+    await this.assertAssignableUsers(
+      [...new Set(normalizedAssignments.map((assignment) => assignment.userId))],
+      user.crunchId!,
+      { id: departmentId, leaderId: department.leaderId },
+    );
+
     const createdSchedule = await $prismaClient.schedule.create({
       data: {
         id: crypto.randomUUID(),
@@ -382,7 +573,18 @@ export class ScheduleAdapters {
       select: scheduleSelect,
     });
 
-    return createdSchedule;
+    if (plannedAssignments.length === 0) {
+      return createdSchedule;
+    }
+
+    const changes = await this.writeAssignments(createdSchedule.id, plannedAssignments, []);
+    const scheduleWithTeam = await this.getScheduleFromCurrentChurch(
+      createdSchedule.id,
+      user.crunchId!,
+    );
+    await this.notifyAssignmentChanges(scheduleWithTeam, changes);
+
+    return scheduleWithTeam;
   }
 
   async updateChurchSchedule(request: FastifyRequest) {
@@ -402,6 +604,7 @@ export class ScheduleAdapters {
       arrivalTime?: string | null;
       serviceOccurrenceId?: string | null;
       isCommunionService?: boolean;
+      assignments?: unknown;
     };
 
     if (!id) {
@@ -418,12 +621,37 @@ export class ScheduleAdapters {
       "Apenas pastores, admins ou cargos com permissao podem editar escalas deste ministerio",
     );
 
+    let targetDepartmentLeaderId = schedule.department.leaderId;
     if (targetDepartmentId !== schedule.departmentId) {
-      await this.context.assertDepartmentPermission(
+      const targetDepartment = await this.context.assertDepartmentPermission(
         user,
         targetDepartmentId,
         "SCHEDULE_EDIT",
         "Apenas pastores, admins ou cargos com permissao podem editar escalas deste ministerio",
+      );
+      targetDepartmentLeaderId = targetDepartment.leaderId;
+    }
+
+    // Equipe junto com a escala (opcional): valida antes de gravar qualquer
+    // coisa, para "Salvar e avisar a equipe" ser uma chamada só.
+    const hasAssignments = body.assignments !== undefined;
+    const normalizedAssignments = hasAssignments
+      ? this.normalizeAssignmentInputs(body.assignments)
+      : [];
+    const previousAssignments = hasAssignments
+      ? await $prismaClient.scheduleAssignment.findMany({
+          where: { scheduleId: id },
+          select: { id: true, userId: true, role: true },
+        })
+      : [];
+    const plannedAssignments = hasAssignments
+      ? this.planAssignments(normalizedAssignments, previousAssignments)
+      : [];
+    if (hasAssignments) {
+      await this.assertAssignableUsers(
+        [...new Set(normalizedAssignments.map((assignment) => assignment.userId))],
+        user.crunchId!,
+        { id: targetDepartmentId, leaderId: targetDepartmentLeaderId },
       );
     }
 
@@ -585,21 +813,48 @@ export class ScheduleAdapters {
       }
     }
 
-    const updatedSchedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
-    const assignedUserIds =
-      updatedSchedule.assignments?.map((assignment) => assignment.userId) || [];
+    const dateChanged = data.date instanceof Date && !sameInstant(data.date, schedule.date);
+    const detailsChanged =
+      (data.arrivalAt !== undefined &&
+        !sameInstant(data.arrivalAt as Date | null, schedule.arrivalAt)) ||
+      (data.rehearsalAt !== undefined &&
+        !sameInstant(data.rehearsalAt as Date | null, schedule.rehearsalAt)) ||
+      (data.rehearsalNotes !== undefined &&
+        (data.rehearsalNotes ?? null) !== (schedule.rehearsalNotes ?? null));
 
-    if (assignedUserIds.length > 0) {
-      await pushNotificationService.sendToUsers(assignedUserIds, {
-        title: "Escala atualizada",
-        body: `${updatedSchedule.department.name} - ${updatedSchedule.description}`,
-        url: `/scale?schedule=${updatedSchedule.id}`,
-        type: "schedule-updated",
-        scheduleId: updatedSchedule.id,
+    const changes = hasAssignments
+      ? await this.writeAssignments(id, plannedAssignments, previousAssignments)
+      : null;
+
+    // Decisão 7: se a data ou o horário mudou, as respostas voltam a
+    // "Pendente" — quem confirmou para o dia antigo precisa confirmar de novo.
+    if (dateChanged) {
+      await $prismaClient.scheduleAssignment.updateMany({
+        where: { scheduleId: id },
+        data: {
+          confirmationStatus: "PENDING",
+          confirmedAt: null,
+          declineReason: null,
+          viewedAt: null,
+        },
       });
     }
 
-    return updatedSchedule;
+    const updatedSchedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    const retainedUserIds = changes
+      ? changes.retainedUserIds
+      : [...new Set(updatedSchedule.assignments.map((assignment) => assignment.userId))];
+
+    await Promise.all([
+      changes ? this.notifyAssignmentChanges(updatedSchedule, changes) : Promise.resolve(),
+      this.notifyRetainedVolunteers(
+        updatedSchedule,
+        retainedUserIds,
+        dateChanged ? "date" : detailsChanged ? "details" : "none",
+      ),
+    ]);
+
+    return { ...updatedSchedule, ...this.scheduleCapabilities(user, updatedSchedule.department) };
   }
 
   async sendChurchScheduleReminder(request: FastifyRequest) {
@@ -616,11 +871,28 @@ export class ScheduleAdapters {
     const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
     await this.context.assertCanSendScheduleNotifications(user, schedule.departmentId);
 
-    const assignedUserIds =
-      schedule.assignments?.map((assignment) => assignment.userId) || [];
+    const body = (request.body ?? {}) as { onlyPending?: unknown };
+    const onlyPending = body.onlyPending === true;
+    // "Lembrar quem não respondeu": só quem tem todas as linhas pendentes.
+    const answeredUserIds = new Set(
+      (schedule.assignments ?? [])
+        .filter((assignment) => (assignment.confirmationStatus || "PENDING") !== "PENDING")
+        .map((assignment) => assignment.userId),
+    );
+    const assignedUserIds = [
+      ...new Set(
+        (schedule.assignments ?? [])
+          .map((assignment) => assignment.userId)
+          .filter((userId) => !onlyPending || !answeredUserIds.has(userId)),
+      ),
+    ];
 
     if (assignedUserIds.length === 0) {
-      throw new DomainError("Nao ha voluntarios nesta escala para notificar");
+      throw new DomainError(
+        onlyPending
+          ? "Todos da equipe já responderam"
+          : "Nao ha voluntarios nesta escala para notificar",
+      );
     }
 
     const rehearsalText = schedule.rehearsalAt
@@ -692,177 +964,149 @@ export class ScheduleAdapters {
     return { success: true };
   }
 
-  async updateChurchScheduleAssignments(request: FastifyRequest) {
-    const user = await this.context.getCurrentUser(request);
-    const { id } = request.params as { id?: string };
-    const body = request.body as {
-      assignments?: {
-        id?: string;
-        userId?: string;
-        role?: string;
-      }[];
-    };
-
-    if (!id) {
-      throw new DomainError("Escala não informada");
-    }
-
-    const assignments = body.assignments ?? [];
-
-    if (!Array.isArray(assignments)) {
+  // Cada função é uma linha. "Teclado · Vocal" (formato antigo, de quando a
+  // pessoa tinha uma linha só) vira duas linhas; a mesma função repetida para
+  // a mesma pessoa (ignorando espaços e caixa) vira uma.
+  private normalizeAssignmentInputs(raw: unknown): NormalizedAssignment[] {
+    if (raw === undefined || raw === null) return [];
+    if (!Array.isArray(raw)) {
       throw new DomainError("Voluntários inválidos");
     }
 
-    const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
-    await this.context.assertDepartmentPermission(
-      user,
-      schedule.departmentId,
-      "SCHEDULE_EDIT",
-      "Apenas pastores, admins ou cargos com permissao podem editar escalas deste ministerio",
-    );
-
-    const normalizedAssignmentsByUser = new Map<string, {
-      id: string | undefined;
-      userId: string;
-      role: string;
-    }>();
-    for (const assignment of assignments) {
-      const userId = assignment.userId?.trim();
+    const byKey = new Map<string, NormalizedAssignment>();
+    for (const item of raw as AssignmentInput[]) {
+      const userId = typeof item?.userId === "string" ? item.userId.trim() : "";
       if (!userId) continue;
 
-      const role = assignment.role?.trim() || "Voluntário";
-      const existing = normalizedAssignmentsByUser.get(userId);
-      if (!existing) {
-        normalizedAssignmentsByUser.set(userId, {
-          id: assignment.id?.trim() || undefined,
-          userId,
-          role,
-        });
-        continue;
-      }
-
-      const roles = [...existing.role.split(/\s*·\s*/), ...role.split(/\s*·\s*/)]
-        .map((item) => item.trim())
+      const id = typeof item.id === "string" && item.id.trim() ? item.id.trim() : undefined;
+      const roles = (typeof item.role === "string" ? item.role : "")
+        .split(/\s*·\s*/)
+        .map((role) => role.trim())
         .filter(Boolean);
-      const seenRoles = new Set<string>();
-      existing.role = roles.filter((item) => {
-        const normalized = item.toLocaleLowerCase("pt-BR");
-        if (seenRoles.has(normalized)) return false;
-        seenRoles.add(normalized);
-        return true;
-      }).join(" · ") || "Voluntário";
-      existing.id ||= assignment.id?.trim() || undefined;
-    }
 
-    const normalizedAssignments = [...normalizedAssignmentsByUser.values()];
-
-    const uniqueUserIds = [...new Set(normalizedAssignments.map((item) => item.userId))];
-
-    if (uniqueUserIds.length > 0) {
-      const users = await $prismaClient.user.findMany({
-        where: {
-          id: {
-            in: uniqueUserIds,
-          },
-          crunchId: user.crunchId!,
-        },
-        select: {
-          id: true,
-        },
+      (roles.length ? roles : ["Voluntário"]).forEach((role, index) => {
+        const key = `${userId}\u0000${role.toLocaleLowerCase("pt-BR")}`;
+        const rowId = index === 0 ? id : undefined;
+        const existing = byKey.get(key);
+        if (existing) {
+          existing.id ||= rowId;
+          return;
+        }
+        byKey.set(key, { id: rowId, userId, role });
       });
-
-      if (users.length !== uniqueUserIds.length) {
-        throw new DomainError("Um ou mais voluntários não pertencem a esta igreja");
-      }
     }
 
-    const previousAssignments = await $prismaClient.scheduleAssignment.findMany({
+    return [...byKey.values()];
+  }
+
+  private async assertAssignableUsers(
+    userIds: string[],
+    crunchId: string,
+    department: { id: string; leaderId: string },
+  ) {
+    if (userIds.length === 0) return;
+
+    const users = await $prismaClient.user.findMany({
       where: {
-        scheduleId: id,
+        id: {
+          in: userIds,
+        },
+        crunchId,
       },
       select: {
         id: true,
-        userId: true,
-        role: true,
       },
     });
 
-    const previousAssignmentById = new Map(
-      previousAssignments.map((assignment) => [assignment.id, assignment]),
-    );
-    const usedAssignmentIds = new Set<string>();
-
-    for (const assignment of normalizedAssignments) {
-      if (!assignment.id) continue;
-
-      const previousAssignment = previousAssignmentById.get(assignment.id);
-      if (!previousAssignment || previousAssignment.userId !== assignment.userId) {
-        throw new DomainError("Atribuição inválida para esta escala");
-      }
-      if (usedAssignmentIds.has(assignment.id)) {
-        throw new DomainError("A atribuição foi informada mais de uma vez");
-      }
-
-      usedAssignmentIds.add(assignment.id);
+    if (users.length !== userIds.length) {
+      throw new DomainError("Um ou mais voluntários não pertencem a esta igreja");
     }
 
     const departmentMemberships = await $prismaClient.userDepartmentMembership.findMany({
       where: {
-        departmentId: schedule.departmentId,
-        userId: { in: uniqueUserIds },
+        departmentId: department.id,
+        userId: { in: userIds },
       },
       select: { userId: true },
     });
     const departmentMemberIds = new Set([
-      schedule.department.leaderId,
+      department.leaderId,
       ...departmentMemberships.map((membership) => membership.userId),
     ]);
 
-    if (uniqueUserIds.some((userId) => !departmentMemberIds.has(userId))) {
+    if (userIds.some((userId) => !departmentMemberIds.has(userId))) {
       throw new DomainError("Um ou mais voluntários não pertencem a este ministério");
     }
+  }
 
-    const previousAssignmentsByUser = new Map<string, typeof previousAssignments>();
-    for (const assignment of previousAssignments) {
-      const matchingAssignments = previousAssignmentsByUser.get(assignment.userId) ?? [];
-      matchingAssignments.push(assignment);
-      previousAssignmentsByUser.set(assignment.userId, matchingAssignments);
+  private planAssignments(
+    normalized: NormalizedAssignment[],
+    previous: { id: string; userId: string; role: string }[],
+  ): PlannedAssignment[] {
+    const previousById = new Map(previous.map((assignment) => [assignment.id, assignment]));
+    const used = new Set<string>();
+
+    for (const assignment of normalized) {
+      if (!assignment.id) continue;
+
+      const previousAssignment = previousById.get(assignment.id);
+      if (!previousAssignment || previousAssignment.userId !== assignment.userId) {
+        throw new DomainError("Atribuição inválida para esta escala");
+      }
+      if (used.has(assignment.id)) {
+        throw new DomainError("A atribuição foi informada mais de uma vez");
+      }
+      used.add(assignment.id);
     }
 
-    const assignmentsWithIds = normalizedAssignments.map((assignment) => {
+    const sameRole = (a: string, b: string) =>
+      a.trim().toLocaleLowerCase("pt-BR") === b.trim().toLocaleLowerCase("pt-BR");
+
+    // Primeiro reaproveita a linha da mesma pessoa na mesma função (mantém
+    // resposta e presença); depois qualquer linha livre da mesma pessoa.
+    const withRoleMatch: PlannedAssignment[] = normalized.map((assignment) => {
       if (assignment.id) return { ...assignment, assignmentId: assignment.id };
-
-      const previousAssignment = previousAssignmentsByUser
-        .get(assignment.userId)
-        ?.find((candidate) => !usedAssignmentIds.has(candidate.id));
-
-      if (!previousAssignment) return { ...assignment, assignmentId: undefined };
-
-      usedAssignmentIds.add(previousAssignment.id);
-      return { ...assignment, assignmentId: previousAssignment.id };
+      const match = previous.find(
+        (candidate) =>
+          !used.has(candidate.id) &&
+          candidate.userId === assignment.userId &&
+          sameRole(candidate.role, assignment.role),
+      );
+      if (!match) return { ...assignment, assignmentId: undefined };
+      used.add(match.id);
+      return { ...assignment, assignmentId: match.id };
     });
 
-    const previousUserIds = new Set(
-      previousAssignments.map((assignment) => assignment.userId),
-    );
-    const currentUserIds = [...new Set(normalizedAssignments.map((assignment) => assignment.userId))];
-    const newlyAssignedUserIds = uniqueUserIds.filter(
-      (userId) => !previousUserIds.has(userId),
-    );
-    const retainedAssignmentIds = assignmentsWithIds
+    return withRoleMatch.map((assignment) => {
+      if (assignment.assignmentId) return assignment;
+      const match = previous.find(
+        (candidate) => !used.has(candidate.id) && candidate.userId === assignment.userId,
+      );
+      if (!match) return assignment;
+      used.add(match.id);
+      return { ...assignment, assignmentId: match.id };
+    });
+  }
+
+  private async writeAssignments(
+    scheduleId: string,
+    planned: PlannedAssignment[],
+    previous: { id: string; userId: string; role: string }[],
+  ): Promise<AssignmentChanges> {
+    const retainedAssignmentIds = planned
       .map((assignment) => assignment.assignmentId)
       .filter((assignmentId): assignmentId is string => Boolean(assignmentId));
 
     await $prismaClient.$transaction([
       $prismaClient.scheduleAssignment.deleteMany({
         where: {
-          scheduleId: id,
+          scheduleId,
           ...(retainedAssignmentIds.length
             ? { id: { notIn: retainedAssignmentIds } }
             : {}),
         },
       }),
-      ...assignmentsWithIds.map((assignment) => {
+      ...planned.map((assignment) => {
         if (assignment.assignmentId) {
           return $prismaClient.scheduleAssignment.update({
             where: {
@@ -877,7 +1121,7 @@ export class ScheduleAdapters {
         return $prismaClient.scheduleAssignment.create({
           data: {
             id: crypto.randomUUID(),
-            scheduleId: id,
+            scheduleId,
             userId: assignment.userId,
             role: assignment.role,
           },
@@ -885,47 +1129,123 @@ export class ScheduleAdapters {
       }),
     ]);
 
-    const updatedSchedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    const previousUserIds = new Set(previous.map((assignment) => assignment.userId));
+    const currentUserIds = [...new Set(planned.map((assignment) => assignment.userId))];
+    const rolesByUser = new Map<string, string[]>();
+    for (const assignment of planned) {
+      rolesByUser.set(assignment.userId, [...(rolesByUser.get(assignment.userId) ?? []), assignment.role]);
+    }
 
-    // Quem entrou agora ja tem seu proprio aviso ("Nova escala publicada")
-    // abaixo - o resto de quem ja estava e continua (nao entrou nem saiu)
-    // precisa saber que o time da escala mudou, e quem foi removido precisa
-    // saber que nao esta mais nela (senao so descobre chegando no dia).
-    const removedUserIds = [...previousUserIds].filter((userId) => !currentUserIds.includes(userId));
-    const unchangedUserIds = currentUserIds.filter((userId) => previousUserIds.has(userId));
+    return {
+      newlyAssignedUserIds: currentUserIds.filter((userId) => !previousUserIds.has(userId)),
+      removedUserIds: [...previousUserIds].filter((userId) => !currentUserIds.includes(userId)),
+      retainedUserIds: currentUserIds.filter((userId) => previousUserIds.has(userId)),
+      rolesByUser,
+    };
+  }
 
+  private async notifyAssignmentChanges(schedule: ScheduleRow, changes: AssignmentChanges) {
     await Promise.all([
-      ...newlyAssignedUserIds.map((userId) => {
-        const assignment = normalizedAssignments.find((item) => item.userId === userId);
-        const roleText = assignment?.role ? ` como ${assignment.role}` : "";
+      ...changes.newlyAssignedUserIds.map((userId) => {
+        const roles = changes.rolesByUser.get(userId) ?? [];
+        const roleText = roles.length ? ` como ${formatRoles(roles)}` : "";
 
         return pushNotificationService.sendToUsers([userId], {
           title: "Nova escala publicada",
-          body: `${updatedSchedule.department.name} - ${updatedSchedule.description}${roleText}`,
-          url: `/scale?schedule=${updatedSchedule.id}`,
+          body: `${schedule.department.name} - ${schedule.description}${roleText}`,
+          url: `/scale?schedule=${schedule.id}`,
           type: "schedule-assigned",
-          scheduleId: updatedSchedule.id,
+          scheduleId: schedule.id,
         });
       }),
-      removedUserIds.length > 0
-        ? pushNotificationService.sendToUsers(removedUserIds, {
+      changes.removedUserIds.length > 0
+        ? pushNotificationService.sendToUsers(changes.removedUserIds, {
             title: "Você foi removido de uma escala",
-            body: `${updatedSchedule.department.name} - ${updatedSchedule.description}`,
+            body: `${schedule.department.name} - ${schedule.description}`,
             url: "/scale",
             type: "schedule-removed",
-            scheduleId: updatedSchedule.id,
-          })
-        : Promise.resolve(),
-      unchangedUserIds.length > 0
-        ? pushNotificationService.sendToUsers(unchangedUserIds, {
-            title: "Escala atualizada",
-            body: `${updatedSchedule.department.name} - ${updatedSchedule.description}`,
-            url: `/scale?schedule=${updatedSchedule.id}`,
-            type: "schedule-updated",
-            scheduleId: updatedSchedule.id,
+            scheduleId: schedule.id,
           })
         : Promise.resolve(),
     ]);
+  }
+
+  private formatScheduleWhen(date: Date) {
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    return `${day}/${month} às ${this.toLocalTimePart(date)}`;
+  }
+
+  // Um push por pessoa por salvamento. Quem continua na escala só é avisado
+  // quando muda algo que afeta a ida dela (data, horário, chegada, ensaio).
+  private async notifyRetainedVolunteers(
+    schedule: ScheduleRow,
+    userIds: string[],
+    change: "date" | "details" | "none",
+  ) {
+    if (userIds.length === 0 || change === "none") return;
+
+    await pushNotificationService.sendToUsers(userIds, change === "date"
+      ? {
+          title: "Mudou a data da escala",
+          body: `${schedule.department.name} - ${schedule.description}: agora ${this.formatScheduleWhen(schedule.date)}. Confirme de novo.`,
+          url: `/scale?schedule=${schedule.id}`,
+          type: "schedule-updated",
+          scheduleId: schedule.id,
+        }
+      : {
+          title: "Escala atualizada",
+          body: `${schedule.department.name} - ${schedule.description}`,
+          url: `/scale?schedule=${schedule.id}`,
+          type: "schedule-updated",
+          scheduleId: schedule.id,
+        });
+  }
+
+  async updateChurchScheduleAssignments(request: FastifyRequest) {
+    const user = await this.context.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+    const body = request.body as { assignments?: unknown };
+
+    if (!id) {
+      throw new DomainError("Escala não informada");
+    }
+
+    const normalized = this.normalizeAssignmentInputs(body.assignments ?? []);
+
+    const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    await this.context.assertDepartmentPermission(
+      user,
+      schedule.departmentId,
+      "SCHEDULE_EDIT",
+      "Apenas pastores, admins ou cargos com permissao podem editar escalas deste ministerio",
+    );
+
+    const previousAssignments = await $prismaClient.scheduleAssignment.findMany({
+      where: {
+        scheduleId: id,
+      },
+      select: {
+        id: true,
+        userId: true,
+        role: true,
+      },
+    });
+
+    const planned = this.planAssignments(normalized, previousAssignments);
+    await this.assertAssignableUsers(
+      [...new Set(normalized.map((assignment) => assignment.userId))],
+      user.crunchId!,
+      { id: schedule.departmentId, leaderId: schedule.department.leaderId },
+    );
+
+    const changes = await this.writeAssignments(id, planned, previousAssignments);
+    const updatedSchedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+
+    // Quem continua na escala não recebe push por mudança de equipe: a edição
+    // da escala (PATCH /schedules/:id) já avisa quando muda a data ou o
+    // horário — antes a mesma edição mandava dois pushes.
+    await this.notifyAssignmentChanges(updatedSchedule, changes);
 
     return updatedSchedule;
   }
@@ -989,6 +1309,128 @@ export class ScheduleAdapters {
     }));
   }
 
+  // Avisos do editor para uma escala que ainda não foi salva (ou que está
+  // mudando de culto/data): quem já está em outro ministério no mesmo culto e
+  // quem marcou a data como indisponível. Nunca bloqueia o salvamento.
+  async getUnsavedScheduleAssignmentConflicts(request: FastifyRequest) {
+    const user = await this.context.getCurrentUser(request);
+    const body = (request.body ?? {}) as {
+      serviceOccurrenceId?: unknown;
+      date?: unknown;
+      time?: unknown;
+      departmentId?: unknown;
+      userIds?: unknown;
+      excludeScheduleId?: unknown;
+    };
+
+    const departmentId = typeof body.departmentId === "string" ? body.departmentId.trim() : "";
+    if (!departmentId) throw new DomainError("Ministério da escala é obrigatório");
+
+    const department = await this.context.getDepartmentFromCurrentChurch(departmentId, user.crunchId!);
+    const capabilities = this.context.departmentCapabilities(user, department);
+    if (!capabilities.canManageSchedule) {
+      throw new DomainError(
+        "Apenas pastores, admins ou cargos com permissao podem editar escalas deste ministerio",
+      );
+    }
+
+    if (!Array.isArray(body.userIds)) throw new DomainError("Lista de pessoas inválida");
+    const userIds = [...new Set(
+      body.userIds
+        .filter((userId): userId is string => typeof userId === "string")
+        .map((userId) => userId.trim())
+        .filter(Boolean),
+    )].slice(0, 100);
+
+    const occurrenceId =
+      typeof body.serviceOccurrenceId === "string" && body.serviceOccurrenceId.trim()
+        ? body.serviceOccurrenceId.trim()
+        : null;
+    const excludeScheduleId =
+      typeof body.excludeScheduleId === "string" && body.excludeScheduleId.trim()
+        ? body.excludeScheduleId.trim()
+        : null;
+
+    let dateKey = typeof body.date === "string" && DATE_ONLY.test(body.date) ? body.date : "";
+    let occurrence: { id: string; date: Date } | null = null;
+    if (occurrenceId) {
+      occurrence = await $prismaClient.serviceOccurrence.findFirst({
+        where: { id: occurrenceId, crunchId: user.crunchId! },
+        select: { id: true, date: true },
+      });
+      if (!occurrence) throw new DomainError("Culto não encontrado");
+      // A ocorrência guarda só o dia (meia-noite UTC).
+      dateKey ||= occurrence.date.toISOString().slice(0, 10);
+    }
+
+    if (userIds.length === 0 || (!occurrence && !dateKey)) {
+      return { conflicts: [], unavailable: [] };
+    }
+
+    const time =
+      typeof body.time === "string" && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(body.time)
+        ? body.time
+        : null;
+    const sameServiceWhere: Prisma.ScheduleWhereInput = occurrence
+      ? { serviceOccurrenceId: occurrence.id }
+      : time
+        ? { date: new Date(`${dateKey}T${time}:00.000`) }
+        : {
+            date: {
+              gte: new Date(`${dateKey}T00:00:00.000`),
+              lt: new Date(new Date(`${dateKey}T00:00:00.000`).getTime() + 24 * 60 * 60 * 1000),
+            },
+          };
+
+    const [conflicts, unavailable] = await Promise.all([
+      $prismaClient.scheduleAssignment.findMany({
+        where: {
+          userId: { in: userIds },
+          schedule: {
+            ...sameServiceWhere,
+            ...(excludeScheduleId ? { id: { not: excludeScheduleId } } : {}),
+            departmentId: { not: departmentId },
+            department: { crunchId: user.crunchId! },
+          },
+        },
+        orderBy: [{ user: { name: "asc" } }, { schedule: { date: "asc" } }],
+        select: {
+          userId: true,
+          role: true,
+          user: { select: { id: true, name: true } },
+          schedule: {
+            select: {
+              id: true,
+              description: true,
+              department: { select: { name: true } },
+            },
+          },
+        },
+      }),
+      dateKey
+        ? $prismaClient.userUnavailableDate.findMany({
+            where: {
+              userId: { in: userIds },
+              date: new Date(`${dateKey}T00:00:00.000`),
+            },
+            select: { userId: true, user: { select: { name: true } } },
+          })
+        : Promise.resolve([] as { userId: string; user: { name: string } }[]),
+    ]);
+
+    return {
+      conflicts: conflicts.map((conflict) => ({
+        userId: conflict.userId,
+        userName: conflict.user.name,
+        departmentName: conflict.schedule.department.name,
+        role: conflict.role,
+        scheduleId: conflict.schedule.id,
+        scheduleDescription: conflict.schedule.description,
+      })),
+      unavailable: unavailable.map((item) => ({ userId: item.userId, userName: item.user.name })),
+    };
+  }
+
   async updateMyChurchScheduleAssignment(request: FastifyRequest) {
     const user = await this.context.getCurrentUser(request);
     const { id } = request.params as { id?: string };
@@ -1048,12 +1490,14 @@ export class ScheduleAdapters {
               confirmedAt: now,
               declineReason: null,
             }
-          : body.action === "DECLINED"
+          : body.action === "DECLINED" || body.action === "SWAP_REQUESTED"
           ? {
+              // "Pediu troca" também guarda o motivo: sai da mesma janela do
+              // "Não posso".
               viewedAt: assignment.viewedAt || now,
-              confirmationStatus: "DECLINED",
+              confirmationStatus: body.action,
               confirmedAt: null,
-              declineReason: body.declineReason?.trim() || null,
+              declineReason: body.declineReason?.trim().slice(0, 500) || null,
             }
           : {
               viewedAt: assignment.viewedAt || now,
@@ -1063,11 +1507,14 @@ export class ScheduleAdapters {
             },
     });
 
-    const updatedAssignment = await $prismaClient.scheduleAssignment.findFirstOrThrow({
+    // Quem tem duas funções tem duas linhas: a resposta vale para todas e
+    // todas voltam, para a tela não ficar com uma linha desatualizada.
+    const myAssignments = await $prismaClient.scheduleAssignment.findMany({
       where: {
         scheduleId: id,
         userId: user.id,
       },
+      orderBy: { id: "asc" },
       select: {
         id: true,
         role: true,
@@ -1088,19 +1535,19 @@ export class ScheduleAdapters {
       },
     });
 
+    const updatedAssignment = { ...myAssignments[0], assignments: myAssignments };
+
     if (body.action !== "VIEWED") {
       const adminRecipientIds = await this.context.getChurchAdminNotificationRecipientIds(
         user.crunchId!,
       );
-      const declinedLabel =
-        body.action === "DECLINED" && body.declineReason?.trim()
-          ? `marcou que nao pode ir: ${body.declineReason.trim()}`
-          : "marcou que nao pode ir";
+      const reasonText = body.declineReason?.trim() ? `: ${body.declineReason.trim()}` : "";
+      const declinedLabel = `marcou que nao pode ir${reasonText}`;
       const actionLabels: Record<string, string> = {
         CONFIRMED: "confirmou presenca",
         DECLINED: declinedLabel,
         MAYBE: "marcou talvez",
-        SWAP_REQUESTED: "pediu troca",
+        SWAP_REQUESTED: `pediu troca${reasonText}`,
       };
 
       await pushNotificationService.sendToUsers(
