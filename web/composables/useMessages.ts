@@ -58,6 +58,13 @@ export interface MessageLog {
   template: { name: string } | null;
 }
 
+/** Contagem do "Novo comunicado" (POST /messages/preview). */
+export interface MessagePreview {
+  recipients: number;
+  excludedWithoutConsent: number;
+  withoutPhone?: number;
+}
+
 export const useMessages = () => {
   const config = useRuntimeConfig();
   const { access_token } = useAuth();
@@ -174,7 +181,19 @@ export const useMessages = () => {
     });
   };
 
+  const preview = async (
+    audience: MessageAudience,
+    recipientIds?: string[],
+  ): Promise<ApiResponse<MessagePreview>> => {
+    return await $customFetch<MessagePreview>(`${base}/preview`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: { audience, ...(recipientIds ? { recipientIds } : {}) },
+    });
+  };
+
   return {
+    preview,
     listTemplates,
     createTemplate,
     updateTemplate,

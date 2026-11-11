@@ -44,6 +44,9 @@ export default defineNuxtConfig({
       "/admin/**",
       "/user",
       "/settings",
+      "/configuracoes/**",
+      "/comunicar",
+      "/perfil/**",
       "/notifications",
       "/scale/**",
       "/ministery/**",
@@ -83,6 +86,13 @@ export default defineNuxtConfig({
     // schema.org que useSeoMeta/useHead geram; sem isso cai na regra geral
     // "/**": ssr:false e vira uma casca vazia pra qualquer bot que nao roda JS.
     "/comece": { ssr: true },
+    // Configurações, Comunicar e Perfil (redesign): endereços antigos.
+    // /admin/configuracoes?secao=… é uma página de redirecionamento própria
+    // (precisa traduzir a seção), ver app/pages/admin/configuracoes.vue.
+    "/settings": { redirect: "/configuracoes/cadastro" },
+    "/plans": { redirect: "/configuracoes/plano" },
+    "/admin/mensagens": { redirect: "/comunicar" },
+    "/admin/publicacoes": { redirect: "/comunicar" },
   },
   nitro: {
     compressPublicAssets: true,

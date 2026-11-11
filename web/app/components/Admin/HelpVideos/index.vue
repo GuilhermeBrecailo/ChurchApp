@@ -335,15 +335,14 @@ const HELP_PAGES: HelpPage[] = [
   { pageKey: "/cultos", label: "Cultos" },
   { pageKey: "/prayer", label: "Oração" },
   { pageKey: "/user", label: "Perfil do Usuário" },
-  { pageKey: "/settings", label: "Configurações" },
+  { pageKey: "/perfil/preferencias", label: "Minhas preferências" },
   { pageKey: "/notifications", label: "Notificações" },
   { pageKey: "/admin", label: "Administração" },
   { pageKey: "/admin/relatorios", label: "Relatórios" },
   { pageKey: "/admin/pessoas", label: "Pessoas" },
   { pageKey: "/admin/ministerios", label: "Gestão de ministérios" },
-  { pageKey: "/admin/publicacoes", label: "Publicações" },
-  { pageKey: "/admin/mensagens", label: "Mensagens" },
-  { pageKey: "/admin/configuracoes", label: "Configurações" },
+  { pageKey: "/comunicar", label: "Comunicar" },
+  { pageKey: "/configuracoes", label: "Configurações da igreja" },
   { pageKey: "/platform-admin", label: "Admin Master" },
 ];
 
