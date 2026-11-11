@@ -203,10 +203,10 @@ describe("role navigation", () => {
 
 		assert.deepEqual(labels(items).slice(0, 5), [
 			"Cuidado pastoral",
+			"Visitantes",
 			"Pessoas",
       "Mensagens",
       "Cultos",
-      "Relatórios",
     ]);
   });
 
@@ -269,6 +269,7 @@ describe("role navigation", () => {
     assert.deepEqual(
       items.map((entry) => entry.title),
       [
+		"Acompanhamento de visitantes",
 		"Administração da igreja",
 		"Cadastro da igreja",
 		"Cargos e permissões",
