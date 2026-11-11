@@ -73,7 +73,6 @@ const {
   status: pushStatus,
   loading: pushLoading,
   message: pushMessage,
-  canAskPermission,
   refreshStatus,
   enable,
 } = usePushNotifications();
@@ -88,7 +87,10 @@ const firstName = computed(() => (user.value?.name || "").trim().split(/\s+/)[0]
 const storageKey = computed(() => `churchapp:welcome-card:${user.value?.id ?? ""}:${churchId.value}`);
 
 const visible = computed(() => Boolean(churchId.value) && !dismissed.value);
-const canAskPush = computed(() => canAskPermission.value && pushStatus.value !== "unsupported");
+// Permissão dada mas sem inscrição ainda também pode ser ativada aqui.
+const canAskPush = computed(
+  () => !["enabled", "denied", "unsupported"].includes(pushStatus.value),
+);
 
 const dismiss = () => {
   dismissed.value = true;

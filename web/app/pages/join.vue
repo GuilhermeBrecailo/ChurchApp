@@ -4,7 +4,9 @@
     :subtitle="shellSubtitle"
     :icon="step === 'confirm' ? undefined : Ticket"
     :back="step === 'code' ? (isAuthenticated ? undefined : '/login') : undefined"
-    :back-label="isAuthenticated ? 'Voltar' : 'Voltar para o login'"
+    :back-button="step === 'form'"
+    :back-label="step === 'form' ? 'Voltar' : isAuthenticated ? 'Voltar' : 'Voltar para o login'"
+    @back="step = 'confirm'"
   >
     <template v-if="step === 'confirm' && church" #media>
       <span class="join-church-mark" aria-hidden="true">
@@ -160,6 +162,7 @@
       </v-alert>
 
       <v-btn
+        v-if="!accountExists"
         type="submit"
         block
         color="primary"
@@ -194,7 +197,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { Ticket } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useChurchInvite, type InviteChurchPreview } from "../../composables/useChurchInvite";
@@ -239,6 +242,14 @@ const registerError = ref("");
 const accountExists = ref(false);
 
 const form = reactive({ name: "", phone: "", email: "", password: "" });
+
+// Trocou o e-mail depois do "Você já tem conta": tenta de novo.
+watch(
+  () => form.email,
+  () => {
+    accountExists.value = false;
+  },
+);
 
 const loginRedirect = computed(() => loginRedirectForJoin(normalizedCode.value));
 

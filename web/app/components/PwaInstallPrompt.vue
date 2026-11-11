@@ -93,8 +93,8 @@
 <script setup lang="ts">
 import { Download, Share2, Smartphone, X } from "lucide-vue-next";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { usePwaInstallPrompt } from "../../../composables/usePwaInstallPrompt";
-import { useFirstRunPrompts } from "../../../composables/useFirstRunPrompts";
+import { usePwaInstallPrompt } from "../../composables/usePwaInstallPrompt";
+import { useFirstRunPrompts } from "../../composables/useFirstRunPrompts";
 
 const route = useRoute();
 const {

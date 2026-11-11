@@ -1,15 +1,15 @@
 <template>
-  <div class="auth-page">
-    <div class="auth-shell" :class="{ 'auth-shell--no-promo': !headline }">
-      <aside v-if="headline" class="auth-promo" :aria-label="promoLabel">
+  <div class="onb-page">
+    <div class="onb-shell" :class="{ 'onb-shell--no-promo': !headline }">
+      <aside v-if="headline" class="onb-promo" :aria-label="promoLabel">
         <NuxtLink to="/comece" class="auth-brand" aria-label="Conhecer o ChurchApp">
           <span class="auth-brand__mark"><Church :size="17" aria-hidden="true" /></span>
           ChurchApp
         </NuxtLink>
-        <div class="auth-promo__body">
-          <p v-if="eyebrow" class="auth-promo__eyebrow">{{ eyebrow }}</p>
-          <p class="auth-promo__headline">{{ headline }}</p>
-          <ul v-if="points?.length" class="auth-promo__list">
+        <div class="onb-promo__body">
+          <p v-if="eyebrow" class="onb-promo__eyebrow">{{ eyebrow }}</p>
+          <p class="onb-promo__headline">{{ headline }}</p>
+          <ul v-if="points?.length" class="onb-promo__list">
             <li v-for="point in points" :key="point">
               <CheckCircle2 :size="17" aria-hidden="true" />
               <span>{{ point }}</span>
@@ -19,11 +19,15 @@
       </aside>
 
       <MotionFadeInUp class="auth-main">
-        <div class="auth-card">
+        <div class="onb-card">
           <NuxtLink v-if="back" :to="back" class="auth-back">
             <ChevronLeft :size="18" aria-hidden="true" />
             {{ backLabel }}
           </NuxtLink>
+          <button v-else-if="backButton" type="button" class="auth-back" @click="emit('back')">
+            <ChevronLeft :size="18" aria-hidden="true" />
+            {{ backLabel }}
+          </button>
 
           <header class="auth-header">
             <slot name="media">
@@ -66,14 +70,18 @@ withDefaults(
     points?: string[];
     promoLabel?: string;
     back?: string;
+    /** Botão "Voltar" que emite `back` (passos dentro da mesma tela). */
+    backButton?: boolean;
     backLabel?: string;
   }>(),
   { promoLabel: "Sobre o ChurchApp", backLabel: "Voltar" },
 );
+
+const emit = defineEmits<{ back: [] }>();
 </script>
 
 <style scoped>
-.auth-page {
+.onb-page {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -85,7 +93,7 @@ withDefaults(
   color: var(--app-color-text);
 }
 
-.auth-shell {
+.onb-shell {
   display: grid;
   grid-template-columns: minmax(280px, 0.86fr) minmax(360px, 1fr);
   width: min(980px, 100%);
@@ -96,12 +104,12 @@ withDefaults(
   box-shadow: var(--app-shadow-lg);
 }
 
-.auth-shell--no-promo {
+.onb-shell--no-promo {
   grid-template-columns: 1fr;
   width: min(520px, 100%);
 }
 
-.auth-promo {
+.onb-promo {
   display: flex;
   min-height: 600px;
   flex-direction: column;
@@ -133,13 +141,13 @@ withDefaults(
   color: var(--app-color-surface);
 }
 
-.auth-promo__body {
+.onb-promo__body {
   margin-top: auto;
   margin-bottom: auto;
   padding-top: 48px;
 }
 
-.auth-promo__eyebrow {
+.onb-promo__eyebrow {
   margin: 0 0 14px;
   color: var(--app-color-accent);
   font-size: 0.75rem;
@@ -148,7 +156,7 @@ withDefaults(
   text-transform: uppercase;
 }
 
-.auth-promo__headline {
+.onb-promo__headline {
   max-width: 360px;
   margin: 0;
   color: var(--app-color-text);
@@ -159,7 +167,7 @@ withDefaults(
   line-height: 1.08;
 }
 
-.auth-promo__list {
+.onb-promo__list {
   display: grid;
   gap: 12px;
   margin: 26px 0 0;
@@ -170,13 +178,13 @@ withDefaults(
   line-height: 1.45;
 }
 
-.auth-promo__list li {
+.onb-promo__list li {
   display: flex;
   align-items: flex-start;
   gap: 10px;
 }
 
-.auth-promo__list svg {
+.onb-promo__list svg {
   flex: 0 0 auto;
   margin-top: 2px;
   color: var(--app-color-accent);
@@ -190,7 +198,7 @@ withDefaults(
   padding: 22px;
 }
 
-.auth-card {
+.onb-card {
   width: 100%;
   max-width: 440px;
   padding: 30px 18px 24px;
@@ -203,11 +211,14 @@ withDefaults(
   min-height: 44px;
   margin: -12px 0 6px -6px;
   padding: 0 6px;
+  border: 0;
   border-radius: 10px;
+  background: transparent;
   color: var(--app-color-text-soft);
   font-size: 0.95rem;
   font-weight: 650;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .auth-back:hover {
@@ -251,16 +262,16 @@ withDefaults(
 
 /* Campos e botões das telas de entrada: altos o bastante para o dedo e com
    texto de 16px (abaixo disso o iPhone dá zoom no campo). */
-.auth-card :deep(.v-field) {
+.onb-card :deep(.v-field) {
   border-radius: 14px;
 }
 
-.auth-card :deep(.v-field__input) {
+.onb-card :deep(.v-field__input) {
   min-height: 52px;
   font-size: 1rem;
 }
 
-.auth-card :deep(.auth-submit) {
+.onb-card :deep(.auth-submit) {
   height: 52px !important;
   font-size: 1.02rem !important;
   font-weight: 750;
@@ -268,19 +279,19 @@ withDefaults(
   text-transform: none;
 }
 
-.auth-card :deep(.auth-secondary) {
+.onb-card :deep(.auth-secondary) {
   min-height: 48px;
   font-weight: 700;
   letter-spacing: 0 !important;
   text-transform: none;
 }
 
-.auth-card :deep(.auth-form) {
+.onb-card :deep(.auth-form) {
   display: grid;
   gap: 16px;
 }
 
-.auth-card :deep(input:-webkit-autofill) {
+.onb-card :deep(input:-webkit-autofill) {
   -webkit-box-shadow: 0 0 0 1000px var(--app-color-surface) inset !important;
   -webkit-text-fill-color: var(--app-color-text) !important;
   caret-color: var(--app-color-text);
@@ -308,13 +319,13 @@ withDefaults(
 }
 
 @media (max-width: 720px) {
-  .auth-page {
+  .onb-page {
     align-items: flex-start;
     padding: 0;
   }
 
-  .auth-shell,
-  .auth-shell--no-promo {
+  .onb-shell,
+  .onb-shell--no-promo {
     display: block;
     width: 100%;
     min-height: 100dvh;
@@ -324,13 +335,13 @@ withDefaults(
   }
 
   /* Painel recolhido: só a marca, para o formulário aparecer sem rolar. */
-  .auth-promo {
+  .onb-promo {
     min-height: 0;
     padding: 10px 16px;
     border-bottom: 1px solid var(--app-color-border-subtle);
   }
 
-  .auth-promo__body {
+  .onb-promo__body {
     display: none;
   }
 
@@ -338,7 +349,7 @@ withDefaults(
     padding: 8px 16px 32px;
   }
 
-  .auth-card {
+  .onb-card {
     max-width: none;
     padding: 24px 0 8px;
   }
