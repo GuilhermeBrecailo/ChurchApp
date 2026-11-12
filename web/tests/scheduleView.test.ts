@@ -282,3 +282,11 @@ describe("cache de escalas", () => {
     assert.equal(await dedupe("k", run), 2);
   });
 });
+
+describe("resumo curto do ensaio", () => {
+  it("formata dia e hora curtos (sem minutos quando é hora cheia)", async () => {
+    const { shortDayTime } = await import("../app/utils/scheduleView");
+    assert.equal(shortDayTime(new Date(2026, 10, 14, 16, 0)), "sáb 14/11, 16h");
+    assert.equal(shortDayTime(new Date(2026, 10, 21, 19, 30)), "sáb 21/11, 19h30");
+  });
+});

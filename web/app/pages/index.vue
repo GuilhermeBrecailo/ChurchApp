@@ -7,8 +7,16 @@
 
       <div class="home-grid">
         <div class="home-primary">
+          <!-- A escala que a pessoa vai servir, para conferir e abrir rápido
+               (quando ela já não está no destaque de "Para você"). -->
+          <section v-if="nextScheduleCard" aria-labelledby="next-schedule-title" class="home-next">
+            <UtilsSectionHeader id="next-schedule-title" title="Sua próxima escala" />
+            <HomeNextScheduleCard :view="nextScheduleCard" hide-kicker />
+          </section>
+
           <HomeForYouList
             :items="forYouItems"
+            :featured-view="featuredScheduleView"
             :loading="loading"
             :answering="answering"
             :push-loading="pushLoading"
@@ -60,6 +68,7 @@ import { useAuth } from "../../composables/useAuth";
 import { useHomeFeed } from "../../composables/useHomeFeed";
 import { usePushNotifications } from "../../composables/usePushNotifications";
 import type { ForYouItem } from "../utils/forYouItems";
+import { toScheduleView, type ApiSchedule, type ScheduleView } from "../utils/scheduleView";
 
 const router = useRouter();
 const { user } = useAuth();
@@ -69,6 +78,7 @@ const {
   announcements,
   verse,
   forYouItems,
+  schedules,
   agenda,
   answering,
   load,
@@ -99,6 +109,29 @@ const featuredAnnouncementId = computed(
 const homeAnnouncements = computed(() =>
   announcements.value.filter((announcement) => announcement.id !== featuredAnnouncementId.value),
 );
+
+// Escalas em que a pessoa está, ainda por vir (sem as que ela disse que não pode).
+const myUpcoming = computed<ScheduleView[]>(() => {
+  const userId = user.value?.id;
+  if (!userId) return [];
+  return schedules.value
+    .map((schedule) => toScheduleView(schedule as unknown as ApiSchedule, { userId }))
+    .filter((view) => view.me && !view.hasStarted && view.me.status !== "DECLINED")
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+});
+
+// Se a escala do destaque é uma das minhas, o destaque mostra o resumo dela.
+const featuredScheduleId = computed(() => {
+  const first = forYouItems.value[0];
+  return first?.kind === "schedule-response" ? first.schedule?.id ?? null : null;
+});
+const featuredScheduleView = computed(
+  () => myUpcoming.value.find((view) => view.id === featuredScheduleId.value) ?? null,
+);
+const nextScheduleCard = computed(() => {
+  const next = myUpcoming.value[0];
+  return next && next.id !== featuredScheduleId.value ? next : null;
+});
 
 const handleOpen = (item: ForYouItem) => {
   if (item.kind === "announcement") markAnnouncementSeen([item.key.split(":")[1] ?? ""]);
@@ -135,6 +168,12 @@ useHead({ title: "Início" });
 .home-page {
   max-width: 1180px;
   margin: 0 auto;
+}
+
+.home-next {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
 }
 
 .home-grid {

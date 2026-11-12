@@ -139,6 +139,8 @@ export type ScheduleView = {
   timeLabel: string;
   arrivalLabel: string;
   rehearsalLabel: string;
+  /** Curto, para resumos: "sáb 14/11, 16h". */
+  rehearsalShortLabel: string;
   rehearsalNotes: string;
   isCommunionService: boolean;
   occurrenceId: string | null;
@@ -161,6 +163,15 @@ export type ScheduleView = {
 };
 
 const pad = (value: number) => String(value).padStart(2, "0");
+
+const shortWeekday = new Intl.DateTimeFormat("pt-BR", { weekday: "short" });
+
+/** "sáb 14/11, 16h" / "sáb 14/11, 16h30". */
+export function shortDayTime(date: Date) {
+  const weekday = shortWeekday.format(date).replace(".", "");
+  const time = date.getMinutes() ? `${date.getHours()}h${pad(date.getMinutes())}` : `${date.getHours()}h`;
+  return `${weekday} ${pad(date.getDate())}/${pad(date.getMonth() + 1)}, ${time}`;
+}
 
 export function toDayKey(date: Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -295,6 +306,7 @@ export function toScheduleView(
     rehearsalLabel: rehearsal
       ? `${formatScheduleDate(rehearsal, "short")} às ${toTimeKey(rehearsal)}`
       : "",
+    rehearsalShortLabel: rehearsal ? shortDayTime(rehearsal) : "",
     rehearsalNotes: schedule.rehearsalNotes?.trim() ?? "",
     isCommunionService: schedule.isCommunionService === true,
     occurrenceId: schedule.serviceOccurrenceId ?? null,

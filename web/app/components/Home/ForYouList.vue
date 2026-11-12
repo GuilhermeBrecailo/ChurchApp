@@ -54,6 +54,12 @@
             @answer="(action) => emit('answer', featured!.schedule!.id, action)"
             @decline="openDecline(featured)"
           />
+          <!-- Conferir antes de responder: ensaio, músicas, equipe e "Ver escala". -->
+          <HomeNextScheduleCard
+            v-if="featuredView && featuredView.id === featured.schedule.id"
+            embedded
+            :view="featuredView"
+          />
         </template>
 
         <div v-else-if="featured.kind === 'enable-push'" class="hero-main hero-main--static">
@@ -195,12 +201,15 @@ import {
 } from "lucide-vue-next";
 import { FOR_YOU_LIMIT, type ForYouItem, type ForYouKind } from "../../utils/forYouItems";
 import type { ScheduleAnswer } from "../../../composables/useHomeFeed";
+import type { ScheduleView } from "../../utils/scheduleView";
 
 const props = defineProps<{
   items: ForYouItem[];
   loading?: boolean;
   answering?: { scheduleId: string; action: ScheduleAnswer } | null;
   pushLoading?: boolean;
+  /** Resumo da escala do destaque (ensaio, músicas, equipe). */
+  featuredView?: ScheduleView | null;
 }>();
 
 const emit = defineEmits<{
