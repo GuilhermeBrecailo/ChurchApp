@@ -70,7 +70,7 @@ export function buildSetupSteps(
     },
     {
       key: "service-times",
-      title: "Horários de culto",
+      title: "Cultos fixos da semana",
       description: "Eles aparecem na página da igreja e ajudam a montar as escalas.",
       done: counts.serviceTimes >= 1,
       locked: false,

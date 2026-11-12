@@ -8,7 +8,7 @@
     >
       <div class="d-flex flex-column ga-4">
         <v-alert v-if="!serviceTimes.length" type="info" variant="tonal" density="compact">
-          Cadastre os horários de culto primeiro.
+          Cadastre os cultos fixos da semana primeiro.
           <NuxtLink to="/configuracoes/horarios" class="config-inline-link">Cadastrar horários</NuxtLink>
         </v-alert>
         <template v-else>

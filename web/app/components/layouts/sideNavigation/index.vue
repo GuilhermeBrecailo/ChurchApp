@@ -50,7 +50,7 @@
           </section>
 
           <!-- Líder: os ministérios dele, um clique cada. -->
-          <div v-if="tab.key === 'ministries' && leaderMinistries.length" class="side-nav-sub side-nav-sub--list">
+          <div v-if="tab.key === 'ministries' && leaderMinistries.length > 1" class="side-nav-sub side-nav-sub--list">
             <NuxtLink
               v-for="ministry in leaderMinistries"
               :key="ministry.id"
@@ -100,7 +100,6 @@ import { getInitials } from "../../../utils/initials";
 import {
   getManagementItems,
   getOwnerTab,
-  getPrimaryTabs,
 } from "../../../utils/roleNavigation";
 import { navigationIcons } from "../../../utils/navigationIcons";
 
@@ -110,7 +109,8 @@ const { mdAndUp } = useDisplay();
 const { getDepartments } = useDepartments();
 const desktop = computed(() => mdAndUp.value);
 
-const tabs = computed(() => getPrimaryTabs(user.value));
+// Líder de um ministério só: a aba vira o nome dele e abre direto.
+const { tabs } = usePrimaryTabs();
 const mainTabs = computed(() => tabs.value.filter((tab) => tab.key !== "profile"));
 const profileTab = computed(() => tabs.value.find((tab) => tab.key === "profile"));
 const ownerTab = computed(() => getOwnerTab(user.value, route.path));

@@ -7,7 +7,7 @@
     @update:model-value="emit('update:modelValue', $event)"
   >
     <UtilsOverlayCard
-      title="Horários de culto"
+      title="Cultos fixos da semana"
       subtitle="Toque nas sugestões e ajuste o que for diferente na sua igreja."
       :icon="Clock3"
       @close="close"
@@ -219,7 +219,7 @@ const save = async () => {
     return;
   }
 
-  toast.success(created === 1 ? "Horário de culto salvo." : created > 1 ? `${created} horários de culto salvos.` : "Esses horários já estavam cadastrados.");
+  toast.success(created === 1 ? "Culto fixo salvo." : created > 1 ? `${created} cultos fixos salvos.` : "Esses cultos já estavam cadastrados.");
   emit("saved");
   close();
 };

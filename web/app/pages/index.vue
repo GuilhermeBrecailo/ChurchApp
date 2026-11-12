@@ -31,7 +31,7 @@
             {{ schedulesError }}
           </v-alert>
 
-          <DashboardTodayCard :agenda="agenda" :loading="loading" />
+          <DashboardTodayCard v-if="homeAgenda" :agenda="homeAgenda" :loading="loading" />
         </div>
 
         <aside class="home-secondary" aria-label="Da igreja">
@@ -131,6 +131,16 @@ const featuredScheduleView = computed(
 const nextScheduleCard = computed(() => {
   const next = myUpcoming.value[0];
   return next && next.id !== featuredScheduleId.value ? next : null;
+});
+
+// "Esta semana na igreja" sem repetir o que já está acima: a escala do
+// destaque e a "Sua próxima escala" (culto e ensaio) saem da lista. Se não
+// sobrar nada, a seção some (não diz "Semana livre", que seria mentira).
+const homeAgenda = computed(() => {
+  const shownAbove = new Set([featuredScheduleId.value, nextScheduleCard.value?.id].filter(Boolean));
+  if (!shownAbove.size || agenda.value.mode === "empty") return agenda.value;
+  const items = agenda.value.items.filter((item) => !(item.iServe && shownAbove.has(item.scheduleId)));
+  return items.length ? { ...agenda.value, items } : null;
 });
 
 const handleOpen = (item: ForYouItem) => {

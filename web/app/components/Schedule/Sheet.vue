@@ -44,6 +44,9 @@
               <BellRing :size="16" class="mr-2" aria-hidden="true" />
               Lembrar quem não respondeu ({{ view.health.pending }})
             </v-btn>
+            <p class="sheet-health-auto">
+              No dia da escala, a partir das 7h, quem ainda não respondeu recebe um lembrete automático.
+            </p>
           </PlanLock>
         </section>
 
@@ -217,6 +220,17 @@
                 <p v-if="view.canManage && !member.viewed && member.status === 'PENDING'" class="sheet-person-hint">
                   Ainda não viu
                 </p>
+                <!-- Líder: resolve a troca ali mesmo, sem abrir o editor. -->
+                <v-btn
+                  v-if="view.canManage && !view.hasStarted && ['DECLINED', 'SWAP_REQUESTED'].includes(member.status)"
+                  variant="tonal"
+                  color="primary"
+                  class="text-none font-weight-bold sheet-person-substitute"
+                  @click="openSubstitute(member)"
+                >
+                  <Repeat :size="16" class="mr-2" aria-hidden="true" />
+                  Substituir
+                </v-btn>
               </div>
               <ScheduleStatusPill :status="member.status" size="small" />
             </li>
@@ -326,6 +340,12 @@
     @cancel="isDeleteOpen = false"
     @confirm="confirmDelete"
   />
+  <ScheduleSubstituteSheet
+    v-model="substituteOpen"
+    :schedule="scheduleRef"
+    :member="substituteMember"
+    :subtitle="view ? `${view.title} · ${view.shortDateLabel}` : undefined"
+  />
 </template>
 
 <script setup lang="ts">
@@ -354,10 +374,11 @@ import {
   MoreHorizontal,
   Pencil,
   Play,
+  Repeat,
   Trash2,
   Users,
 } from "lucide-vue-next";
-import { canMarkAttendance, toScheduleView } from "../../utils/scheduleView";
+import { canMarkAttendance, toScheduleView, type TeamMember } from "../../utils/scheduleView";
 import { resolveDepartmentScheduleConfig } from "../../utils/departmentScheduleConfig";
 import type { DepartmentScheduleConfig } from "../../utils/departmentScheduleConfig";
 import { songKeyLabel } from "../../../composables/useSongChords";
@@ -376,6 +397,14 @@ const { getHolyricsStatus, syncScheduleToHolyrics } = useHolyrics();
 const holyricsConnected = useState<boolean | null>("holyrics-connected", () => null);
 
 const userId = computed(() => user.value?.id ?? null);
+
+// "Substituir" (líder): quem pediu troca ou não pode.
+const substituteOpen = ref(false);
+const substituteMember = ref<TeamMember | null>(null);
+const openSubstitute = (member: TeamMember) => {
+  substituteMember.value = member;
+  substituteOpen.value = true;
+};
 const error = ref("");
 const scheduleRef = computed(() => schedules.cache.value.byId[props.scheduleId] ?? null);
 const view = computed(() =>
@@ -694,6 +723,19 @@ const confirmDelete = async () => {
 }
 
 .sheet-person-role,
+.sheet-health-auto {
+  margin: 8px 0 0;
+  color: var(--app-color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.sheet-person-substitute {
+  justify-self: start;
+  margin-top: 6px;
+  border-radius: 12px !important;
+}
+
 .sheet-person-hint {
   margin: 0;
   color: var(--app-color-text-muted);

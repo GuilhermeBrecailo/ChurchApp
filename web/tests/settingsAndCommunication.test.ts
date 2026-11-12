@@ -86,7 +86,7 @@ describe("configurações da igreja", () => {
   });
 
   it("linhas de situação", () => {
-    assert.equal(serviceTimesStatus(0), "Nenhum horário cadastrado");
+    assert.equal(serviceTimesStatus(0), "Nenhum culto fixo cadastrado");
     assert.equal(serviceTimesStatus(1), "1 culto por semana");
     assert.equal(serviceTimesStatus(3), "3 cultos por semana");
     assert.equal(whatsappStatus(true, "5511987654321"), "Conectado · (11) 98765-4321");

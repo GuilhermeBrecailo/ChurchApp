@@ -36,6 +36,7 @@ import TenantHandler from "./src/interfaces/plugins/TenantHandler.ts";
 import { registerRateLimit } from "./src/interfaces/plugins/RateLimit.ts";
 import { startMessageRuleScheduler } from "./src/infrastructure/whatsapp/messageRuleScheduler.ts";
 import { startBirthdayScheduler } from "./src/infrastructure/whatsapp/birthdayScheduler.ts";
+import { startScheduleDayReminderScheduler } from "./src/application/jobs/sendScheduleDayReminders.ts";
 
 const port = Number(process.env.API_PORT || 8000);
 
@@ -112,5 +113,7 @@ await server.listen({ port, host: "0.0.0.0" });
 
 startMessageRuleScheduler();
 startBirthdayScheduler();
+// No dia da escala, lembra quem ainda não respondeu (a partir das 7h).
+startScheduleDayReminderScheduler();
 
 console.log(`Server running on http://localhost:${port}`);

@@ -18,8 +18,8 @@
         title="Nenhum culto na agenda"
         :description="access.canEditChurchSettings
           ? 'Cadastre os horários fixos da igreja e os cultos aparecem aqui toda semana.'
-          : 'Quando a igreja cadastrar os horários de culto, eles aparecem aqui.'"
-        :action-label="access.canEditChurchSettings ? 'Cadastrar horários de culto' : undefined"
+          : 'Quando a igreja cadastrar os cultos fixos da semana, eles aparecem aqui.'"
+        :action-label="access.canEditChurchSettings ? 'Cadastrar cultos fixos' : undefined"
         action-to="/configuracoes/horarios"
         compact
       />

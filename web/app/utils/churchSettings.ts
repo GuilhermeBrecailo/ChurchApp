@@ -53,7 +53,7 @@ export const SETTINGS_SECTIONS: Record<SettingsSectionSlug, SettingsSection> = {
   },
   horarios: {
     slug: "horarios",
-    title: "Horários de culto",
+    title: "Cultos fixos da semana",
     description: "Aparecem na página pública e nas mensagens pós-culto",
     icon: "clock",
   },
@@ -141,7 +141,7 @@ export function legacySettingsRoute(secao: unknown) {
 // ── Linhas de situação ("Conectado · (11) 9…", "3 cultos por semana") ──
 
 export function serviceTimesStatus(count: number) {
-  if (count <= 0) return "Nenhum horário cadastrado";
+  if (count <= 0) return "Nenhum culto fixo cadastrado";
   return count === 1 ? "1 culto por semana" : `${count} cultos por semana`;
 }
 

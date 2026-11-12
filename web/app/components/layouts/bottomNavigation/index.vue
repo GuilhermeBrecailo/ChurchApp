@@ -25,13 +25,14 @@
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { useAuth } from "../../../../composables/useAuth";
-import { getOwnerTab, getPrimaryTabs } from "../../../utils/roleNavigation";
+import { getOwnerTab } from "../../../utils/roleNavigation";
 import { navigationIcons } from "../../../utils/navigationIcons";
 
 const { user } = useAuth();
 const route = useRoute();
 
-const tabs = computed(() => getPrimaryTabs(user.value));
+// Líder de um ministério só: a aba vira o nome dele e abre direto.
+const { tabs } = usePrimaryTabs();
 const ownerTab = computed(() => getOwnerTab(user.value, route.path));
 </script>
 

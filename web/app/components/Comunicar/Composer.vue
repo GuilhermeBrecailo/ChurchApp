@@ -454,11 +454,15 @@ const reset = async () => {
   if (kind.value === "WHATSAPP") void loadWhatsAppData();
 };
 
+// immediate: quando a tela já abre com ?novo=<tipo> (ex.: "Novo devocional"
+// em Devocionais, ou a volta do "Conectar agora" do WhatsApp), o formulário
+// nasce aberto e precisa já vir com o tipo escolhido.
 watch(
   () => props.modelValue,
   (open) => {
     if (open) void reset();
   },
+  { immediate: true },
 );
 
 // Depois de criar um modelo novo, ele já vem escolhido.

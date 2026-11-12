@@ -504,10 +504,12 @@ export function seedEsperanca(now: Date): DemoDB {
             });
           });
           if (dayKey === nextSundayKey && service.id === "st-dom-manha") {
+            // Música da Ceia: uma que ainda não está no repertório do dia.
+            const ceiaSong = ["mais-perto", "santo", "graca", "luz"].find((key) => !songs.includes(key)) ?? "santo";
             db.scheduleMedia.push({
               id: `sm-${scheduleId}-ceia`,
               scheduleId,
-              mediaItemId: "song-mais-perto",
+              mediaItemId: `song-${ceiaSong}`,
               order: 4,
               observation: "Durante a distribuição da Ceia",
               startedByUserId: null,

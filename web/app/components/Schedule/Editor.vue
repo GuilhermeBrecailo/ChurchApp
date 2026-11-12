@@ -191,7 +191,16 @@
             >
               <X :size="18" />
             </v-btn>
-            <div v-if="row.userId && badgesFor(row.userId).length" class="editor-badges">
+            <div v-if="row.userId && (badgesFor(row.userId).length || responseFor(row))" class="editor-badges">
+              <!-- Resposta que a pessoa já deu nesta escala (ao editar). -->
+              <v-chip
+                v-if="responseFor(row)"
+                size="small"
+                variant="tonal"
+                :color="responseFor(row)!.color"
+              >
+                {{ responseFor(row)!.label }}
+              </v-chip>
               <v-chip
                 v-for="badge in badgesFor(row.userId)"
                 :key="badge.text"
@@ -365,6 +374,7 @@
  * "Salvar e avisar a equipe" — uma chamada, um push por pessoa.
  */
 import { computed, nextTick, reactive, ref, watch } from "vue";
+import { scheduleStatusInfo } from "../../utils/scheduleStatus";
 import {
   AlertTriangle,
   CalendarPlus,
@@ -480,6 +490,16 @@ const emptyDraft = (): EditorDraft => ({
 const draft = reactive<EditorDraft>(emptyDraft());
 
 const isEditing = computed(() => Boolean(props.schedule));
+
+// Ao editar: a resposta de quem já estava na escala (Confirmado, Pediu troca,
+// Não posso…), para o líder não trocar gente às cegas.
+const responseFor = (row: { userId: string; role: string }) => {
+  if (!props.schedule || !row.userId) return null;
+  const sameRole = (a: string, b: string) => a.trim().toLocaleLowerCase("pt-BR") === b.trim().toLocaleLowerCase("pt-BR");
+  const assignments = (props.schedule.assignments ?? []).filter((item) => item.userId === row.userId);
+  const match = assignments.find((item) => sameRole(item.role, row.role)) ?? assignments[0];
+  return match ? scheduleStatusInfo(match.confirmationStatus) : null;
+};
 
 const manageableDepartments = computed(() =>
   departments.value.filter(

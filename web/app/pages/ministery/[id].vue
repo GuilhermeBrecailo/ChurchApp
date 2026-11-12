@@ -249,7 +249,7 @@ onMounted(async () => {
   }
 });
 
-useHead({ title: "Ministério" });
+useHead(() => ({ title: department.value?.name ?? "Ministério" }));
 </script>
 
 <style scoped>

@@ -14,7 +14,29 @@
       </template>
     </UtilsPageHeader>
 
-    <UtilsPageTabs v-model="tab" :items="tabItems" query-key="aba" aria-label="Visões das escalas" />
+    <UtilsPageTabs :model-value="tabForBar" :items="tabItems" query-key="aba" aria-label="Visões das escalas" />
+
+    <!-- Líder: "Organizar" mostra os ministérios dele; "Igreja toda" mostra
+         as escalas dos outros ministérios (sem precisar de outra aba). -->
+    <div
+      v-if="showScopeToggle && (tab === 'organizar' || tab === 'igreja')"
+      class="scale-chips scale-scope"
+      role="group"
+      aria-label="Quais escalas ver"
+    >
+      <v-chip
+        v-for="option in scopeOptions"
+        :key="option.value"
+        :variant="tab === option.value ? 'flat' : 'outlined'"
+        :color="tab === option.value ? 'primary' : undefined"
+        :aria-pressed="tab === option.value"
+        tag="button"
+        class="scale-chip"
+        @click="setQuery({ aba: option.value, filtro: undefined, ministerio: undefined })"
+      >
+        {{ option.label }}
+      </v-chip>
+    </div>
 
     <!-- Minhas -->
     <section v-if="tab === 'minhas'" aria-label="Minhas escalas">
@@ -103,6 +125,10 @@
           <span class="scale-stat-label">{{ stat.label }}</span>
         </button>
       </div>
+      <p v-if="autoReminder && stats.noAnswer" class="scale-auto-reminder">
+        <BellRing :size="15" aria-hidden="true" />
+        No dia da escala, a partir das 7h, quem ainda não respondeu recebe um lembrete automático.
+      </p>
       <div v-if="managedDepartments.length > 1" v-scroll-fade class="scale-chips hide-scrollbar" role="group" aria-label="Filtrar por ministério">
         <v-chip
           v-for="option in managedChips"
@@ -151,13 +177,14 @@
 
 <script setup lang="ts">
 /**
- * Escalas: Minhas (padrão) · Igreja · Organizar (quem organiza algum
- * ministério) · Cultos. Lista agrupada por data; o histórico carrega 20 por
+ * Escalas: Minhas (padrão) · Igreja (quem só serve) ou Organizar (quem
+ * organiza algum ministério; o líder alterna "Meus ministérios / Igreja
+ * toda") · Cultos. Lista agrupada por data; o histórico carrega 20 por
  * vez em "Ver escalas anteriores". Tocar numa escala abre a folha única
  * (?schedule=<id>), montada no layout.
  */
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
-import { CalendarCheck, CalendarPlus, Church, Plus } from "lucide-vue-next";
+import { BellRing, CalendarCheck, CalendarPlus, Church, Plus } from "lucide-vue-next";
 import {
   groupByDate,
   groupByService,
@@ -252,12 +279,22 @@ const organizerTiles = computed(() => [
   { filter: "nao-viram" as const, value: stats.value.notViewed, label: "Não viram" },
 ]);
 
+// Quem organiza: Minhas · Organizar · Cultos ("Igreja" vira o "Igreja toda"
+// dentro de Organizar, só para o líder; o pastor já vê tudo em Organizar).
+// Quem não organiza: Minhas · Igreja · Cultos.
 const tabItems = computed(() => [
   { value: "minhas", label: "Minhas" },
-  { value: "igreja", label: "Igreja" },
-  ...(managesAny.value ? [{ value: "organizar", label: "Organizar" }] : []),
+  managesAny.value ? { value: "organizar", label: "Organizar" } : { value: "igreja", label: "Igreja" },
   { value: "cultos", label: "Cultos" },
 ]);
+const tabForBar = computed(() => (tab.value === "igreja" && managesAny.value ? "organizar" : tab.value));
+const showScopeToggle = computed(() => managesAny.value && !access.value.isChurchManager);
+const scopeOptions = [
+  { value: "organizar", label: "Meus ministérios" },
+  { value: "igreja", label: "Igreja toda" },
+];
+const { hasFeature } = useChurchPlan();
+const autoReminder = computed(() => hasFeature("SCHEDULE_REMINDER"));
 
 const ministryChips = computed(() => [
   { value: "", label: "Todos" },
@@ -401,6 +438,26 @@ useHead({ title: "Escalas" });
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+.scale-scope {
+  margin-bottom: 14px;
+}
+
+.scale-auto-reminder {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: -4px 0 14px;
+  color: var(--app-color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.scale-auto-reminder svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--app-color-accent);
 }
 
 .scale-stats {

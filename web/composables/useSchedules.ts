@@ -246,6 +246,26 @@ export const useSchedules = () => {
     return response;
   };
 
+  /**
+   * Troca a equipe da escala (o líder, pelo "Substituir"). Quem continua vai
+   * com o `id` da linha (mantém a resposta); quem entra vai sem `id` e é
+   * avisado pela API.
+   */
+  const replaceAssignments = async (
+    scheduleId: string,
+    assignments: { id?: string; userId: string; role: string }[],
+  ): Promise<ApiResponse<ApiSchedule>> => {
+    const response = await $customFetch<ApiSchedule>(`${base}/${scheduleId}/assignments`, {
+      method: "PATCH",
+      headers: headers(),
+      body: { assignments },
+    });
+    if (response.data) {
+      cache.value = invalidateScheduleCache(storeSchedules(cache.value, [response.data], { full: true }));
+    }
+    return response;
+  };
+
   const remindPending = async (id: string) =>
     await $customFetch<{ success: boolean; notifiedCount: number }>(`${base}/${id}/reminders`, {
       method: "POST",
@@ -360,6 +380,7 @@ export const useSchedules = () => {
     respond,
     save,
     remove,
+    replaceAssignments,
     remindPending,
     checkConflicts,
     setAttendance,
