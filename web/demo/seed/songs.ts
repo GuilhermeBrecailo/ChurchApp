@@ -139,7 +139,8 @@ Meu Deus, de ti!`,
     songKey: "E",
     bpm: "128",
     songCategory: "Celebração",
-    mediaLink: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    // Música fictícia da igreja de exemplo: sem link de vídeo (um link real
+    // apontaria para uma música de outra pessoa).
     notes: "Música tema da igreja. Final com a ponte repetida 2x.",
     lyrics: `[Verso 1]
 Quando a noite parecia não ter fim

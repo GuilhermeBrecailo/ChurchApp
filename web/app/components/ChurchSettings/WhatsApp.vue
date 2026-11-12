@@ -117,6 +117,16 @@ import { formatBrazilianPhone } from "../../utils/churchSettings";
 
 const { getWhatsAppStatus, connectWhatsApp, disconnectWhatsApp } = useWhatsApp();
 const toast = useAppToast();
+const route = useRoute();
+const router = useRouter();
+
+// Veio do meio de um comunicado (?voltar=/comunicar?novo=whatsapp): depois de
+// conectar, volta sozinho para lá em vez de deixar a pessoa perdida aqui.
+// Só caminhos internos ("/..."), nunca outro site.
+const returnTo = computed(() => {
+  const value = String(route.query.voltar ?? "");
+  return value.startsWith("/") && !value.startsWith("//") ? value : "";
+});
 
 const connected = ref(false);
 const phone = ref<string | null>(null);
@@ -154,6 +164,11 @@ const startPolling = () => {
       phone.value = data.phone ?? null;
       isConnectOpen.value = false;
       stopPolling();
+      if (returnTo.value) {
+        toast.success("WhatsApp conectado. Voltando para o comunicado…");
+        await router.push(returnTo.value);
+        return;
+      }
       toast.success("WhatsApp conectado");
     }
   }, 3000);
@@ -196,7 +211,11 @@ const disconnect = async () => {
   toast.success("WhatsApp desconectado");
 };
 
-onMounted(loadStatus);
+onMounted(async () => {
+  await loadStatus();
+  // Chegou pelo "Conectar agora" de um comunicado: já abre o QR Code.
+  if (returnTo.value && !connected.value) await startConnect();
+});
 onUnmounted(stopPolling);
 </script>
 

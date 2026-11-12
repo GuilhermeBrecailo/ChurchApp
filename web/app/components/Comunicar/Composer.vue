@@ -61,7 +61,7 @@
           <template v-if="kind === 'WHATSAPP'">
             <v-alert v-if="whatsappConnected === false" type="warning" variant="tonal" class="mb-4">
               O WhatsApp da igreja não está conectado.
-              <NuxtLink to="/configuracoes/whatsapp" class="config-inline-link">Conectar agora</NuxtLink>
+              <NuxtLink :to="{ path: '/configuracoes/whatsapp', query: { voltar: '/comunicar?novo=whatsapp' } }" class="config-inline-link">Conectar agora</NuxtLink>
             </v-alert>
             <div class="content-fields">
               <v-select

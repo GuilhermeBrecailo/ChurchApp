@@ -13,6 +13,9 @@ import { ref } from "vue";
 import { AnimatePresence, motion } from "motion-v";
 
 const direction = ref(0);
+// "Reduzir movimento" no sistema: a troca de tela só esmaece, sem deslizar.
+const reduceMotion =
+  import.meta.client && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const depth = (path: string) => path.split("/").filter(Boolean).length;
 
 useRouter().beforeEach((to, from) => {
@@ -20,7 +23,7 @@ useRouter().beforeEach((to, from) => {
   const a = depth(from.path);
   const b = depth(to.path);
   // Abas de primeiro nível (/, /scale, /igreja, /user…) contam como irmãs.
-  direction.value = a <= 1 && b <= 1 ? 0 : Math.sign(b - a);
+  direction.value = reduceMotion || (a <= 1 && b <= 1) ? 0 : Math.sign(b - a);
 });
 
 // Curva das telas do iOS (sai rápido, assenta devagar).

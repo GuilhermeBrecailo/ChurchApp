@@ -163,21 +163,7 @@ const onKeydown = (event: KeyboardEvent) => {
   pointer-events: none;
 }
 
-.ui-page-tabs-thumb--ready {
-  transition:
-    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
-    width 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-:global(.app-theme-dark) .ui-page-tabs-thumb {
-  background: #636366;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ui-page-tabs-thumb--ready {
-    transition: none;
-  }
-}
+/* Transição, tema escuro e "reduzir movimento": em theme.css (globais). */
 
 .ui-page-tabs--fill > button {
   flex: 1 1 0;

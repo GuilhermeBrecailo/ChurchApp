@@ -1759,7 +1759,7 @@ h1.text-h5 {
 }
 
 /* Seletor segmentado e chips: troca de item ativo suave. */
-.app-segmented > *,
+.app-segmented > :not(.ui-page-tabs-thumb),
 :where(.app-operational-page, .responsive-overlay) .v-tab,
 :where(.app-operational-page, .responsive-overlay) .v-btn-toggle .v-btn {
   transition:
@@ -1955,5 +1955,22 @@ button.v-chip {
 
   .bottom-nav .custom-btn.v-btn--active .nav-icon {
     animation: none;
+  }
+}
+
+/* "Botão branco" deslizante do controle segmentado (UtilsPageTabs). */
+.ui-page-tabs-thumb--ready {
+  transition:
+    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    width 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.app-theme-dark .ui-page-tabs > .ui-page-tabs-thumb {
+  background: #636366;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-page-tabs-thumb--ready {
+    transition: none;
   }
 }
