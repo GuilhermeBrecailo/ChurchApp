@@ -34,7 +34,18 @@ template" nem de interface gerada por IA. A identidade da igreja aparece na
   branco com sombra leve). **Filtros:** cápsulas cinza preenchidas; a
   selecionada fica na cor de destaque.
 - **Ajuda:** botão de texto "Ajuda", sem fundo.
-- **Movimento** curto e funcional, respeitando `prefers-reduced-motion`.
+- **Movimento** curto e funcional, no ritmo do iPhone, respeitando
+  `prefers-reduced-motion`:
+  - curva padrão `cubic-bezier(0.32, 0.72, 0, 1)` (sai rápido, assenta devagar);
+    nada passa de ~0,45s; saídas mais rápidas que entradas;
+  - trocar de tela: detalhe entra pela direita, voltar vem da esquerda, abas
+    só esmaecem;
+  - controle segmentado: o "botão branco" desliza até a aba escolhida;
+  - título grande vira título pequeno na barra de cima ao rolar;
+  - folhas sobem com a curva do iOS; ícone da aba tocada dá um "pulinho";
+  - item respondido sai da lista e os de baixo sobem sem pular;
+  - listas entram quase juntas (30ms entre itens, 4px): **sem cascatas
+    longas, brilhos, gradientes animados ou "flutuação" decorativa**.
 
 Os valores estão em `web/app/assets/css/theme.css` (tokens `--app-color-*`) e
 no tema do Vuetify em `web/nuxt.config.ts`.

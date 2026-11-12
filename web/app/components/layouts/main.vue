@@ -33,6 +33,8 @@ function skipToContent() {
 <style scoped>
 .app-main {
   background-color: var(--app-color-background);
+  /* A tela que entra deslizando não pode criar rolagem para o lado. */
+  overflow-x: clip;
 }
 
 .app-main:focus {

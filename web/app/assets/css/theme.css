@@ -1920,3 +1920,40 @@ button.v-chip {
 .v-btn.v-btn--size-x-small {
   --v-btn-size: 0.8125rem;
 }
+
+/* ============================================================
+   Movimento (estilo iOS, discreto):
+   - folhas sobem com a curva das telas do iPhone e descem mais rápido;
+   - ícone da aba tocada dá um "pulinho" curto.
+   ============================================================ */
+.bottom-sheet-transition-enter-active {
+  transition-duration: 0.42s !important;
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1) !important;
+}
+
+.bottom-sheet-transition-leave-active {
+  transition-duration: 0.24s !important;
+  transition-timing-function: cubic-bezier(0.4, 0, 1, 1) !important;
+}
+
+@keyframes app-tab-bounce {
+  0% { transform: scale(1); }
+  35% { transform: scale(0.82); }
+  70% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.bottom-nav .custom-btn.v-btn--active .nav-icon {
+  animation: app-tab-bounce 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-sheet-transition-enter-active,
+  .bottom-sheet-transition-leave-active {
+    transition-duration: 0.01s !important;
+  }
+
+  .bottom-nav .custom-btn.v-btn--active .nav-icon {
+    animation: none;
+  }
+}

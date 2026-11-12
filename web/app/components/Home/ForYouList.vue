@@ -19,7 +19,8 @@
       description="Quando houver uma escala para responder ou algo para cuidar, aparece aqui."
     />
 
-    <ul v-else class="for-you-card app-surface" role="list">
+    <!-- Ao responder, o item sai esmaecendo e os de baixo sobem suavemente. -->
+    <TransitionGroup v-else tag="ul" name="for-you" class="for-you-card app-surface" role="list">
       <li
         v-for="item in visibleItems"
         :key="item.key"
@@ -113,12 +114,12 @@
         </NuxtLink>
       </li>
 
-      <li v-if="hiddenCount > 0 || expanded" class="for-you-more">
+      <li v-if="hiddenCount > 0 || expanded" key="for-you-more" class="for-you-more">
         <button type="button" class="for-you-more-btn" @click="expanded = !expanded">
           {{ expanded ? "Ver menos" : `Ver mais (${hiddenCount})` }}
         </button>
       </li>
-    </ul>
+    </TransitionGroup>
 
     <HomeDeclineSheet
       v-model="declineOpen"
@@ -215,11 +216,47 @@ const confirmDecline = (reason: string) => {
 }
 
 .for-you-card {
+  position: relative;
   display: grid;
   margin: 0;
   padding: 4px 0;
   list-style: none;
   overflow: hidden;
+}
+
+.for-you-move,
+.for-you-enter-active {
+  transition:
+    transform 0.34s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.24s ease;
+}
+
+.for-you-leave-active {
+  position: absolute;
+  left: 0;
+  right: 0;
+  transition:
+    opacity 0.2s ease,
+    transform 0.24s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.for-you-enter-from,
+.for-you-leave-to {
+  opacity: 0;
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .for-you-move,
+  .for-you-enter-active,
+  .for-you-leave-active {
+    transition: opacity 0.15s ease;
+  }
+
+  .for-you-enter-from,
+  .for-you-leave-to {
+    transform: none;
+  }
 }
 
 .for-you-item + .for-you-item,

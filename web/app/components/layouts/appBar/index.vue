@@ -8,6 +8,10 @@
         <Church size="18" />
       </span>
 
+      <!-- Ao rolar, o nome da igreja dá lugar ao título da tela (como a barra
+           de navegação do iPhone quando o título grande sai da tela). -->
+      <div class="header-title-swap" :class="{ 'is-compact': showCompactTitle }">
+      <div class="header-title-church">
       <div v-if="!hasMultipleChurches" class="header-church-row">
         <span class="church-text">{{ churchName }}</span>
       </div>
@@ -39,6 +43,9 @@
           </v-list-item>
         </v-list>
       </v-menu>
+      </div>
+      <span class="header-title-page" aria-hidden="true">{{ compactTitle }}</span>
+      </div>
     </div>
 
     <v-spacer></v-spacer>
@@ -218,7 +225,7 @@ import {
   Eye,
   Smartphone,
 } from "lucide-vue-next";
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useAuth } from "../../../../composables/useAuth";
 import {
   usePushNotifications,
@@ -252,7 +259,46 @@ const {
   disable,
 } = usePushNotifications();
 const router = useRouter();
+const route = useRoute();
 const notificationMenuOpen = ref(false);
+
+// Título compacto: quando o título grande (h1) da tela passa por baixo da
+// barra, ele aparece pequeno aqui. Usa o nome da aba do navegador
+// ("Escalas · ChurchApp" → "Escalas"), senão o próprio h1.
+const compactTitle = ref("");
+const showCompactTitle = ref(false);
+let titleObserver: IntersectionObserver | null = null;
+let titleTimer: ReturnType<typeof setTimeout> | null = null;
+
+const observePageTitle = () => {
+  titleObserver?.disconnect();
+  showCompactTitle.value = false;
+  const heading = document.querySelector<HTMLElement>("#conteudo h1");
+  if (!heading || typeof IntersectionObserver === "undefined") return;
+  const tabTitle = document.title.replace(/\s·\sChurchApp$/, "").trim();
+  compactTitle.value = tabTitle && tabTitle !== "ChurchApp" ? tabTitle : (heading.textContent ?? "").trim();
+  titleObserver = new IntersectionObserver(
+    ([entry]) => {
+      if (!entry) return;
+      showCompactTitle.value = !entry.isIntersecting && entry.boundingClientRect.top < 80;
+    },
+    { rootMargin: "-64px 0px 0px 0px", threshold: 0 },
+  );
+  titleObserver.observe(heading);
+};
+
+const scheduleTitleObserver = () => {
+  if (titleTimer) clearTimeout(titleTimer);
+  // Espera a troca de tela terminar (a tela nova entra animada).
+  titleTimer = setTimeout(observePageTitle, 450);
+};
+
+watch(() => route.path, scheduleTitleObserver);
+onMounted(scheduleTitleObserver);
+onBeforeUnmount(() => {
+  titleObserver?.disconnect();
+  if (titleTimer) clearTimeout(titleTimer);
+});
 
 const previewLabel = computed(() => getNavPreviewLabel(user.value));
 const previewExiting = ref(false);
@@ -347,6 +393,53 @@ onMounted(async () => {
   padding: 5px clamp(12px, 2.5vw, 20px);
   border-bottom: 1px solid var(--app-color-appbar-border) !important;
   box-shadow: 0 2px 10px rgba(31, 30, 29, 0.04) !important;
+}
+
+.header-title-swap {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.header-title-church,
+.header-title-page {
+  transition:
+    opacity 0.24s ease,
+    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.header-title-page {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  color: var(--app-color-text);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translateY(20%);
+  pointer-events: none;
+}
+
+.header-title-swap.is-compact .header-title-church {
+  opacity: 0;
+  transform: translateY(-60%);
+  pointer-events: none;
+}
+
+.header-title-swap.is-compact .header-title-page {
+  opacity: 1;
+  transform: translateY(-50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-title-church,
+  .header-title-page {
+    transition: opacity 0.2s ease;
+  }
 }
 
 .header-identity-wrap {

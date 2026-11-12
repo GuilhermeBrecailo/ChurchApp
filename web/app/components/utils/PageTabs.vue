@@ -6,6 +6,14 @@
     :aria-label="ariaLabel"
     @keydown="onKeydown"
   >
+    <!-- "Botão branco" que desliza até a aba escolhida (controle segmentado do iOS). -->
+    <span
+      v-if="thumb"
+      class="ui-page-tabs-thumb"
+      :class="{ 'ui-page-tabs-thumb--ready': thumbReady }"
+      :style="{ transform: `translate3d(${thumb.x}px, ${thumb.y}px, 0)`, width: `${thumb.w}px`, height: `${thumb.h}px` }"
+      aria-hidden="true"
+    />
     <button
       v-for="(item, index) in items"
       :key="item.value"
@@ -32,7 +40,15 @@
  * celular volta para a aba anterior em vez de sair da tela.
  * Chips continuam servindo só para filtros, nunca para trocar de visão.
  */
-import { computed, type ComponentPublicInstance } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+  type ComponentPublicInstance,
+} from "vue";
 
 export type PageTabItem = { value: string; label: string; badge?: number | string | null };
 
@@ -74,6 +90,33 @@ const select = (value: string) => {
   }
 };
 
+// Posição do "botão branco": mede a aba ativa e desliza até ela.
+const thumb = ref<{ x: number; y: number; w: number; h: number } | null>(null);
+const thumbReady = ref(false);
+let resizeObserver: ResizeObserver | null = null;
+
+const measureThumb = () => {
+  const index = props.items.findIndex((item) => item.value === current.value);
+  const el = tabRefs[index];
+  if (!el) return;
+  thumb.value = { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight };
+};
+
+watch(current, () => nextTick(measureThumb));
+watch(() => props.items.map((item) => `${item.value}:${item.badge ?? ""}`).join("|"), () => nextTick(measureThumb));
+
+onMounted(() => {
+  measureThumb();
+  // Só anima depois da primeira medida, para não "voar" do canto ao abrir a tela.
+  requestAnimationFrame(() => { thumbReady.value = true; });
+  if (typeof ResizeObserver !== "undefined") {
+    resizeObserver = new ResizeObserver(() => measureThumb());
+    tabRefs.forEach((el) => el && resizeObserver?.observe(el));
+  }
+});
+
+onBeforeUnmount(() => resizeObserver?.disconnect());
+
 const onKeydown = (event: KeyboardEvent) => {
   if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
   const index = props.items.findIndex((item) => item.value === current.value);
@@ -93,7 +136,47 @@ const onKeydown = (event: KeyboardEvent) => {
 
 <style scoped>
 .ui-page-tabs {
+  position: relative;
   margin-bottom: 16px;
+}
+
+.ui-page-tabs > button {
+  position: relative;
+  z-index: 1;
+  transition: color 0.2s ease, font-weight 0.2s ease;
+}
+
+/* Com o "botão branco" deslizante, a aba ativa não pinta o próprio fundo. */
+.ui-page-tabs > button.app-segmented--active {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ui-page-tabs-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  border-radius: 8px;
+  background: var(--app-color-surface);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
+  pointer-events: none;
+}
+
+.ui-page-tabs-thumb--ready {
+  transition:
+    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    width 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+:global(.app-theme-dark) .ui-page-tabs-thumb {
+  background: #636366;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-page-tabs-thumb--ready {
+    transition: none;
+  }
 }
 
 .ui-page-tabs--fill > button {
