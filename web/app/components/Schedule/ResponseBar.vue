@@ -3,7 +3,7 @@
     <template v-if="showButtons">
       <div class="response-bar-buttons" role="group" aria-label="Sua resposta">
         <v-btn
-          color="teal-darken-2"
+          color="primary"
           variant="flat"
           :size="compact ? 'small' : 'default'"
           class="text-none font-weight-bold response-btn"

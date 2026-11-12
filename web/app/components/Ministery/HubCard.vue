@@ -28,7 +28,7 @@
         v-for="action in inlineActions"
         :key="action.key"
         :color="action.key === 'schedule' ? 'primary' : undefined"
-        :variant="action.key === 'schedule' ? 'flat' : 'tonal'"
+        variant="tonal"
         class="text-none font-weight-bold hub-card-action"
         @click="emit(action.key === 'schedule' ? 'new-schedule' : 'people', department)"
       >

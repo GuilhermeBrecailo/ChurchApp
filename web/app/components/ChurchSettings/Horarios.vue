@@ -258,7 +258,8 @@ onMounted(loadServiceTimes);
 }
 
 .service-hour {
-  font-family: "IBM Plex Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
   font-size: 1.0625rem;
   color: var(--app-color-text);
 }

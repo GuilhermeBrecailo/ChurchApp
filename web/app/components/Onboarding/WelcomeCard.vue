@@ -152,7 +152,8 @@ onMounted(async () => {
 .welcome-title {
   margin: 0;
   color: var(--app-color-text);
-  font-family: "Fraunces", Georgia, serif;
+  font-family: inherit;
+  letter-spacing: -0.02em;
   font-size: clamp(1.3rem, 1.1rem + 0.8vw, 1.55rem);
   font-weight: 650;
   letter-spacing: -0.015em;

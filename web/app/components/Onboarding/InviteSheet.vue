@@ -169,7 +169,7 @@ watch(
   border: 1px dashed var(--app-color-border-strong);
   border-radius: 12px;
   color: var(--app-color-text-soft);
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
   font-size: 0.85rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -211,7 +211,7 @@ watch(
 
 .invite-code {
   color: var(--app-color-text);
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
   letter-spacing: 0.1em;
 }
 

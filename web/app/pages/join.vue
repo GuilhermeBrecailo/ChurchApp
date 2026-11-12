@@ -416,7 +416,8 @@ onMounted(async () => {
   border-radius: 24px;
   background: var(--app-color-accent-tint);
   color: var(--app-color-accent);
-  font-family: "Fraunces", Georgia, serif;
+  font-family: inherit;
+  letter-spacing: -0.02em;
   font-size: 1.8rem;
   font-weight: 700;
 }
@@ -428,7 +429,7 @@ onMounted(async () => {
 }
 
 .join-code-input :deep(input) {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }

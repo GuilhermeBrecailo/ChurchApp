@@ -38,7 +38,7 @@ withDefaults(
 <style scoped>
 .ui-section-header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
@@ -72,10 +72,10 @@ withDefaults(
   align-items: center;
   gap: 2px;
   flex: 0 0 auto;
-  min-height: 40px;
+  min-height: 36px;
   color: var(--app-color-accent);
-  font-size: 0.88rem;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 500;
   text-decoration: none;
 }
 

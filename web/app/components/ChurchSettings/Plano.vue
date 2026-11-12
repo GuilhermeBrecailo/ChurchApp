@@ -236,7 +236,8 @@ onMounted(async () => {
 }
 
 .plans-status-name {
-  font-family: "Fraunces", serif;
+  font-family: inherit;
+  letter-spacing: -0.02em;
   font-weight: 650;
   font-size: 1.25rem;
   color: var(--app-color-text);
@@ -269,7 +270,8 @@ onMounted(async () => {
 }
 
 .plans-column-title {
-  font-family: "Fraunces", serif;
+  font-family: inherit;
+  letter-spacing: -0.02em;
   font-weight: 650;
   font-size: 1.375rem;
   letter-spacing: -0.01em;
@@ -291,7 +293,8 @@ onMounted(async () => {
 }
 
 .plans-price-amount {
-  font-family: "Fraunces", serif;
+  font-family: inherit;
+  letter-spacing: -0.02em;
   font-weight: 650;
   font-size: 1.7rem;
   color: var(--app-color-text);
@@ -334,7 +337,7 @@ onMounted(async () => {
   border-radius: 999px;
   background: var(--app-color-warning);
   color: var(--app-color-surface);
-  font-family: "IBM Plex Mono", monospace;
+  font-family: inherit;
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.06em;

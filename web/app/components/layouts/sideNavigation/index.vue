@@ -20,17 +20,22 @@
             <span>{{ tab.label }}</span>
           </NuxtLink>
 
-          <!-- Gestão abre os grupos ali mesmo (sem hub intermediário). -->
-          <div v-if="tab.key === 'management'" class="side-nav-sub">
-            <section
-              v-for="group in managementGroups"
-              :key="group.key"
-              class="side-nav-group"
-              :aria-labelledby="`side-nav-${group.key}`"
+          <!-- Gestão: uma seção com seta para abrir/fechar (padrão da barra
+               lateral da Apple: no máximo dois níveis, grupos recolhíveis). -->
+          <section v-if="tab.key === 'management'" class="side-nav-section" aria-label="Gestão">
+            <button
+              type="button"
+              class="side-nav-disclosure"
+              :aria-expanded="managementOpen"
+              aria-controls="side-nav-management"
+              @click="toggleManagement"
             >
-              <h2 :id="`side-nav-${group.key}`" class="side-nav-heading">{{ group.label }}</h2>
+              <span>Ferramentas de gestão</span>
+              <ChevronDown size="16" aria-hidden="true" :class="{ 'side-nav-chevron--closed': !managementOpen }" />
+            </button>
+            <div v-show="managementOpen" id="side-nav-management" class="side-nav-sub">
               <NuxtLink
-                v-for="item in group.items"
+                v-for="item in managementFlat"
                 :key="item.key"
                 :to="item.route"
                 class="side-nav-link side-nav-link--sub"
@@ -41,11 +46,11 @@
                 <component :is="navigationIcons[item.icon]" size="17" aria-hidden="true" />
                 <span>{{ item.label }}</span>
               </NuxtLink>
-            </section>
-          </div>
+            </div>
+          </section>
 
           <!-- Líder: os ministérios dele, um clique cada. -->
-          <div v-if="tab.key === 'ministries' && leaderMinistries.length" class="side-nav-sub">
+          <div v-if="tab.key === 'ministries' && leaderMinistries.length" class="side-nav-sub side-nav-sub--list">
             <NuxtLink
               v-for="ministry in leaderMinistries"
               :key="ministry.id"
@@ -83,7 +88,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
+import { ChevronDown } from "lucide-vue-next";
 import { useRoute } from "vue-router";
 import { useDisplay } from "vuetify";
 import { useState } from "#app";
@@ -114,6 +120,26 @@ const managementGroups = computed(() =>
   hasManagementTab.value ? getManagementItems(user.value) : [],
 );
 const initials = computed(() => getInitials(user.value?.name));
+const managementFlat = computed(() => managementGroups.value.flatMap((group) => group.items));
+
+// Seção de gestão aberta/fechada: lembrada neste aparelho.
+const MANAGEMENT_OPEN_KEY = "side-nav-management-open";
+const readManagementOpen = () => {
+  try {
+    return localStorage.getItem(MANAGEMENT_OPEN_KEY) !== "0";
+  } catch {
+    return true;
+  }
+};
+const managementOpen = ref(import.meta.client ? readManagementOpen() : true);
+const toggleManagement = () => {
+  managementOpen.value = !managementOpen.value;
+  try {
+    localStorage.setItem(MANAGEMENT_OPEN_KEY, managementOpen.value ? "1" : "0");
+  } catch {
+    /* sem storage: só não lembra */
+  }
+};
 
 // Ministérios do líder: buscados uma vez por sessão/igreja.
 const leaderMinistries = useState<Array<{ id: string; name: string }>>(
@@ -169,9 +195,13 @@ const activeSubKey = computed(() => {
 </script>
 
 <style scoped>
+/* Barra lateral no padrão Apple (Mac/iPad): fundo cinza translúcido,
+   linhas simples, ícones na cor de destaque, item ativo com realce suave. */
 .side-nav {
   background: var(--app-color-shell-bg) !important;
   border-right: 1px solid var(--app-color-shell-border) !important;
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .side-nav :deep(.v-navigation-drawer__content) {
@@ -192,66 +222,80 @@ const activeSubKey = computed(() => {
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 2px;
-  padding: 16px 12px 16px;
+  padding: 14px 10px;
   flex: 1 1 auto;
+}
+
+.side-nav-section {
+  display: grid;
+  margin-top: 14px;
+}
+
+.side-nav-disclosure {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+  width: 100%;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--app-color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.side-nav-disclosure:hover {
+  color: var(--app-color-text);
+}
+
+.side-nav-disclosure:focus-visible {
+  outline: none;
+  box-shadow: var(--app-focus-ring);
+}
+
+.side-nav-disclosure svg {
+  transition: transform 0.2s ease;
+}
+
+.side-nav-chevron--closed {
+  transform: rotate(-90deg);
 }
 
 .side-nav-sub {
   display: grid;
-  gap: 10px;
-  margin: 2px 0 8px 18px;
-  padding-left: 10px;
-  border-left: 1px solid var(--app-color-border-subtle);
+  gap: 2px;
 }
 
-.side-nav-group {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1px;
-}
-
-.side-nav-heading {
-  margin: 4px 0 2px;
-  padding: 0 10px;
-  color: var(--app-color-text-muted);
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.side-nav-sub--list {
+  margin: 2px 0 6px 20px;
 }
 
 .side-nav-link {
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 44px;
-  padding: 0 12px;
-  border-radius: 10px;
-  color: var(--app-color-text-soft);
-  font-size: 0.95rem;
-  font-weight: 700;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--app-color-text);
+  font-size: 0.94rem;
+  font-weight: 500;
   text-decoration: none;
   transition: background-color 0.16s ease, color 0.16s ease;
 }
 
 .side-nav-link--sub {
-  min-height: 38px;
-  padding: 6px 10px;
-  gap: 10px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.side-nav-link.side-nav-link--sub span {
-  white-space: normal;
+  min-height: 36px;
+  font-size: 0.9rem;
 }
 
 .side-nav-link svg {
   flex-shrink: 0;
-  color: var(--app-color-text-muted);
-  transition: color 0.16s ease;
+  color: var(--app-color-accent);
 }
 
 .side-nav-link span {
@@ -270,8 +314,7 @@ const activeSubKey = computed(() => {
 }
 
 .side-nav-link:hover {
-  background: var(--app-color-surface-soft);
-  color: var(--app-color-text);
+  background: color-mix(in srgb, var(--app-color-text) 6%, transparent);
 }
 
 .side-nav-link:focus-visible,
@@ -284,11 +327,7 @@ const activeSubKey = computed(() => {
 .side-nav-link--active:hover {
   background: var(--app-color-accent-tint);
   color: var(--app-color-accent);
-  font-weight: 800;
-}
-
-.side-nav-link--active svg {
-  color: var(--app-color-accent);
+  font-weight: 600;
 }
 
 .side-nav-link--active .side-nav-dot {
@@ -296,34 +335,29 @@ const activeSubKey = computed(() => {
 }
 
 .side-nav-profile {
-  position: sticky;
-  bottom: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 0 12px 12px;
-  padding: 10px;
-  border: 1px solid var(--app-color-border-subtle);
-  border-radius: 14px;
-  background: var(--app-color-surface);
+  margin: 0 10px 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
   color: var(--app-color-text);
   text-decoration: none;
-  transition: background-color 0.16s ease, border-color 0.16s ease;
+  transition: background-color 0.16s ease;
 }
 
 .side-nav-profile:hover {
-  background: var(--app-color-surface-soft);
+  background: color-mix(in srgb, var(--app-color-text) 6%, transparent);
 }
 
 .side-nav-profile--active {
-  border-color: var(--app-color-accent);
   background: var(--app-color-accent-tint);
 }
 
 .side-nav-profile-avatar {
   flex: 0 0 auto;
-  font-size: 0.85rem;
-  font-weight: 800;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .side-nav-profile-copy {
@@ -340,12 +374,11 @@ const activeSubKey = computed(() => {
 
 .side-nav-profile-name {
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .side-nav-profile-hint {
   color: var(--app-color-text-muted);
   font-size: 0.78rem;
-  font-weight: 600;
 }
 </style>

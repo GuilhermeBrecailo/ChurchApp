@@ -40,12 +40,16 @@ const ownerTab = computed(() => getOwnerTab(user.value, route.path));
   width: 100%;
   max-width: 100vw;
   background: var(--app-color-shell-bg) !important;
-  border-top: 1px solid var(--app-color-shell-border) !important;
-  border-radius: 16px 16px 0 0 !important;
+  /* Barra de abas da Apple: translúcida, linha fina no topo, sem cantos
+     arredondados nem sombra. */
+  border-top: 0.5px solid var(--app-color-shell-border) !important;
+  border-radius: 0 !important;
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   padding: 4px max(4px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom))
     max(4px, env(safe-area-inset-left));
   overflow: hidden;
-  box-shadow: 0 -4px 18px rgba(31, 30, 29, 0.06) !important;
+  box-shadow: none !important;
 }
 
 .nav-label {
@@ -53,7 +57,7 @@ const ownerTab = computed(() => getOwnerTab(user.value, route.path));
   width: 100%;
   overflow: hidden;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.05;
   text-align: center;
   text-overflow: ellipsis;
@@ -63,7 +67,7 @@ const ownerTab = computed(() => getOwnerTab(user.value, route.path));
 }
 
 .custom-btn.v-btn--active .nav-label {
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .nav-icon {
@@ -100,16 +104,15 @@ const ownerTab = computed(() => getOwnerTab(user.value, route.path));
   transition: transform var(--app-motion-duration-base) var(--app-motion-ease-standard) !important;
 }
 
+/* Aba ativa: só ícone e nome na cor de destaque (sem "pílula"). */
 .custom-btn.v-btn--active {
   color: var(--app-color-accent) !important;
-  background-color: var(--app-color-accent-tint) !important;
+  background-color: transparent !important;
 }
 
-.custom-btn.v-btn--active .nav-icon {
-  transform: scale(1.06) !important;
-}
-
-.custom-btn:hover > .v-btn__overlay {
+.custom-btn:hover > .v-btn__overlay,
+.custom-btn.v-btn--active > .v-btn__overlay,
+.custom-btn :deep(.v-btn__overlay) {
   opacity: 0 !important;
 }
 

@@ -238,7 +238,7 @@ onUnmounted(stopPolling);
 }
 
 .wa-status-phone {
-  font-family: "IBM Plex Mono", monospace;
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   white-space: nowrap;
   color: var(--app-color-text);

@@ -60,7 +60,8 @@
             Confirmar
           </v-btn>
           <v-btn
-            variant="outlined"
+            color="amber-darken-3"
+            variant="tonal"
             class="text-none font-weight-bold for-you-answer-btn"
             :loading="isAnswering(item.schedule.id, 'MAYBE')"
             :disabled="isBusy(item.schedule.id)"
@@ -69,8 +70,8 @@
             {{ statusLabel("MAYBE") }}
           </v-btn>
           <v-btn
-            variant="outlined"
-            color="error"
+            variant="tonal"
+            color="red-darken-2"
             class="text-none font-weight-bold for-you-answer-btn"
             :loading="isAnswering(item.schedule.id, 'DECLINED')"
             :disabled="isBusy(item.schedule.id)"

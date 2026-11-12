@@ -49,12 +49,12 @@ const emit = defineEmits<{ "update:modelValue": [value: string] }>();
   gap: 8px;
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid var(--app-color-border);
+  border: 0;
   border-radius: 999px;
-  background: var(--app-color-surface);
+  background: color-mix(in srgb, var(--app-color-text) 7%, transparent);
   color: var(--app-color-text);
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -76,9 +76,14 @@ const emit = defineEmits<{ "update:modelValue": [value: string] }>();
 }
 
 .people-segment--active {
-  border-color: var(--app-color-accent);
-  background: var(--app-color-accent-tint);
-  color: var(--app-color-accent);
+  background: var(--app-color-accent);
+  color: rgb(var(--v-theme-on-primary));
+  font-weight: 600;
+}
+
+.people-segment--active .people-segment-count {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: rgb(var(--v-theme-on-primary)) !important;
 }
 
 .people-segment--active .people-segment-count {

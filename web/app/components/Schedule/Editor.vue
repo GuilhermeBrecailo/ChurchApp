@@ -206,6 +206,25 @@
           </v-btn>
         </section>
 
+        <!-- O básico (quando e quem) vem primeiro; ensaio, músicas, materiais e
+             tarefas ficam em "Mais opções" para não assustar quem monta a
+             primeira escala. Abre sozinho quando a escala já tem algo disso. -->
+        <button
+          v-if="hasExtraSections"
+          type="button"
+          class="editor-more"
+          :aria-expanded="extrasOpen"
+          aria-controls="editor-extras"
+          @click="showExtras = !showExtras"
+        >
+          <span class="editor-more-copy">
+            <span class="editor-more-title">Mais opções</span>
+            <span class="editor-more-hint">{{ extrasSummary }}</span>
+          </span>
+          <ChevronDown :size="18" aria-hidden="true" :class="{ 'editor-more-chevron--open': extrasOpen }" />
+        </button>
+
+        <div v-show="extrasOpen" id="editor-extras">
         <!-- Ensaio -->
         <section v-if="config.fields.rehearsal" class="editor-section" aria-labelledby="editor-rehearsal">
           <h3 id="editor-rehearsal" class="editor-section-title">Ensaio <span class="editor-optional">(opcional)</span></h3>
@@ -290,6 +309,7 @@
             <li v-for="item in checklistPreview" :key="item.templateKey">{{ item.title }}</li>
           </ul>
         </section>
+        </div>
         </template>
       </v-form>
 
@@ -396,6 +416,9 @@ const props = withDefaults(
   }>(),
   { schedule: null, copyFrom: null, lockedDepartmentId: null, lockedOccurrenceId: null, startAt: null },
 );
+
+// "Mais opções" (ensaio, músicas, materiais, tarefas).
+const showExtras = ref(false);
 
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
@@ -507,6 +530,32 @@ const resourceOptions = computed(() =>
     value: resource.id,
   })),
 );
+
+const hasExtraSections = computed(
+  () =>
+    config.value.fields.rehearsal ||
+    config.value.fields.songs ||
+    (config.value.fields.materials && resourceOptions.value.length > 0) ||
+    checklistPreview.value.length > 0,
+);
+const hasExtrasContent = computed(
+  () => Boolean(draft.rehearsalDate) || draft.songIds.length > 0 || draft.resourceIds.length > 0,
+);
+const extrasOpen = computed(() => showExtras.value || hasExtrasContent.value);
+const extrasSummary = computed(() => {
+  const parts: string[] = [];
+  if (draft.songIds.length) parts.push(`${draft.songIds.length} ${draft.songIds.length === 1 ? "música" : "músicas"}`);
+  if (draft.rehearsalDate) parts.push("ensaio marcado");
+  if (draft.resourceIds.length) parts.push(`${draft.resourceIds.length} ${draft.resourceIds.length === 1 ? "material" : "materiais"}`);
+  if (parts.length) return parts.join(" · ");
+  const offered = [
+    config.value.fields.rehearsal ? "ensaio" : "",
+    config.value.fields.songs ? "músicas" : "",
+    config.value.fields.materials && resourceOptions.value.length ? "materiais" : "",
+    checklistPreview.value.length ? "tarefas" : "",
+  ].filter(Boolean);
+  return offered.length ? `Opcional: ${offered.join(", ")}` : "Opcional";
+});
 
 const cultOptions = computed(() => getScheduleCultOptions(upcoming.value));
 const selectedCult = computed(() => cultOptions.value.find((option) => option.value === cultValue.value) ?? null);
@@ -838,6 +887,51 @@ const save = async () => {
 </script>
 
 <style scoped>
+.editor-more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  margin: 4px 0 12px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: var(--app-radius-lg);
+  background: var(--app-color-surface-soft);
+  color: var(--app-color-text);
+  text-align: left;
+}
+
+.editor-more:focus-visible {
+  outline: none;
+  box-shadow: var(--app-focus-ring);
+}
+
+.editor-more-copy {
+  display: grid;
+  min-width: 0;
+}
+
+.editor-more-title {
+  font-weight: 600;
+}
+
+.editor-more-hint {
+  color: var(--app-color-text-muted);
+  font-size: 0.85rem;
+}
+
+.editor-more svg {
+  flex: 0 0 auto;
+  color: var(--app-color-text-muted);
+  transition: transform 0.2s ease;
+}
+
+.editor-more-chevron--open {
+  transform: rotate(180deg);
+}
+
 .editor-section {
   margin-bottom: 22px;
 }

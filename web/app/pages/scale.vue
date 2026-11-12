@@ -301,6 +301,20 @@ watch(
   () => loadTab(),
 );
 
+// Quem organiza escalas e não está escalado em nada (o pastor, quase sempre)
+// abre direto em "Organizar" em vez de ver "Você não tem escalas próximas".
+// Só quando a pessoa chega sem escolher aba (?aba= vazio).
+let defaultTabDecided = false;
+watch(
+  () => [mineState.loading, managesAny.value, mineList.value.length] as const,
+  ([loading, manages, mineCount]) => {
+    if (defaultTabDecided || loading || queryText("aba")) return;
+    if (!manages) return;
+    defaultTabDecided = true;
+    if (mineCount === 0) void router.replace({ query: { ...route.query, aba: "organizar" } });
+  },
+);
+
 // Depois de salvar no editor (aqui ou na folha), as listas recarregam.
 watch(
   () => editor.lastSaved.value?.at,

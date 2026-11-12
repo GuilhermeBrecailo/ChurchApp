@@ -179,7 +179,7 @@ export default defineNuxtConfig({
             colors: {
               primary: "#b5472a",
               secondary: "#0f766e",
-              background: "#f6f7f9",
+              background: "#f2f2f7",
               surface: "#ffffff",
               error: "#dc2626",
             },
@@ -192,8 +192,8 @@ export default defineNuxtConfig({
               // #f0975a dá ~2.3:1 de contraste (ilegível em "Salvar Perfil").
               "on-primary": "#1f1410",
               secondary: "#5eead4",
-              background: "#12100e",
-              surface: "#1b1815",
+              background: "#000000",
+              surface: "#1c1c1e",
               error: "#f87171",
             },
           },

@@ -30,31 +30,37 @@
 
 :root {
   color-scheme: light;
+  /* Padrão Apple (HIG): fundo cinza agrupado (systemGroupedBackground
+     #F2F2F7), listas e cartões brancos, textos em níveis de cinza
+     (label / secondaryLabel) e separadores finos. A cor da igreja (terracota)
+     fica só como cor de destaque: botões principais, item ativo, links. */
   --app-color-accent: #b5472a;
   --app-color-accent-soft: #c2542c;
   --app-color-accent-muted: #e07a45;
-  --app-color-accent-tint: #f7e2d3;
-  --app-color-background: #f4f5f7;
+  --app-color-accent-tint: #f8ebe5;
+  --app-color-background: #f2f2f7;
   --app-color-surface: #ffffff;
-  --app-color-surface-soft: #fafaf9;
-  --app-color-surface-muted: #f7e2d3;
-  --app-color-border: #dde2e7;
-  --app-color-border-strong: #c4cbd3;
-  --app-color-input-border: #262626;
-  --app-color-input-label: #35312e;
-  --app-color-text: #1f1e1d;
-  --app-color-text-soft: #514c47;
-  --app-color-text-muted: #6f6a64;
-  --app-color-border-subtle: #e7e9ec;
-  --app-shadow-sm: 0 1px 3px rgba(17,24,39,0.06), 0 1px 2px rgba(17,24,39,0.04);
-  --app-shadow-md: 0 4px 16px rgba(17,24,39,0.08), 0 2px 6px rgba(17,24,39,0.04);
-  --app-shadow-lg: 0 12px 32px rgba(17,24,39,0.1), 0 4px 12px rgba(17,24,39,0.06);
-  --app-shadow-hover: 0 8px 20px rgba(17,24,39,0.09), 0 2px 6px rgba(17,24,39,0.05);
-  --app-shadow-accent: 0 8px 24px rgba(181,71,42,0.22);
+  --app-color-surface-soft: #f2f2f7;
+  --app-color-surface-muted: #f8ebe5;
+  --app-color-border: #d1d1d6;
+  --app-color-border-strong: #c7c7cc;
+  --app-color-input-border: #8e8e93;
+  --app-color-input-label: #3a3a3c;
+  --app-color-text: #1c1c1e;
+  --app-color-text-soft: #3a3a3c;
+  --app-color-text-muted: #6e6e73;
+  --app-color-border-subtle: #e5e5ea;
+  /* Listas e cartões da Apple não usam sombra: a separação vem do branco
+     sobre o cinza. Sombra só em janelas que flutuam. */
+  --app-shadow-sm: none;
+  --app-shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+  --app-shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
+  --app-shadow-hover: none;
+  --app-shadow-accent: none;
   --app-radius-sm: 8px;
   --app-radius-md: 10px;
   --app-radius-lg: 12px;
-  --app-radius-card: 14px;
+  --app-radius-card: 12px;
   --app-overlay-radius: 16px;
   --app-overlay-sheet-radius: 24px;
   --app-overlay-content-gap: 16px;
@@ -81,10 +87,10 @@
    * pai) — o override dark simplesmente não existia no CSS final, então a
    * AppBar e a BottomNav ficavam sempre com o fundo claro, mesmo no dark mode.
    */
-  --app-color-appbar-bg: #ffffff;
-  --app-color-appbar-border: #e7e9ec;
-  --app-color-shell-bg: #ffffff;
-  --app-color-shell-border: #e7e9ec;
+  --app-color-appbar-bg: rgba(249, 249, 249, 0.86);
+  --app-color-appbar-border: rgba(60, 60, 67, 0.16);
+  --app-color-shell-bg: rgba(249, 249, 249, 0.92);
+  --app-color-shell-border: rgba(60, 60, 67, 0.16);
 
   /* Paleta semântica "warning" (âmbar — pendências, indisponibilidade, alertas leves) */
   --app-color-warning: #b45309;
@@ -100,10 +106,11 @@
 /* Tipografia global */
 body,
 .v-application {
-  font-family: 'Inter', 'Roboto', system-ui, -apple-system, sans-serif !important;
+  /* Fonte do sistema (SF Pro no iPhone/Mac); Inter fora do mundo Apple. */
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
 }
 
 /* O navegador aplica margem nativa em h1-h6 e <p>. Todo espaçamento de texto
@@ -251,32 +258,29 @@ body {
    * elevado) e as bordas ficam sutis; o contorno forte fica só nos campos,
    * onde precisa ser visto para operar (≥3:1).
    */
+  /* Escuro no padrão Apple: fundo preto, cartões em systemGray6 (#1C1C1E)
+     e elevados em #2C2C2E; textos branco e cinzas neutros. */
   --app-color-accent: #f0975a;
   --app-color-accent-soft: #f4ab78;
   --app-color-accent-muted: #f8c9a4;
-  --app-color-accent-tint: #33231a;
-  --app-color-background: #12100e;
-  --app-color-surface: #1b1815;
-  --app-color-surface-soft: #23201c;
-  --app-color-surface-muted: #2e2219;
-  --app-color-border: #3a342f;
-  --app-color-border-strong: #5c534c;
-  --app-color-input-border: #81776f;
-  --app-color-input-label: #ddd4ca;
-  --app-color-text: #f4eee8;
-  --app-color-text-soft: #cdc2b7;
-  --app-color-text-muted: #a0948a;
-  --app-color-border-subtle: #2c2824;
-  /*
-   * Sombra preta sobre fundo quase preto não cria profundidade perceptível —
-   * a elevação vem principalmente dos degraus de superfície; a sombra é só
-   * reforço.
-   */
-  --app-shadow-sm: 0 1px 2px rgba(0,0,0,0.45), 0 1px 1px rgba(0,0,0,0.3);
-  --app-shadow-md: 0 6px 18px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.32);
-  --app-shadow-lg: 0 16px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4);
-  --app-shadow-hover: 0 10px 26px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.34);
-  --app-shadow-accent: 0 8px 24px rgba(240,151,90,0.22);
+  --app-color-accent-tint: rgba(240, 151, 90, 0.16);
+  --app-color-background: #000000;
+  --app-color-surface: #1c1c1e;
+  --app-color-surface-soft: #2c2c2e;
+  --app-color-surface-muted: rgba(240, 151, 90, 0.16);
+  --app-color-border: #3a3a3c;
+  --app-color-border-strong: #48484a;
+  --app-color-input-border: #8e8e93;
+  --app-color-input-label: #d1d1d6;
+  --app-color-text: #f5f5f7;
+  --app-color-text-soft: #d1d1d6;
+  --app-color-text-muted: #98989d;
+  --app-color-border-subtle: #2c2c2e;
+  --app-shadow-sm: none;
+  --app-shadow-md: 0 6px 18px rgba(0,0,0,0.5);
+  --app-shadow-lg: 0 16px 40px rgba(0,0,0,0.6);
+  --app-shadow-hover: none;
+  --app-shadow-accent: none;
 
   /* Paleta semântica "success" no dark */
   --app-color-success: #3fd4b8;
@@ -284,10 +288,10 @@ body {
   --app-color-success-tint: rgba(63, 212, 184, 0.13);
 
   /* Shell (AppBar / BottomNav / barra lateral) no dark — vidro quente */
-  --app-color-appbar-bg: rgba(27, 24, 21, 0.86);
-  --app-color-appbar-border: rgba(255, 236, 220, 0.07);
-  --app-color-shell-bg: rgba(24, 21, 19, 0.94);
-  --app-color-shell-border: rgba(255, 236, 220, 0.07);
+  --app-color-appbar-bg: rgba(22, 22, 23, 0.86);
+  --app-color-appbar-border: rgba(84, 84, 88, 0.6);
+  --app-color-shell-bg: rgba(22, 22, 23, 0.92);
+  --app-color-shell-border: rgba(84, 84, 88, 0.6);
 
   /* Paleta semântica "warning" no dark */
   --app-color-warning: #fbbf24;
@@ -384,9 +388,15 @@ h1.text-h5 {
 
 .app-surface {
   background: var(--app-color-surface) !important;
-  border: 1px solid var(--app-color-border-subtle) !important;
+  border: 1px solid transparent !important;
   border-radius: var(--app-radius-card) !important;
   box-shadow: var(--app-shadow-sm) !important;
+}
+
+/* Dentro de janelas (fundo branco) o cartão precisa do contorno fino. */
+.v-overlay .app-surface,
+.v-navigation-drawer .app-surface {
+  border-color: var(--app-color-border-subtle) !important;
 }
 
 .app-surface-muted {
@@ -624,8 +634,16 @@ h1.text-h5 {
 }
 
 :where(.app-operational-page, .responsive-overlay) .v-chip {
-  border-radius: var(--app-radius-sm);
-  font-weight: 700;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* Filtros em cápsula (padrão Apple): não selecionado = cinza preenchido,
+   sem contorno; selecionado = cor de destaque. */
+:where(.app-operational-page, .responsive-overlay) .v-chip.v-chip--variant-outlined {
+  border-color: transparent !important;
+  background: color-mix(in srgb, var(--app-color-text) 7%, transparent);
+  color: var(--app-color-text);
 }
 
 :where(.app-operational-page, .responsive-overlay) .v-alert {
@@ -644,10 +662,11 @@ h1.text-h5 {
   display: inline-flex;
   gap: 4px;
   max-width: 100%;
-  padding: 4px;
-  border: 1px solid var(--app-color-border);
-  border-radius: var(--app-control-radius);
-  background: var(--app-color-surface-soft);
+  padding: 3px;
+  border: 0;
+  border-radius: 10px;
+  /* tertiarySystemFill da Apple */
+  background: color-mix(in srgb, var(--app-color-text) 8%, transparent);
 }
 
 /* v-tabs já rola sozinho (slide-group); só o grupo customizado precisa disso. */
@@ -674,8 +693,8 @@ h1.text-h5 {
   min-height: var(--app-control-height-compact, 36px);
   border-radius: 8px !important;
   background: transparent !important;
-  color: var(--app-color-text-soft) !important;
-  font-weight: 700;
+  color: var(--app-color-text) !important;
+  font-weight: 500;
   text-transform: none;
   letter-spacing: 0;
   box-shadow: none !important;
@@ -685,8 +704,15 @@ h1.text-h5 {
 .app-segmented > button.app-segmented--active,
 :where(.app-operational-page, .responsive-overlay) .v-tab.v-tab--selected {
   background: var(--app-color-surface) !important;
-  color: var(--app-color-accent) !important;
-  box-shadow: var(--app-shadow-sm) !important;
+  color: var(--app-color-text) !important;
+  font-weight: 600;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04) !important;
+}
+
+.app-theme-dark .app-segmented > .v-btn.app-segmented--active,
+.app-theme-dark .app-segmented > button.app-segmented--active,
+.app-theme-dark :where(.app-operational-page, .responsive-overlay) .v-tab.v-tab--selected {
+  background: #636366 !important;
 }
 
 :where(.app-operational-page, .responsive-overlay) .v-tab .v-tab__slider {
@@ -713,10 +739,10 @@ h1.text-h5 {
 
 :where(.app-operational-page, .responsive-overlay) .v-btn-toggle {
   gap: 4px;
-  padding: 4px;
-  border: 1px solid var(--app-color-border);
-  border-radius: var(--app-control-radius);
-  background: var(--app-color-surface-soft);
+  padding: 3px;
+  border: 0;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--app-color-text) 8%, transparent);
 }
 
 :where(.app-operational-page, .responsive-overlay) .v-btn-toggle .v-btn {
@@ -1509,22 +1535,23 @@ h1.text-h5 {
 }
 
 /* ============================================================
-   IDENTIDADE TIPOGRÁFICA — mesma fonte serifada (Fraunces) e
-   labels em caixa alta com tracking usadas na landing pública
-   (/c/:slug), aplicadas aos títulos das telas principais do app
-   logado pra dar uma identidade visual coesa entre público/logado.
+   TIPOGRAFIA DO APP LOGADO — padrão Apple (fonte do sistema).
+   A serifada (Fraunces) e a mono (IBM Plex Mono) ficam só na página
+   pública da igreja e na página de vendas.
    ============================================================ */
+/* Título grande (Large Title da Apple): fonte do sistema em negrito. */
 .app-page-title {
-  font-family: "Fraunces", serif;
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
+/* Linha acima do título (ex.: a data no Início), como no app Hoje/Fitness. */
 .app-page-kicker {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.7rem;
+  font-family: inherit;
+  font-size: 0.8rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   color: var(--app-color-text-muted);
 }

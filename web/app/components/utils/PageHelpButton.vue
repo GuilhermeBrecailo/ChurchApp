@@ -6,7 +6,7 @@
              familiaridade com apps não reconhece o ícone sozinho. -->
         <v-btn
           v-bind="props"
-          variant="tonal"
+          variant="text"
           color="primary"
           size="small"
           class="page-help-trigger text-none"

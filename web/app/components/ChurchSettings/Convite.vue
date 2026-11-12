@@ -180,7 +180,7 @@ onMounted(loadCode);
 }
 
 .invite-code-text {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
   font-size: 1.9rem;
   font-weight: 800;
   letter-spacing: 0.16em;
