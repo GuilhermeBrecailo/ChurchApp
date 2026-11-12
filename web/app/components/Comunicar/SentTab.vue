@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="filters.length > 2" class="sent-filters" role="group" aria-label="Filtrar por tipo">
+    <div v-if="filters.length > 2" v-scroll-fade class="sent-filters" role="group" aria-label="Filtrar por tipo">
       <v-chip
         v-for="filter in filters"
         :key="filter.value"

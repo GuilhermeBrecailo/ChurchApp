@@ -1,5 +1,5 @@
 <template>
-  <div class="people-segments" role="group" :aria-label="label">
+  <div v-scroll-fade class="people-segments" role="group" :aria-label="label">
     <button
       v-for="segment in segments"
       :key="segment.value"

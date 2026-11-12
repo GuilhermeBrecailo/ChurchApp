@@ -1,7 +1,13 @@
 <template>
   <div
+    ref="trackRef"
     class="app-segmented ui-page-tabs"
-    :class="{ 'ui-page-tabs--fill': items.length <= 3 }"
+    :class="{
+      'ui-page-tabs--fill': items.length <= 3,
+      'ui-page-tabs--fade-start': fadeStart,
+      'ui-page-tabs--fade-end': fadeEnd,
+    }"
+    @scroll.passive="updateFades"
     role="tablist"
     :aria-label="ariaLabel"
     @keydown="onKeydown"
@@ -100,13 +106,37 @@ const measureThumb = () => {
   const el = tabRefs[index];
   if (!el) return;
   thumb.value = { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight };
+  updateFades();
 };
 
-watch(current, () => nextTick(measureThumb));
+// Abas demais para a largura: a fila rola de lado, com um esmaecido na
+// borda mostrando que tem mais, e a aba escolhida sempre fica à vista.
+const trackRef = ref<HTMLElement | null>(null);
+const fadeStart = ref(false);
+const fadeEnd = ref(false);
+
+function updateFades() {
+  const el = trackRef.value;
+  if (!el) return;
+  fadeStart.value = el.scrollLeft > 4;
+  fadeEnd.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+}
+
+const revealActive = (smooth: boolean) => {
+  const track = trackRef.value;
+  const index = props.items.findIndex((item) => item.value === current.value);
+  const el = tabRefs[index];
+  if (!track || !el || track.scrollWidth <= track.clientWidth) return;
+  const left = el.offsetLeft - (track.clientWidth - el.offsetWidth) / 2;
+  track.scrollTo({ left: Math.max(0, left), behavior: smooth ? "smooth" : "auto" });
+};
+
+watch(current, () => nextTick(() => { measureThumb(); revealActive(true); }));
 watch(() => props.items.map((item) => `${item.value}:${item.badge ?? ""}`).join("|"), () => nextTick(measureThumb));
 
 onMounted(() => {
   measureThumb();
+  revealActive(false);
   // Só anima depois da primeira medida, para não "voar" do canto ao abrir a tela.
   requestAnimationFrame(() => { thumbReady.value = true; });
   if (typeof ResizeObserver !== "undefined") {
@@ -165,8 +195,29 @@ const onKeydown = (event: KeyboardEvent) => {
 
 /* Transição, tema escuro e "reduzir movimento": em theme.css (globais). */
 
+/* Até 3 abas: dividem a largura, mas nenhuma fica menor que o próprio texto. */
 .ui-page-tabs--fill > button {
-  flex: 1 1 0;
+  flex: 1 0 auto;
+}
+
+.ui-page-tabs > button {
+  white-space: nowrap;
+}
+
+/* Esmaecido nas bordas quando a fila de abas rola de lado. */
+.ui-page-tabs--fade-end {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+}
+
+.ui-page-tabs--fade-start {
+  -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent);
+}
+
+.ui-page-tabs--fade-start.ui-page-tabs--fade-end {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent);
 }
 
 .ui-page-tabs-badge {

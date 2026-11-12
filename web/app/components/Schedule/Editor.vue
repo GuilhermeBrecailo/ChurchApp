@@ -916,12 +916,8 @@ const save = async () => {
 .editor-alt-date {
   min-height: 44px;
   padding-inline: 8px !important;
-  color: var(--app-color-text) !important;
-  font-weight: 500;
-}
-
-.editor-alt-date svg {
-  color: var(--app-color-accent);
+  color: var(--app-color-accent) !important;
+  font-weight: 600;
 }
 
 .editor-more {

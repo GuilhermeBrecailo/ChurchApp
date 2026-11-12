@@ -43,7 +43,7 @@
 
     <!-- Igreja -->
     <section v-else-if="tab === 'igreja'" aria-label="Escalas da igreja">
-      <div v-if="departments.length > 1" class="scale-chips hide-scrollbar" role="group" aria-label="Filtrar por ministério">
+      <div v-if="departments.length > 1" v-scroll-fade class="scale-chips hide-scrollbar" role="group" aria-label="Filtrar por ministério">
         <v-chip
           v-for="option in ministryChips"
           :key="option.value"
@@ -103,7 +103,7 @@
           <span class="scale-stat-label">{{ stat.label }}</span>
         </button>
       </div>
-      <div v-if="managedDepartments.length > 1" class="scale-chips hide-scrollbar" role="group" aria-label="Filtrar por ministério">
+      <div v-if="managedDepartments.length > 1" v-scroll-fade class="scale-chips hide-scrollbar" role="group" aria-label="Filtrar por ministério">
         <v-chip
           v-for="option in managedChips"
           :key="option.value"

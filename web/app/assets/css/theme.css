@@ -1974,3 +1974,59 @@ button.v-chip {
     transition: none;
   }
 }
+
+/* ============================================================
+   Botões secundários sem cor definida: cor de destaque (padrão Apple).
+   O Vuetify pinta botões text/tonal/outlined sem `color` de preto/cinza,
+   o que parece desabilitado. Aqui eles ficam terracota (tonal com fundo
+   terracota clarinho). Ícones soltos (fechar, ⋮, editar) ficam cinza;
+   a seta de voltar fica na cor de destaque, como no iPhone.
+   ============================================================ */
+:where(.app-operational-page, .responsive-overlay)
+  :is(.v-btn--variant-text, .v-btn--variant-tonal, .v-btn--variant-outlined, .v-btn--variant-plain):not(.v-btn--icon):not(
+    .text-primary, .text-error, .text-success, .text-warning, .text-info, .text-secondary,
+    .text-white, .text-medium-emphasis, .text-high-emphasis,
+    [class*="text-grey"], [class*="text-red"], [class*="text-orange"], [class*="text-green"],
+    [class*="text-teal"], [class*="text-indigo"], [class*="text-purple"], [class*="text-deep"],
+    [class*="text-blue"], [class*="text-amber"], [class*="text-pink"], [class*="text-brown"]
+  ):not(.v-date-picker *, .v-picker *, .v-field *, .v-chip *, .v-list-item *, .v-pagination *, .v-tab) {
+  color: var(--app-color-accent) !important;
+}
+
+:where(.app-operational-page, .responsive-overlay)
+  .v-btn--icon.v-btn--variant-text:not(
+    .text-primary, .text-error, .text-success, .text-warning, .text-info, .text-white,
+    [class*="text-grey"], [class*="text-red"], [class*="text-green"]
+  ):not(.v-date-picker *, .v-picker *, .v-field *) {
+  color: var(--app-color-text-muted) !important;
+}
+
+.ui-page-header-back.v-btn {
+  color: var(--app-color-accent) !important;
+}
+
+/* Contorno do botão "outlined" acompanha a cor de destaque, bem suave. */
+:where(.app-operational-page, .responsive-overlay) .v-btn--variant-outlined:not(.v-btn--icon) {
+  border-color: color-mix(in srgb, var(--app-color-accent) 35%, transparent);
+}
+
+/* v-scroll-fade (plugins/scrollFade.ts): borda esmaecida onde a fileira continua. */
+.scroll-fade--end {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+}
+
+.scroll-fade--start {
+  -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent);
+}
+
+.scroll-fade--start.scroll-fade--end {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+}
+
+/* Seta de voltar na cor de destaque (vence a regra dos ícones cinza). */
+.ui-page-header-back.v-btn.v-btn--icon.v-btn--variant-text {
+  color: var(--app-color-accent) !important;
+}
