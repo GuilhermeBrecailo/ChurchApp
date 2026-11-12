@@ -437,9 +437,10 @@ a.for-you-row:focus-visible,
   border-radius: 18px;
 }
 
+/* !important: o .app-surface também usa !important para fundo e borda. */
 .for-you-hero--p1 {
-  border-color: color-mix(in srgb, var(--app-color-accent) 28%, transparent);
-  background: color-mix(in srgb, var(--app-color-accent) 5%, var(--app-color-surface));
+  border-color: color-mix(in srgb, var(--app-color-accent) 28%, transparent) !important;
+  background: color-mix(in srgb, var(--app-color-accent) 5%, var(--app-color-surface)) !important;
 }
 
 .hero-main {

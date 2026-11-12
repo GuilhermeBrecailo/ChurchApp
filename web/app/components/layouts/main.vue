@@ -33,7 +33,9 @@ function skipToContent() {
 <style scoped>
 .app-main {
   background-color: var(--app-color-background);
-  /* A tela que entra deslizando não pode criar rolagem para o lado. */
+  /* A tela que entra deslizando não pode criar rolagem para o lado.
+     (hidden antes: reserva para Safari < 16, que não conhece clip.) */
+  overflow-x: hidden;
   overflow-x: clip;
 }
 

@@ -179,6 +179,11 @@ const onKeydown = (event: KeyboardEvent) => {
 /* Com o "botão branco" deslizante, a aba ativa não pinta o próprio fundo. */
 .ui-page-tabs > button.app-segmented--active {
   background: transparent !important;
+}
+
+/* Sem a sombra do item ativo (quem desenha o fundo é o "botão branco"),
+   mas o contorno de foco do teclado continua aparecendo. */
+.ui-page-tabs > button.app-segmented--active:not(:focus-visible) {
   box-shadow: none !important;
 }
 

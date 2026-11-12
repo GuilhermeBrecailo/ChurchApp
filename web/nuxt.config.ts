@@ -104,6 +104,20 @@ export default defineNuxtConfig({
     sources: ["/api/__sitemap__/churches"],
   },
   css: ["~/assets/css/theme.css"],
+  // iPhones antigos: o Vuetify 4 já exige iOS 15.4 (@layer). Para quem está
+  // entre 15.4 e 16.x (iPhone 6s/7/SE 1ª geração e quem não atualizou):
+  // - CSS: cor de reserva para color-mix() (postcss/color-mix-fallback.cjs);
+  // - JS: código gerado compatível com Safari 15 (o padrão do Vite 7 é 16).
+  postcss: {
+    plugins: {
+      "./postcss/color-mix-fallback.cjs": {},
+    },
+  },
+  vite: {
+    build: {
+      target: ["es2020", "safari15", "ios15", "chrome100", "edge100", "firefox100"],
+    },
+  },
   imports: {
     dirs: ["../composables"],
   },
