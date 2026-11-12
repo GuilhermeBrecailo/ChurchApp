@@ -277,6 +277,8 @@ const logoutNow = async () => {
 onMounted(() => {
   void refreshStatus();
 });
+
+useHead({ title: "Minhas preferências" });
 </script>
 
 <style scoped>

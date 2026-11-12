@@ -263,6 +263,8 @@ onMounted(async () => {
   await loadDevotional();
   await loadComments();
 });
+
+useHead({ title: "Devocional" });
 </script>
 
 <style scoped>

@@ -97,6 +97,8 @@ async function handleClick(notification: AppNotification) {
 }
 
 onMounted(() => startInboxSync());
+
+useHead({ title: "Notificações" });
 </script>
 
 <style scoped>

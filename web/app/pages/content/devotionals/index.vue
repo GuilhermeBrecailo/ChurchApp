@@ -418,6 +418,8 @@ const loadDevotionals = async () => {
 };
 
 onMounted(loadDevotionals);
+
+useHead({ title: "Devocionais" });
 </script>
 
 <style scoped>

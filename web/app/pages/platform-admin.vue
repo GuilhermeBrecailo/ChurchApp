@@ -1668,6 +1668,8 @@ onMounted(async () => {
     await Promise.all([loadPlatformChurches(), loadRoles()]);
   }
 });
+
+useHead({ title: "Administração da plataforma" });
 </script>
 
 <style scoped>

@@ -19,6 +19,13 @@
 <script setup lang="ts">
 const { themeClass, themeName } = useThemeMode();
 const { user } = useAuth();
+
+// Cada tela dá só o próprio nome (useHead({ title: "Escalas" })); aqui vira
+// "Escalas · ChurchApp" na aba do navegador e no leitor de tela.
+useHead({
+  titleTemplate: (title?: string) =>
+    !title || title === "ChurchApp" ? "ChurchApp" : title.includes("ChurchApp") ? title : `${title} · ChurchApp`,
+});
 </script>
 
 <style scoped>

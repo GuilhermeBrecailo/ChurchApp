@@ -179,6 +179,8 @@ onMounted(async () => {
   }
   songs.value = data ?? [];
 });
+
+useHead({ title: "Minha playlist" });
 </script>
 
 <style scoped>

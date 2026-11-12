@@ -29,8 +29,9 @@
         color="primary"
         hide-details="auto"
         class="join-code-input"
-        :error-messages="codeError ? [codeError] : []"
+        :error-messages="codeErrors"
         :disabled="lookingUp"
+        @update:model-value="codeError && (codeError = '')"
       />
       <v-btn
         type="submit"
@@ -234,6 +235,9 @@ const church = ref<InviteChurchPreview | null>(null);
 const churchInitials = computed(() => getInitials(church.value?.name || "Igreja"));
 
 const codeError = ref("");
+// Lista estável: um array novo a cada renderização dentro do v-form fazia o
+// Vuetify entrar em laço de atualização (mesmo defeito do criar igreja).
+const codeErrors = computed(() => (codeError.value ? [codeError.value] : []));
 const lookingUp = ref(false);
 const joining = ref(false);
 const joinError = ref("");

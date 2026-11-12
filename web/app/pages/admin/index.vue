@@ -129,6 +129,8 @@ onMounted(() => {
   }
   if (groups.value.length) loadCounts();
 });
+
+useHead({ title: "Gestão" });
 </script>
 
 <style scoped>

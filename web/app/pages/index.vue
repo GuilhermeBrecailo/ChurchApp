@@ -1,7 +1,7 @@
 <template>
   <div class="pa-4 pb-8 app-operational-page home-page">
     <template v-if="hasChurch">
-      <OnboardingHomeSlot />
+      <OnboardingHomeSlot part="checklist" />
 
       <UtilsPageHeader :kicker="todayLabel" :title="greeting" />
 
@@ -16,6 +16,8 @@
             @enable-push="enablePush"
             @open="handleOpen"
           />
+
+          <OnboardingHomeSlot part="welcome" />
 
           <v-alert v-if="schedulesError" type="error" variant="tonal" density="compact">
             {{ schedulesError }}
@@ -125,6 +127,8 @@ onMounted(() => {
   if (hasChurch.value) load();
   else redirectWithoutChurch();
 });
+
+useHead({ title: "Início" });
 </script>
 
 <style scoped>

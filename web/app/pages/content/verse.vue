@@ -331,6 +331,8 @@ const handlePublish = async () => {
 };
 
 onMounted(loadVerses);
+
+useHead({ title: "Versículo do dia" });
 </script>
 
 <style scoped>

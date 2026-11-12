@@ -4,7 +4,9 @@
     subtitle="Só isso por agora. Endereço, CNPJ e o resto você completa depois, nas configurações."
     :icon="Church"
   >
-    <v-form class="auth-form" @submit.prevent="handleCreateChurch">
+    <!-- Formulário comum (não v-form): a validação é nossa, e o v-form entrava
+         em laço de atualização quando o erro de "nome vazio" aparecia. -->
+    <form class="auth-form" novalidate @submit.prevent="handleCreateChurch">
       <v-text-field
         v-model="form.name"
         label="Nome da igreja"
@@ -17,9 +19,9 @@
         density="comfortable"
         color="primary"
         hide-details="auto"
-        :error-messages="nameError ? [nameError] : []"
+        :error-messages="nameErrors"
         :disabled="loading"
-        @update:model-value="nameError = ''"
+        @update:model-value="nameError && (nameError = '')"
       />
 
       <div class="church-location">
@@ -71,7 +73,7 @@
         Depois, um checklist no Início ajuda a cadastrar horários, ministérios e
         convidar a equipe.
       </p>
-    </v-form>
+    </form>
 
     <template #footer>
       <button type="button" class="church-logout" :disabled="loading" @click="handleLogout">
@@ -82,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import { Church } from "lucide-vue-next";
 import { useAuth } from "../../../composables/useAuth";
 import { useChurch } from "../../../composables/useChurch";
@@ -106,6 +108,7 @@ const { createOwnChurch } = useChurch();
 const loading = ref(false);
 const errorMessage = ref("");
 const nameError = ref("");
+const nameErrors = computed(() => (nameError.value ? [nameError.value] : []));
 
 const form = reactive({
   name: "",

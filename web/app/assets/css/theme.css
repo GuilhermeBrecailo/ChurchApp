@@ -662,7 +662,7 @@ h1.text-h5 {
   display: inline-flex;
   gap: 4px;
   max-width: 100%;
-  padding: 3px;
+  padding: 2px;
   border: 0;
   border-radius: 10px;
   /* tertiarySystemFill da Apple */
@@ -681,7 +681,8 @@ h1.text-h5 {
 }
 
 :where(.app-operational-page, .responsive-overlay) .v-tabs {
-  --v-tabs-height: 36px;
+  /* 40px + trilho de 2px = controle de 44px, o alvo de toque mínimo da Apple. */
+  --v-tabs-height: 40px;
   height: auto !important;
 }
 
@@ -690,7 +691,7 @@ h1.text-h5 {
 :where(.app-operational-page, .responsive-overlay) .v-tab {
   flex: 0 0 auto;
   min-width: 0;
-  min-height: var(--app-control-height-compact, 36px);
+  min-height: 40px;
   border-radius: 8px !important;
   background: transparent !important;
   color: var(--app-color-text) !important;

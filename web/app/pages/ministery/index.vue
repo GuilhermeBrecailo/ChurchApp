@@ -399,6 +399,8 @@ onMounted(async () => {
     isWizardOpen.value = true;
   }
 });
+
+useHead({ title: "Ministérios" });
 </script>
 
 <style scoped>

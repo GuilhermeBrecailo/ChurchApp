@@ -5,7 +5,7 @@
         <v-btn
           color="primary"
           variant="flat"
-          :size="compact ? 'small' : 'default'"
+          size="default"
           class="text-none font-weight-bold response-btn"
           :loading="busy === 'CONFIRMED'"
           :disabled="Boolean(busy)"
@@ -16,7 +16,7 @@
         <v-btn
           color="amber-darken-3"
           variant="tonal"
-          :size="compact ? 'small' : 'default'"
+          size="default"
           class="text-none font-weight-bold response-btn"
           :loading="busy === 'MAYBE'"
           :disabled="Boolean(busy)"
@@ -27,7 +27,7 @@
         <v-btn
           color="red-darken-2"
           variant="tonal"
-          :size="compact ? 'small' : 'default'"
+          size="default"
           class="text-none font-weight-bold response-btn"
           :disabled="Boolean(busy)"
           @click="isDeclineOpen = true"
@@ -47,13 +47,13 @@
     </template>
 
     <div v-else class="response-bar-answered">
-      <ScheduleStatusPill :status="view.me.status" :mine="!compact" :size="compact ? 'small' : 'default'" />
+      <ScheduleStatusPill :status="view.me.status" :mine="!compact" size="default" />
       <v-btn
         v-if="canChange"
         variant="text"
         color="primary"
-        :size="compact ? 'small' : 'default'"
-        class="text-none font-weight-bold"
+        size="default"
+        class="text-none font-weight-bold response-change"
         @click="editing = true"
       >
         Mudar resposta
@@ -154,10 +154,17 @@ const decline = async (payload: {
   min-height: 48px;
   min-width: 0 !important;
   padding-inline: 8px !important;
+  /* Letra confortável para quem tem 50+ (antes 12px no cartão). */
+  font-size: 0.95rem !important;
 }
 
 .response-bar--compact .response-btn {
   min-height: 44px;
+}
+
+.response-change {
+  min-height: 44px;
+  font-size: 0.95rem !important;
 }
 
 .response-bar-answered {

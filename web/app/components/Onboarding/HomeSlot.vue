@@ -13,6 +13,11 @@ import { computed } from "vue";
 import { useAuth } from "../../../composables/useAuth";
 import { useChurchAccess } from "../../../composables/useChurchAccess";
 
+// "checklist": só o checklist do pastor (topo do Início).
+// "welcome": só as boas-vindas do membro (abaixo de "Para você", para não
+// empurrar a escala a responder para baixo). Sem prop: os dois, como antes.
+const props = withDefaults(defineProps<{ part?: "all" | "checklist" | "welcome" }>(), { part: "all" });
+
 const { user } = useAuth();
 const access = useChurchAccess();
 
@@ -21,8 +26,11 @@ const previewingAsMember = computed(
   () => user.value?.navPreviewRole === "MEMBRO" || user.value?.navPreviewRole === "LIDER",
 );
 
-const showChecklist = computed(
+const managerView = computed(
   () => access.value.hasChurch && access.value.isChurchManager && !previewingAsMember.value,
 );
-const showWelcome = computed(() => access.value.hasChurch && !showChecklist.value);
+const showChecklist = computed(() => managerView.value && props.part !== "welcome");
+const showWelcome = computed(
+  () => access.value.hasChurch && !managerView.value && props.part !== "checklist",
+);
 </script>

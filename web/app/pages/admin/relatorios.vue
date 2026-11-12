@@ -415,6 +415,8 @@ onMounted(async () => {
     loadRosterReport(),
   ]);
 });
+
+useHead({ title: "Relatórios" });
 </script>
 
 <style scoped>

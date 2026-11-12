@@ -183,8 +183,32 @@ function resetMobileSheetHeight() {
   mobileSheetMinHeight.value = 0;
 }
 
+// Acessibilidade: quem abre uma janela pelo teclado (ou leitor de tela)
+// precisa voltar ao botão de origem quando ela fecha, e não ao topo da página.
+let returnFocusTo: HTMLElement | null = null;
+
+watch(
+  () => props.modelValue,
+  (isOpen) => {
+    if (!import.meta.client || !isOpen) return;
+    const active = document.activeElement;
+    returnFocusTo = active instanceof HTMLElement && active !== document.body ? active : null;
+  },
+  { immediate: true },
+);
+
+function restoreFocus() {
+  const target = returnFocusTo;
+  returnFocusTo = null;
+  if (!target || !target.isConnected) return;
+  // Se outra janela abriu nesse meio tempo, ela fica com o foco.
+  if (document.querySelector(".v-overlay--active:not(.v-snackbar)")) return;
+  target.focus({ preventScroll: true });
+}
+
 function handleAfterLeave() {
   resetMobileSheetHeight();
+  restoreFocus();
   emit("afterLeave");
 }
 
@@ -201,5 +225,11 @@ watch(
   { immediate: true },
 );
 
-onBeforeUnmount(resetMobileSheetHeight);
+onBeforeUnmount(() => {
+  resetMobileSheetHeight();
+  // Quem fecha a janela às vezes desmonta o componente na hora (ex.: o editor
+  // de escala do SheetHost), antes do "after-leave": devolve o foco assim que
+  // a janela sai da página.
+  if (returnFocusTo && import.meta.client) window.setTimeout(restoreFocus, 0);
+});
 </script>

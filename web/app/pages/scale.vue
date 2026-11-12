@@ -337,6 +337,8 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => document.removeEventListener("visibilitychange", onVisible));
+
+useHead({ title: "Escalas" });
 </script>
 
 <style scoped>

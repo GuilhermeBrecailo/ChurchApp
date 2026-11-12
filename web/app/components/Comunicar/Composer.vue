@@ -151,14 +151,14 @@
               <Users size="20" aria-hidden="true" />
               <div>
                 <p class="audience-count-main mb-0">
-                  {{ peopleCount(preview.recipients) }} {{ preview.recipients === 1 ? "vai receber" : "vão receber" }}
+                  {{ peopleCount(deliverableCount) }} {{ deliverableCount === 1 ? "vai receber" : "vão receber" }}
                 </p>
                 <p v-if="preview.excludedWithoutConsent" class="audience-count-note mb-0">
                   {{ excludedWithoutConsentLabel(preview.excludedWithoutConsent) }}.
                   Visitante só recebe WhatsApp se autorizou o contato.
                 </p>
                 <p v-if="preview.withoutPhone" class="audience-count-note mb-0">
-                  {{ preview.withoutPhone }} sem telefone no cadastro não {{ preview.withoutPhone === 1 ? "vai" : "vão" }} receber.
+                  {{ preview.withoutPhone }} {{ preview.withoutPhone === 1 ? "está" : "estão" }} sem telefone no cadastro e {{ preview.withoutPhone === 1 ? "fica" : "ficam" }} de fora.
                 </p>
               </div>
             </template>
@@ -232,7 +232,7 @@
           class="text-none font-weight-bold"
           min-height="44"
           :loading="sending"
-          :disabled="kind === 'WHATSAPP' && (!preview || preview.recipients === 0)"
+          :disabled="kind === 'WHATSAPP' && (!preview || deliverableCount === 0)"
           @click="send"
         >
           <Send size="16" class="mr-2" aria-hidden="true" />
@@ -376,6 +376,11 @@ const togglePerson = (id: string) => {
 };
 
 const preview = ref<MessagePreview | null>(null);
+// Quem de fato recebe: a API conta quem não tem telefone dentro de
+// "recipients" (essas mensagens falham), então descontamos aqui.
+const deliverableCount = computed(() =>
+  preview.value ? Math.max(0, preview.value.recipients - (preview.value.withoutPhone ?? 0)) : 0,
+);
 const previewLoading = ref(false);
 const previewError = ref("");
 let previewTimer: ReturnType<typeof setTimeout> | null = null;
@@ -504,7 +509,7 @@ const previewText = computed(() => {
 const audienceSummary = computed(() => {
   if (kind.value === "WHATSAPP") {
     const label = AUDIENCE_OPTIONS.find((option) => option.value === form.audience)?.label ?? "";
-    const count = preview.value ? ` · ${peopleCount(preview.value.recipients)}` : "";
+    const count = preview.value ? ` · ${peopleCount(deliverableCount.value)}` : "";
     const excluded = preview.value?.excludedWithoutConsent
       ? ` (${excludedWithoutConsentLabel(preview.value.excludedWithoutConsent)})`
       : "";
@@ -515,7 +520,7 @@ const audienceSummary = computed(() => {
 
 const finalLabel = computed(() => {
   if (!kind.value) return "";
-  const recipients = kind.value === "WHATSAPP" ? preview.value?.recipients ?? null : memberCount.value;
+  const recipients = kind.value === "WHATSAPP" ? (preview.value ? deliverableCount.value : null) : memberCount.value;
   return sendButtonLabel(kind.value, recipients, Boolean(props.editing));
 });
 
@@ -556,7 +561,7 @@ const send = async () => {
 
   if (current === "WHATSAPP") {
     toast.success(
-      `Envio começou para ${peopleCount(preview.value?.recipients ?? 0)}. Acompanhe em Enviados.`,
+      `Envio começou para ${peopleCount(deliverableCount.value)}. Acompanhe em Enviados.`,
     );
   } else {
     toast.success(editingId ? "Alterações salvas" : `${COMPOSER_KINDS[current].label} publicado`);

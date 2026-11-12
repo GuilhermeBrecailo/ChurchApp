@@ -247,6 +247,8 @@ onMounted(async () => {
     }),
   ]);
 });
+
+useHead({ title: "Igreja" });
 </script>
 
 <style scoped>

@@ -281,6 +281,8 @@ onMounted(() => {
   fetchChapter();
   loadNote();
 });
+
+useHead({ title: "Leitura bíblica" });
 </script>
 
 <style scoped>

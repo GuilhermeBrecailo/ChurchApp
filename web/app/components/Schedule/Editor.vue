@@ -67,6 +67,7 @@
           <template v-else>
             <v-select
               v-if="!manualDate"
+              ref="cultField"
               v-model="cultValue"
               :items="cultOptions"
               item-title="label"
@@ -74,30 +75,32 @@
               label="Culto"
               variant="outlined"
               hide-details="auto"
+              :error-messages="whenErrors"
               class="mb-1"
               :menu-props="scaleSelectMenuProps"
               no-data-text="Nenhum culto nos próximos meses"
             />
             <v-btn
               variant="text"
-              color="primary"
-              size="small"
-              class="text-none px-0 mb-2"
+              class="text-none editor-alt-date mb-2"
               @click="toggleManualDate"
             >
-              {{ manualDate ? "Escolher um culto da agenda" : "Outra data (sem culto da agenda)" }}
+              <CalendarDays :size="17" class="mr-2" aria-hidden="true" />
+              {{ manualDate ? "Escolher um culto da agenda" : "Escolher outra data" }}
             </v-btn>
             <div v-if="manualDate" class="editor-grid mb-3">
-              <v-text-field v-model="draft.date" type="date" label="Data" variant="outlined" hide-details="auto" />
+              <v-text-field ref="dateField" v-model="draft.date" type="date" label="Data" variant="outlined" hide-details="auto" :error-messages="whenErrors" />
               <v-text-field v-model="draft.time" type="time" label="Horário" variant="outlined" hide-details="auto" />
             </div>
           </template>
 
           <v-text-field
+            ref="titleField"
             v-model="draft.title"
             label="Nome da escala"
             variant="outlined"
             hide-details="auto"
+            :error-messages="titleErrors"
             class="mb-3"
             @update:model-value="titleTouched = true"
           />
@@ -365,6 +368,7 @@ import { computed, nextTick, reactive, ref, watch } from "vue";
 import {
   AlertTriangle,
   CalendarPlus,
+  CalendarDays,
   ChevronDown,
   ChevronUp,
   Church,
@@ -847,10 +851,32 @@ const close = (value = false) => {
   emit("update:modelValue", value);
 };
 
+// Erros de preenchimento aparecem no próprio campo (e o foco vai até ele),
+// em vez de só num aviso no rodapé por cima do formulário.
+const whenError = ref("");
+const titleError = ref("");
+const whenErrors = computed(() => (whenError.value ? [whenError.value] : []));
+const titleErrors = computed(() => (titleError.value ? [titleError.value] : []));
+const cultField = ref<{ focus?: () => void } | null>(null);
+const dateField = ref<{ focus?: () => void } | null>(null);
+const titleField = ref<{ focus?: () => void } | null>(null);
+watch(() => [cultValue.value, draft.date, draft.time], () => { whenError.value = ""; });
+watch(() => draft.title, () => { titleError.value = ""; });
+
 const save = async () => {
   const problem = validateDraft(draft);
   if (problem) {
-    toast.error(problem);
+    if (/culto|data|horário/i.test(problem)) {
+      whenError.value = problem;
+      await nextTick();
+      (manualDate.value ? dateField.value : cultField.value)?.focus?.();
+    } else if (/nome/i.test(problem)) {
+      titleError.value = problem;
+      await nextTick();
+      titleField.value?.focus?.();
+    } else {
+      toast.error(problem);
+    }
     return;
   }
 
@@ -887,6 +913,17 @@ const save = async () => {
 </script>
 
 <style scoped>
+.editor-alt-date {
+  min-height: 44px;
+  padding-inline: 8px !important;
+  color: var(--app-color-text) !important;
+  font-weight: 500;
+}
+
+.editor-alt-date svg {
+  color: var(--app-color-accent);
+}
+
 .editor-more {
   display: flex;
   align-items: center;

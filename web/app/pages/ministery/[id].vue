@@ -248,6 +248,8 @@ onMounted(async () => {
     void scheduleEditor.value?.openCreate(department.value, { cultoId: String(cultoId) });
   }
 });
+
+useHead({ title: "Ministério" });
 </script>
 
 <style scoped>

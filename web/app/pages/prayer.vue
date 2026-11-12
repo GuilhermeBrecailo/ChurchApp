@@ -401,6 +401,8 @@ onMounted(() => {
   void loadMine();
   void loadPending();
 });
+
+useHead({ title: "Pedidos de oração" });
 </script>
 
 <style scoped>

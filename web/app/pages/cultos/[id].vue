@@ -589,6 +589,8 @@ watch(
 );
 
 onMounted(load);
+
+useHead({ title: "Culto" });
 </script>
 
 <style scoped>

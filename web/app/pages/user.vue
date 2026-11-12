@@ -353,6 +353,8 @@ const loadPageData = async () => {
 };
 
 onMounted(loadPageData);
+
+useHead({ title: "Perfil" });
 </script>
 
 <style scoped>

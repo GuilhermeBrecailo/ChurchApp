@@ -20,7 +20,8 @@
         </li>
       </ol>
 
-      <p v-if="lastCheckLabel" class="waiting-status" aria-live="polite">
+      <!-- A região "ao vivo" existe desde o início para o leitor de tela anunciar a mudança. -->
+      <p class="waiting-status" aria-live="polite" :hidden="!lastCheckLabel">
         {{ lastCheckLabel }}
       </p>
 
@@ -124,6 +125,7 @@ const refresh = async (manual: boolean) => {
   if (manual) {
     const time = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date());
     lastCheckLabel.value = `Ainda aguardando. Verificado às ${time}.`;
+    toast.info("Ainda aguardando a aprovação do pastor. Você entra sozinho assim que ele aprovar.");
   }
 };
 

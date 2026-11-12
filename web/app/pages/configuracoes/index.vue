@@ -144,6 +144,8 @@ onMounted(() => {
     });
   }
 });
+
+useHead({ title: "Configurações" });
 </script>
 
 <style scoped>
