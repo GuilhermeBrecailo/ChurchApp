@@ -268,7 +268,7 @@ onMounted(load);
   border-radius: 999px;
   background: var(--app-color-surface-muted);
   color: var(--app-color-text-muted);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 

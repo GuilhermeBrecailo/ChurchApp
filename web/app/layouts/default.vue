@@ -32,7 +32,7 @@ useHead({
 .demo-banner {
   background: #92400e;
   color: #fef3c7;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   text-align: center;
   padding: 5px 16px;

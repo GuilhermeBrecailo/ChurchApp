@@ -435,7 +435,7 @@ function removeCommunionTask(index: number) {
   background: transparent;
   color: rgb(var(--v-theme-primary));
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 650;
   cursor: pointer;
 }
@@ -461,7 +461,7 @@ function removeCommunionTask(index: number) {
 
 .schedule-config-subheading {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 650;
 }
 
@@ -472,7 +472,7 @@ function removeCommunionTask(index: number) {
 
   .schedule-config-remove-button {
     padding-inline: 0.25rem;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
   }
 }
 </style>

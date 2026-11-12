@@ -172,7 +172,7 @@ async function restore() {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 32px;
+  min-height: 44px;
   padding: 0 12px;
   border: 1px solid var(--app-color-border-subtle);
   border-radius: 999px;

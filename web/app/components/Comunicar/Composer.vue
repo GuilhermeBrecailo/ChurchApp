@@ -605,7 +605,7 @@ const send = async () => {
   height: 22px;
   border-radius: 999px;
   background: var(--app-color-surface-soft);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -772,7 +772,7 @@ const send = async () => {
 }
 
 .content-preview-kicker {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;

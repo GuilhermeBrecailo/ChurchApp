@@ -311,7 +311,7 @@ async function save() {
 }
 
 .role-editor-link {
-  min-height: 36px;
+  min-height: 44px;
   border: 0;
   background: none;
   color: var(--app-color-accent);

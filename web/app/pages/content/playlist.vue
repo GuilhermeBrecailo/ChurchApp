@@ -251,7 +251,7 @@ useHead({ title: "Minha playlist" });
 }
 
 .playlist-card-dept {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--app-color-text-muted);
 }
 
@@ -261,7 +261,7 @@ useHead({ title: "Minha playlist" });
 
 .playlist-key-select :deep(.v-field) {
   border-radius: 8px;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
 }
 
 .playlist-chevron {

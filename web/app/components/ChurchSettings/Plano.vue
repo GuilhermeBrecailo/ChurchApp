@@ -305,7 +305,7 @@ onMounted(async () => {
 }
 
 .plans-price-period {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--app-color-text-muted);
 }
@@ -338,7 +338,7 @@ onMounted(async () => {
   background: var(--app-color-warning);
   color: var(--app-color-surface);
   font-family: inherit;
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;

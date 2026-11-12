@@ -130,7 +130,7 @@ const submit = () => {
 }
 
 .decline-chip {
-  min-height: 40px;
+  min-height: 44px;
   font-weight: 700;
 }
 

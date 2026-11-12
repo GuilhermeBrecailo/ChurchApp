@@ -434,7 +434,7 @@ onMounted(async () => {
 
 .preview-banner-exit {
   flex: 0 0 auto;
-  min-height: 32px;
+  min-height: 44px;
   padding: 0 14px;
   border: 1px solid var(--app-color-border);
   border-radius: 999px;
@@ -514,7 +514,7 @@ onMounted(async () => {
   border-radius: 999px;
   background: var(--notif-accent-tint);
   color: var(--notif-accent-text);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -528,7 +528,7 @@ onMounted(async () => {
   border: 0;
   background: transparent;
   color: var(--notif-accent-text);
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   cursor: pointer;
   border-radius: 8px;
@@ -651,14 +651,14 @@ onMounted(async () => {
   overflow: hidden;
   overflow-wrap: anywhere;
   color: var(--app-color-text-soft);
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   line-height: 1.4;
 }
 
 .notification-item-date {
   margin-top: 2px;
   color: var(--app-color-text-muted);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
@@ -707,7 +707,7 @@ onMounted(async () => {
 .notification-empty-body {
   max-width: 250px;
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   line-height: 1.4;
   color: var(--app-color-text-muted);
 }
@@ -763,7 +763,7 @@ onMounted(async () => {
 
 .notification-push-title {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   color: var(--app-color-text);
   line-height: 1.25;
@@ -771,7 +771,7 @@ onMounted(async () => {
 
 .notification-push-description {
   margin: 2px 0 0;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   line-height: 1.35;
   color: var(--app-color-text-muted);
 }

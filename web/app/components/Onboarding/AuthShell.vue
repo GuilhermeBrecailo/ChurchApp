@@ -150,7 +150,7 @@ const emit = defineEmits<{ back: [] }>();
 .onb-promo__eyebrow {
   margin: 0 0 14px;
   color: var(--app-color-accent);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;

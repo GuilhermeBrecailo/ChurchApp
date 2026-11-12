@@ -111,7 +111,7 @@ const onKeydown = (event: KeyboardEvent) => {
   border-radius: 999px;
   background: var(--app-color-accent);
   color: #fff;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 800;
 }
 </style>

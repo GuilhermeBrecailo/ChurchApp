@@ -133,7 +133,7 @@ const formatDate = (value: string) =>
   border-radius: 999px;
   background: var(--app-color-surface-soft);
   color: var(--app-color-text-soft);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 800;
 }
 

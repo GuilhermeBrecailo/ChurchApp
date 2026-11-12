@@ -932,7 +932,7 @@ onMounted(async () => {
 
 .person-link {
   justify-self: start;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0;
   border: 0;
   background: none;
@@ -1010,7 +1010,7 @@ onMounted(async () => {
 }
 
 .person-visit-actions :deep(.v-btn) {
-  min-height: 40px;
+  min-height: 44px;
 }
 
 .person-actions {
@@ -1119,7 +1119,7 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 6px 0 12px;
   border-radius: 999px;
   background: var(--app-color-accent-tint);

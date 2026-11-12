@@ -57,7 +57,7 @@ const ownerTab = computed(() => getOwnerTab(user.value, route.path));
   width: 100%;
   overflow: hidden;
   /* 12px: o menor tamanho legível para quem tem mais de 50 anos. */
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1.05;
   text-align: center;
@@ -131,7 +131,7 @@ const ownerTab = computed(() => getOwnerTab(user.value, route.path));
   .nav-label {
     /* 390px é a largura da maioria dos iPhones: 0.62rem (~10px) era pequeno
        demais para ler o nome da aba. */
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     letter-spacing: 0;
   }
 
@@ -143,7 +143,7 @@ const ownerTab = computed(() => getOwnerTab(user.value, route.path));
 
 @media (max-width: 340px) {
   .nav-label {
-    font-size: 0.66rem;
+    font-size: 0.8125rem;
   }
 }
 </style>

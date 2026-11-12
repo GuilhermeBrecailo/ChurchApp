@@ -506,7 +506,7 @@ useHead({ title: "Relatórios" });
 
 .report-kpi-card small {
   color: var(--app-color-text-muted);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   font-weight: 750;
 }
 
@@ -578,7 +578,7 @@ useHead({ title: "Relatórios" });
 .report-row small,
 .leadership-row small {
   color: var(--app-color-text-muted);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   font-weight: 650;
 }
 
@@ -608,7 +608,7 @@ useHead({ title: "Relatórios" });
 
 .leadership-summary span {
   color: var(--app-color-text-muted);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 750;
 }
 
@@ -653,7 +653,7 @@ useHead({ title: "Relatórios" });
 
 .attendance-totals span {
   color: var(--app-color-text-muted);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 750;
 }
 
@@ -684,13 +684,13 @@ useHead({ title: "Relatórios" });
 
 .finalize-service-row small {
   color: var(--app-color-text-muted);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 
 .finalize-service-time {
   color: var(--app-color-text-muted);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 
@@ -720,7 +720,7 @@ useHead({ title: "Relatórios" });
 
 .attendance-row small {
   color: var(--app-color-text-muted);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 
@@ -733,7 +733,7 @@ useHead({ title: "Relatórios" });
 
 .attendance-counts span {
   color: var(--app-color-text-soft);
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 

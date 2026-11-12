@@ -269,7 +269,7 @@ async function copy() {
   border-radius: 999px;
   background: var(--app-color-success-tint);
   color: var(--app-color-success);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 

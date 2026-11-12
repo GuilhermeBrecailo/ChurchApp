@@ -154,7 +154,7 @@ const sessionLabel = (session: MinistryChildSession) => {
   color: #263238;
 }
 .attendance-summary span {
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: #64748b;
 }
 .attendance-child {
@@ -185,7 +185,7 @@ const sessionLabel = (session: MinistryChildSession) => {
     grid-template-columns: 1fr 1fr;
   }
   .attendance-actions .v-btn {
-    min-height: 40px;
+    min-height: 44px;
   }
 }
 </style>

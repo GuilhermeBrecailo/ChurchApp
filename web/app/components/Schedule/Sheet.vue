@@ -635,6 +635,9 @@ const confirmDelete = async () => {
 }
 
 .sheet-song-title {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   padding: 0;
   border: 0;
   background: none;

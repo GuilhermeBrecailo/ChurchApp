@@ -875,7 +875,7 @@ onMounted(loadCommercialLeads);
 .commercial-lead-card-meta,
 .commercial-lead-optout {
   color: var(--app-color-text-muted, #6b7280);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
 }
 
 .commercial-lead-card-meta {

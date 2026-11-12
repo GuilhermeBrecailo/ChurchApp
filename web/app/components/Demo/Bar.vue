@@ -137,13 +137,13 @@ body:has(.side-nav) .demo-bar {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 36px;
+  min-height: 44px;
   padding: 6px 12px 6px 10px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
   background: var(--demo-bg);
   color: var(--demo-fg);
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   line-height: 1.1;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
   cursor: pointer;
@@ -181,7 +181,7 @@ body:has(.side-nav) .demo-bar {
 }
 
 .demo-bar__caret {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--demo-muted);
 }
 
@@ -201,7 +201,7 @@ body:has(.side-nav) .demo-bar {
 
 .demo-bar__menu-title {
   margin: 4px 10px 6px;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -245,7 +245,7 @@ body:has(.side-nav) .demo-bar {
 }
 
 .demo-bar__item-text small {
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   color: var(--demo-muted);
 }
 

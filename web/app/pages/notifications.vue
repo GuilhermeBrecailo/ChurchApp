@@ -262,7 +262,7 @@ useHead({ title: "Notificações" });
 }
 
 .notif-date {
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--app-color-text-muted, #6b7280);
   margin-top: 2px;

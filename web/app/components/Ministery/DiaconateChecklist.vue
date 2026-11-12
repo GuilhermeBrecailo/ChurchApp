@@ -415,7 +415,7 @@ const copyFromSchedule = async (source: DepartmentSchedule) => {
 }
 .checklist-title {
   color: var(--app-color-text, #1f2937);
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   overflow-wrap: anywhere;
 }

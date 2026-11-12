@@ -508,13 +508,13 @@ h1.text-h5 {
 }
 
 :where(.app-operational-page, .responsive-overlay) .v-btn--icon.v-btn--size-small {
-  min-width: 40px;
-  min-height: 40px;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 :where(.app-operational-page, .responsive-overlay) .v-btn--size-x-small {
   min-width: 32px;
-  min-height: 32px;
+  min-height: 44px;
 }
 
 :where(.app-operational-page, .responsive-overlay) .v-btn:not(.v-btn--disabled):hover {
@@ -681,8 +681,8 @@ h1.text-h5 {
 }
 
 :where(.app-operational-page, .responsive-overlay) .v-tabs {
-  /* 40px + trilho de 2px = controle de 44px, o alvo de toque mínimo da Apple. */
-  --v-tabs-height: 40px;
+  /* Cada aba com 44px, o alvo de toque mínimo da Apple. */
+  --v-tabs-height: 44px;
   height: auto !important;
 }
 
@@ -691,7 +691,7 @@ h1.text-h5 {
 :where(.app-operational-page, .responsive-overlay) .v-tab {
   flex: 0 0 auto;
   min-width: 0;
-  min-height: 40px;
+  min-height: 44px;
   border-radius: 8px !important;
   background: transparent !important;
   color: var(--app-color-text) !important;
@@ -766,7 +766,7 @@ h1.text-h5 {
 
 :where(.app-operational-page, .responsive-overlay) .v-data-table-header__content {
   color: var(--app-color-text-muted);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1550,7 +1550,7 @@ h1.text-h5 {
 /* Linha acima do título (ex.: a data no Início), como no app Hoje/Fitness. */
 .app-page-kicker {
   font-family: inherit;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   text-transform: uppercase;
@@ -1616,7 +1616,7 @@ h1.text-h5 {
   min-height: 40px;
   padding-inline: 14px;
   border-radius: 10px;
-  font-size: 0.77rem;
+  font-size: 0.8125rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1633,6 +1633,9 @@ h1.text-h5 {
 /* Link dentro de alertas/avisos que leva direto para a aba certa das
    Configurações (ex.: "Conectar em Configurações › WhatsApp"). */
 .config-inline-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: inherit;
   font-weight: 800;
   text-decoration: underline;
@@ -1865,4 +1868,55 @@ h1.text-h5 {
   .content-card-link:hover > .v-card {
     transform: none !important;
   }
+}
+
+/* ============================================================
+   Tamanho mínimo (revisão de acessibilidade, público 50+):
+   - todo alvo de toque com pelo menos 44px de altura (Apple HIG);
+   - todo texto com pelo menos 13px (legendas, chips, contadores).
+   Regras fora de camada: valem sobre os padrões do Vuetify.
+   ============================================================ */
+.v-btn:not(.v-btn--icon):not(.v-field .v-btn):not(.v-chip .v-btn) {
+  min-height: 44px;
+}
+
+.v-btn.v-btn--icon:not(.v-field .v-btn):not(.v-chip .v-btn) {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.text-caption,
+.text-overline,
+.v-messages__message,
+.v-counter,
+.v-chip.v-chip--size-x-small,
+.v-chip.v-chip--size-small,
+.v-badge__badge,
+.v-list-item-subtitle {
+  font-size: 0.8125rem !important;
+}
+
+.v-badge__badge {
+  min-width: 20px;
+  height: 20px;
+}
+
+.v-tab.v-btn {
+  min-height: 44px;
+}
+
+/* Chips que são botões (filtros) e caixas de marcar/interruptores. */
+.v-chip.v-chip--link,
+button.v-chip {
+  min-height: 44px;
+}
+
+.v-selection-control {
+  --v-selection-control-size: 44px;
+}
+
+/* Botões "small"/"x-small" do Vuetify usam 12px/10px: sobem para 13px. */
+.v-btn.v-btn--size-small,
+.v-btn.v-btn--size-x-small {
+  --v-btn-size: 0.8125rem;
 }

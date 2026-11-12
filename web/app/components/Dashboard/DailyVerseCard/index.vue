@@ -43,7 +43,7 @@ withDefaults(
   align-items: center;
   gap: 6px;
   color: var(--app-color-accent);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;

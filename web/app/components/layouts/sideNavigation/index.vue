@@ -235,14 +235,14 @@ const activeSubKey = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 32px;
+  min-height: 44px;
   width: 100%;
   padding: 0 10px;
   border: 0;
   border-radius: 8px;
   background: transparent;
   color: var(--app-color-text-muted);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   text-align: left;
 }
@@ -266,7 +266,7 @@ const activeSubKey = computed(() => {
 
 .side-nav-sub {
   display: grid;
-  gap: 2px;
+  gap: 0;
 }
 
 .side-nav-sub--list {
@@ -278,7 +278,7 @@ const activeSubKey = computed(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 10px;
   border-radius: 8px;
   color: var(--app-color-text);
@@ -289,7 +289,7 @@ const activeSubKey = computed(() => {
 }
 
 .side-nav-link--sub {
-  min-height: 36px;
+  min-height: 44px;
   font-size: 0.9rem;
 }
 
@@ -379,6 +379,6 @@ const activeSubKey = computed(() => {
 
 .side-nav-profile-hint {
   color: var(--app-color-text-muted);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
 }
 </style>

@@ -350,7 +350,7 @@ useHead({ title: "Leitura bíblica" });
 }
 
 .bible-verse-num {
-  font-size: 0.65rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--app-color-accent);
   vertical-align: super;

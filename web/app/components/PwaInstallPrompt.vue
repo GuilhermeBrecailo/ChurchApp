@@ -210,7 +210,7 @@ onMounted(initialize);
 
 .pwa-install-copy > span {
   color: var(--app-color-text-muted);
-  font-size: 0.77rem;
+  font-size: 0.8125rem;
   line-height: 1.35;
 }
 
@@ -296,7 +296,7 @@ onMounted(initialize);
 
 .pwa-install-eyebrow {
   color: var(--app-color-accent);
-  font-size: 0.73rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   margin: 0 0 6px;
@@ -337,7 +337,7 @@ onMounted(initialize);
 
 .pwa-install-guide-note {
   color: var(--app-color-text-muted);
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   line-height: 1.45;
   margin: 14px 0 0;
 }
@@ -376,7 +376,7 @@ onMounted(initialize);
   }
 
   .pwa-install-action {
-    min-height: 38px;
+    min-height: 44px;
   }
 }
 

@@ -401,7 +401,7 @@ onMounted(async () => {
   border-radius: 10px;
   background: var(--app-color-accent-tint);
   color: var(--app-color-accent);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   line-height: 1.2;
   text-transform: uppercase;
@@ -465,7 +465,7 @@ onMounted(async () => {
 }
 
 .home-person .v-avatar {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 800;
 }
 </style>

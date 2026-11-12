@@ -241,7 +241,7 @@ onMounted(load);
 }
 
 .service-date-month {
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   text-transform: uppercase;
 }

@@ -668,7 +668,7 @@ const handleRemove = async () => {
 .help-video-row-head {
   background: #f7f7fb;
   color: #6b6472;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   text-transform: uppercase;
 }

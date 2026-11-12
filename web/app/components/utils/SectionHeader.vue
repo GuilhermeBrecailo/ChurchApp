@@ -62,7 +62,7 @@ withDefaults(
   border-radius: 999px;
   background: var(--app-color-accent-tint);
   color: var(--app-color-accent);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   text-align: center;
 }
@@ -72,7 +72,7 @@ withDefaults(
   align-items: center;
   gap: 2px;
   flex: 0 0 auto;
-  min-height: 36px;
+  min-height: 44px;
   color: var(--app-color-accent);
   font-size: 0.9rem;
   font-weight: 500;

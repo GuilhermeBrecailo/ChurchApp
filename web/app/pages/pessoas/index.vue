@@ -463,7 +463,7 @@ onMounted(load);
 }
 
 .people-row-btn {
-  min-height: 40px;
+  min-height: 44px;
 }
 
 .people-active-filter {
@@ -477,7 +477,7 @@ onMounted(load);
 }
 
 .people-link {
-  min-height: 36px;
+  min-height: 44px;
   border: 0;
   background: none;
   color: var(--app-color-accent);

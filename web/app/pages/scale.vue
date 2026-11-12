@@ -391,7 +391,7 @@ useHead({ title: "Escalas" });
 
 .scale-chip {
   flex: 0 0 auto;
-  min-height: 40px;
+  min-height: 44px;
   font-weight: 700;
 }
 

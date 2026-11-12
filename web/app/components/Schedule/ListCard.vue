@@ -98,7 +98,7 @@ const openSheet = () => sheet.open(props.view.id);
 }
 
 .when-month {
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   text-transform: uppercase;
 }
