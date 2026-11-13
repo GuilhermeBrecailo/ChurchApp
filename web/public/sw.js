@@ -1,4 +1,4 @@
-self.__APP_QUADRANGULAR_SW_VERSION__ = "2026-09-09-01";
+self.__APP_QUADRANGULAR_SW_VERSION__ = "2026-11-13-01";
 
 const CACHE_NAME = `app-quadrangular-${self.__APP_QUADRANGULAR_SW_VERSION__}`;
 const APP_SHELL = ["/", "/login", "/manifest.webmanifest", "/pwa-icon.svg"];
@@ -41,23 +41,21 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_NAME);
+
+        // Network-first: o HTML sempre vem do servidor. Servir o HTML da visita
+        // anterior (stale-while-revalidate) apontava, depois de um deploy, para
+        // arquivos /_nuxt/ de outra versao - tela sem CSS/JS de alguns trechos.
+        // O cache so serve de reserva quando nao ha rede.
+        try {
+          const response = await fetch(request);
+          if (response.ok) cache.put(request, response.clone());
+          return response;
+        } catch {
+          // sem rede: cai no cache abaixo
+        }
+
         const cachedResponse = await cache.match(request);
-
-        // Always kick off a network fetch to refresh the cache, whether or
-        // not we already have something to serve from it.
-        const networkFetch = fetch(request)
-          .then((response) => {
-            cache.put(request, response.clone());
-            return response;
-          })
-          .catch(() => undefined);
-
-        // Stale-while-revalidate: serve the cached shell immediately so the
-        // app opens instantly, refresh happens in the background for next time.
         if (cachedResponse) return cachedResponse;
-
-        const networkResponse = await networkFetch;
-        if (networkResponse) return networkResponse;
 
         const cachedLogin = await caches.match("/login");
         const cachedHome = await caches.match("/");

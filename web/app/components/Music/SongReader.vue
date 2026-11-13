@@ -157,16 +157,7 @@
         :auto-scroll="scrollSpeed > 0"
         :scroll-speed="effectiveScrollSpeed"
       />
-      <v-btn
-        v-if="showResumeScrollButton"
-        class="song-reader-resume-btn text-none"
-        color="primary"
-        rounded="pill"
-        prepend-icon="mdi-play"
-        @click="songTextRenderer?.resume()"
-      >
-        Retomar rolagem
-      </v-btn>
+      <MusicAutoScrollButton :state="autoScrollState" @toggle="toggleAutoScroll" />
     </div>
 
     <div v-if="$slots.extra" class="song-reader-extra">
@@ -251,13 +242,32 @@ const tab = ref<"lyrics" | "chords">(props.tab);
 const instrument = ref<"auto" | "default" | "keyboard">("auto");
 const scrollSpeed = ref(0);
 const isControlsOpen = ref(false);
-const songTextRenderer = ref<{ isPaused: { value: boolean }; resume: () => void } | null>(null);
-// Rolagem manual pausa e nao retoma sozinha (ver SongTextRenderer) - esse
-// botao flutuante e o atalho pra voltar a rolar sem precisar abrir o menu
-// e reencostar no slider.
-const showResumeScrollButton = computed(
-  () => scrollSpeed.value > 0 && songTextRenderer.value?.isPaused?.value === true,
-);
+// O template ref desembrulha os refs expostos: isPaused chega como boolean.
+const songTextRenderer = ref<{
+  isPaused: boolean;
+  pause: () => void;
+  resume: () => void;
+} | null>(null);
+// Botao flutuante unico: um toque inicia a rolagem na ultima velocidade usada
+// (ou na padrao), outro pausa, outro retoma. Rolar a mao nao pausa.
+const DEFAULT_SCROLL_SPEED = 24;
+let lastScrollSpeed = DEFAULT_SCROLL_SPEED;
+watch(scrollSpeed, (speed) => {
+  if (speed > 0) lastScrollSpeed = speed;
+});
+const autoScrollState = computed<"idle" | "running" | "paused">(() => {
+  if (scrollSpeed.value <= 0) return "idle";
+  return songTextRenderer.value?.isPaused === true ? "paused" : "running";
+});
+const toggleAutoScroll = () => {
+  if (autoScrollState.value === "idle") {
+    scrollSpeed.value = lastScrollSpeed;
+  } else if (autoScrollState.value === "running") {
+    songTextRenderer.value?.pause();
+  } else {
+    songTextRenderer.value?.resume();
+  }
+};
 // Cordas e teclado transpõem de forma independente - trocar o tom com
 // teclado selecionado não pode mexer no tom da cifra de cordas, e vice-versa.
 const transposeStepsByInstrument = reactive({ default: 0, keyboard: 0 });
@@ -483,15 +493,6 @@ defineExpose({ tab });
   padding: 20px;
 }
 
-.song-reader-resume-btn {
-  position: absolute;
-  left: 50%;
-  bottom: 16px;
-  transform: translateX(-50%);
-  z-index: 2;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
-}
-
 .song-reader-extra {
   border-top: 1px solid var(--app-color-border);
   padding: 12px 18px;
@@ -543,9 +544,4 @@ defineExpose({ tab });
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .song-reader-resume-btn {
-    transition: none;
-  }
-}
 </style>

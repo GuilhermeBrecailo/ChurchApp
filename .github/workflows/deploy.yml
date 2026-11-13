@@ -1,59 +1,88 @@
-name: Deploy CrunchApp
+name: Deploy
 
+# Push na main => VPS Hostinger (platform-autodeploy): clone, build de api e web,
+# troca dos containers, health check e rollback automatico se falhar.
+# O servidor ja confere a main sozinho a cada 5 min; este workflow so dispara o
+# deploy na hora, acompanha o resultado e deixa o run vermelho se nao chegar.
+# Detalhes e como configurar o segredo: docs/DEPLOY.md
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  VPS_HOST: 187.77.238.124
+  # Chave de host ED25519 da VPS (fingerprint SHA256:U5b8Aa3ab/X8sfQd6rab4JFjq2wlkbbLQedCTRYbfA8).
+  VPS_HOST_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFSxeiVR/S4WJICL+HrOfOXmgm/7H8JUeT6iUCez9NfS
 
 jobs:
   deploy:
-    runs-on: [self-hosted, Linux, X64]
-
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - name: Atualizar servidor
-        run: |
-          set -e
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-          run_docker() {
-            if docker info >/dev/null 2>&1; then
-              docker "$@"
-            elif command -v sudo >/dev/null 2>&1 && sudo -n docker info >/dev/null 2>&1; then
-              sudo docker "$@"
-            else
-              echo "Runner $(id -un) cannot access Docker at /var/run/docker.sock." >&2
-              id >&2
-              ls -l /var/run/docker.sock >&2 || true
-              echo "Configure Docker access for the runner, then rerun this workflow." >&2
+      - name: Preparar SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -eu
+          test -n "$VPS_SSH_KEY" || { echo "Segredo VPS_SSH_KEY nao configurado (ver docs/DEPLOY.md)"; exit 1; }
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s %s\n' "$VPS_HOST" "$VPS_HOST_KEY" > ~/.ssh/known_hosts
+
+      - name: Deploy na VPS
+        run: |
+          set -u
+          # A chave so executa um comando no servidor (platform-autodeploy do
+          # churchapp) e devolve o estado do deploy em JSON.
+          for attempt in $(seq 1 30); do
+            out=$(ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
+              -o StrictHostKeyChecking=yes -o ConnectTimeout=20 "root@$VPS_HOST" 2>&1) || true
+            state=$(printf '%s\n' "$out" | grep '^{' | tail -n 1)
+            if [ -z "$state" ]; then
+              echo "Tentativa $attempt: sem estado do servidor:"; printf '%s\n' "$out" | tail -n 5
+              sleep 20; continue
+            fi
+
+            status=$(printf '%s' "$state" | jq -r '.status // ""')
+            current=$(printf '%s' "$state" | jq -r '.current_sha // ""')
+            failed=$(printf '%s' "$state" | jq -r '.failed_sha // ""')
+            echo "Tentativa $attempt: status=$status atual=${current:0:12} alvo=${GITHUB_SHA:0:12}"
+
+            if [ "$failed" = "$GITHUB_SHA" ]; then
+              echo "::error::Deploy de $GITHUB_SHA falhou no servidor (status=$status): $(printf '%s' "$state" | jq -r '.last_error // ""')"
               exit 1
             fi
-          }
-          project_dir=""
-          for candidate in \
-            /home/ghrunner/CrunchApp \
-            /home/ghrunner/ChurchApp \
-            /opt/CrunchApp \
-            /opt/ChurchApp \
-            /srv/CrunchApp \
-            /srv/ChurchApp; do
-            if [ -f "$candidate/docker-compose.yml" ]; then
-              project_dir="$candidate"
-              break
+
+            # Sucesso: o servidor ja esta no alvo ou em um commit mais novo da main.
+            git fetch --quiet origin main || true
+            if [ "$current" = "$GITHUB_SHA" ] ||
+               { git cat-file -e "$current^{commit}" 2>/dev/null && git merge-base --is-ancestor "$GITHUB_SHA" "$current"; }; then
+              echo "Deploy concluido: servidor em ${current:0:12}."
+              exit 0
             fi
+
+            # Outro deploy (timer de 5 min) pode estar segurando o lock: espera e tenta de novo.
+            sleep 60
           done
+          echo "::error::Servidor nao chegou em $GITHUB_SHA a tempo."
+          exit 1
 
-          if [ -n "$project_dir" ]; then
-            git -C "$project_dir" pull origin main
-            run_docker compose --project-directory "$project_dir" up -d --build web api
-            exit 0
-          fi
-
-          run_docker run --rm \
-            -v /root/CrunchApp:/root/CrunchApp \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -w /root/CrunchApp \
-            docker:27-cli \
-            sh -euxc '
-              apk add --no-cache git docker-cli-compose
-              git pull origin main
-              docker compose up -d --build web api
-            '
+      - name: Conferir no ar
+        run: |
+          set -eu
+          curl --fail --silent --show-error --retry 6 --retry-delay 10 --retry-all-errors --max-time 20 -o /dev/null https://churchapp.site/
+          curl --fail --silent --show-error --retry 6 --retry-delay 10 --retry-all-errors --max-time 20 -o /dev/null https://api.churchapp.site/status
+          echo "churchapp.site e api.churchapp.site respondendo."
