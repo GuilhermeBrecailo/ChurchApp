@@ -454,4 +454,85 @@ describe("extractSongsFromPages", () => {
     expect(song.chords).toContain("[Intro] A E F#m D");
     expect(song.chords).toContain("Eu olho para cruz");
   });
+
+  it("junta em uma so musica a cifra que continua na pagina seguinte e le artista e tom do cabecalho simples", () => {
+    const songs = extractSongsFromPages([
+      [
+        "Sublime",
+        "Florianópolis House Of Prayer",
+        "Tom: G",
+        " [Intro] G  Em  D  C",
+        "[Primeira Parte]",
+        " G          Em    D",
+        "Quem é como Tu, Jesus",
+        " C                  G",
+        "Não há ninguém além de Ti            Em7",
+        "   D",
+        "Que é manso e humilde assim",
+      ].join("\n"),
+      [
+        "[Ponte]",
+        "Am          G      D",
+        "Ah, como espero o dia",
+        "       C",
+        "Só quero a Ti",
+        "      Am",
+        "E nada mais",
+      ].join("\n"),
+    ]);
+
+    expect(songs).toHaveLength(1);
+    expect(songs[0]).toMatchObject({
+      title: "Sublime",
+      artist: "Florianópolis House Of Prayer",
+      key: "G",
+    });
+    expect(songs[0].lyrics).toContain("Quem é como Tu, Jesus");
+    expect(songs[0].lyrics).toContain("[Ponte]");
+    expect(songs[0].lyrics).toContain("Só quero a Ti");
+    expect(songs[0].lyrics).not.toContain("Tom:");
+    expect(songs[0].lyrics).not.toContain("Em7");
+    expect(songs[0].chords).toContain("Am          G      D");
+    expect(songs[0].chords).toMatch(/^ *D +Em7$/m);
+  });
+
+  it("junta paginas sem titulo na musica anterior mesmo sem cabecalho com tom", () => {
+    const songs = extractSongsFromPages([
+      ["Minha Musica", "G   D", "Primeira linha", "Em   C", "Segunda linha"].join("\n"),
+      ["[Ponte]", "Am   G", "Terceira linha"].join("\n"),
+    ]);
+
+    expect(songs).toHaveLength(1);
+    expect(songs[0].title).toBe("Minha Musica");
+    expect(songs[0].lyrics).toContain("Terceira linha");
+  });
+
+  it("le titulo em duas linhas e ignora rodape de impressao no PDF do Cifra Club", () => {
+    const songs = extractSongsFromPages([
+      [
+        "Hino da Igreja do Evangelho",
+        "Quadrangular",
+        "Quadrangular",
+        "Composição de: Aimee Semple McPherson",
+        "Tom: D",
+        "Afinação: E A D G B E",
+        "D",
+        "Eia, salvos avançai",
+        "https://www.cifraclub.com.br/quadrangular/imprimir.html",
+        "10/11/2026, 22:55",
+        "Página 1 de 2",
+      ].join("\n"),
+      ["A", "Nada de temer", "Página 2 de 2"].join("\n"),
+    ]);
+
+    expect(songs).toHaveLength(1);
+    expect(songs[0]).toMatchObject({
+      title: "Hino da Igreja do Evangelho Quadrangular",
+      artist: "Quadrangular",
+      key: "D",
+    });
+    expect(songs[0].lyrics).toBe("Eia, salvos avançai\nNada de temer");
+    expect(songs[0].chords).not.toContain("cifraclub");
+    expect(songs[0].chords).not.toContain("Página");
+  });
 });

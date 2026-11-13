@@ -69,8 +69,26 @@ function isRhythmLine(line: string): boolean {
   return /^\[ritmo padrao\]/.test(normalized) || /^\d{2,4}(?:\s*bpm)?$/.test(normalized);
 }
 
+// Rodape/cabecalho que o navegador adiciona ao imprimir a cifra em PDF:
+// endereco da pagina, data/hora e "Pagina 1 de 3".
+function isPrintFooterLine(line: string): boolean {
+  const normalized = normalizeMetadataLabel(line);
+
+  return (
+    /^https?:\/\//.test(normalized) ||
+    /^\d{1,2}\/\d{1,2}\/\d{2,4}(?:,?\s+\d{1,2}:\d{2})?$/.test(normalized) ||
+    /^pagina\s+\d+\s+de\s+\d+$/.test(normalized)
+  );
+}
+
 function isMetadataNoiseLine(line: string): boolean {
-  return isCompositionLine(line) || isTomLine(line) || isTuningLine(line) || isRhythmLine(line);
+  return (
+    isCompositionLine(line) ||
+    isTomLine(line) ||
+    isTuningLine(line) ||
+    isRhythmLine(line) ||
+    isPrintFooterLine(line)
+  );
 }
 
 function isChordToken(token: string): boolean {
@@ -246,7 +264,8 @@ function renderPdfColumn(rows: PdfTextRow[], isRightColumn: boolean): string[] {
 // ordem visual. Em PDFs do Cifra Club a letra vem primeiro, os acordes depois
 // e paginas longas usam duas colunas. Agrupamos por Y, reconstruimos cada
 // linha por X e so depois juntamos a coluna esquerda com a direita.
-export function renderPdfTextItems(items: PdfTextItem[]): string {
+export function renderPdfTextItems(allItems: PdfTextItem[]): string {
+  const items = allItems.filter((item) => !isPrintFooterLine(item.str.trim()));
   const rows = groupPdfItemsIntoRows(items).filter(hasVisiblePdfText);
   const leftRows = renderPdfColumn(rows, false);
   const rightRows = renderPdfColumn(rows, true);
@@ -295,7 +314,7 @@ export async function extractPdfPages(buffer: Buffer): Promise<string[]> {
 // G/B D Em Am"), so o marcador vai pra letra e a linha inteira vai pra
 // cifra.
 function splitLyricsFromChords(lines: string[]): { lyricLines: string[]; chordLines: string[] } {
-  const chordLines = lines;
+  const chordLines = moveWrappedChordsToChordLine(lines);
   const lyricLines: string[] = [];
 
   for (const rawLine of lines) {
@@ -317,10 +336,46 @@ function splitLyricsFromChords(lines: string[]): { lyricLines: string[]; chordLi
       continue;
     }
 
-    lyricLines.push(line);
+    lyricLines.push(stripTrailingChords(line));
   }
 
   return { lyricLines, chordLines };
+}
+
+// Quando a linha de acordes e mais comprida que a coluna, o PDF joga o ultimo
+// acorde para o fim da linha de letra de cima (ex: "Nao ha ninguem alem de Ti
+// <varios espacos> Em7"). Acorde separado da letra por 3+ espacos nao e letra.
+function stripTrailingChords(line: string): string {
+  const match = line.match(/^(.*\S)\s{3,}(\S+(?:\s+\S+)*)$/);
+  if (!match) return line;
+
+  const [, text, tail] = match;
+  const tailTokens = tail.split(/\s+/);
+
+  if (!tailTokens.every(isChordToken) || isChordLine(text)) return line;
+
+  return text;
+}
+
+function moveWrappedChordsToChordLine(lines: string[]): string[] {
+  const result = [...lines];
+
+  for (let index = 0; index < result.length - 1; index += 1) {
+    const line = result[index];
+    const next = result[index + 1];
+    const text = stripTrailingChords(line.trimEnd());
+
+    if (text === line.trimEnd() || !isChordLine(next.trim())) continue;
+
+    const tail = line.trimEnd().slice(text.length).trim();
+    const column = line.trimEnd().length - tail.length;
+
+    result[index] = text;
+    result[index + 1] =
+      next.length < column ? `${next.padEnd(column)}${tail}` : `${next.trimEnd()}  ${tail}`;
+  }
+
+  return result;
 }
 
 function splitIntoBlocks(text: string): string[] {
@@ -542,6 +597,17 @@ function findCifraClubMetadata(lines: string[]): PageSongMetadata | null {
   }
 
   const isMergedLayout = preTitleTomIndex !== -1 && preTitleTomIndex < titleIndex;
+  // Cabecalho no topo da pagina: o titulo pode quebrar em varias linhas
+  // (ex: "Hino da Igreja do Evangelho" / "Quadrangular") antes do artista.
+  const headerTitleLines = lines.slice(0, artistIndex);
+  const isMultiLineHeaderTitle =
+    !isMergedLayout &&
+    headerTitleLines.length > 1 &&
+    headerTitleLines.length <= 3 &&
+    headerTitleLines.every((line) => !isChordLine(line) && !SECTION_TAG_PREFIX_RE.test(line.trim()));
+  const fullTitle = isMultiLineHeaderTitle
+    ? headerTitleLines.map((line) => line.trim()).join(" ")
+    : title;
   const key = explicitTomKey || (isMergedLayout ? keyAfterComposition : "");
 
   let bodyStartIndex: number | undefined;
@@ -567,7 +633,7 @@ function findCifraClubMetadata(lines: string[]): PageSongMetadata | null {
   }
 
   return {
-    title: title.slice(0, MAX_TITLE_LENGTH),
+    title: fullTitle.slice(0, MAX_TITLE_LENGTH),
     artist,
     key,
     footerStartIndex: isMergedLayout ? preTitleTomIndex : titleIndex,
@@ -585,11 +651,46 @@ function findCifraClubMetadata(lines: string[]): PageSongMetadata | null {
   };
 }
 
+// Cifra sem o layout do Cifra Club: titulo, artista (opcional) e "Tom: X" no
+// topo da pagina (ex: "Sublime" / "Florianopolis House Of Prayer" / "Tom: G").
+// O "Tom:" com valor valido e o sinal de que ali comeca uma musica nova.
+function findPlainHeaderMetadata(lines: string[]): PageSongMetadata | null {
+  const tomIndex = lines.slice(0, 5).findIndex((line) => /^Tom:\s*\S/i.test(line.trim()));
+  if (tomIndex < 1 || tomIndex > 3) return null;
+
+  const key = lines[tomIndex].trim().replace(/^Tom:\s*/i, "").trim();
+  if (!CHORD_TOKEN_RE.test(key)) return null;
+
+  const headerLines = lines.slice(0, tomIndex).map((line) => line.trim());
+  const isHeaderText = headerLines.every(
+    (line) => !isChordLine(line) && !SECTION_TAG_PREFIX_RE.test(line) && !isMetadataNoiseLine(line),
+  );
+  if (!isHeaderText) return null;
+
+  let bodyStartIndex = tomIndex + 1;
+  while (
+    bodyStartIndex < lines.length &&
+    (isMetadataNoiseLine(lines[bodyStartIndex] ?? "") ||
+      /^Afina[cç][aã]o:/i.test((lines[bodyStartIndex] ?? "").trim()))
+  ) {
+    bodyStartIndex += 1;
+  }
+
+  return {
+    title: headerLines[0].slice(0, MAX_TITLE_LENGTH),
+    artist: headerLines[1] ?? "",
+    key,
+    footerStartIndex: 0,
+    bodyStartIndex,
+    bodyEndIndex: lines.length,
+  };
+}
+
 function cleanPageLyrics(
   pageText: string,
 ): { lyrics: string; chords: string; metadata: PageSongMetadata | null } {
   const lines = normalizeLines(pageText);
-  const metadata = findCifraClubMetadata(lines);
+  const metadata = findCifraClubMetadata(lines) ?? findPlainHeaderMetadata(lines);
   const bodyStartIndex = metadata?.bodyStartIndex ?? 0;
   const bodyEndIndex = metadata?.bodyEndIndex ?? metadata?.footerStartIndex ?? lines.length;
   const bodyLines = lines
@@ -654,8 +755,35 @@ export function extractSongsFromPages(pages: string[]): ExtractedSong[] {
     return songs;
   }
 
-  return pages
-    .flatMap((page) => splitIntoBlocks(page))
-    .map((block) => blockToSong(block))
-    .filter((song): song is ExtractedSong => song !== null);
+  const blockSongs: ExtractedSong[] = [];
+
+  for (const page of pages) {
+    splitIntoBlocks(page).forEach((block, blockIndex) => {
+      const song = blockToSong(block);
+      if (!song) return;
+
+      // Uma musica que passa de uma pagina: a pagina seguinte nao tem titulo,
+      // comeca direto numa secao ("[Ponte]") ou numa linha de acordes. Isso e
+      // continuacao da anterior, nao uma musica nova.
+      const firstLine = block.split("\n").find((line) => line.trim().length > 0)?.trim() ?? "";
+      const continuesPreviousSong =
+        blockIndex === 0 &&
+        blockSongs.length > 0 &&
+        (SECTION_TAG_PREFIX_RE.test(firstLine) || isChordLine(firstLine));
+
+      if (continuesPreviousSong) {
+        const previous = blockSongs[blockSongs.length - 1];
+        const { lyricLines, chordLines } = splitLyricsFromChords(
+          block.split("\n").map((line) => line.trimEnd()),
+        );
+        previous.lyrics = [previous.lyrics, lyricLines.join("\n").trim()].filter(Boolean).join("\n");
+        previous.chords = [previous.chords, chordLines.join("\n").trimEnd()].filter(Boolean).join("\n");
+        return;
+      }
+
+      blockSongs.push(song);
+    });
+  }
+
+  return blockSongs;
 }
