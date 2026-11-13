@@ -179,6 +179,8 @@ onMounted(async () => {
   }
   songs.value = data ?? [];
 });
+
+useHead({ title: "Minha playlist" });
 </script>
 
 <style scoped>
@@ -249,7 +251,7 @@ onMounted(async () => {
 }
 
 .playlist-card-dept {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--app-color-text-muted);
 }
 
@@ -259,7 +261,7 @@ onMounted(async () => {
 
 .playlist-key-select :deep(.v-field) {
   border-radius: 8px;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
 }
 
 .playlist-chevron {

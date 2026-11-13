@@ -1,778 +1,500 @@
 <template>
-  <div class="pa-4 page-wrapper min-vh-100 app-operational-page">
-    <div class="scale-page-header mb-5">
-      <div class="min-w-0">
-        <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">Escalas</h1>
-        <p class="text-body-2 text-grey-darken-1 mb-0">
-          {{ schedulePeriod === "upcoming" ? "Acompanhe as próximas escalas" : "Consulte as escalas que já aconteceram" }}
-        </p>
-      </div>
-      <div class="scale-header-actions">
+  <div class="pa-4 app-operational-page scale-page">
+    <UtilsPageHeader title="Escalas" :subtitle="subtitle" help-title="Escalas">
+      <template #actions>
         <v-btn
-          v-if="canCreateChurchSchedule"
-          :color="accentColor"
-          class="rounded-lg text-none px-4"
-          elevation="2"
-          @click="openNewScheduleDialog"
+          v-if="managesAny"
+          color="primary"
+          variant="flat"
+          class="text-none font-weight-bold"
+          @click="editor.open({})"
         >
-          <Plus size="18" class="mr-1" /> Novo
+          <Plus :size="18" class="mr-1" aria-hidden="true" /> Nova escala
         </v-btn>
-        <UtilsPageHelpButton title="Escalas" />
-      </div>
-    </div>
+      </template>
+    </UtilsPageHeader>
 
-    <!-- O seletor fica fora da .filter-strip: a faixa tem margem negativa
-         (para os chips rolarem até a borda) e degradês nas laterais, que
-         desalinhavam e cobriam o seletor. -->
-    <v-btn-toggle
-      v-model="schedulePeriod"
-      mandatory
-      color="primary"
-      variant="outlined"
-      class="schedule-period-toggle mb-3"
-      aria-label="Período das escalas"
+    <UtilsPageTabs :model-value="tabForBar" :items="tabItems" query-key="aba" aria-label="Visões das escalas" />
+
+    <!-- Líder: "Organizar" mostra os ministérios dele; "Igreja toda" mostra
+         as escalas dos outros ministérios (sem precisar de outra aba). -->
+    <div
+      v-if="showScopeToggle && (tab === 'organizar' || tab === 'igreja')"
+      class="scale-chips scale-scope"
+      role="group"
+      aria-label="Quais escalas ver"
     >
-      <v-btn value="upcoming" class="text-none">Próximas</v-btn>
-      <v-btn value="history" class="text-none">Histórico</v-btn>
-    </v-btn-toggle>
-
-    <div class="filter-strip mb-8">
-      <div class="filter-scroll hide-scrollbar">
-        <v-chip
-          v-for="filter in filters"
-          :key="filter"
-          :variant="activeFilter === filter ? 'tonal' : 'outlined'"
-          :color="activeFilter === filter ? accentColor : 'grey-darken-1'"
-          :aria-pressed="activeFilter === filter"
-          class="filter-chip cursor-pointer"
-          @click="activeFilter = filter"
-        >
-          <span class="filter-chip-label">{{ filter }}</span>
-        </v-chip>
-      </div>
+      <v-chip
+        v-for="option in scopeOptions"
+        :key="option.value"
+        :variant="tab === option.value ? 'flat' : 'outlined'"
+        :color="tab === option.value ? 'primary' : undefined"
+        :aria-pressed="tab === option.value"
+        tag="button"
+        class="scale-chip"
+        @click="setQuery({ aba: option.value, filtro: undefined, ministerio: undefined })"
+      >
+        {{ option.label }}
+      </v-chip>
     </div>
 
-    <div v-if="canCreateChurchSchedule" class="leader-summary-grid mb-5">
-      <v-card class="leader-summary-card app-surface pa-3">
-        <Clock class="stat-icon" size="18" :color="accentColor" />
-        <p class="text-caption text-grey-darken-1 mb-1 mt-1">Pendentes</p>
-        <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-          {{ leaderSummary.pending }}
-        </h2>
-      </v-card>
-      <v-card class="leader-summary-card app-surface pa-3">
-        <EyeOff class="stat-icon" size="18" :color="accentColor" />
-        <p class="text-caption text-grey-darken-1 mb-1 mt-1">Não viram</p>
-        <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-          {{ leaderSummary.notViewed }}
-        </h2>
-      </v-card>
-      <v-card class="leader-summary-card app-surface pa-3">
-        <Repeat2 class="stat-icon" size="18" :color="accentColor" />
-        <p class="text-caption text-grey-darken-1 mb-1 mt-1">Trocas</p>
-        <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-          {{ leaderSummary.swapRequests }}
-        </h2>
-      </v-card>
-    </div>
-
-    <div>
-      <ScaleScheduleSection
-        v-for="(section, index) in filteredSchedules"
-        :key="index"
-        :title="section.category"
-        :events="section.events"
-        :selected-event-id="focusedScheduleId"
-        @open-details="openScheduleDetails"
-        @add-volunteer="openAssignmentsDialog"
-        @edit="openScheduleEditDialog"
-        @delete="handleDeleteSchedule"
-        @mark-viewed="handleMarkScheduleViewed"
-        @confirm-presence="handleConfirmSchedule"
-        @decline-presence="handleDeclineSchedule"
-        @request-swap="handleRequestSwap"
-      />
-
-      <div v-if="isLoadingSchedules" class="scale-loading">
+    <!-- Minhas -->
+    <section v-if="tab === 'minhas'" aria-label="Minhas escalas">
+      <div v-if="mineState.loading" aria-busy="true">
         <v-skeleton-loader type="card" class="mb-3" />
         <v-skeleton-loader type="card" />
       </div>
+      <UtilsEmptyState
+        v-else-if="!mineViews.length"
+        :icon="CalendarCheck"
+        title="Você não tem escalas próximas"
+        description="Quando a liderança escalar você, a escala aparece aqui e você recebe um aviso no celular."
+        action-label="Avisar datas em que não posso"
+        action-to="/user#indisponibilidade"
+      />
+      <template v-else>
+        <div v-for="group in mineGroups" :key="group.key" class="scale-group">
+          <UtilsSectionHeader :title="group.label" :count="group.items.length" />
+          <div class="scale-list">
+            <ScheduleListCard v-for="view in group.items" :key="view.id" :view="view" />
+          </div>
+        </div>
+      </template>
+      <ScheduleHistory v-if="!mineState.loading" scope="mine" />
+    </section>
 
-      <v-card
-        v-else-if="filteredSchedules.length === 0 && !schedulesError"
-        class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center"
-      >
-        <Calendar size="32" class="empty-state-icon mb-3" />
-        <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-          {{ schedulePeriod === "history" ? "Nenhuma escala no histórico" : "Nenhuma escala futura" }}
-        </p>
-        <p v-if="schedulePeriod === 'upcoming'" class="text-caption text-grey-darken-1 text-center mt-2">
-          {{
-            canCreateChurchSchedule
-              ? "Crie uma escala para organizar a próxima equipe."
-              : "Quando você for escalado para servir, a escala aparece aqui."
-          }}
-        </p>
-        <v-btn
-          v-if="schedulePeriod === 'upcoming' && canCreateChurchSchedule"
-          color="primary"
-          variant="tonal"
-          class="text-none mt-3"
-          @click="openNewScheduleDialog"
+    <!-- Igreja -->
+    <section v-else-if="tab === 'igreja'" aria-label="Escalas da igreja">
+      <div v-if="departments.length > 1" v-scroll-fade class="scale-chips hide-scrollbar" role="group" aria-label="Filtrar por ministério">
+        <v-chip
+          v-for="option in ministryChips"
+          :key="option.value"
+          :variant="ministryFilter === option.value ? 'flat' : 'outlined'"
+          :color="ministryFilter === option.value ? 'primary' : undefined"
+          :aria-pressed="ministryFilter === option.value"
+          tag="button"
+          class="scale-chip"
+          @click="setMinistryFilter(option.value)"
         >
-          Criar escala
-        </v-btn>
-      </v-card>
+          {{ option.label }}
+        </v-chip>
+      </div>
+      <div v-if="churchState.loading" aria-busy="true">
+        <v-skeleton-loader type="card" class="mb-3" />
+        <v-skeleton-loader type="card" />
+      </div>
+      <UtilsEmptyState
+        v-else-if="!churchViews.length"
+        variant="no-results"
+        :icon="CalendarCheck"
+        title="Nenhuma escala próxima"
+        :description="ministryFilter ? 'Este ministério não tem escalas marcadas.' : 'Quando os ministérios montarem as escalas, elas aparecem aqui.'"
+      />
+      <template v-else>
+        <div v-for="group in churchGroups" :key="group.key" class="scale-group">
+          <UtilsSectionHeader :title="group.label" />
+          <div v-for="service in group.services" :key="service.key" class="scale-service">
+            <p class="scale-service-title">
+              <Church :size="16" aria-hidden="true" />
+              <NuxtLink v-if="service.occurrenceId" :to="`/cultos/${service.occurrenceId}`">{{ service.label }}</NuxtLink>
+              <span v-else>{{ service.label }}</span>
+              <span class="scale-service-count">· {{ service.schedules.length === 1 ? "1 ministério" : `${service.schedules.length} ministérios` }}</span>
+            </p>
+            <div class="scale-list">
+              <ScheduleListCard v-for="view in service.schedules" :key="view.id" :view="view" />
+            </div>
+          </div>
+        </div>
+      </template>
+      <ScheduleHistory v-if="!churchState.loading" scope="all" :department-id="ministryFilter || undefined" />
+    </section>
 
-      <v-alert v-if="schedulesError" type="error" variant="tonal" density="compact" class="mt-4">
-        {{ schedulesError }}
-      </v-alert>
-    </div>
+    <!-- Organizar -->
+    <section v-else-if="tab === 'organizar' && managesAny" aria-label="Organizar escalas">
+      <div class="scale-stats" role="group" aria-label="Respostas das próximas escalas">
+        <button
+          v-for="stat in organizerTiles"
+          :key="stat.filter"
+          type="button"
+          class="scale-stat app-surface"
+          :class="{ 'scale-stat--active': organizerFilter === stat.filter }"
+          :aria-pressed="organizerFilter === stat.filter"
+          @click="setOrganizerFilter(stat.filter)"
+        >
+          <span class="scale-stat-value">{{ stat.value }}</span>
+          <span class="scale-stat-label">{{ stat.label }}</span>
+        </button>
+      </div>
+      <p v-if="autoReminder && stats.noAnswer" class="scale-auto-reminder">
+        <BellRing :size="15" aria-hidden="true" />
+        No dia da escala, a partir das 7h, quem ainda não respondeu recebe um lembrete automático.
+      </p>
+      <div v-if="managedDepartments.length > 1" v-scroll-fade class="scale-chips hide-scrollbar" role="group" aria-label="Filtrar por ministério">
+        <v-chip
+          v-for="option in managedChips"
+          :key="option.value"
+          :variant="ministryFilter === option.value ? 'flat' : 'outlined'"
+          :color="ministryFilter === option.value ? 'primary' : undefined"
+          :aria-pressed="ministryFilter === option.value"
+          tag="button"
+          class="scale-chip"
+          @click="setMinistryFilter(option.value)"
+        >
+          {{ option.label }}
+        </v-chip>
+      </div>
+      <div v-if="managedState.loading" aria-busy="true">
+        <v-skeleton-loader type="card" class="mb-3" />
+      </div>
+      <UtilsEmptyState
+        v-else-if="!managedViews.length"
+        :icon="CalendarPlus"
+        :variant="organizerFilter ? 'all-done' : 'first-use'"
+        :title="organizerFilter ? 'Nada pendente aqui' : 'Nenhuma escala próxima'"
+        :description="organizerFilter
+          ? 'Nenhuma escala próxima com esse aviso.'
+          : 'Monte a próxima escala: escolha o culto, as pessoas e avise a equipe de uma vez.'"
+        :action-label="organizerFilter ? undefined : 'Nova escala'"
+        @action="editor.open({ departmentId: ministryFilter || undefined })"
+      />
+      <template v-else>
+        <div v-for="group in managedGroups" :key="group.key" class="scale-group">
+          <UtilsSectionHeader :title="group.label" :count="group.items.length" />
+          <div class="scale-list">
+            <ScheduleListCard v-for="view in group.items" :key="view.id" :view="view" show-health />
+          </div>
+        </div>
+      </template>
+      <ScheduleHistory v-if="!managedState.loading" scope="managed" :department-id="ministryFilter || undefined" show-health />
+    </section>
 
-    <ScaleDetailSheet
-      v-model="isScheduleDetailsOpen"
-      :event="selectedDetailEvent"
-      :department-name="selectedDetailDepartmentName"
-      :holyrics-connected="holyricsConnected"
-      @edit="openEditFromDetails"
-      @delete="openDeleteFromDetails"
-      @manage-volunteers="openAssignmentsFromDetails"
-      @mark-viewed="handleMarkScheduleViewed"
-      @confirm-presence="handleConfirmSchedule"
-      @decline-presence="handleDeclineSchedule"
-      @request-swap="handleRequestSwap"
-      @reload-needed="loadSchedules"
-    />
-
-    <ScaleFormDialog
-      v-model="isScheduleDialogOpen"
-      :schedule="editingSchedule"
-      :departments="manageableDepartments"
-      :members="members"
-      :schedules="schedules"
-      @saved="handleScheduleSaved"
-    />
-
-    <ScaleAssignmentsDialog
-      v-model="isAssignmentsDialogOpen"
-      :schedule="assignmentsSchedule"
-      :departments="departments"
-      :members="members"
-      :all-schedules="schedules"
-      @saved="handleScheduleSaved"
-      @assignment-updated="handleAssignmentUpdated"
-    />
-
-    <UtilsConfirmDialog
-      v-model="isDeleteScheduleDialogOpen"
-      title="Remover escala"
-      message="Esta escala e seus voluntários serão removidos."
-      :loading="isDeletingSchedule"
-      @cancel="closeDeleteScheduleDialog"
-      @confirm="confirmDeleteSchedule"
-    />
-
-    <ScaleDeclineDialog v-model="isDeclineDialogOpen" @confirm="confirmDecline" />
+    <!-- Cultos -->
+    <section v-else-if="tab === 'cultos'" aria-label="Cultos">
+      <ScheduleServicesAgenda />
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { Calendar, Clock, EyeOff, Plus, Repeat2 } from "lucide-vue-next";
-import { useAuth } from "../../composables/useAuth";
-import { useThemeMode } from "../../../composables/useThemeMode";
+/**
+ * Escalas: Minhas (padrão) · Igreja (quem só serve) ou Organizar (quem
+ * organiza algum ministério; o líder alterna "Meus ministérios / Igreja
+ * toda") · Cultos. Lista agrupada por data; o histórico carrega 20 por
+ * vez em "Ver escalas anteriores". Tocar numa escala abre a folha única
+ * (?schedule=<id>), montada no layout.
+ */
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { BellRing, CalendarCheck, CalendarPlus, Church, Plus } from "lucide-vue-next";
 import {
-  useDepartments,
-  type ChurchDepartment,
-  type DepartmentSchedule,
-} from "../../composables/useDepartments";
-import { useMembers, type ChurchMember } from "../../composables/useMembers";
-import { useHolyrics } from "../../composables/useHolyrics";
-import type { ScheduleEvent } from "../components/Scale/types";
-import { getInitials } from "../utils/initials";
-import { splitSchedulesByDate } from "../utils/dashboardSchedules";
-import { getSchedulePeriodSchedules, groupScheduleAssignments } from "../utils/scaleSchedule";
+  groupByDate,
+  groupByService,
+  matchesOrganizerFilter,
+  organizerStats,
+  toScheduleView,
+  type OrganizerFilter,
+  type ScheduleView,
+} from "../utils/scheduleView";
+import type { ApiSchedule } from "../utils/scheduleView";
+import type { ChurchDepartment } from "../../composables/useDepartments";
 
-const {
-  getDepartments,
-  getChurchSchedules,
-  deleteChurchSchedule,
-  updateMyScheduleAssignment,
-} = useDepartments();
-const { getMembers } = useMembers();
-const { getHolyricsStatus } = useHolyrics();
-const { user } = useAuth();
-const { isDark } = useThemeMode();
-const accentColor = computed(() => (isDark.value ? "#f0975a" : "#B5472A"));
 const route = useRoute();
+const router = useRouter();
+const { user } = useAuth();
+const access = useChurchAccess();
+const schedules = useSchedules();
+const editor = useScheduleEditor();
+const { getDepartments } = useDepartments();
+const toast = useAppToast();
 
-const activeFilter = ref("Todos");
-const schedulePeriod = ref<"upcoming" | "history">(
-  route.query.period === "history" ? "history" : "upcoming",
-);
 const departments = ref<ChurchDepartment[]>([]);
-const schedules = ref<DepartmentSchedule[]>([]);
-const isLoadingSchedules = ref(true);
-const members = ref<ChurchMember[]>([]);
-const schedulesError = ref("");
-const isScheduleDialogOpen = ref(false);
-const isAssignmentsDialogOpen = ref(false);
-const isDeletingSchedule = ref(false);
-const assignmentsScheduleId = ref("");
-const focusedScheduleId = ref("");
-const editingSchedule = ref<DepartmentSchedule | null>(null);
-const pendingDeleteSchedule = ref<ScheduleEvent | null>(null);
-const selectedDetailEvent = ref<ScheduleEvent | null>(null);
-const isDeclineDialogOpen = ref(false);
-const pendingDeclineEvent = ref<ScheduleEvent | null>(null);
-const holyricsConnected = ref(false);
+const managedDepartments = computed(() =>
+  departments.value.filter((department) => access.value.isChurchManager || department.canManageSchedule === true),
+);
+const managesAny = computed(
+  () => access.value.isChurchManager || managedDepartments.value.length > 0,
+);
 
-const filters = computed(() => ["Todos", ...departments.value.map((department) => department.name)]);
+const queryText = (key: string) => {
+  const value = route.query[key];
+  return typeof value === "string" ? value : Array.isArray(value) ? value[0] ?? "" : "";
+};
+const TAB_VALUES = ["minhas", "igreja", "organizar", "cultos"];
+// A aba vem do endereço (?aba=): UtilsPageTabs grava a escolha na query.
+const tab = computed({
+  get: () => {
+    const value = queryText("aba");
+    if (value === "organizar" && !managesAny.value) return "minhas";
+    return TAB_VALUES.includes(value) ? value : "minhas";
+  },
+  set: () => {},
+});
+const ministryFilter = computed(() => queryText("ministerio"));
+const organizerFilter = computed(() => {
+  const value = queryText("filtro");
+  return ["sem-resposta", "trocas", "nao-viram"].includes(value) ? (value as OrganizerFilter) : null;
+});
+
+const setQuery = (patch: Record<string, string | undefined>) => {
+  const query = { ...route.query, ...patch };
+  for (const key of Object.keys(patch)) if (!patch[key]) delete query[key];
+  void router.replace({ query });
+};
+const setMinistryFilter = (value: string) => setQuery({ ministerio: value || undefined });
+const setOrganizerFilter = (value: OrganizerFilter) =>
+  setQuery({ filtro: organizerFilter.value === value ? undefined : value });
+
+const toViews = (items: ApiSchedule[]) =>
+  items.map((item) => toScheduleView(item, { userId: user.value?.id }));
+
+// ---- listas (cache em useSchedules)
+const mineState = reactive({ loading: true });
+const churchState = reactive({ loading: true });
+const managedState = reactive({ loading: true });
+
+const mineList = computed(() => schedules.select(schedules.mineParams()));
+const churchList = computed(() =>
+  schedules.select(schedules.churchParams({ departmentId: ministryFilter.value || undefined })),
+);
+const managedList = computed(() =>
+  schedules.select(schedules.managedParams(ministryFilter.value || undefined)),
+);
+
+const mineViews = computed(() => toViews(mineList.value));
+const churchViews = computed(() => toViews(churchList.value));
+const managedAll = computed(() => toViews(managedList.value));
+const managedViews = computed(() =>
+  managedAll.value.filter((view) => matchesOrganizerFilter(view, organizerFilter.value)),
+);
+
+const mineGroups = computed(() => groupByDate(mineViews.value));
+const churchGroups = computed(() =>
+  groupByDate(churchViews.value).map((group) => ({ ...group, services: groupByService(group.items) })),
+);
+const managedGroups = computed(() => groupByDate(managedViews.value));
+
+const stats = computed(() => organizerStats(managedAll.value));
+const organizerTiles = computed(() => [
+  { filter: "sem-resposta" as const, value: stats.value.noAnswer, label: "Sem resposta" },
+  { filter: "trocas" as const, value: stats.value.swaps, label: "Pediram troca" },
+  { filter: "nao-viram" as const, value: stats.value.notViewed, label: "Não viram" },
+]);
+
+// Quem organiza: Minhas · Organizar · Cultos ("Igreja" vira o "Igreja toda"
+// dentro de Organizar, só para o líder; o pastor já vê tudo em Organizar).
+// Quem não organiza: Minhas · Igreja · Cultos.
+const tabItems = computed(() => [
+  { value: "minhas", label: "Minhas" },
+  managesAny.value ? { value: "organizar", label: "Organizar" } : { value: "igreja", label: "Igreja" },
+  { value: "cultos", label: "Cultos" },
+]);
+const tabForBar = computed(() => (tab.value === "igreja" && managesAny.value ? "organizar" : tab.value));
+const showScopeToggle = computed(() => managesAny.value && !access.value.isChurchManager);
+const scopeOptions = [
+  { value: "organizar", label: "Meus ministérios" },
+  { value: "igreja", label: "Igreja toda" },
+];
+const { hasFeature } = useChurchPlan();
+const autoReminder = computed(() => hasFeature("SCHEDULE_REMINDER"));
+
+const ministryChips = computed(() => [
+  { value: "", label: "Todos" },
+  ...departments.value.map((department) => ({ value: department.id, label: department.name })),
+]);
+const managedChips = computed(() => [
+  { value: "", label: "Todos" },
+  ...managedDepartments.value.map((department) => ({ value: department.id, label: department.name })),
+]);
+
+const subtitle = computed(() =>
+  tab.value === "minhas"
+    ? "Onde e quando você serve"
+    : tab.value === "igreja"
+      ? "Quem serve em cada culto"
+      : tab.value === "organizar"
+        ? "Respostas das próximas escalas"
+        : "Agenda de cultos",
+);
+
+const run = async (state: { loading: boolean }, loader: () => Promise<{ error?: string }>, silent = false) => {
+  if (!silent) state.loading = true;
+  const { error } = await loader();
+  state.loading = false;
+  if (error) toast.error(error);
+};
+
+const loadTab = (force = false) => {
+  const department = ministryFilter.value || undefined;
+  if (tab.value === "minhas") {
+    void run(mineState, () => schedules.listMine({ force }), force && mineList.value.length > 0);
+  } else if (tab.value === "igreja") {
+    void run(churchState, () => schedules.listChurch({ departmentId: department }, { force }), force);
+  } else if (tab.value === "organizar" && managesAny.value) {
+    void run(managedState, () => schedules.listManaged({ departmentId: department }, { force }), force);
+  }
+};
 
 watch(
-  () => route.query.period,
-  (period) => {
-    schedulePeriod.value = period === "history" ? "history" : "upcoming";
+  () => [tab.value, ministryFilter.value, managesAny.value] as const,
+  () => loadTab(),
+);
+
+// Quem organiza escalas e não está escalado em nada (o pastor, quase sempre)
+// abre direto em "Organizar" em vez de ver "Você não tem escalas próximas".
+// Só quando a pessoa chega sem escolher aba (?aba= vazio).
+let defaultTabDecided = false;
+watch(
+  () => [mineState.loading, managesAny.value, mineList.value.length] as const,
+  ([loading, manages, mineCount]) => {
+    if (defaultTabDecided || loading || queryText("aba")) return;
+    if (!manages) return;
+    defaultTabDecided = true;
+    if (mineCount === 0) void router.replace({ query: { ...route.query, aba: "organizar" } });
   },
 );
 
-const isChurchWideManager = computed(
-  () =>
-    user.value?.role === "PASTOR" ||
-    user.value?.role === "ADMIN" ||
-    user.value?.role === "SUPER_ADMIN" ||
-    user.value?.is_admin === true,
+// Depois de salvar no editor (aqui ou na folha), as listas recarregam.
+watch(
+  () => editor.lastSaved.value?.at,
+  () => loadTab(true),
 );
 
-const manageableDepartments = computed(() => {
-  if (isChurchWideManager.value) {
-    return departments.value;
-  }
-
-  return departments.value.filter(
-    (department) => department.canManageSchedule === true || department.leaderId === user.value?.id,
-  );
-});
-
-const canCreateChurchSchedule = computed(() => manageableDepartments.value.length > 0);
-
-const canManageSchedule = (schedule: DepartmentSchedule) =>
-  isChurchWideManager.value ||
-  departments.value.some(
-    (department) => department.id === schedule.departmentId && department.canManageSchedule === true,
-  ) ||
-  schedule.department?.leaderId === user.value?.id;
-
-const leaderSummary = computed(() => {
-  const assignments = schedules.value.flatMap((schedule) =>
-    groupScheduleAssignments(schedule.assignments || []),
-  );
-
-  return {
-    pending: assignments.filter(
-      (assignment) => !assignment.confirmationStatus || assignment.confirmationStatus === "PENDING",
-    ).length,
-    notViewed: assignments.filter((assignment) => !assignment.viewedAt).length,
-    swapRequests: assignments.filter((assignment) => assignment.confirmationStatus === "SWAP_REQUESTED").length,
-  };
-});
-
-const isDeleteScheduleDialogOpen = computed({
-  get: () => Boolean(pendingDeleteSchedule.value),
-  set: (value: boolean) => {
-    if (!value && !isDeletingSchedule.value) {
-      pendingDeleteSchedule.value = null;
-    }
-  },
-});
-
-const isScheduleDetailsOpen = computed({
-  get: () => Boolean(selectedDetailEvent.value),
-  set: (value: boolean) => {
-    if (!value) selectedDetailEvent.value = null;
-  },
-});
-
-const assignmentsSchedule = computed(
-  () => schedules.value.find((schedule) => schedule.id === assignmentsScheduleId.value) || null,
-);
-
-const selectedDetailDepartmentName = computed(() => {
-  const event = selectedDetailEvent.value;
-  if (!event) return "";
-
-  const schedule = schedules.value.find((item) => item.id === event.id);
-  return schedule?.department?.name || "Sem ministério";
-});
-
-const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
-  const date = new Date(schedule.date);
-  const rehearsalDate = schedule.rehearsalAt ? new Date(schedule.rehearsalAt) : null;
-  const assignments = groupScheduleAssignments(schedule.assignments || []);
-  const currentUserAssignment = assignments.find(
-    (assignment) => assignment.userId === user.value?.id,
-  );
-
-  return {
-    id: schedule.id,
-    title: schedule.description,
-    date: new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" }).format(date),
-    time: new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(date),
-    rehearsalLabel:
-      rehearsalDate && !Number.isNaN(rehearsalDate.getTime())
-        ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short" }).format(rehearsalDate)
-        : "",
-    rehearsalNotes: schedule.rehearsalNotes,
-    volunteerCount: assignments.length,
-    viewedCount: assignments.filter((assignment) => Boolean(assignment.viewedAt)).length,
-    confirmedCount:
-      assignments.filter((assignment) => assignment.confirmationStatus === "CONFIRMED").length,
-    currentUserAssignment: currentUserAssignment
-      ? {
-          id: currentUserAssignment.id,
-          role: currentUserAssignment.role,
-          viewedAt: currentUserAssignment.viewedAt,
-          confirmationStatus: currentUserAssignment.confirmationStatus,
-          confirmedAt: currentUserAssignment.confirmedAt,
-        }
-      : null,
-    mediaItems:
-      schedule.mediaItems?.map((item) => ({
-        id: item.mediaItem.id,
-        scheduleMediaItemId: item.id,
-        order: item.order ?? 0,
-        title: item.mediaItem.title,
-        category: item.mediaItem.category,
-        url: item.mediaItem.url,
-        metadata: item.mediaItem.metadata,
-        observation: item.observation,
-        startedByUserId: item.startedByUserId,
-        startedByName: item.startedBy?.name,
-      })) || [],
-    canManage: canManageSchedule(schedule),
-    volunteers:
-      assignments.map((assignment) => ({
-        userId: assignment.userId,
-        name: assignment.user.name,
-        role: assignment.role,
-        confirmationStatus: assignment.confirmationStatus,
-        attendanceStatus: assignment.attendanceStatus,
-        viewedAt: assignment.viewedAt,
-        declineReason: assignment.declineReason,
-        initials: getInitials(assignment.user.name),
-      })) || [],
-  };
-};
-
-const filteredSchedules = computed(() => {
-  const datedSchedules = splitSchedulesByDate(schedules.value);
-  const periodSchedules = getSchedulePeriodSchedules(datedSchedules, schedulePeriod.value);
-  const visibleSchedules =
-    activeFilter.value === "Todos"
-      ? periodSchedules
-      : periodSchedules.filter((schedule) => schedule.department?.name === activeFilter.value);
-
-  const groups = visibleSchedules.reduce<Record<string, ScheduleEvent[]>>((acc, schedule) => {
-    const category = schedule.department?.name || "Sem ministério";
-    acc[category] ||= [];
-    acc[category].push(toScheduleEvent(schedule));
-    return acc;
-  }, {});
-
-  return Object.entries(groups).map(([category, events]) => ({ category, events }));
-});
-
-const openScheduleDetails = (event: ScheduleEvent) => {
-  selectedDetailEvent.value = event;
-};
-
-const updateLocalAssignment = (
-  scheduleId: string,
-  assignment: NonNullable<DepartmentSchedule["assignments"]>[number],
-) => {
-  schedules.value = schedules.value.map((schedule) => {
-    if (schedule.id !== scheduleId) return schedule;
-
-    return {
-      ...schedule,
-      assignments: schedule.assignments?.map((item) => (item.id === assignment.id ? assignment : item)),
-    };
-  });
-
-  const updatedSchedule = schedules.value.find((schedule) => schedule.id === scheduleId);
-  if (updatedSchedule && selectedDetailEvent.value?.id === scheduleId) {
-    selectedDetailEvent.value = toScheduleEvent(updatedSchedule);
-  }
-};
-
-const updateMyScheduleResponse = async (
-  event: ScheduleEvent,
-  action: "VIEWED" | "CONFIRMED" | "DECLINED" | "SWAP_REQUESTED",
-  fallbackError: string,
-  declineReason?: string,
-) => {
-  schedulesError.value = "";
-  const { data, error } = await updateMyScheduleAssignment(event.id, {
-    action,
-    ...(action === "DECLINED" ? { declineReason: declineReason || undefined } : {}),
-  });
-
-  if (error || !data) {
-    schedulesError.value = error || fallbackError;
-    return;
-  }
-
-  updateLocalAssignment(event.id, data);
-};
-
-const handleMarkScheduleViewed = async (event: ScheduleEvent) => {
-  await updateMyScheduleResponse(event, "VIEWED", "Não foi possível marcar a escala como vista.");
-};
-
-const handleConfirmSchedule = async (event: ScheduleEvent) => {
-  await updateMyScheduleResponse(event, "CONFIRMED", "Não foi possível confirmar presença.");
-};
-
-const handleDeclineSchedule = (event: ScheduleEvent) => {
-  pendingDeclineEvent.value = event;
-  isDeclineDialogOpen.value = true;
-};
-
-const confirmDecline = async (reason: string) => {
-  if (!pendingDeclineEvent.value) return;
-  await updateMyScheduleResponse(
-    pendingDeclineEvent.value,
-    "DECLINED",
-    "Não foi possível informar ausência.",
-    reason,
-  );
-  pendingDeclineEvent.value = null;
-};
-
-const handleRequestSwap = async (event: ScheduleEvent) => {
-  await updateMyScheduleResponse(event, "SWAP_REQUESTED", "Não foi possível pedir troca.");
-};
-
-const loadDepartments = async () => {
-  const { data } = await getDepartments();
-  departments.value = data ?? [];
-};
-
-const loadSchedules = async () => {
-  schedulesError.value = "";
-  isLoadingSchedules.value = true;
-  const { data, error } = await getChurchSchedules();
-
-  if (error) {
-    schedulesError.value = error;
-    isLoadingSchedules.value = false;
-    return;
-  }
-
-  schedules.value = data ?? [];
-  isLoadingSchedules.value = false;
-};
-
-const focusScheduleFromRoute = async () => {
-  const scheduleId = typeof route.query.schedule === "string" ? route.query.schedule : "";
-
-  if (!scheduleId) {
-    focusedScheduleId.value = "";
-    return;
-  }
-
-  const schedule = schedules.value.find((item) => item.id === scheduleId);
-  if (!schedule) return;
-
-  focusedScheduleId.value = schedule.id;
-
-  if (schedule.department?.name) {
-    activeFilter.value = schedule.department.name;
-  }
-
-  await nextTick();
-  document.getElementById(`schedule-${schedule.id}`)?.scrollIntoView({
-    behavior: "smooth",
-    block: "center",
-  });
-};
-
-const loadMembers = async () => {
-  const { data } = await getMembers();
-  members.value = data ?? [];
-};
-
-const openNewScheduleDialog = () => {
-  editingSchedule.value = null;
-  isScheduleDialogOpen.value = true;
-};
-
-const openScheduleEditDialog = (event: ScheduleEvent) => {
-  const schedule = schedules.value.find((item) => item.id === event.id);
-  if (!schedule) return;
-
-  editingSchedule.value = schedule;
-  isScheduleDialogOpen.value = true;
-};
-
-const handleScheduleSaved = (schedule: DepartmentSchedule) => {
-  const exists = schedules.value.some((item) => item.id === schedule.id);
-  const nextSchedules = exists
-    ? schedules.value.map((item) => (item.id === schedule.id ? schedule : item))
-    : [...schedules.value, schedule];
-
-  schedules.value = nextSchedules.sort(
-    (current, next) => new Date(next.date).getTime() - new Date(current.date).getTime(),
-  );
-
-  if (selectedDetailEvent.value?.id === schedule.id) {
-    selectedDetailEvent.value = toScheduleEvent(schedule);
-  }
-};
-
-const handleAssignmentUpdated = (assignment: NonNullable<DepartmentSchedule["assignments"]>[number]) => {
-  if (!assignmentsScheduleId.value) return;
-  updateLocalAssignment(assignmentsScheduleId.value, assignment);
-};
-
-const handleDeleteSchedule = (event: ScheduleEvent) => {
-  pendingDeleteSchedule.value = event;
-};
-
-const closeDeleteScheduleDialog = () => {
-  if (!isDeletingSchedule.value) {
-    pendingDeleteSchedule.value = null;
-  }
-};
-
-const confirmDeleteSchedule = async () => {
-  if (!pendingDeleteSchedule.value) return;
-
-  schedulesError.value = "";
-  isDeletingSchedule.value = true;
-  const scheduleId = pendingDeleteSchedule.value.id;
-
-  try {
-    const { error } = await deleteChurchSchedule(scheduleId);
-
-    if (error) {
-      schedulesError.value = error;
-      return;
-    }
-
-    schedules.value = schedules.value.filter((schedule) => schedule.id !== scheduleId);
-    pendingDeleteSchedule.value = null;
-  } finally {
-    isDeletingSchedule.value = false;
-  }
-};
-
-const openAssignmentsDialog = (event: ScheduleEvent) => {
-  const schedule = schedules.value.find((item) => item.id === event.id);
-  if (!schedule) return;
-
-  assignmentsScheduleId.value = schedule.id;
-  isAssignmentsDialogOpen.value = true;
-};
-
-const openAssignmentsFromDetails = (event: ScheduleEvent) => {
-  selectedDetailEvent.value = null;
-  openAssignmentsDialog(event);
-};
-
-const openEditFromDetails = (event: ScheduleEvent) => {
-  selectedDetailEvent.value = null;
-  openScheduleEditDialog(event);
-};
-
-const openDeleteFromDetails = (event: ScheduleEvent) => {
-  selectedDetailEvent.value = null;
-  handleDeleteSchedule(event);
-};
-
-const handleVisibilityChange = () => {
-  if (document.visibilityState === "visible") {
-    loadSchedules();
-  }
-};
-
-const loadHolyricsStatus = async () => {
-  const { data } = await getHolyricsStatus();
-  holyricsConnected.value = data?.connected ?? false;
+const onVisible = () => {
+  if (document.visibilityState === "visible") loadTab();
 };
 
 onMounted(async () => {
-  await Promise.all([loadDepartments(), loadSchedules(), loadMembers(), loadHolyricsStatus()]);
-  await focusScheduleFromRoute();
-  document.addEventListener("visibilitychange", handleVisibilityChange);
-});
-
-onUnmounted(() => {
-  document.removeEventListener("visibilitychange", handleVisibilityChange);
-});
-
-watch(
-  () => route.query.schedule,
-  async () => {
-    await focusScheduleFromRoute();
-  },
-);
-
-watch(schedules, async () => {
-  if (focusedScheduleId.value) return;
-  await focusScheduleFromRoute();
-
-  if (selectedDetailEvent.value) {
-    const updated = schedules.value.find((s) => s.id === selectedDetailEvent.value!.id);
-    if (updated) {
-      selectedDetailEvent.value = toScheduleEvent(updated);
-    }
+  loadTab();
+  const { data } = await getDepartments();
+  departments.value = data ?? [];
+  if (queryText("nova") === "1") {
+    editor.open({ departmentId: ministryFilter.value || undefined });
+    setQuery({ nova: undefined });
   }
+  document.addEventListener("visibilitychange", onVisible);
 });
+
+onBeforeUnmount(() => document.removeEventListener("visibilitychange", onVisible));
+
+useHead({ title: "Escalas" });
 </script>
 
 <style scoped>
-.min-vh-100 {
-  min-height: 100vh;
+.scale-group {
+  margin-bottom: 20px;
 }
 
-.page-wrapper {
-  background: var(--app-color-background);
+.scale-list {
+  display: grid;
+  gap: 10px;
 }
 
-.gap-2 {
-  gap: 8px;
+@media (min-width: 960px) {
+  .scale-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-.scale-page-header {
+.scale-service {
+  margin-bottom: 14px;
+}
+
+.scale-service-title {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.scale-header-actions {
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
+  gap: 6px;
+  margin: 0 0 8px;
+  color: var(--app-color-text);
+  font-weight: 800;
 }
 
-.filter-strip {
-  position: relative;
-  margin-right: -16px;
-  margin-left: -16px;
+.scale-service-title a {
+  color: var(--app-color-accent);
+  text-decoration: none;
 }
 
-.filter-strip::before,
-.filter-strip::after {
-  position: absolute;
-  top: 0;
-  bottom: 4px;
-  z-index: 1;
-  width: 18px;
-  pointer-events: none;
-  content: "";
+.scale-service-count {
+  color: var(--app-color-text-muted);
+  font-weight: 600;
 }
 
-.filter-strip::before {
-  left: 0;
-    background: linear-gradient(90deg, var(--app-color-background) 0%, transparent 100%);
-}
-
-.filter-strip::after {
-  right: 0;
-    background: linear-gradient(270deg, var(--app-color-background) 0%, transparent 100%);
-}
-
-.filter-scroll {
+.scale-chips {
   display: flex;
   gap: 8px;
+  margin: 0 -16px 16px;
+  padding: 0 16px 4px;
   overflow-x: auto;
-  flex-wrap: nowrap;
-  -webkit-overflow-scrolling: touch;
-  padding: 0 16px 6px;
-  scroll-padding-inline: 16px;
 }
 
-.filter-chip {
+.scale-chip {
   flex: 0 0 auto;
-  max-width: min(64vw, 220px);
-  height: 34px !important;
-  padding-inline: 14px !important;
+  min-height: 44px;
   font-weight: 700;
 }
 
-.filter-chip-label {
-  display: block;
-  min-width: 0;
-  overflow: hidden;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.hide-scrollbar {
+  scrollbar-width: none;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+
+.scale-scope {
+  margin-bottom: 14px;
 }
 
-.cursor-pointer {
-  cursor: pointer;
+.scale-auto-reminder {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: -4px 0 14px;
+  color: var(--app-color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.4;
 }
 
-.leader-summary-grid {
+.scale-auto-reminder svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--app-color-accent);
+}
+
+.scale-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  margin-bottom: 16px;
 }
 
-.leader-summary-card {
-  min-height: 92px;
+.scale-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 80px;
+  padding: 12px;
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: var(--app-radius-card);
+  color: var(--app-color-text);
+  text-align: left;
+  cursor: pointer;
 }
 
-.stat-icon {
-  display: block;
+.scale-stat--active {
+  border-color: var(--app-color-accent);
+  box-shadow: inset 0 0 0 1px var(--app-color-accent);
 }
 
-@media (max-width: 420px) {
-  .scale-page-header {
-    align-items: flex-start;
-  }
+.scale-stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
 
-  .scale-header-actions {
-    align-items: flex-start;
-  }
-
-  .filter-strip {
-    margin-right: -12px;
-    margin-left: -12px;
-  }
-
-  .filter-scroll {
-    gap: 6px;
-    padding-right: 12px;
-    padding-left: 12px;
-    scroll-padding-inline: 12px;
-  }
-
-  .filter-chip {
-    max-width: 58vw;
-    height: 32px !important;
-    padding-inline: 12px !important;
-    font-size: 0.78rem;
-  }
-
-  .leader-summary-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .scale-header-actions .v-btn {
-    min-width: 40px;
-    padding-inline: 10px !important;
-  }
+.scale-stat-label {
+  color: var(--app-color-text-muted);
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 </style>

@@ -42,7 +42,7 @@ describe("sendTrialReminders", () => {
     });
     expect(pushService.sendToUsers).toHaveBeenCalledWith(
       ["pastor-1"],
-      expect.objectContaining({ type: "TRIAL_ENDING", url: "/plans" }),
+      expect.objectContaining({ type: "TRIAL_ENDING", url: "/configuracoes/plano" }),
     );
     expect(mockPrismaClient.crunch.update).toHaveBeenCalledWith({
       where: { id: "church-1" },

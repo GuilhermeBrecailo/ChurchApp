@@ -335,15 +335,15 @@ const HELP_PAGES: HelpPage[] = [
   { pageKey: "/cultos", label: "Cultos" },
   { pageKey: "/prayer", label: "Oração" },
   { pageKey: "/user", label: "Perfil do Usuário" },
-  { pageKey: "/settings", label: "Configurações" },
+  { pageKey: "/perfil/preferencias", label: "Minhas preferências" },
   { pageKey: "/notifications", label: "Notificações" },
   { pageKey: "/admin", label: "Administração" },
   { pageKey: "/admin/relatorios", label: "Relatórios" },
-  { pageKey: "/admin/pessoas", label: "Pessoas" },
-  { pageKey: "/admin/ministerios", label: "Gestão de ministérios" },
-  { pageKey: "/admin/publicacoes", label: "Publicações" },
-  { pageKey: "/admin/mensagens", label: "Mensagens" },
-  { pageKey: "/admin/configuracoes", label: "Configurações" },
+  { pageKey: "/pessoas", label: "Pessoas" },
+  { pageKey: "/pessoas/cuidado", label: "Cuidado pastoral" },
+  { pageKey: "/pessoas/cargos", label: "Cargos" },
+  { pageKey: "/comunicar", label: "Comunicar" },
+  { pageKey: "/configuracoes", label: "Configurações da igreja" },
   { pageKey: "/platform-admin", label: "Admin Master" },
 ];
 
@@ -668,7 +668,7 @@ const handleRemove = async () => {
 .help-video-row-head {
   background: #f7f7fb;
   color: #6b6472;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   text-transform: uppercase;
 }

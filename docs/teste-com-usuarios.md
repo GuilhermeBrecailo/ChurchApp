@@ -74,8 +74,9 @@ botões nem onde ficam.
 
 - **Sucesso:** a escala do domingo fica como **confirmada**.
 - **Observe:** vai pelo Início, pela aba Escalas ou pelo sino? Reconhece que
-  está escalado e em qual função? Entende a diferença entre "Confirmar" e
-  "Não posso"? Percebe que deu certo (mensagem, cor, ícone)?
+  está escalado e em qual função? Entende a diferença entre "Confirmar",
+  "Talvez" e "Não posso"? Percebe que deu certo (o selo muda para
+  "Confirmado")?
 - **Variação (opcional):** "Agora imagine que surgiu um compromisso. Avise que
   não vai poder ir e explique o motivo."
 
@@ -87,8 +88,8 @@ botões nem onde ficam.
 - **Sucesso:** o pedido é enviado **como anônimo**.
 - **Observe:** encontra "Oração" (fica no menu "Mais" no celular)? Entende a
   opção "Publicar como anônimo"? Entende que o pedido passa pela revisão do
-  pastor antes de aparecer? Fica ansiosa por não ver o pedido na lista logo
-  depois de enviar?
+  pastor antes de aparecer? Vê o aviso "Pedido enviado!" e entende que o
+  pedido só aparece na lista depois da aprovação?
 
 ### Tarefa 3: Marcar indisponibilidade
 
@@ -97,10 +98,9 @@ botões nem onde ficam.
 
 - **Sucesso:** a data aparece na lista de indisponibilidades.
 - **Observe:** encontra o lugar (fica no Perfil)? Consegue usar o seletor de
-  data? Percebe que precisa tocar no "+" para adicionar? Percebe que precisa
-  tocar em "Salvar Perfil" depois? (Hoje a data **não é salva** só com o "+":
-  se a pessoa sair da tela sem salvar, a indisponibilidade se perde. Anote
-  quantas pessoas caem nisso.)
+  data? Percebe que precisa tocar no "+" para adicionar? Vê o aviso "Datas
+  salvas."? (A data é salva na hora; anote se alguém ainda procura um botão
+  de salvar ou toca em "Salvar Perfil" por garantia.)
 
 ### Tarefa extra para o líder (perfil 3)
 

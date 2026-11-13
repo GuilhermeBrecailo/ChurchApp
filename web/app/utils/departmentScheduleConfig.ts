@@ -25,6 +25,9 @@ export interface DepartmentScheduleConfig {
 }
 
 export interface DepartmentScheduleConfigVisibility {
+  /** "Tarefas para conferir": só quando o checklist do culto está ligado. */
+  showChecklistItems: boolean;
+  /** Santa Ceia aparece sempre, mesmo sem checklist (tem funções próprias). */
   showCommunionSettings: boolean;
   showCommunionRoles: boolean;
   showCommunionChecklist: boolean;
@@ -167,6 +170,7 @@ export function getDepartmentScheduleConfigVisibility(
   config: DepartmentScheduleConfig,
 ): DepartmentScheduleConfigVisibility {
   return {
+    showChecklistItems: config.fields.checklist,
     showCommunionSettings: true,
     showCommunionRoles: config.communion.enabled && config.fields.roles,
     showCommunionChecklist: config.communion.enabled && config.fields.checklist,

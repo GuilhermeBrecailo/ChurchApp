@@ -4,30 +4,64 @@
 
 **A rotina da igreja organizada com clareza e cuidado.**
 
-A interface deve parecer um produto SaaS confiável para uma equipe real: acolhedora sem ser infantil, profissional sem ficar fria e comercial sem parecer uma página de template.
+O app logado segue os padrões da Apple (Human Interface Guidelines): parece um
+app de iPhone/iPad/Mac bem feito, simples para quem é leigo, sem "cara de
+template" nem de interface gerada por IA. A identidade da igreja aparece na
+**cor de destaque** (terracota), não em enfeites.
 
-## Sistema visual
+## Sistema visual do app (logado)
 
-- fundo de marketing: creme quente e discreto;
-- superfície: branco levemente quente;
-- ação primária: terracota, com estados mais escuros bem definidos;
-- sinal de organização e acompanhamento: teal usado com parcimônia;
-- texto: carvão, com cinzas apenas para hierarquia secundária;
-- Inter para o produto e corpo de texto;
-- Fraunces somente em títulos de marketing que mereçam personalidade;
-- bordas finas, sombras curtas e cards com raio moderado de 12–16px;
-- uma linguagem de composição baseada em workflow, produto real e prova de uso;
-- movimento curto e funcional, sempre respeitando `prefers-reduced-motion`.
+- **Fonte:** a do sistema (`-apple-system`, SF Pro no iPhone/Mac; Inter como
+  reserva em outros sistemas). Sem fonte serifada nem monoespaçada em títulos
+  e rótulos. Monoespaçada só para códigos (ex.: código de convite).
+- **Título grande** em negrito no topo de cada tela (Large Title), subtítulo
+  em cinza. Linha acima do título (como a data no Início) em caixa alta
+  pequena e cinza, na fonte do sistema.
+- **Fundo agrupado:** cinza `#F2F2F7` no claro, preto `#000000` no escuro.
+- **Listas e cartões:** brancos no claro (`#1C1C1E` no escuro), raio 12px,
+  **sem sombra**; separadores finos (`#E5E5EA` / `#2C2C2E`). Sombra só em
+  janelas que flutuam (folhas, diálogos, menus).
+- **Texto:** principal `#1C1C1E`, secundário `#6E6E73` (escuro: `#F5F5F7` e
+  `#98989D`).
+- **Cor de destaque:** terracota `#B5472A` (escuro `#F0975A`) para o botão
+  principal da tela, item ativo, links e ícones da barra lateral. **Um botão
+  cheio por tela**; as demais ações em tom suave ("tinted") ou só texto.
+- **Barra de abas (celular/iPad em pé):** translúcida, linha fina no topo, aba
+  ativa só com ícone e nome na cor de destaque (sem "pílula").
+- **Barra lateral (computador/iPad deitado):** translúcida, no máximo dois
+  níveis, grupos que abrem e fecham, item ativo com realce suave.
+- **Abas da tela:** controle segmentado da Apple (trilho cinza, item ativo
+  branco com sombra leve). **Filtros:** cápsulas cinza preenchidas; a
+  selecionada fica na cor de destaque.
+- **Ajuda:** botão de texto "Ajuda", sem fundo.
+- **Movimento** curto e funcional, no ritmo do iPhone, respeitando
+  `prefers-reduced-motion`:
+  - curva padrão `cubic-bezier(0.32, 0.72, 0, 1)` (sai rápido, assenta devagar);
+    nada passa de ~0,45s; saídas mais rápidas que entradas;
+  - trocar de tela: detalhe entra pela direita, voltar vem da esquerda, abas
+    só esmaecem;
+  - controle segmentado: o "botão branco" desliza até a aba escolhida;
+  - título grande vira título pequeno na barra de cima ao rolar;
+  - folhas sobem com a curva do iOS; ícone da aba tocada dá um "pulinho";
+  - item respondido sai da lista e os de baixo sobem sem pular;
+  - listas entram quase juntas (30ms entre itens, 4px): **sem cascatas
+    longas, brilhos, gradientes animados ou "flutuação" decorativa**.
+
+Os valores estão em `web/app/assets/css/theme.css` (tokens `--app-color-*`) e
+no tema do Vuetify em `web/nuxt.config.ts`.
 
 ## Regras de composição
 
-- uma promessa clara por seção;
-- uma ação primária consistente;
-- menos cards repetidos e mais hierarquia entre destaque, apoio e detalhe;
-- imagens de produto tratadas como evidência, não como decoração;
-- foco visível e alvos de toque confortáveis;
+- uma tarefa clara por tela e uma ação principal;
+- o básico primeiro, o resto em "Mais opções" (revelação progressiva);
+- toda tela vazia ensina o que vai ali e oferece no máximo uma ação;
+- textos em português simples, com verbo ("Confirmar presença"), sem jargão;
+- alvos de toque de pelo menos 44px e foco visível;
 - nenhuma afirmação social sem dado real.
 
-## Aplicação
+## Fora do app logado
 
-Esta direção é a referência para a landing, shell da aplicação, autenticação e páginas internas. As páginas públicas de cada igreja preservam seus temas e configurações próprias.
+- **Landing de vendas (`/comece`):** pode manter a personalidade de marketing
+  (fundo creme discreto, Fraunces em títulos).
+- **Página pública de cada igreja (`/c/[slug]`):** usa o tema e as
+  configurações da própria igreja.

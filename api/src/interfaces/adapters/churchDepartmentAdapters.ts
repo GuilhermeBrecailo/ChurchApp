@@ -83,6 +83,14 @@ export class ChurchDepartmentAdapters {
     return this.schedule.getChurchSchedules(request);
   }
 
+  async getChurchScheduleById(request: FastifyRequest) {
+    return this.schedule.getChurchScheduleById(request);
+  }
+
+  async getUnsavedScheduleAssignmentConflicts(request: FastifyRequest) {
+    return this.schedule.getUnsavedScheduleAssignmentConflicts(request);
+  }
+
   async createChurchDepartmentSchedule(request: FastifyRequest) {
     return this.schedule.createChurchDepartmentSchedule(request);
   }

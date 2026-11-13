@@ -20,7 +20,10 @@ import { hasPermission } from "../../application/Services/Auth/AuthorizationServ
 import { PermissionKey } from "../../domain/permissions";
 import { PLAN_FEATURES, resolveEffectivePlan, pastDueGraceDaysLeft } from "../../domain/planConfig";
 import { CommercialLeadRepository } from "./commercialLeadRepository";
+import { pushNotificationService } from "../../infrastructure/notifications/PushNotificationService";
 import { z } from "zod";
+import { ensureRosterMemberForUser } from "../utils/rosterLink";
+import { generateTemporaryPassword } from "../utils/temporaryPassword";
 
 const TRIAL_PERIOD_DAYS = 90;
 
@@ -350,11 +353,14 @@ export class UserAdapters {
     // acabar destravando acesso indevido antes da aprovacao.
     const pendingMemberships = await $prismaClient.churchMembership.findMany({
       where: { userId: user.id, isActive: false },
-      select: { crunch: { select: { id: true, name: true } } },
+      select: { crunch: { select: { id: true, name: true, slug: true } } },
     });
+    // slug: a tela "Aguardando aprovacao" oferece "Ver a pagina da igreja"
+    // (/c/:slug) enquanto o pedido nao e aprovado.
     const pendingChurches = pendingMemberships.map((membership) => ({
       id: membership.crunch.id,
       name: membership.crunch.name,
+      slug: membership.crunch.slug,
     }));
 
     return {
@@ -1327,13 +1333,18 @@ export class UserAdapters {
     }));
   }
 
+  // Cria a conta no app ja ligada a esta igreja. Se a pessoa ja esta no rol
+  // (rosterMemberId, ou mesmo e-mail/telefone), a conta e LIGADA a esse
+  // registro em vez de criar uma pessoa duplicada. Sem senha informada, gera
+  // uma senha temporaria e devolve para quem esta cadastrando repassar.
   async createChurchMember(request: FastifyRequest) {
     const manager = await this.getChurchMemberManager(request, "MEMBER_CREATE");
-    const body = request.body as {
+    const body = (request.body ?? {}) as {
       name?: string;
       email?: string;
       phone?: string;
       password?: string;
+      rosterMemberId?: string;
     };
 
     if (!body.name?.trim()) {
@@ -1344,15 +1355,26 @@ export class UserAdapters {
       throw new DomainError("Email do membro é obrigatório");
     }
 
-    if (!body.phone?.trim()) {
-      throw new DomainError("Telefone do membro é obrigatório");
+    const normalizedEmail = body.email.trim().toLowerCase();
+    if (!z.string().email().safeParse(normalizedEmail).success) {
+      throw new DomainError("E-mail inválido");
     }
 
-    if (!body.password || body.password.length < 6) {
+    const providedPassword = body.password?.trim();
+    if (providedPassword && providedPassword.length < 6) {
       throw new DomainError("Senha temporária deve ter pelo menos 6 caracteres");
     }
+    const password = providedPassword || generateTemporaryPassword();
 
-    const normalizedEmail = body.email.trim().toLowerCase();
+    if (body.rosterMemberId) {
+      const rosterMember = await $prismaClient.rosterMember.findFirst({
+        where: { id: body.rosterMemberId, crunchId: manager.crunchId },
+        select: { id: true, userId: true },
+      });
+      if (!rosterMember) throw new DomainError("Pessoa não encontrada no rol");
+      if (rosterMember.userId) throw new DomainError("Esta pessoa já tem acesso ao app");
+    }
+
     const existingUser = await $prismaClient.user.findUnique({
       where: {
         email: normalizedEmail,
@@ -1367,42 +1389,57 @@ export class UserAdapters {
     const keycloakId = await identityProvider.createUser(
       normalizedEmail,
       body.name.trim(),
-      body.password,
+      password,
     );
 
     try {
-      const createdUser = await $prismaClient.user.create({
-        data: {
-          id: keycloakId,
-          name: body.name.trim(),
-          email: normalizedEmail,
-          phone: body.phone.trim(),
-          role: "MEMBER",
-          canManageMembers: false,
-          mustChangePassword: true,
-          crunchId: manager.crunchId,
-          churchMemberships: {
-            create: {
-              crunchId: manager.crunchId!,
-              role: "MEMBER",
-              canManageMembers: false,
-              isPrimary: true,
+      const createdUser = await $prismaClient.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            id: keycloakId,
+            name: body.name!.trim(),
+            email: normalizedEmail,
+            phone: body.phone?.trim() || null,
+            role: "MEMBER",
+            canManageMembers: false,
+            mustChangePassword: true,
+            crunchId: manager.crunchId,
+            churchMemberships: {
+              create: {
+                crunchId: manager.crunchId!,
+                role: "MEMBER",
+                canManageMembers: false,
+                isPrimary: true,
+              },
             },
           },
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-          role: true,
-          canManageMembers: true,
-          mustChangePassword: true,
-          createdAt: true,
-        },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            role: true,
+            canManageMembers: true,
+            mustChangePassword: true,
+            createdAt: true,
+          },
+        });
+
+        const rosterMember = await ensureRosterMemberForUser(
+          tx,
+          manager.crunchId!,
+          { id: user.id, name: user.name, email: user.email, phone: user.phone },
+          { rosterMemberId: body.rosterMemberId ?? null },
+        );
+
+        return { ...user, rosterMemberId: rosterMember?.id ?? null };
       });
 
-      return createdUser;
+      return {
+        ...createdUser,
+        // So devolve a senha quando foi gerada aqui - quem digitou ja sabe.
+        temporaryPassword: providedPassword ? null : password,
+      };
     } catch (error) {
       await identityProvider.deleteUser(keycloakId).catch(() => undefined);
       throw error;
@@ -1451,12 +1488,48 @@ export class UserAdapters {
 
     if (!membership) throw new DomainError("Solicitação pendente não encontrada");
 
-    await $prismaClient.churchMembership.update({
-      where: { id: membership.id },
-      data: { isActive: true },
+    const rosterMember = await $prismaClient.$transaction(async (tx) => {
+      await tx.churchMembership.update({
+        where: { id: membership.id },
+        data: { isActive: true },
+      });
+
+      const user = await tx.user.findUnique({
+        where: { id: membership.userId },
+        select: { id: true, name: true, email: true, phone: true },
+      });
+      if (!user) return null;
+
+      // Entra no rol ja aprovado - e, se a pessoa ja estava la como
+      // visitante (mesmo e-mail/telefone), a conta e ligada a esse registro.
+      return ensureRosterMemberForUser(tx, manager.crunchId!, user);
     });
 
-    return { success: true };
+    await this.notifyMembershipApproved(membership.userId, manager.crunchId);
+
+    return { success: true, rosterMemberId: rosterMember?.id ?? null };
+  }
+
+  // Avisa quem pediu para entrar (in-app + push) que o pedido foi aprovado.
+  // Falha no aviso nao desfaz a aprovacao.
+  private async notifyMembershipApproved(userId: string, crunchId: string) {
+    try {
+      const church = await $prismaClient.crunch.findUnique({
+        where: { id: crunchId },
+        select: { name: true },
+      });
+
+      await pushNotificationService.sendToUsers([userId], {
+        title: "Você foi aprovado!",
+        body: church?.name
+          ? `Agora você faz parte da ${church.name}. Toque para entrar.`
+          : "Toque para entrar.",
+        url: "/",
+        type: "membership_approved",
+      });
+    } catch (error) {
+      console.error("Erro ao notificar aprovação de membro", error);
+    }
   }
 
   // So remove o vinculo pendente com essa igreja - a conta em si (e outras
@@ -1607,8 +1680,25 @@ export class UserAdapters {
       throw new DomainError("Email do membro e obrigatorio");
     }
 
+    // O tipo (MEMBER/PASTOR) so muda quando realmente mudou: o formulario
+    // antigo mandava o tipo em todo "Salvar" e um ADMIN virava MEMBER sem
+    // ninguem pedir. Admin/super admin nunca sao rebaixados por aqui.
+    const requestedRole =
+      body.role !== undefined ? body.role.trim() || "MEMBER" : undefined;
+    const nextRole =
+      requestedRole !== undefined && requestedRole !== membership.role
+        ? requestedRole
+        : undefined;
+
     if (
-      body.role !== undefined &&
+      nextRole !== undefined &&
+      (membership.role === "ADMIN" || membership.role === "SUPER_ADMIN")
+    ) {
+      throw new DomainError("O tipo de um administrador não pode ser alterado por este formulário");
+    }
+
+    if (
+      nextRole !== undefined &&
       manager.role !== "PASTOR" &&
       manager.role !== "ADMIN" &&
       manager.role !== "SUPER_ADMIN"
@@ -1616,10 +1706,7 @@ export class UserAdapters {
       throw new DomainError("Apenas pastores ou admins podem alterar cargos");
     }
 
-    if (
-      body.role !== undefined &&
-      !["MEMBER", "PASTOR"].includes(body.role.trim() || "MEMBER")
-    ) {
+    if (nextRole !== undefined && !["MEMBER", "PASTOR"].includes(nextRole)) {
       throw new DomainError("Cargo invalido");
     }
 
@@ -1646,8 +1733,8 @@ export class UserAdapters {
           ...(body.name !== undefined ? { name: body.name.trim() } : {}),
           ...(normalizedEmail !== undefined ? { email: normalizedEmail } : {}),
           ...(body.phone !== undefined ? { phone: body.phone?.trim() || null } : {}),
-          ...(body.role !== undefined && member.crunchId === manager.crunchId
-            ? { role: body.role.trim() || "MEMBER" }
+          ...(nextRole !== undefined && member.crunchId === manager.crunchId
+            ? { role: nextRole }
             : {}),
         },
         select: {
@@ -1662,9 +1749,7 @@ export class UserAdapters {
       const updatedMembership = await tx.churchMembership.update({
         where: { id: membership.id },
         data: {
-          ...(body.role !== undefined
-            ? { role: body.role.trim() || "MEMBER" }
-            : {}),
+          ...(nextRole !== undefined ? { role: nextRole } : {}),
         },
         select: {
           role: true,
@@ -1722,6 +1807,13 @@ export class UserAdapters {
         },
       });
 
+      // "Remover da igreja": a pessoa continua no rol como desligada (o
+      // historico de visitas e acolhimento fica), so perde o acesso.
+      await tx.rosterMember.updateMany({
+        where: { userId: membership.userId, crunchId: manager.crunchId! },
+        data: { status: "FORMER", leftAt: new Date() },
+      });
+
       if (membership.user.crunchId === manager.crunchId) {
         const nextMembership = await tx.churchMembership.findFirst({
           where: {
@@ -1743,6 +1835,63 @@ export class UserAdapters {
     });
 
     return { success: true };
+  }
+
+  // "Gerar senha temporaria" no perfil da pessoa: quem cadastra membros
+  // (MEMBER_CREATE) gera uma senha nova para quem esqueceu a sua. A pessoa e
+  // obrigada a trocar no proximo acesso. Nao vale para si mesmo, para o
+  // pastor titular, para admins da plataforma nem (sem ser pastor/admin) para
+  // outro pastor.
+  async resetChurchMemberPassword(request: FastifyRequest) {
+    const manager = await this.getChurchMemberManager(request, "MEMBER_CREATE");
+    const { id } = request.params as { id?: string };
+    if (!id) throw new DomainError("Membro não informado");
+
+    if (id === manager.id) {
+      throw new DomainError("Para trocar a sua própria senha, use Minhas preferências");
+    }
+
+    const membership = await $prismaClient.churchMembership.findUnique({
+      where: { userId_crunchId: { userId: id, crunchId: manager.crunchId! } },
+      include: { user: true, crunch: true },
+    });
+
+    if (!membership || !membership.isActive) {
+      throw new DomainError("Membro não encontrado nesta igreja");
+    }
+
+    if (membership.crunch?.userMainId === membership.userId) {
+      throw new DomainError("Não é possível gerar senha para o pastor titular");
+    }
+
+    if (membership.role === "ADMIN" || membership.role === "SUPER_ADMIN") {
+      throw new DomainError("Não é possível gerar senha para um administrador");
+    }
+
+    const managerIsPrivileged = ["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(manager.role);
+    if (membership.role === "PASTOR" && !managerIsPrivileged) {
+      throw new DomainError("Só o pastor pode gerar senha para outro pastor");
+    }
+
+    if (membership.user.isDemoUser) {
+      throw new DomainError("Não é possível alterar a senha do usuário demo");
+    }
+
+    const temporaryPassword = generateTemporaryPassword();
+    const identityProvider = new KeycloakProvider();
+
+    try {
+      await identityProvider.updatePassword(membership.userId, temporaryPassword);
+    } catch {
+      throw new DomainError("Não foi possível gerar a nova senha agora. Tente de novo em instantes.");
+    }
+
+    await $prismaClient.user.update({
+      where: { id: membership.userId },
+      data: { mustChangePassword: true },
+    });
+
+    return { success: true, temporaryPassword };
   }
 
   async createUser(request: FastifyRequest): Promise<{ id: string }> {

@@ -77,7 +77,7 @@
           </button>
         </fieldset>
 
-        <fieldset v-if="configVisibility.showCommunionSettings" class="schedule-config-group">
+        <fieldset v-if="configVisibility.showChecklistItems" class="schedule-config-group">
           <legend>Tarefas para conferir</legend>
           <div
             v-for="(item, index) in modelValue.checklistItems"
@@ -113,7 +113,7 @@
           </button>
         </fieldset>
 
-        <fieldset v-if="modelValue.fields.checklist" class="schedule-config-group">
+        <fieldset v-if="configVisibility.showCommunionSettings" class="schedule-config-group">
           <legend>Santa Ceia</legend>
           <label class="schedule-config-toggle">
             <input
@@ -435,7 +435,7 @@ function removeCommunionTask(index: number) {
   background: transparent;
   color: rgb(var(--v-theme-primary));
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 650;
   cursor: pointer;
 }
@@ -461,7 +461,7 @@ function removeCommunionTask(index: number) {
 
 .schedule-config-subheading {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 650;
 }
 
@@ -472,7 +472,7 @@ function removeCommunionTask(index: number) {
 
   .schedule-config-remove-button {
     padding-inline: 0.25rem;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
   }
 }
 </style>

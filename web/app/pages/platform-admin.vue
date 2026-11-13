@@ -1668,6 +1668,8 @@ onMounted(async () => {
     await Promise.all([loadPlatformChurches(), loadRoles()]);
   }
 });
+
+useHead({ title: "Administração da plataforma" });
 </script>
 
 <style scoped>
@@ -1726,7 +1728,7 @@ onMounted(async () => {
 
 .platform-kicker {
   color: var(--app-color-accent);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -1817,7 +1819,7 @@ onMounted(async () => {
 
 .master-summary-grid span {
   color: var(--app-color-text-muted, #6b7280);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 750;
 }
 
@@ -1836,7 +1838,7 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
-  min-height: 42px;
+  min-height: 44px;
   padding: 9px 10px;
   text-align: left;
   border-color: var(--app-color-border);
@@ -1985,7 +1987,7 @@ onMounted(async () => {
 }
 
 .church-trial-note {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--app-color-text-muted);
 }
@@ -2018,7 +2020,7 @@ onMounted(async () => {
   border-radius: 8px;
   background: var(--app-color-surface-soft);
   color: var(--app-color-text-muted);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   min-height: 46px;
   display: grid;
@@ -2161,7 +2163,7 @@ onMounted(async () => {
 .sheet-summary-tile small {
   grid-area: label;
   color: var(--app-color-text-muted, #6b7280);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 
@@ -2248,7 +2250,7 @@ onMounted(async () => {
 
 .admin-tab {
   font-size: 0.82rem !important;
-  min-height: 36px !important;
+  min-height: 44px !important;
   min-width: 0 !important;
   padding: 0 14px !important;
   border-radius: 10px;

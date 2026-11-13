@@ -1,13 +1,13 @@
 import { defineNuxtRouteMiddleware, navigateTo, useCookie, useState } from "#app";
+import { resolveFirstRunRedirect } from "../utils/firstRunRoutes";
 
-// /join fica publica porque agora tambem serve auto-cadastro por link de
-// convite pra quem ainda nao tem conta (ver web/app/pages/join.vue) - mas
-// precisa continuar acessivel logado tambem (fluxo antigo de entrar com
-// codigo numa conta existente), entao tambem entra em alwaysAccessibleRoutes
-// abaixo pra nao ser expulsa de volta pra "/" quando autenticado.
+// /join fica publica porque serve o auto-cadastro por link de convite pra
+// quem ainda nao tem conta (ver web/app/pages/join.vue) - mas precisa
+// continuar acessivel logado tambem (pedir para participar com a conta que
+// ja existe, inclusive depois de "Voce ja tem conta, entre com sua senha"),
+// entao tambem entra em alwaysAccessibleRoutes abaixo pra nao ser expulsa de
+// volta pra "/" quando autenticado.
 const publicRoutes = ["/login", "/register", "/forgot-password", "/c", "/termos", "/privacidade", "/comece", "/join"];
-const onboardingRoutes = ["/onboarding/church"];
-const noChurchAllowedRoutes = ["/", "/user", "/admin", "/platform-admin", "/join", ...onboardingRoutes];
 const refreshCookieName = "refresh_token";
 
 export default defineNuxtRouteMiddleware(async (to) => {
@@ -131,26 +131,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
     });
   }
 
-  const isOnboardingRoute = onboardingRoutes.some(
-    (route) => to.path === route || to.path.startsWith(`${route}/`),
-  );
+  // Primeiro uso, uma regra por vez (app/utils/firstRunRoutes.ts):
+  // senha provisoria -> /definir-senha?redirect=...; pastor sem igreja ->
+  // /onboarding/church; pedido pendente -> /onboarding/aguardando; sem
+  // igreja e sem pedido -> /join; quem ja tem igreja sai das telas de
+  // primeiro uso.
+  const redirect = resolveFirstRunRedirect(user.value, {
+    path: to.path,
+    fullPath: to.fullPath,
+  });
 
-  const isNoChurchAllowedRoute = noChurchAllowedRoutes.some(
-    (route) =>
-      to.path === route || (route !== "/" && to.path.startsWith(`${route}/`)),
-  );
-
-  if (!user.value?.hasChurch && !isNoChurchAllowedRoute) {
-    return navigateTo("/");
-  }
-
-  if (user.value?.mustChangePassword && to.path !== "/user") {
-    return navigateTo("/user");
-  }
-
-  if (user.value?.hasChurch && isOnboardingRoute) {
-    return navigateTo("/");
+  if (redirect && redirect !== to.fullPath) {
+    return navigateTo(redirect);
   }
 });
-
-

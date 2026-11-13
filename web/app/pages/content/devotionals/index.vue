@@ -1,16 +1,6 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper app-operational-page">
-    <div class="content-page-header mb-4">
-      <div class="content-detail-title-group min-w-0">
-        <v-btn icon variant="text" size="small" class="mr-2" aria-label="Voltar" @click="router.back()">
-          <ChevronLeft size="20" />
-        </v-btn>
-        <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-0">
-          Devocionais
-        </h1>
-      </div>
-      <UtilsPageHelpButton title="Devocionais" />
-    </div>
+    <UtilsPageHeader title="Devocionais" back="/igreja" back-label="Voltar para Igreja" help-title="Devocionais" />
 
     <v-btn
       v-if="canPublish"
@@ -18,7 +8,7 @@
       class="text-none font-weight-bold rounded-lg mb-5"
       block
       elevation="1"
-      @click="openCreateDialog"
+      @click="openComposer"
     >
       <Plus size="16" class="mr-1" /> Novo devocional
     </v-btn>
@@ -51,14 +41,14 @@
       >
         <v-card class="app-surface rounded-xl pa-4 border-subtle devotional-card">
           <div class="d-flex align-center mb-3">
-            <v-avatar color="#FFF1F2" size="42" class="mr-3">
-              <Heart size="20" color="#F43F5E" />
+            <v-avatar size="42" class="accent-avatar mr-3">
+              <Heart size="20" />
             </v-avatar>
             <div class="min-w-0">
-              <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+              <h2 class="devotional-title text-truncate">
                 {{ devotional.title }}
               </h2>
-              <p class="text-caption text-grey-darken-1 mb-0">
+              <p class="devotional-meta mb-0">
                 {{ devotional._count?.chapters ?? devotional.chapters?.length ?? 0 }} capítulos
               </p>
             </div>
@@ -66,229 +56,54 @@
           <p class="devotional-description mb-4">
             {{ devotional.description || "Sem descrição." }}
           </p>
-          <v-progress-linear
-            :model-value="devotional.progresses?.length ? 50 : 0"
-            color="pink-darken-1"
-            height="6"
-            rounded
-          />
+          <div class="devotional-progress">
+            <v-progress-linear
+              v-if="progressOf(devotional).percent !== null"
+              :model-value="progressOf(devotional).percent ?? 0"
+              color="primary"
+              bg-color="primary"
+              height="6"
+              rounded
+              :aria-label="`Progresso: ${progressOf(devotional).label}`"
+            />
+            <span class="devotional-progress-label">{{ progressOf(devotional).label }}</span>
+          </div>
         </v-card>
       </NuxtLink>
     </div>
 
-    <v-card
+    <UtilsEmptyState
       v-else-if="devotionals.length"
-      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
-    >
-      <Heart size="34" color="#9CA3AF" class="mb-3" />
-      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-        Nenhum devocional encontrado
-      </p>
-    </v-card>
+      variant="no-results"
+      compact
+      :icon="Heart"
+      title="Nenhum devocional encontrado"
+      description="Tente buscar por outra palavra do título."
+    />
 
-    <v-card
+    <UtilsEmptyState
       v-else
-      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
-    >
-      <Heart size="34" color="#9CA3AF" class="mb-3" />
-      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-        Nenhum devocional publicado ainda
-      </p>
-    </v-card>
+      :icon="Heart"
+      title="Nenhum devocional publicado ainda"
+      :description="canPublish
+        ? 'Monte uma série com capítulos para a igreja ler durante a semana.'
+        : 'Quando a liderança publicar uma série de estudo, ela aparece aqui.'"
+      :action-label="canPublish ? 'Criar devocional' : undefined"
+      @action="openComposer"
+    />
 
-    <UtilsResponsiveOverlay v-model="isCreateDialogOpen" max-width="560" variant="form" scrollable>
-      <v-card class="rounded-xl pa-6" elevation="0">
-        <div class="responsive-dialog-header mb-5">
-          <div class="d-flex align-center min-w-0">
-            <v-avatar color="#FFF1F2" size="44" class="mr-3">
-              <Heart size="20" color="#F43F5E" />
-            </v-avatar>
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              Novo devocional
-            </h2>
-          </div>
-          <v-btn
-            icon
-            variant="text"
-            color="grey-darken-1"
-            size="small"
-            :disabled="isSaving"
-            @click="closeCreateDialog"
-          >
-            <v-icon size="20">mdi-close</v-icon>
-          </v-btn>
-        </div>
-
-        <v-form autocomplete="off" @submit.prevent="handleCreate">
-          <v-text-field
-            v-model="createForm.title"
-            label="Título da série"
-            variant="outlined"
-            density="comfortable"
-            color="primary"
-            class="mb-4"
-            hide-details="auto"
-            :disabled="isSaving"
-          />
-
-          <v-textarea
-            v-model="createForm.description"
-            label="Descrição (opcional)"
-            variant="outlined"
-            density="comfortable"
-            color="primary"
-            class="mb-4"
-            rows="2"
-            auto-grow
-            hide-details="auto"
-            :disabled="isSaving"
-          />
-
-          <v-text-field
-            v-model="createForm.videoUrl"
-            label="Link de vídeo (opcional)"
-            placeholder="YouTube, Instagram..."
-            prepend-inner-icon="mdi-video-outline"
-            variant="outlined"
-            density="comfortable"
-            color="primary"
-            class="mb-2"
-            hide-details="auto"
-            :disabled="isSaving"
-          />
-
-          <v-switch
-            v-model="createForm.isPublic"
-            color="primary"
-            density="compact"
-            hide-details
-            class="mb-1"
-            label="Mostrar na página pública da igreja"
-            :disabled="isSaving"
-          />
-          <p class="text-caption text-grey-darken-1 mb-5">
-            Quem abrir o link público da igreja vai ver este devocional.
-          </p>
-
-          <p class="text-caption font-weight-bold text-grey-darken-1 mb-2">
-            Capítulos
-          </p>
-
-          <v-card
-            v-for="(chapter, index) in createForm.chapters"
-            :key="index"
-            class="rounded-lg pa-4 mb-3 elevation-0 chapter-card"
-          >
-            <div class="d-flex align-center justify-space-between mb-3">
-              <span class="text-caption font-weight-bold text-grey-darken-2">
-                Capítulo {{ index + 1 }}
-              </span>
-              <v-btn
-                v-if="createForm.chapters.length > 1"
-                icon
-                variant="text"
-                color="red-darken-2"
-                size="small"
-                :aria-label="`Remover capítulo ${index + 1}`"
-                :disabled="isSaving"
-                @click="removeChapter(index)"
-              >
-                <v-icon size="18">mdi-close</v-icon>
-              </v-btn>
-            </div>
-
-            <v-text-field
-              v-model="chapter.title"
-              label="Título do capítulo"
-              variant="outlined"
-              density="compact"
-              color="primary"
-              class="mb-3"
-              hide-details="auto"
-              :disabled="isSaving"
-            />
-
-            <v-text-field
-              v-model="chapter.bibleRef"
-              label="Referência bíblica (opcional)"
-              placeholder="Ex.: Salmos 23"
-              variant="outlined"
-              density="compact"
-              color="primary"
-              class="mb-3"
-              hide-details="auto"
-              :disabled="isSaving"
-            />
-
-            <v-textarea
-              v-model="chapter.content"
-              label="Texto"
-              variant="outlined"
-              density="compact"
-              color="primary"
-              rows="4"
-              auto-grow
-              hide-details="auto"
-              :disabled="isSaving"
-            />
-          </v-card>
-
-          <v-btn
-            variant="tonal"
-            color="primary"
-            size="small"
-            class="text-none mb-4"
-            :disabled="isSaving"
-            @click="addChapter"
-          >
-            <Plus size="16" class="mr-1" /> Adicionar capítulo
-          </v-btn>
-
-          <v-alert
-            v-if="createError"
-            type="error"
-            variant="tonal"
-            density="compact"
-            class="mb-4"
-          >
-            {{ createError }}
-          </v-alert>
-
-          <div class="d-flex justify-end ga-3">
-            <v-btn
-              variant="text"
-              color="grey-darken-1"
-              class="text-none"
-              :disabled="isSaving"
-              @click="closeCreateDialog"
-            >
-              Cancelar
-            </v-btn>
-            <v-btn
-              type="submit"
-              color="primary"
-              class="text-none font-weight-bold"
-              :loading="isSaving"
-              :disabled="isSaving"
-            >
-              Publicar
-            </v-btn>
-          </div>
-        </v-form>
-      </v-card>
-    </UtilsResponsiveOverlay>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
-import { ChevronLeft, Heart, Plus } from "lucide-vue-next";
+import { computed, onMounted, ref } from "vue";
+import { Heart, Plus } from "lucide-vue-next";
 import { useDevotionals, type Devotional } from "../../../../composables/useDevotionals";
 import { usePermissions } from "../../../../composables/usePermissions";
 import { compareListText, normalizeListText } from "../../../utils/listOrdering";
+import { devotionalProgress } from "../../../utils/devotionalProgress";
 
-const router = useRouter();
-const { listDevotionals, createDevotional } = useDevotionals();
+const { listDevotionals, getDevotional } = useDevotionals();
 const { can } = usePermissions();
 
 const devotionals = ref<Devotional[]>([]);
@@ -296,22 +111,6 @@ const loading = ref(false);
 const errorMessage = ref("");
 const search = ref("");
 
-const isCreateDialogOpen = ref(false);
-const isSaving = ref(false);
-const createError = ref("");
-
-const emptyChapter = () => ({ title: "", content: "", bibleRef: "" });
-
-const createForm = reactive({
-  title: "",
-  description: "",
-  videoUrl: "",
-  isPublic: false,
-  chapters: [emptyChapter()],
-});
-
-
-// Pastor/admin sempre; demais so com PUBLISH_CONTENT concedido pelo pastor.
 const canPublish = computed(() => can("CONTENT_PUBLISH"));
 
 const filteredDevotionals = computed(() => {
@@ -324,72 +123,28 @@ const filteredDevotionals = computed(() => {
     .sort((first, second) => compareListText(first.title, second.title));
 });
 
-const openCreateDialog = () => {
-  createForm.title = "";
-  createForm.description = "";
-  createForm.videoUrl = "";
-  createForm.isPublic = false;
-  createForm.chapters = [emptyChapter()];
-  createError.value = "";
-  isCreateDialogOpen.value = true;
-};
+// Devocional é criado num lugar só: o "Novo comunicado" do Comunicar (mesmo
+// formulário, com capítulos). Antes havia um segundo formulário aqui.
+const router = useRouter();
+const openComposer = () => router.push({ path: "/comunicar", query: { novo: "devocional" } });
 
-const closeCreateDialog = () => {
-  isCreateDialogOpen.value = false;
-  createError.value = "";
-};
+const progressOf = (devotional: Devotional) => devotionalProgress(devotional);
 
-const addChapter = () => {
-  createForm.chapters.push(emptyChapter());
-};
-
-const removeChapter = (index: number) => {
-  createForm.chapters.splice(index, 1);
-};
-
-const handleCreate = async () => {
-  createError.value = "";
-
-  const title = createForm.title.trim();
-  if (!title) {
-    createError.value = "Informe o título do devocional.";
-    return;
-  }
-
-  const chapters = createForm.chapters
-    .map((chapter) => ({
-      title: chapter.title.trim(),
-      content: chapter.content.trim(),
-      bibleRef: chapter.bibleRef.trim(),
-    }))
-    .filter((chapter) => chapter.title && chapter.content);
-
-  if (chapters.length === 0) {
-    createError.value = "Informe ao menos um capítulo com título e texto.";
-    return;
-  }
-
-  isSaving.value = true;
-
-  try {
-    const { error } = await createDevotional({
-      title,
-      description: createForm.description.trim(),
-      videoUrl: createForm.videoUrl.trim(),
-      isPublic: createForm.isPublic,
-      chapters,
-    });
-
-    if (error) {
-      createError.value = error;
-      return;
-    }
-
-    closeCreateDialog();
-    await loadDevotionals();
-  } finally {
-    isSaving.value = false;
-  }
+// A lista não traz os capítulos; para mostrar o progresso de verdade busca
+// o detalhe só dos devocionais que a pessoa já começou (poucos).
+const MAX_PROGRESS_LOOKUPS = 12;
+const loadStartedChapters = async () => {
+  const started = devotionals.value
+    .filter((devotional) => devotional.progresses?.length && !devotional.chapters?.length)
+    .slice(0, MAX_PROGRESS_LOOKUPS);
+  const details = await Promise.all(started.map((devotional) => getDevotional(devotional.id)));
+  const chaptersById = new Map(
+    details.flatMap(({ data }) => (data?.chapters ? [[data.id, data.chapters] as const] : [])),
+  );
+  if (!chaptersById.size) return;
+  devotionals.value = devotionals.value.map((devotional) =>
+    chaptersById.has(devotional.id) ? { ...devotional, chapters: chaptersById.get(devotional.id) } : devotional,
+  );
 };
 
 const loadDevotionals = async () => {
@@ -399,38 +154,18 @@ const loadDevotionals = async () => {
   devotionals.value = data ?? [];
   if (error) errorMessage.value = error;
   loading.value = false;
+  await loadStartedChapters();
 };
 
 onMounted(loadDevotionals);
+
+useHead({ title: "Devocionais" });
 </script>
 
 <style scoped>
 .page-wrapper {
   background: var(--app-color-background);
   min-height: 100%;
-}
-
-.chapter-card {
-  background: var(--app-color-surface-soft);
-  border: 1px solid var(--app-color-border);
-}
-
-.content-page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.content-detail-title-group {
-  display: flex;
-  align-items: center;
-}
-
-.content-page-header h1 {
-  /* sem isso o h1 herda a margem do reset e desalinha do botao de voltar */
-  line-height: 1.2;
-  margin: 0;
 }
 
 .devotional-grid {
@@ -454,12 +189,35 @@ onMounted(loadDevotionals);
   transform: translateY(-1px);
 }
 
+.devotional-title {
+  margin: 0;
+  color: var(--app-color-text);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.devotional-meta {
+  color: var(--app-color-text-muted);
+  font-size: 0.85rem;
+}
+
 .devotional-description {
-  color: #4b5563;
+  color: var(--app-color-text-soft);
   line-height: 1.5;
 }
 
+.devotional-progress {
+  display: grid;
+  gap: 6px;
+}
+
+.devotional-progress-label {
+  color: var(--app-color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .border-subtle {
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--app-color-border-subtle);
 }
 </style>

@@ -187,6 +187,78 @@ describe("ChurchDepartmentAdapters - tarefas", () => {
     });
   });
 
+  describe("updateChurchDepartmentTask - quem recebeu a tarefa", () => {
+    beforeEach(() => {
+      mockPrismaClient.user.findUnique.mockResolvedValue({
+        id: "user-1",
+        crunchId: "church-1",
+        role: "MEMBRO",
+      });
+    });
+
+    it("pode concluir a propria tarefa mudando so o status", async () => {
+      mockPrismaClient.departmentTask.findFirst.mockResolvedValue({ ...taskRow, assigneeId: "user-1" });
+      mockPrismaClient.departmentTask.update.mockResolvedValue({ ...taskRow, status: "DONE" });
+
+      const result = await adapters.updateChurchDepartmentTask(
+        makeRequest({
+          role: "MEMBRO",
+          params: { departmentId: "dept-1", taskId: "task-1" },
+          body: { status: "DONE" },
+        }),
+      );
+
+      expect(result.status).toBe("DONE");
+      expect(mockPrismaClient.departmentTask.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "task-1" }, data: { status: "DONE" } }),
+      );
+    });
+
+    it("nao pode mudar outros campos da propria tarefa", async () => {
+      mockPrismaClient.departmentTask.findFirst.mockResolvedValue({ ...taskRow, assigneeId: "user-1" });
+
+      await expect(
+        adapters.updateChurchDepartmentTask(
+          makeRequest({
+            role: "MEMBRO",
+            params: { departmentId: "dept-1", taskId: "task-1" },
+            body: { status: "DONE", title: "Outro titulo" },
+          }),
+        ),
+      ).rejects.toThrow(DomainError);
+      expect(mockPrismaClient.departmentTask.update).not.toHaveBeenCalled();
+    });
+
+    it("nao pode concluir tarefa de outra pessoa", async () => {
+      mockPrismaClient.departmentTask.findFirst.mockResolvedValue({ ...taskRow, assigneeId: "outra-pessoa" });
+
+      await expect(
+        adapters.updateChurchDepartmentTask(
+          makeRequest({
+            role: "MEMBRO",
+            params: { departmentId: "dept-1", taskId: "task-1" },
+            body: { status: "DONE" },
+          }),
+        ),
+      ).rejects.toThrow(DomainError);
+      expect(mockPrismaClient.departmentTask.update).not.toHaveBeenCalled();
+    });
+
+    it("nao pode concluir tarefa sem responsavel", async () => {
+      mockPrismaClient.departmentTask.findFirst.mockResolvedValue(taskRow);
+
+      await expect(
+        adapters.updateChurchDepartmentTask(
+          makeRequest({
+            role: "MEMBRO",
+            params: { departmentId: "dept-1", taskId: "task-1" },
+            body: { status: "DONE" },
+          }),
+        ),
+      ).rejects.toThrow(DomainError);
+    });
+  });
+
   describe("deleteChurchDepartmentTask", () => {
     it("apaga tarefa existente do ministerio", async () => {
       mockPrismaClient.departmentTask.findFirst.mockResolvedValue(taskRow);

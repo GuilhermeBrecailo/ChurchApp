@@ -405,7 +405,7 @@ defineExpose({ tab });
 
 .song-reader-position {
   color: var(--app-color-accent);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -448,7 +448,7 @@ defineExpose({ tab });
 
 .song-reader-control-label {
   color: var(--app-color-text-soft);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 800;
 }
 

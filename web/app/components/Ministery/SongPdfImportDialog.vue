@@ -405,7 +405,7 @@ watch(isOpen, (open) => {
   gap: 10px;
   margin-bottom: 20px;
   color: var(--app-color-text-muted);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
 }
 
 .pdf-import-step {
@@ -489,7 +489,7 @@ watch(isOpen, (open) => {
 .pdf-import-upload-hint {
   margin-top: 14px;
   color: var(--app-color-text-muted);
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
 }
 
 .pdf-import-file-card {
@@ -510,7 +510,7 @@ watch(isOpen, (open) => {
 
 .pdf-import-file-card span {
   color: var(--app-color-text-muted);
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
 }
 
 .pdf-import-file-icon {
@@ -610,7 +610,7 @@ watch(isOpen, (open) => {
   display: block;
   margin-top: 2px;
   color: var(--app-color-text-muted);
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
 }
 
 .pdf-import-fields-grid {
@@ -701,7 +701,7 @@ watch(isOpen, (open) => {
 
   .pdf-import-steps {
     gap: 8px;
-    font-size: 0.74rem;
+    font-size: 0.8125rem;
   }
 
   .pdf-import-step-divider {

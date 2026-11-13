@@ -23,11 +23,12 @@ function makeRequest(
     query?: Record<string, string>;
     body?: Record<string, unknown>;
     params?: Record<string, string>;
+    roles?: { scope: string; departmentId: string | null; permissions: string[] }[];
   } = {},
 ): FastifyRequest {
   return {
     headers: { authorization: `Bearer ${fakeToken("user-1")}` },
-    churchContext: { activeChurchId: "church-1", role, roles: [] },
+    churchContext: { activeChurchId: "church-1", role, roles: overrides.roles ?? [] },
     query: overrides.query ?? {},
     body: overrides.body ?? {},
     params: overrides.params ?? {},
@@ -56,9 +57,27 @@ describe("AttendanceAdapters - privilege gate", () => {
   ];
 
   it.each(cases)("%s rejects a non-privileged MEMBRO", async (_name, call) => {
-    await expect(call()).rejects.toThrow("Apenas pastores ou administradores podem registrar presença");
+    await expect(call()).rejects.toThrow("Sem permissão para registrar presença do culto");
     expect(mockPrismaClient.serviceAttendance.upsert).not.toHaveBeenCalled();
     expect(mockPrismaClient.serviceAttendance.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("AttendanceAdapters - cargo com CULT_ATTENDANCE_MANAGE", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("permite registrar presença para quem tem o cargo (mesmo gate da tela do culto)", async () => {
+    mockPrismaClient.serviceTime.findUnique.mockResolvedValue({ id: "st1", crunchId: "church-1" });
+    mockPrismaClient.serviceAttendance.upsert.mockResolvedValue({ id: "a1" });
+
+    await new AttendanceAdapters().upsert(
+      makeRequest("MEMBRO", {
+        body: VALID_BODY,
+        roles: [{ scope: "CHURCH", departmentId: null, permissions: ["CULT_ATTENDANCE_MANAGE"] }],
+      }),
+    );
+
+    expect(mockPrismaClient.serviceAttendance.upsert).toHaveBeenCalled();
   });
 });
 
@@ -152,7 +171,7 @@ describe("AttendanceAdapters - finalize", () => {
   it("rejects a non-privileged MEMBRO", async () => {
     await expect(
       adapters.finalize(makeRequest("MEMBRO", { params: { serviceTimeId: "st1" } })),
-    ).rejects.toThrow("Apenas pastores ou administradores podem registrar presença");
+    ).rejects.toThrow("Sem permissão para registrar presença do culto");
     expect(mockPrismaClient.serviceAttendance.upsert).not.toHaveBeenCalled();
   });
 
@@ -213,6 +232,81 @@ describe("AttendanceAdapters - finalize", () => {
   });
 });
 
+describe("AttendanceAdapters - finalize pelo dia do culto", () => {
+  let adapters: AttendanceAdapters;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    adapters = new AttendanceAdapters();
+    // Segunda de manhã: finalizando o culto de domingo à noite.
+    jest.useFakeTimers().setSystemTime(new Date("2026-08-17T09:00:00"));
+    mockPrismaClient.serviceTime.findUnique.mockResolvedValue({
+      id: "st1",
+      crunchId: "church-1",
+      time: "19:00",
+    });
+    mockPrismaClient.serviceAttendance.upsert.mockResolvedValue({ id: "a1" });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("grava no dia da ocorrência (não no dia de hoje)", async () => {
+    mockPrismaClient.serviceOccurrence.findFirst.mockResolvedValue({
+      id: "occ-1",
+      date: new Date("2026-08-16"),
+      time: null,
+      serviceTimeId: "st1",
+    });
+
+    await adapters.finalize(
+      makeRequest("PASTOR", { params: { serviceTimeId: "st1" }, body: { occurrenceId: "occ-1" } }),
+    );
+
+    const call = mockPrismaClient.serviceAttendance.upsert.mock.calls[0][0];
+    expect(call.where).toEqual({ serviceTimeId_date: { serviceTimeId: "st1", date: new Date("2026-08-16") } });
+    expect(call.create.serviceOccurrenceId).toBe("occ-1");
+    expect(mockPrismaClient.serviceOccurrence.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "occ-1", crunchId: "church-1" } }),
+    );
+  });
+
+  it("aceita a data explícita do culto", async () => {
+    mockPrismaClient.serviceOccurrence.findFirst.mockResolvedValue(null);
+
+    await adapters.finalize(
+      makeRequest("PASTOR", { params: { serviceTimeId: "st1" }, body: { date: "2026-08-16" } }),
+    );
+
+    const call = mockPrismaClient.serviceAttendance.upsert.mock.calls[0][0];
+    expect(call.where.serviceTimeId_date.date).toEqual(new Date("2026-08-16"));
+  });
+
+  it("rejeita ocorrência de outro horário de culto", async () => {
+    mockPrismaClient.serviceOccurrence.findFirst.mockResolvedValue({
+      id: "occ-2",
+      date: new Date("2026-08-16"),
+      time: null,
+      serviceTimeId: "st-other",
+    });
+
+    await expect(
+      adapters.finalize(
+        makeRequest("PASTOR", { params: { serviceTimeId: "st1" }, body: { occurrenceId: "occ-2" } }),
+      ),
+    ).rejects.toThrow("Esse culto não pertence a este horário");
+  });
+
+  it("rejeita finalizar um culto futuro", async () => {
+    await expect(
+      adapters.finalize(
+        makeRequest("PASTOR", { params: { serviceTimeId: "st1" }, body: { date: "2026-08-23" } }),
+      ),
+    ).rejects.toThrow("Esse culto ainda não começou");
+  });
+});
+
 describe("AttendanceAdapters - list", () => {
   let adapters: AttendanceAdapters;
 
@@ -230,5 +324,36 @@ describe("AttendanceAdapters - list", () => {
     expect(call.where.crunchId).toBe("church-1");
     expect(call.orderBy).toEqual({ date: "desc" });
     expect(call.include).toEqual({ serviceTime: { select: { id: true, label: true, weekday: true, time: true } } });
+  });
+
+  it("busca só o registro do culto pela ocorrência", async () => {
+    mockPrismaClient.serviceOccurrence.findFirst.mockResolvedValue({
+      id: "occ-1",
+      date: new Date("2026-08-16"),
+      time: null,
+      serviceTimeId: "st1",
+    });
+    mockPrismaClient.serviceAttendance.findMany.mockResolvedValue([{ id: "a1" }]);
+
+    const result = await adapters.list(makeRequest("PASTOR", { query: { occurrenceId: "occ-1" } }));
+
+    expect(result).toEqual([{ id: "a1" }]);
+    const call = mockPrismaClient.serviceAttendance.findMany.mock.calls[0][0];
+    expect(call.where).toEqual({ crunchId: "church-1", serviceTimeId: "st1", date: new Date("2026-08-16") });
+    expect(call.take).toBe(1);
+  });
+
+  it("culto avulso (sem horário fixo) não tem contagem", async () => {
+    mockPrismaClient.serviceOccurrence.findFirst.mockResolvedValue({
+      id: "occ-9",
+      date: new Date("2026-08-16"),
+      time: "10:00",
+      serviceTimeId: null,
+    });
+
+    const result = await adapters.list(makeRequest("PASTOR", { query: { occurrenceId: "occ-9" } }));
+
+    expect(result).toEqual([]);
+    expect(mockPrismaClient.serviceAttendance.findMany).not.toHaveBeenCalled();
   });
 });

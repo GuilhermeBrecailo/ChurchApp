@@ -1,64 +1,56 @@
 <template>
-  <v-app-bar app class="appbar" elevation="1">
+  <v-app-bar app class="appbar" elevation="1" :extension-height="previewLabel ? 48 : undefined">
     <div class="d-flex align-center header-identity-wrap">
-      <v-btn icon variant="text" aria-label="Abrir meu perfil" @click="router.push('/user')">
-        <v-avatar class="user-avatar" size="40">
-          <v-img v-if="user?.avatarUrl" :src="user.avatarUrl" alt="Foto de perfil" cover />
-          <span v-else class="avatar-text">{{ userInitials }}</span>
-        </v-avatar>
-      </v-btn>
+      <v-avatar v-if="churchLogo" size="34" class="church-logo mr-2" rounded="lg">
+        <v-img :src="churchLogo" alt="" cover />
+      </v-avatar>
+      <span v-else class="church-mark mr-2" aria-hidden="true">
+        <Church size="18" />
+      </span>
 
-      <div class="ml-3 d-flex flex-column justify-center header-identity">
-        <span class="greeting-text">Olá, {{ firstName }}</span>
-        <div v-if="!hasMultipleChurches" class="d-flex align-center mt-n1 header-church-row">
-          <Church size="16" class="church-icon mr-1 flex-shrink-0" />
-          <span class="church-text">{{ churchName }}</span>
-        </div>
-        <v-menu v-else location="bottom start">
-          <template #activator="{ props }">
-            <button v-bind="props" type="button" class="church-switcher mt-n1">
-              <Church size="16" class="church-icon mr-1" />
-              <span class="church-text">{{ churchName }}</span>
-              <ChevronDown size="14" class="church-icon ml-1" />
-            </button>
-          </template>
+      <!-- Ao rolar, o nome da igreja dá lugar ao título da tela (como a barra
+           de navegação do iPhone quando o título grande sai da tela). -->
+      <div class="header-title-swap" :class="{ 'is-compact': showCompactTitle }">
+      <div class="header-title-church">
+      <div v-if="!hasMultipleChurches" class="header-church-row">
+        <span class="church-text">{{ churchName }}</span>
+      </div>
+      <v-menu v-else location="bottom start">
+        <template #activator="{ props }">
+          <button
+            v-bind="props"
+            type="button"
+            class="church-switcher"
+            :aria-label="`Igreja atual: ${churchName}. Trocar de igreja`"
+          >
+            <span class="church-text">{{ churchName }}</span>
+            <ChevronDown size="16" class="church-icon ml-1 flex-shrink-0" />
+          </button>
+        </template>
 
-          <v-list density="compact" min-width="240">
-            <v-list-item
-              v-for="membership in activeMemberships"
-              :key="membership.church.id"
-              :active="membership.church.id === user?.activeChurchId"
-              @click="handleChurchChange(membership.church.id)"
-            >
-              <v-list-item-title>{{ membership.church.name }}</v-list-item-title>
-              <v-list-item-subtitle>
-                {{ membership.church.city }}{{ membership.church.state ? `/${membership.church.state}` : "" }}
-              </v-list-item-subtitle>
-            </v-list-item>
-          </v-list>
-        </v-menu>
+        <v-list density="compact" min-width="240">
+          <v-list-subheader>Trocar de igreja</v-list-subheader>
+          <v-list-item
+            v-for="membership in activeMemberships"
+            :key="membership.church.id"
+            :active="membership.church.id === user?.activeChurchId"
+            @click="handleChurchChange(membership.church.id)"
+          >
+            <v-list-item-title>{{ membership.church.name }}</v-list-item-title>
+            <v-list-item-subtitle>
+              {{ membership.church.city }}{{ membership.church.state ? `/${membership.church.state}` : "" }}
+            </v-list-item-subtitle>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+      </div>
+      <span class="header-title-page" aria-hidden="true">{{ compactTitle }}</span>
       </div>
     </div>
 
     <v-spacer></v-spacer>
 
     <div class="d-flex align-center">
-      <v-tooltip location="bottom" :text="themeToggleLabel">
-        <template #activator="{ props }">
-          <v-btn
-            v-bind="props"
-            icon
-            variant="text"
-            class="theme-toggle-btn mr-1"
-            :aria-label="themeToggleLabel"
-            @click="toggleTheme"
-          >
-            <Sun v-if="isDark" size="22" />
-            <Moon v-else size="22" />
-          </v-btn>
-        </template>
-      </v-tooltip>
-
       <v-menu
         v-model="notificationMenuOpen"
         location="bottom end"
@@ -200,6 +192,24 @@
         {{ message }}
       </v-snackbar>
     </div>
+
+    <!-- Pastor vendo o app como membro/líder: aviso sempre à vista. -->
+    <template v-if="previewLabel" #extension>
+      <div class="preview-banner" role="status">
+        <Eye size="18" aria-hidden="true" />
+        <span class="preview-banner-text">
+          Vendo como <strong>{{ previewLabel }}</strong>
+        </span>
+        <button
+          type="button"
+          class="preview-banner-exit"
+          :disabled="previewExiting"
+          @click="exitPreview"
+        >
+          Sair
+        </button>
+      </div>
+    </template>
   </v-app-bar>
 </template>
 
@@ -212,17 +222,16 @@ import {
   CheckCheck,
   ChevronDown,
   Church,
-  Moon,
+  Eye,
   Smartphone,
-  Sun,
 } from "lucide-vue-next";
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useAuth } from "../../../../composables/useAuth";
 import {
   usePushNotifications,
   type AppNotification,
 } from "../../../../composables/usePushNotifications";
-import { getInitials } from "../../../utils/initials";
+import { getNavPreviewLabel } from "../../../utils/roleNavigation";
 import {
   formatNotificationFullDate,
   formatNotificationRelativeDate,
@@ -230,8 +239,8 @@ import {
   notificationToneFor,
 } from "../../../utils/notificationDisplay";
 
-const { user, setActiveChurch } = useAuth();
-const { isDark, toggleTheme } = useThemeMode();
+const { user, setActiveChurch, updateNavPreviewRole } = useAuth();
+const toast = useAppToast();
 const {
   status,
   message,
@@ -250,15 +259,60 @@ const {
   disable,
 } = usePushNotifications();
 const router = useRouter();
+const route = useRoute();
 const notificationMenuOpen = ref(false);
 
-const firstName = computed(() => {
-  const name = user.value?.name?.trim();
+// Título compacto: quando o título grande (h1) da tela passa por baixo da
+// barra, ele aparece pequeno aqui. Usa o nome da aba do navegador
+// ("Escalas · ChurchApp" → "Escalas"), senão o próprio h1.
+const compactTitle = ref("");
+const showCompactTitle = ref(false);
+let titleObserver: IntersectionObserver | null = null;
+let titleTimer: ReturnType<typeof setTimeout> | null = null;
 
-  return name ? name.split(" ")[0] : "usuário";
+const observePageTitle = () => {
+  titleObserver?.disconnect();
+  showCompactTitle.value = false;
+  const heading = document.querySelector<HTMLElement>("#conteudo h1");
+  if (!heading || typeof IntersectionObserver === "undefined") return;
+  const tabTitle = document.title.replace(/\s·\sChurchApp$/, "").trim();
+  compactTitle.value = tabTitle && tabTitle !== "ChurchApp" ? tabTitle : (heading.textContent ?? "").trim();
+  titleObserver = new IntersectionObserver(
+    ([entry]) => {
+      if (!entry) return;
+      showCompactTitle.value = !entry.isIntersecting && entry.boundingClientRect.top < 80;
+    },
+    { rootMargin: "-64px 0px 0px 0px", threshold: 0 },
+  );
+  titleObserver.observe(heading);
+};
+
+const scheduleTitleObserver = () => {
+  if (titleTimer) clearTimeout(titleTimer);
+  // Espera a troca de tela terminar (a tela nova entra animada).
+  titleTimer = setTimeout(observePageTitle, 450);
+};
+
+watch(() => route.path, scheduleTitleObserver);
+onMounted(scheduleTitleObserver);
+onBeforeUnmount(() => {
+  titleObserver?.disconnect();
+  if (titleTimer) clearTimeout(titleTimer);
 });
 
-const userInitials = computed(() => getInitials(user.value?.name));
+const previewLabel = computed(() => getNavPreviewLabel(user.value));
+const previewExiting = ref(false);
+
+const exitPreview = async () => {
+  previewExiting.value = true;
+  const { error } = await updateNavPreviewRole(null);
+  previewExiting.value = false;
+  if (error) {
+    toast.error(error);
+    return;
+  }
+  toast.success("Você voltou a ver o app como pastor.");
+};
 
 const activeMemberships = computed(() =>
   (user.value?.memberships ?? []).filter((membership) => membership.isActive),
@@ -267,14 +321,12 @@ const hasMultipleChurches = computed(() => activeMemberships.value.length > 1);
 const churchName = computed(
   () => user.value?.activeChurch?.name || user.value?.church?.name || "Sem igreja",
 );
+const churchLogo = computed(() => user.value?.activeChurch?.logo || user.value?.church?.logo || null);
 const churchAccent = computed(
   () => user.value?.activeChurch?.accentColor || user.value?.church?.accentColor || "#B5472A",
 );
 const notificationCardStyle = computed(() => ({ "--church-accent": churchAccent.value }));
 const hasUnreadNotifications = computed(() => hasUnread.value);
-const themeToggleLabel = computed(() =>
-  isDark.value ? "Ativar tema claro" : "Ativar tema escuro",
-);
 
 const pushTone = computed(() => {
   if (isEnabled.value) return "on";
@@ -343,46 +395,91 @@ onMounted(async () => {
   box-shadow: 0 2px 10px rgba(31, 30, 29, 0.04) !important;
 }
 
+.header-title-swap {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.header-title-church,
+.header-title-page {
+  transition:
+    opacity 0.24s ease,
+    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.header-title-page {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  color: var(--app-color-text);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translateY(20%);
+  pointer-events: none;
+}
+
+.header-title-swap.is-compact .header-title-church {
+  opacity: 0;
+  transform: translateY(-60%);
+  pointer-events: none;
+}
+
+.header-title-swap.is-compact .header-title-page {
+  opacity: 1;
+  transform: translateY(-50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-title-church,
+  .header-title-page {
+    transition: opacity 0.2s ease;
+  }
+}
+
 .header-identity-wrap {
   min-width: 0;
   flex: 1 1 auto;
 }
 
-.header-identity {
-  min-width: 0;
-}
-
 .header-church-row {
   min-width: 0;
+  display: flex;
+}
+
+.church-mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--app-color-accent-tint);
+  color: var(--app-color-accent);
+}
+
+.church-logo {
+  flex: 0 0 auto;
+  border: 1px solid var(--app-color-border-subtle);
 }
 
 .church-switcher {
   display: inline-flex;
   align-items: center;
-  max-width: 190px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
   padding: 0;
   border: 0;
   background: transparent;
+  color: var(--app-color-text);
   cursor: pointer;
-}
-
-.user-avatar {
-  background: var(--app-color-accent);
-  box-shadow: 0 2px 8px rgba(181, 71, 42, 0.3);
-}
-
-.avatar-text {
-  color: #ffffff;
-  font-weight: 800;
-  font-size: 0.95rem;
-  letter-spacing: 0.03em;
-}
-
-.greeting-text {
-  padding-bottom: 5px;
-  font-size: 0.95rem;
-  color: var(--app-color-text-muted);
-  line-height: 1.2;
 }
 
 .church-icon {
@@ -390,14 +487,60 @@ onMounted(async () => {
 }
 
 .church-text {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 800;
   color: var(--app-color-text);
   line-height: 1.2;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.appbar :deep(.v-toolbar__extension) {
+  padding: 0 0 6px;
+}
+
+.preview-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 6px 0 14px;
+  border: 1px solid var(--app-color-warning);
+  border-radius: 12px;
+  background: var(--app-color-warning-tint);
+  color: var(--app-color-text);
+  font-size: 0.95rem;
+}
+
+.preview-banner svg {
+  flex: 0 0 auto;
+  color: var(--app-color-warning);
+}
+
+.preview-banner-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.preview-banner-exit {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--app-color-border);
+  border-radius: 999px;
+  background: var(--app-color-surface);
+  color: var(--app-color-text);
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.preview-banner-exit:focus-visible {
+  outline: none;
+  box-shadow: var(--app-focus-ring);
 }
 
 .notification-trigger {
@@ -464,7 +607,7 @@ onMounted(async () => {
   border-radius: 999px;
   background: var(--notif-accent-tint);
   color: var(--notif-accent-text);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -478,7 +621,7 @@ onMounted(async () => {
   border: 0;
   background: transparent;
   color: var(--notif-accent-text);
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   cursor: pointer;
   border-radius: 8px;
@@ -601,14 +744,14 @@ onMounted(async () => {
   overflow: hidden;
   overflow-wrap: anywhere;
   color: var(--app-color-text-soft);
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   line-height: 1.4;
 }
 
 .notification-item-date {
   margin-top: 2px;
   color: var(--app-color-text-muted);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
@@ -657,7 +800,7 @@ onMounted(async () => {
 .notification-empty-body {
   max-width: 250px;
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   line-height: 1.4;
   color: var(--app-color-text-muted);
 }
@@ -713,7 +856,7 @@ onMounted(async () => {
 
 .notification-push-title {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   color: var(--app-color-text);
   line-height: 1.25;
@@ -721,7 +864,7 @@ onMounted(async () => {
 
 .notification-push-description {
   margin: 2px 0 0;
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
   line-height: 1.35;
   color: var(--app-color-text-muted);
 }
@@ -752,17 +895,8 @@ onMounted(async () => {
     padding-inline: 10px;
   }
 
-  .header-identity-wrap {
-    max-width: calc(100% - 84px);
-  }
-
-  .greeting-text,
   .church-text {
-    font-size: 0.84rem;
-  }
-
-  .church-switcher {
-    max-width: 150px;
+    font-size: 0.95rem;
   }
 
   .notification-card {

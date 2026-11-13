@@ -9,8 +9,9 @@
  * vazias, então não precisa de API, banco nem Keycloak.
  *
  * Saída: uma imagem por tela/modo em OUT_DIR (padrão ./screenshots) e um
- * resumo em OUT_DIR/report.md. Termina com erro se alguma tela tiver rolagem
- * horizontal no celular (conteúdo vazando da tela) ou não carregar.
+ * resumo em OUT_DIR/report.md. Termina com erro se alguma tela cair na tela
+ * de erro do Nuxt ("Algo deu errado"), tiver rolagem horizontal no celular
+ * (conteúdo vazando da tela) ou não carregar.
  *
  * Uso local:
  *   NUXT_PUBLIC_URL_BACKEND=http://mock.local npx nuxt dev --port 3000
@@ -27,7 +28,7 @@ const OUT_DIR = resolve(process.env.OUT_DIR || "screenshots");
 const API_ORIGIN = "http://mock.local";
 
 const PAGES = (process.env.PAGES ||
-  "/,/scale,/ministery,/prayer,/notifications,/content,/user,/admin,/admin/configuracoes,/admin/pessoas,/login")
+  "/,/scale,/ministery,/ministery/demo,/igreja,/prayer,/notifications,/content/devotionals,/user,/admin,/configuracoes,/comunicar,/pessoas,/login")
   .split(",")
   .map((page) => page.trim())
   .filter(Boolean);
@@ -81,8 +82,23 @@ const me = {
   permissions: [],
 };
 
+// Ministério de exemplo para a tela de detalhe (/ministery/demo).
+const demoDepartment = {
+  id: "demo",
+  name: "Louvor",
+  type: "WORSHIP",
+  isActive: true,
+  modules: ["SCHEDULES", "SONGS"],
+  leaderId: "user-1",
+  canManageSchedule: true,
+  canManageSongs: true,
+  isMember: true,
+  leader: { id: "user-1", name: "Carlos Mendes", email: "pastor@exemplo.com" },
+};
+
 function mockResponse(url) {
   if (url.includes("refresh-token")) return { access_token: accessToken };
+  if (/\/api\/church\/departments\/[^/?]+$/.test(url)) return demoDepartment;
   if (url.endsWith("/api/me")) return me;
   if (url.includes("/api/notifications/public-key")) return { publicKey: null, configured: false };
   if (/\/api\/notifications(\?|$)/.test(url)) return { notifications: [], unreadCount: 0 };
@@ -150,6 +166,17 @@ async function run() {
       try {
         await tab.goto(`${BASE_URL}${page}`, { waitUntil: "networkidle", timeout: 60_000 });
         await tab.waitForTimeout(1_000);
+
+        // Tela de erro do Nuxt ("Algo deu errado"): um erro de renderização
+        // vira essa tela sem disparar "pageerror" no navegador.
+        const nuxtError = await tab.evaluate(() => {
+          const app = document.querySelector("#__nuxt")?.__vue_app__;
+          const error = app?.config.globalProperties.$nuxt?.payload?.error;
+          return error ? String(error.message || error.statusMessage || error) : "";
+        });
+        if (nuxtError) {
+          result.problems.push(`tela de erro: ${nuxtError.slice(0, 160)}`);
+        }
 
         const finalPath = new URL(tab.url()).pathname;
         if (finalPath !== page.split("?")[0]) {

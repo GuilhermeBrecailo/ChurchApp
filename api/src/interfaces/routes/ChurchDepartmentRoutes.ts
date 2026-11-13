@@ -125,6 +125,16 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
     controllerHandler(adapters.createChurchSchedule.bind(adapters)),
   );
 
+  app.post(
+    "/api/church/schedules/assignment-conflicts",
+    controllerHandler(adapters.getUnsavedScheduleAssignmentConflicts.bind(adapters)),
+  );
+
+  app.get(
+    "/api/church/schedules/:id",
+    controllerHandler(adapters.getChurchScheduleById.bind(adapters)),
+  );
+
   app.patch(
     "/api/church/schedules/:id",
     controllerHandler(adapters.updateChurchSchedule.bind(adapters)),

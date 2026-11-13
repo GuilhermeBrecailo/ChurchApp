@@ -2,27 +2,17 @@ import { FastifyRequest } from "fastify";
 import { z } from "zod";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
-import { resolveActiveChurchContext, RoleContext } from "../utils/churchContext";
 import { isPrivilegedRole } from "../../application/Services/Auth/AuthorizationService";
 import { WhatsAppServiceClient } from "../../infrastructure/whatsapp/WhatsAppServiceClient";
+import {
+  getPeopleViewer,
+  PeopleAccess,
+  PeopleViewer,
+  resolvePeopleAccess,
+} from "../utils/peopleAccess";
+import { syncMissingRosterMembers } from "../utils/rosterLink";
 
-type CurrentUser = {
-  id: string;
-  crunchId: string;
-  role: string;
-  roles: RoleContext[];
-};
-
-function getAuthUserId(request: FastifyRequest) {
-  const authHeader = request.headers.authorization;
-  const token = authHeader?.replace("Bearer ", "");
-  if (!token) throw new DomainError("Token não fornecido");
-  const [, payload] = token.split(".");
-  if (!payload) throw new DomainError("Token inválido");
-  const decoded = JSON.parse(Buffer.from(payload, "base64url").toString());
-  if (!decoded?.sub) throw new DomainError("Token sem usuário");
-  return decoded.sub as string;
-}
+type CurrentUser = PeopleViewer & { access: PeopleAccess };
 
 const createSchema = z.object({
   name: z.string().trim().min(1, "Nome é obrigatório"),
@@ -31,66 +21,55 @@ const createSchema = z.object({
   birthDate: z.string().trim().optional().or(z.literal("")),
   notes: z.string().trim().optional().or(z.literal("")),
   contactConsent: z.boolean().default(false),
+  // Visitante (padrão, entra no acolhimento) ou membro sem conta no app.
+  status: z.enum(["VISITOR", "MEMBER"]).default("VISITOR"),
 });
 
-const updateSchema = createSchema.omit({ contactConsent: true }).partial();
+const updateSchema = createSchema.omit({ contactConsent: true, status: true }).partial();
+
+const consentSchema = z.object({
+  consentToContact: z.boolean(),
+  note: z.string().trim().max(600).optional(),
+});
 
 export class RosterAdapters {
   private async getCurrentUser(request: FastifyRequest): Promise<CurrentUser> {
-    const userId = getAuthUserId(request);
-    const context = request.churchContext ?? (await resolveActiveChurchContext(request, userId));
-    if (!context.activeChurchId) throw new DomainError("Usuário não possui igreja vinculada");
-
-    return {
-      id: userId,
-      crunchId: context.activeChurchId,
-      role: context.role,
-      roles: context.roles,
-    };
+    const viewer = await getPeopleViewer(request);
+    return { ...viewer, access: resolvePeopleAccess(viewer) };
   }
 
-  // O rol e uma ferramenta pastoral - so quem tem papel privilegiado
-  // (pastor/admin) mexe nele, ninguem mais precisa ver isso.
+  // Conferir WhatsApp e o relatorio continuam so do pastor/admin (o WhatsApp
+  // da igreja e o relatorio sao ferramentas dele).
   private assertCanManageRoster(user: CurrentUser) {
     if (isPrivilegedRole(user)) return;
     throw new DomainError("Apenas pastores ou administradores podem gerenciar o rol de membros");
   }
 
-  // Todo ChurchMembership ativo tem que ter um RosterMember correspondente.
-  // Sincroniza de forma idempotente (upsert por userId) antes de listar, pra
-  // quem ja tinha login antes dessa feature existir aparecer automaticamente,
-  // sem precisar de um passo manual de importacao.
-  private async syncExistingMembers(crunchId: string) {
-    const memberships = await $prismaClient.churchMembership.findMany({
-      where: { crunchId, isActive: true },
-      select: {
-        userId: true,
-        createdAt: true,
-        user: { select: { name: true, email: true, phone: true } },
-      },
-    });
+  // Ler o rol: secretaria (MEMBER_*) e quem faz cuidado pastoral - quem
+  // agenda visita precisa escolher a pessoa.
+  private assertCanReadRoster(user: CurrentUser) {
+    if (user.access.canSeeRoster) return;
+    throw new DomainError("Sem permissão para ver as pessoas da igreja");
+  }
 
-    for (const membership of memberships) {
-      await $prismaClient.rosterMember.upsert({
-        where: { userId: membership.userId },
-        create: {
-          crunchId,
-          userId: membership.userId,
-          name: membership.user.name,
-          email: membership.user.email,
-          phone: membership.user.phone,
-          status: "MEMBER",
-          joinedAt: membership.createdAt,
-        },
-        update: {},
-      });
-    }
+  private assertCanEdit(user: CurrentUser, member?: { status: string }) {
+    if (user.access.canEdit) return;
+    // Quem faz o acolhimento pode corrigir os dados do visitante que cadastrou.
+    if (user.access.canCare && member?.status === "VISITOR") return;
+    throw new DomainError("Sem permissão para editar pessoas");
+  }
+
+  private assertCanChangeStatus(user: CurrentUser) {
+    if (user.access.canEdit || user.access.canDelete) return;
+    throw new DomainError("Sem permissão para mudar a situação desta pessoa");
   }
 
   async list(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    this.assertCanManageRoster(user);
-    await this.syncExistingMembers(user.crunchId);
+    this.assertCanReadRoster(user);
+    // Auto-correcao barata: so cria o registro de quem tem conta ativa e
+    // ainda nao aparece no rol (uma consulta quando esta tudo certo).
+    await syncMissingRosterMembers(user.crunchId);
 
     const { status } = request.query as { status?: string };
     const where =
@@ -128,17 +107,58 @@ export class RosterAdapters {
 
   async create(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    this.assertCanManageRoster(user);
     const body = createSchema.parse(request.body);
+
+    if (body.status === "MEMBER" && !user.access.canCreate) {
+      throw new DomainError("Sem permissão para cadastrar membros");
+    }
+    if (body.status === "VISITOR" && !user.access.canCreate && !user.access.canCare) {
+      throw new DomainError("Sem permissão para cadastrar visitantes");
+    }
+
+    const base = {
+      crunchId: user.crunchId,
+      name: body.name,
+      email: body.email || null,
+      phone: body.phone || null,
+      birthDate: body.birthDate ? new Date(body.birthDate) : null,
+      notes: body.notes || null,
+    };
+
+    if (body.status === "MEMBER") {
+      return await $prismaClient.rosterMember.create({
+        data: {
+          ...base,
+          status: "MEMBER",
+          joinedAt: new Date(),
+          // Membro cadastrado pela igreja: guarda a autorizacao so quando
+          // ela foi dada (sem registro, membro pode receber contato).
+          ...(body.contactConsent
+            ? {
+                visitorFollowUp: {
+                  create: {
+                    crunchId: user.crunchId,
+                    stage: "INTEGRATED",
+                    consentToContact: true,
+                    activities: {
+                      create: {
+                        action: "CONSENT_UPDATED",
+                        stage: "INTEGRATED",
+                        note: "Contato digital autorizado.",
+                        actorId: user.id,
+                      },
+                    },
+                  },
+                },
+              }
+            : {}),
+        },
+      });
+    }
 
     return await $prismaClient.rosterMember.create({
       data: {
-        crunchId: user.crunchId,
-        name: body.name,
-        email: body.email || null,
-        phone: body.phone || null,
-        birthDate: body.birthDate ? new Date(body.birthDate) : null,
-        notes: body.notes || null,
+        ...base,
         status: "VISITOR",
         visitorFollowUp: {
           create: {
@@ -170,9 +190,9 @@ export class RosterAdapters {
 
   async update(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    this.assertCanManageRoster(user);
     const { id } = request.params as { id: string };
-    await this.findOwned(id, user.crunchId);
+    const member = await this.findOwned(id, user.crunchId);
+    this.assertCanEdit(user, member);
     const body = updateSchema.parse(request.body);
 
     return await $prismaClient.rosterMember.update({
@@ -191,7 +211,7 @@ export class RosterAdapters {
 
   async promote(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    this.assertCanManageRoster(user);
+    this.assertCanChangeStatus(user);
     const { id } = request.params as { id: string };
     const member = await this.findOwned(id, user.crunchId);
 
@@ -228,7 +248,7 @@ export class RosterAdapters {
 
   async markAsLeft(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    this.assertCanManageRoster(user);
+    this.assertCanChangeStatus(user);
     const { id } = request.params as { id: string };
     const member = await this.findOwned(id, user.crunchId);
 
@@ -240,7 +260,7 @@ export class RosterAdapters {
 
   async restore(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    this.assertCanManageRoster(user);
+    this.assertCanChangeStatus(user);
     const { id } = request.params as { id: string };
     const member = await this.findOwned(id, user.crunchId);
 
@@ -274,9 +294,58 @@ export class RosterAdapters {
     return { exists };
   }
 
+  // "Registrar autorização": guarda se a pessoa autorizou contato por
+  // WhatsApp/e-mail (LGPD). Vale para visitante, membro ou desligado - fica no
+  // registro de acolhimento, que e criado quando ainda nao existe.
+  async updateConsent(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    if (!user.access.canEdit && !user.access.canCare) {
+      throw new DomainError("Sem permissão para registrar a autorização de contato");
+    }
+    const { id } = request.params as { id: string };
+    const member = await this.findOwned(id, user.crunchId);
+    const body = consentSchema.parse(request.body);
+    const stage =
+      member.status === "VISITOR" ? "NEW" : member.status === "MEMBER" ? "INTEGRATED" : "CLOSED";
+    const note = [
+      body.note?.trim() || null,
+      body.consentToContact ? "Contato digital autorizado." : "Autorização para contato digital removida.",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    return await $prismaClient.$transaction(async (tx) => {
+      const followUp = await tx.visitorFollowUp.upsert({
+        where: { rosterMemberId: member.id },
+        create: {
+          crunchId: user.crunchId,
+          rosterMemberId: member.id,
+          stage,
+          consentToContact: body.consentToContact,
+        },
+        update: { consentToContact: body.consentToContact },
+        select: { id: true, stage: true, consentToContact: true },
+      });
+
+      await tx.visitorFollowUpActivity.create({
+        data: {
+          followUpId: followUp.id,
+          action: "CONSENT_UPDATED",
+          stage: followUp.stage,
+          note,
+          actorId: user.id,
+        },
+      });
+
+      return { rosterMemberId: member.id, consentToContact: followUp.consentToContact };
+    });
+  }
+
   async remove(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    this.assertCanManageRoster(user);
+    if (!user.access.canDelete) {
+      throw new DomainError("Sem permissão para excluir pessoas");
+    }
     const { id } = request.params as { id: string };
     const member = await this.findOwned(id, user.crunchId);
 

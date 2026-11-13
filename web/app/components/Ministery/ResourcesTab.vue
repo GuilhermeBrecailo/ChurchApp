@@ -3,7 +3,7 @@
     <v-text-field
       v-if="resourceMaterials.length"
       v-model="search"
-      label="Buscar recurso"
+      label="Buscar material"
       prepend-inner-icon="mdi-magnify"
       variant="outlined"
       density="compact"
@@ -13,27 +13,32 @@
       class="mb-4"
     />
 
-    <div class="ministery-section-actions mb-4">
-      <PlanLock v-if="canManageSongs" feature="MINISTRY_RESOURCES">
+    <div v-if="canManage && resourceMaterials.length" class="ministery-section-actions mb-4">
+      <PlanLock feature="MINISTRY_RESOURCES">
         <v-btn
           color="primary"
           class="rounded-lg text-none"
           @click="$emit('create')"
         >
-          <Plus size="18" class="mr-1" /> Novo recurso
+          <Plus size="18" class="mr-1" /> Novo material
         </v-btn>
       </PlanLock>
     </div>
 
-    <v-card
+    <UtilsEmptyState
       v-if="resourceMaterials.length === 0 && !resourcesError"
-      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
+      :icon="FileText"
+      title="Nenhum material ainda"
+      :description="canManage
+        ? 'Guarde aqui o que a equipe consulta: roteiros, manuais, links e PDFs.'
+        : 'Quando o líder guardar roteiros, links ou PDFs, eles aparecem aqui.'"
     >
-      <FileText size="32" color="#9CA3AF" class="mb-3" />
-      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-        Nenhum recurso cadastrado ainda
-      </p>
-    </v-card>
+      <PlanLock v-if="canManage" feature="MINISTRY_RESOURCES">
+        <v-btn color="primary" variant="flat" class="text-none font-weight-bold" @click="$emit('create')">
+          Adicionar material
+        </v-btn>
+      </PlanLock>
+    </UtilsEmptyState>
 
     <div v-else-if="visibleResources.length" class="ministery-card-grid">
       <v-card
@@ -80,7 +85,7 @@
           </v-btn>
         </div>
 
-        <div v-if="canManageSongs" class="ministery-card-actions mt-3">
+        <div v-if="canManage" class="ministery-card-actions mt-3">
           <v-btn
             icon
             variant="text"
@@ -105,15 +110,14 @@
       </v-card>
     </div>
 
-    <v-card
+    <UtilsEmptyState
       v-else-if="resourceMaterials.length"
-      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
-    >
-      <FileText size="32" color="#9CA3AF" class="mb-3" />
-      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-        Nenhum recurso encontrado
-      </p>
-    </v-card>
+      compact
+      variant="no-results"
+      :icon="FileText"
+      title="Nenhum material encontrado"
+      description="Tente outro nome."
+    />
 
     <v-alert
       v-if="resourcesError"
@@ -136,7 +140,7 @@ import { compareListText, normalizeListText } from "../../utils/listOrdering";
 const props = defineProps<{
   resourceMaterials: DepartmentResource[];
   resourcesError: string;
-  canManageSongs: boolean;
+  canManage: boolean;
 }>();
 
 const search = ref("");
@@ -158,9 +162,6 @@ defineEmits<{
 </script>
 
 <style scoped>
-.border-subtle {
-  border: 1px solid #f3f4f6;
-}
 .ministery-section-actions,
 .ministery-card-actions {
   display: flex;
@@ -176,13 +177,13 @@ defineEmits<{
   gap: 12px;
 }
 .ministery-content-card {
-  border: 1px solid #eef2f7;
+  border: 1px solid var(--app-color-border-subtle);
   border-radius: 8px !important;
 }
 .ministery-card-actions {
   justify-content: flex-end;
   gap: 8px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--app-color-border-subtle);
   padding-top: 10px;
 }
 @media (max-width: 420px) {

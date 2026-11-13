@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
@@ -11,8 +11,8 @@ const theme = readFileSync(resolve(root, "app/assets/css/theme.css"), "utf8");
 const directDialogMigrations = [
   "app/components/utils/ConfirmDialog.vue",
   "app/components/Admin/ChurchPlanDialog.vue",
-  "app/components/Scale/DeclineDialog.vue",
-  "app/pages/plans.vue",
+  "app/components/ChurchSettings/WhatsApp.vue",
+  "app/components/Schedule/DeclineSheet.vue",
   "app/pages/prayer.vue",
 ].map((relativePath) => ({
   relativePath,
@@ -20,12 +20,10 @@ const directDialogMigrations = [
 }));
 
 const legacyDialogMigrations = [
-  "app/components/Ministery/DetailsView/index.vue",
-  "app/components/Ministery/NewMusicModal.vue",
-  "app/components/Ministery/NewReferenceModal.vue",
-  "app/pages/cultos/index.vue",
   "app/pages/cultos/[id].vue",
-  "app/pages/pastoral/visitas.vue",
+  "app/components/People/VisitSheet.vue",
+  "app/pages/cultos/[id].vue",
+  "app/components/Schedule/ServicesAgenda.vue",
 ].map((relativePath) => ({
   relativePath,
   content: readFileSync(resolve(root, relativePath), "utf8"),
@@ -33,60 +31,47 @@ const legacyDialogMigrations = [
 
 const longFormOverlays = [
   "app/components/Ministery/ActivityFormDialog.vue",
-  "app/components/Ministery/AssignmentsDialog.vue",
+  "app/components/Ministery/CreateWizard.vue",
+  "app/components/Ministery/PeopleSheet.vue",
   "app/components/Ministery/ResourceFormDialog.vue",
-  "app/components/Ministery/ScheduleFormDialog.vue",
+  "app/components/Ministery/SettingsSheet.vue",
   "app/components/Ministery/SongFormDialog.vue",
   "app/components/Ministery/TaskFormDialog.vue",
-  "app/components/Scale/AssignmentsDialog.vue",
-  "app/components/Scale/FormDialog.vue",
-  "app/pages/admin/configuracoes.vue",
-  "app/pages/admin/mensagens.vue",
-  "app/pages/admin/ministerios.vue",
-  "app/pages/admin/pessoas.vue",
-  "app/pages/admin/relatorios.vue",
-  "app/pages/ministery/index.vue",
-  "app/pages/user.vue",
+  "app/components/ChurchSettings/Horarios.vue",
+  "app/components/Comunicar/Composer.vue",
+  "app/components/Comunicar/TemplateDialog.vue",
+  "app/components/Comunicar/RuleDialog.vue",
+  "app/components/People/RoleEditorSheet.vue",
+  "app/pages/perfil/preferencias.vue",
+  "app/components/Schedule/Editor.vue",
+  "app/components/Schedule/Sheet.vue",
+  "app/components/Schedule/AttendanceSheet.vue",
 ].map((relativePath) => ({
   relativePath,
   content: readFileSync(resolve(root, relativePath), "utf8"),
 }));
 
-// O acesso rápido do Início deixou de abrir o menu "Mais" (055388b); só a
-// barra inferior usa o MoreOptionsOverlay.
-const moreOptionsSources = [
-  "app/components/layouts/bottomNavigation/index.vue",
-].map((relativePath) => ({
-  relativePath,
-  content: readFileSync(resolve(root, relativePath), "utf8"),
-}));
-const moreOptionsComponentPath = resolve(root, "app/components/layouts/MoreOptionsOverlay.vue");
-const moreOptionsComponent = existsSync(moreOptionsComponentPath)
-  ? readFileSync(moreOptionsComponentPath, "utf8")
-  : "";
+// O menu "Mais" (MoreOptionsOverlay) saiu no redesign da navegação: a barra
+// tem no máximo 5 abas e nada fica escondido num menu extra.
 const stableFilterOverlaySources = [
-  "app/components/Ministery/SongPickerDialog.vue",
-  "app/components/layouts/MoreOptionsOverlay.vue",
 ].map((relativePath) => ({
   relativePath,
   content: readFileSync(resolve(root, relativePath), "utf8"),
 }));
 const scaleSelectSources = [
-  "app/components/Scale/FormDialog.vue",
-  "app/components/Scale/AssignmentsDialog.vue",
+  "app/components/Schedule/Editor.vue",
 ].map((relativePath) => ({
   relativePath,
   content: readFileSync(resolve(root, relativePath), "utf8"),
 }));
-const scaleDetails = readFileSync(
-  resolve(root, "app/components/Scale/DetailSheet.vue"),
+const scheduleSheet = readFileSync(
+  resolve(root, "app/components/Schedule/Sheet.vue"),
   "utf8",
 );
 const pdfImportDialog = readFileSync(
   resolve(root, "app/components/Ministery/SongPdfImportDialog.vue"),
   "utf8",
 );
-const onboarding = readFileSync(resolve(root, "app/components/OnboardingModal/index.vue"), "utf8");
 
 const checks = [
   [
@@ -158,25 +143,20 @@ const checks = [
     /\bscrollable\b/,
     content,
   ]),
-  [
-    "MoreOptionsOverlay existe como componente compartilhado",
-    /UtilsResponsiveOverlay/,
-    moreOptionsComponent,
-  ],
   ...stableFilterOverlaySources.map(({ relativePath, content }) => [
     `${relativePath} preserva altura durante filtros`,
     /height:\s*auto;/,
     content,
   ]),
   [
-    "ScaleDetailSheet usa estrutura flexível e altura estável",
-    /display:\s*flex;[\s\S]*?height:\s*min\(92svh,\s*920px\);/,
-    scaleDetails,
+    "Folha da escala usa o miolo padrão (UtilsOverlayCard)",
+    /<UtilsOverlayCard[\s\S]*<\/UtilsOverlayCard>/,
+    scheduleSheet,
   ],
   [
-    "ScaleDetailSheet usa tokens de superfície",
-    /background:\s*var\(--app-color-surface\)/,
-    scaleDetails,
+    "Folha da escala usa tokens de superfície",
+    /background:\s*var\(--app-color-surface-muted\)/,
+    scheduleSheet,
   ],
   ...scaleSelectSources.map(({ relativePath, content }) => [
     `${relativePath} configura menu de select fora do sheet`,
@@ -207,21 +187,6 @@ const checks = [
     "importacao PDF possui rodape de acoes dedicado",
     /pdf-import-actions/,
     pdfImportDialog,
-  ],
-  ...moreOptionsSources.map(({ relativePath, content }) => [
-    `${relativePath} usa MoreOptionsOverlay`,
-    /MoreOptionsOverlay/,
-    content,
-  ]),
-  [
-    "onboarding usa dots acionáveis",
-    /<button[\s\S]*class="onboarding-dot"[\s\S]*aria-label=/,
-    onboarding,
-  ],
-  [
-    "onboarding respeita reduced motion",
-    /prefers-reduced-motion:\s*reduce/,
-    onboarding,
   ],
 ];
 

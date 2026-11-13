@@ -233,7 +233,7 @@ watch(
 
 .schedule-copy-item-meta {
   color: var(--app-color-text-soft);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1.35;
 }

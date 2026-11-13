@@ -2,7 +2,6 @@
   <v-app :theme="themeName" :class="themeClass">
     <v-locale-provider>
       <LayoutsMain>
-        <OnboardingModal />
         <div v-if="user?.isDemoUser" class="demo-banner">
           <v-icon size="15" class="mr-1">mdi-test-tube</v-icon>
           Você está no <strong>modo demo</strong> — os dados são resetados diariamente
@@ -11,6 +10,8 @@
           <MotionPageTransition />
         </v-container>
       </LayoutsMain>
+      <UtilsToastHost />
+      <ScheduleSheetHost />
     </v-locale-provider>
   </v-app>
 </template>
@@ -18,13 +19,20 @@
 <script setup lang="ts">
 const { themeClass, themeName } = useThemeMode();
 const { user } = useAuth();
+
+// Cada tela dá só o próprio nome (useHead({ title: "Escalas" })); aqui vira
+// "Escalas · ChurchApp" na aba do navegador e no leitor de tela.
+useHead({
+  titleTemplate: (title?: string) =>
+    !title || title === "ChurchApp" ? "ChurchApp" : title.includes("ChurchApp") ? title : `${title} · ChurchApp`,
+});
 </script>
 
 <style scoped>
 .demo-banner {
   background: #92400e;
   color: #fef3c7;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   text-align: center;
   padding: 5px 16px;

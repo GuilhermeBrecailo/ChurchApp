@@ -6,7 +6,7 @@
              familiaridade com apps não reconhece o ícone sozinho. -->
         <v-btn
           v-bind="props"
-          variant="tonal"
+          variant="text"
           color="primary"
           size="small"
           class="page-help-trigger text-none"
@@ -212,7 +212,8 @@ const whatsappHref = computed(() => {
 
 .page-help-trigger {
   flex: 0 0 auto;
-  min-height: 36px !important;
+  min-height: 44px !important;
+  font-size: 0.875rem !important;
   padding-inline: 12px !important;
   border-radius: 999px !important;
   font-weight: 700 !important;
@@ -390,7 +391,7 @@ const whatsappHref = computed(() => {
 }
 
 .page-help-card-desc {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--app-color-text-muted);
   line-height: 1.45;
 }
@@ -416,7 +417,7 @@ const whatsappHref = computed(() => {
 
 .page-help-whatsapp-cta {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--app-color-accent);
 }

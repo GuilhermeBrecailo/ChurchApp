@@ -1,16 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  getAllNavigationItems,
-  getBottomNavigationItems,
-  getChurchHubItems,
-  getMoreNavigationItems,
-  getQuickAccessItems,
-  isNavigationItemActive,
+  getManagementItems,
+  getNavPreviewLabel,
+  getOwnerTab,
+  getPrimaryTabs,
+  resolveNavTier,
   type RoleNavigationUser,
 } from "../app/utils/roleNavigation";
 
-const churchUser = (overrides: Partial<RoleNavigationUser>): RoleNavigationUser => ({
+const churchUser = (overrides: Partial<RoleNavigationUser> = {}): RoleNavigationUser => ({
   hasChurch: true,
   role: "MEMBER",
   is_admin: false,
@@ -18,345 +17,252 @@ const churchUser = (overrides: Partial<RoleNavigationUser>): RoleNavigationUser 
   ...overrides,
 });
 
-const labels = (items: { label: string }[]) => items.map((item) => item.label);
-const routes = (items: { route: string }[]) => items.map((item) => item.route);
+const pastor = (overrides: Partial<RoleNavigationUser> = {}) =>
+  churchUser({ role: "PASTOR", ...overrides });
 
-describe("role navigation", () => {
-	it("prioriza cuidado, cultos, escalas e mais para pastor", () => {
-		const items = getBottomNavigationItems(churchUser({ role: "PASTOR" }));
+const ministryLeader = churchUser({
+  roles: [{ scope: "MINISTRY", departmentId: "louvor", permissions: ["SCHEDULE_CREATE", "SONG_EDIT"] }],
+});
 
-		assert.deepEqual(labels(items), [
-			"Início",
-			"Pastoral",
-			"Cultos",
-			"Escalas",
-			"Mais",
-		]);
-		assert.deepEqual(routes(items), [
-			"/",
-			"/pastoral",
-			"/cultos",
-			"/scale",
-			"",
-		]);
-	});
+const peopleManager = churchUser({
+  roles: [{ scope: "CHURCH", departmentId: null, permissions: ["MEMBER_CREATE", "MEMBER_EDIT"] }],
+});
 
-  it("mostra execucao delegada para lider com cuidado pastoral", () => {
-    const items = getBottomNavigationItems(
-      churchUser({
-        roles: [
-          {
-            scope: "CHURCH",
-            departmentId: null,
-            permissions: ["PASTORAL_CARE_MANAGE"],
-          },
-        ],
-      }),
-    );
+const careOnly = churchUser({
+  roles: [{ scope: "CHURCH", departmentId: null, permissions: ["PASTORAL_CARE_MANAGE"] }],
+});
 
-    assert.deepEqual(labels(items), [
-      "Início",
-      "Ministérios",
-		"Escalas",
-		"Cultos",
-		"Mais",
-	]);
-		assert.deepEqual(routes(items), [
-			"/",
-			"/ministery",
-			"/scale",
-			"/cultos",
-			"",
-		]);
+const prayerModerator = churchUser({
+  roles: [{ scope: "CHURCH", departmentId: null, permissions: ["PRAYER_MANAGE"] }],
+});
 
-		assert.ok(getMoreNavigationItems(churchUser({
-			roles: [
-				{
-					scope: "CHURCH",
-					departmentId: null,
-					permissions: ["PASTORAL_CARE_MANAGE"],
-				},
-			],
-		})).some((entry) => entry.key === "visits"));
+const publisher = churchUser({
+  roles: [{ scope: "CHURCH", departmentId: null, permissions: ["ANNOUNCEMENT_PUBLISH"] }],
+});
+
+const labels = (user: RoleNavigationUser | null) => getPrimaryTabs(user).map((tab) => tab.label);
+const managementKeys = (user: RoleNavigationUser) =>
+  getManagementItems(user).flatMap((group) => group.items.map((item) => item.key));
+
+describe("abas por nível", () => {
+  it("membro: Início · Escalas · Igreja · Perfil", () => {
+    assert.equal(resolveNavTier(churchUser()), "member");
+    assert.deepEqual(labels(churchUser()), ["Início", "Escalas", "Igreja", "Perfil"]);
   });
 
-  it("mantem membro focado em participacao e perfil", () => {
-    const items = getBottomNavigationItems(churchUser({}));
-
-    assert.deepEqual(labels(items), [
-      "Início",
-      "Cultos",
-      "Escalas",
-      "Ministérios",
-      "Mais",
-    ]);
+  it("líder de ministério: ganha a aba Ministérios", () => {
+    assert.equal(resolveNavTier(ministryLeader), "leader");
+    assert.deepEqual(labels(ministryLeader), ["Início", "Escalas", "Igreja", "Ministérios", "Perfil"]);
   });
 
-  it("prioriza ministerios e escalas para lider de ministerio", () => {
+  it("pastor: ganha a aba Gestão no lugar de Ministérios", () => {
+    assert.equal(resolveNavTier(pastor()), "manager");
+    assert.deepEqual(labels(pastor()), ["Início", "Escalas", "Igreja", "Gestão", "Perfil"]);
+    assert.equal(getPrimaryTabs(pastor())[3]?.route, "/admin");
+  });
+
+  it("quem tem qualquer ferramenta de gestão da igreja vê Gestão", () => {
+    for (const user of [peopleManager, careOnly, prayerModerator, publisher]) {
+      assert.deepEqual(labels(user), ["Início", "Escalas", "Igreja", "Gestão", "Perfil"]);
+    }
+  });
+
+  it("líder que também gerencia pessoas fica com Gestão (não duas abas)", () => {
     const user = churchUser({
       roles: [
-        {
-          scope: "MINISTRY",
-          departmentId: "music",
-          permissions: ["SCHEDULE_CREATE", "SONG_EDIT"],
-        },
+        ...(ministryLeader.roles ?? []),
+        ...(peopleManager.roles ?? []),
       ],
     });
-    const items = getBottomNavigationItems(user);
+    assert.deepEqual(labels(user), ["Início", "Escalas", "Igreja", "Gestão", "Perfil"]);
+  });
 
-    assert.deepEqual(labels(items), [
+  it("sem igreja não há barra", () => {
+    assert.deepEqual(labels(churchUser({ hasChurch: false })), []);
+    assert.deepEqual(labels(churchUser({ hasChurch: false, role: "PASTOR" })), []);
+    assert.deepEqual(labels(null), []);
+  });
+
+  it("admin da plataforma sem igreja: Início · Plataforma · Perfil", () => {
+    const admin = churchUser({ hasChurch: false, is_admin: true, role: "SUPER_ADMIN" });
+    assert.deepEqual(labels(admin), ["Início", "Plataforma", "Perfil"]);
+  });
+
+  it("não existe mais a aba Mais", () => {
+    for (const user of [churchUser(), ministryLeader, pastor()]) {
+      assert.ok(!labels(user).includes("Mais"));
+    }
+  });
+});
+
+describe("pré-visualização (navPreviewRole)", () => {
+  it("pastor vendo como membro ou líder", () => {
+    assert.deepEqual(labels(pastor({ navPreviewRole: "MEMBRO" })), ["Início", "Escalas", "Igreja", "Perfil"]);
+    assert.deepEqual(labels(pastor({ navPreviewRole: "LIDER" })), [
       "Início",
-      "Ministérios",
       "Escalas",
-      "Cultos",
-      "Mais",
-    ]);
-
-    const moreKeys = getMoreNavigationItems(user).map((entry) => entry.key);
-    assert.ok(moreKeys.includes("team"));
-    assert.ok(moreKeys.includes("scale"));
-    assert.ok(moreKeys.includes("cults"));
-  });
-
-  it("leva gestor de membros direto para pessoas sem expor cargos globais", () => {
-    const user = churchUser({
-      roles: [
-        {
-          scope: "CHURCH",
-          departmentId: null,
-          permissions: ["MEMBER_CREATE", "MEMBER_EDIT"],
-        },
-      ],
-    });
-
-    assert.deepEqual(labels(getBottomNavigationItems(user)), [
-		"Início",
-		"Pessoas",
-		"Escalas",
-		"Cultos",
-		"Mais",
-	]);
-
-    const moreKeys = getMoreNavigationItems(user).map((entry) => entry.key);
-    assert.ok(moreKeys.includes("churchAdmin"));
-    assert.ok(moreKeys.includes("settings"));
-    assert.ok(!moreKeys.includes("rolesManagement"));
-    assert.ok(!moreKeys.includes("messages"));
-  });
-
-  it("mantem ministerios no menu mais do lider que gerencia pessoas", () => {
-    const user = churchUser({
-      canManageMembers: true,
-      roles: [
-        {
-          scope: "MINISTRY",
-          departmentId: "music",
-          permissions: ["SCHEDULE_CREATE", "MINISTRY_MEMBER_MANAGE"],
-        },
-      ],
-    });
-
-    const moreKeys = getMoreNavigationItems(user).map((entry) => entry.key);
-
-    assert.ok(moreKeys.includes("team"));
-  });
-
-  it("prioriza conteudo para comunicacao sem liberar admin pastoral", () => {
-    const user = churchUser({
-      roles: [
-        {
-          scope: "CHURCH",
-          departmentId: null,
-          permissions: ["CONTENT_PUBLISH", "ANNOUNCEMENT_PUBLISH"],
-        },
-      ],
-    });
-
-    assert.deepEqual(labels(getBottomNavigationItems(user)), [
-		"Início",
-		"Conteúdo",
-		"Escalas",
-		"Cultos",
-		"Mais",
-	]);
-
-    const moreKeys = getMoreNavigationItems(user).map((entry) => entry.key);
-    assert.ok(!moreKeys.includes("churchAdmin"));
-    assert.ok(!moreKeys.includes("messages"));
-    assert.ok(!moreKeys.includes("rolesManagement"));
-  });
-
-	it("mantem acesso rapido curto e focado no pastor", () => {
-		const items = getQuickAccessItems(churchUser({ role: "PASTOR" }));
-
-		assert.deepEqual(labels(items), [
-			"Pastoral",
-			"Escalas",
-			"Cultos",
-			"Pessoas",
-		]);
-		assert.ok(!labels(items).includes("Mais"));
-	});
-
-  it("monta hub da igreja com prioridade pastoral para pastor", () => {
-    const items = getChurchHubItems(churchUser({ role: "PASTOR" }));
-
-		assert.deepEqual(labels(items).slice(0, 5), [
-			"Cuidado pastoral",
-			"Pessoas",
-      "Mensagens",
-      "Cultos",
-      "Relatórios",
-    ]);
-  });
-
-  it("pastor com preview de membro ve a navegacao de membro sem perder o preview", () => {
-    const items = getBottomNavigationItems(
-      churchUser({ role: "PASTOR", navPreviewRole: "MEMBRO" }),
-    );
-
-    assert.deepEqual(labels(items), [
-      "Início",
-      "Cultos",
-      "Escalas",
+      "Igreja",
       "Ministérios",
-      "Mais",
+      "Perfil",
     ]);
+    assert.deepEqual(labels(pastor({ navPreviewRole: "PASTOR" })), labels(pastor()));
   });
 
-  it("pastor com preview de lider ve a navegacao principal de lider", () => {
-    const items = getBottomNavigationItems(
-      churchUser({ role: "PASTOR", navPreviewRole: "LIDER" }),
-    );
-
-    assert.deepEqual(labels(items), [
-      "Início",
-      "Ministérios",
-      "Escalas",
-      "Cultos",
-      "Mais",
-    ]);
+  it("aviso 'Vendo como' só quando a pré-visualização muda algo", () => {
+    assert.equal(getNavPreviewLabel(pastor({ navPreviewRole: "MEMBRO" })), "Membro");
+    assert.equal(getNavPreviewLabel(pastor({ navPreviewRole: "LIDER" })), "Líder");
+    assert.equal(getNavPreviewLabel(pastor({ navPreviewRole: "PASTOR" })), null);
+    assert.equal(getNavPreviewLabel(pastor()), null);
   });
 
-  it("membro sem privilegio real ignora navPreviewRole", () => {
-    const items = getBottomNavigationItems(
-      churchUser({ navPreviewRole: "PASTOR" }),
-    );
-
-    assert.deepEqual(labels(items), [
-      "Início",
-      "Cultos",
-      "Escalas",
-      "Ministérios",
-      "Mais",
-    ]);
+  it("quem não é pastor/admin não consegue se pré-visualizar", () => {
+    const sneaky = churchUser({ navPreviewRole: "PASTOR" });
+    assert.equal(resolveNavTier(sneaky), "member");
+    assert.equal(getNavPreviewLabel(churchUser({ navPreviewRole: "MEMBRO" })), null);
   });
 
-  it("coloca pessoas e administracao no menu mais do pastor", () => {
-    const items = getMoreNavigationItems(churchUser({ role: "PASTOR" }));
-    const keys = items.map((entry) => entry.key);
-
-    assert.ok(keys.includes("people"));
-    assert.ok(keys.includes("churchAdmin"));
-    assert.ok(keys.includes("rolesManagement"));
-    assert.ok(keys.includes("settings"));
-    assert.ok(keys.includes("profile"));
-  });
-
-  it("ordena o menu mais do pastor em ordem alfabetica pelo titulo", () => {
-    const items = getMoreNavigationItems(churchUser({ role: "PASTOR" }));
-
+  it("a pré-visualização não muda o acesso real aos itens de Gestão", () => {
     assert.deepEqual(
-      items.map((entry) => entry.title),
-      [
-		"Administração da igreja",
-		"Cadastro da igreja",
-		"Cargos e permissões",
-		"Conteúdo",
-		"Cuidado pastoral",
-		"Cultos",
-		"Escalas",
-		"Início",
-		"Integrações e página pública",
-		"Mensagens",
-		"Meu perfil",
-		"Ministérios",
-		"Oração",
-		"Pessoas",
-		"Publicações",
-		"Relatórios",
-		"Visitas",
-      ],
+      managementKeys(pastor({ navPreviewRole: "MEMBRO" })),
+      managementKeys(pastor()),
     );
   });
+});
 
-  it("nao marca administracao geral como ativa em subrotas especificas do admin", () => {
-    const items = getMoreNavigationItems(churchUser({ role: "PASTOR" }));
-    const churchAdmin = items.find((entry) => entry.key === "churchAdmin");
-
-    assert.ok(churchAdmin);
-    assert.equal(isNavigationItemActive(churchAdmin, "/admin"), true);
-    assert.equal(isNavigationItemActive(churchAdmin, "/admin/relatorios"), false);
-  });
-
-  it("nao mostra administracao no menu mais do membro", () => {
-    const items = getMoreNavigationItems(churchUser({}));
-    const keys = items.map((entry) => entry.key);
-
-    assert.ok(keys.includes("profile"));
-    assert.ok(!keys.includes("people"));
-    assert.ok(!keys.includes("churchAdmin"));
-    assert.ok(!keys.includes("settings"));
-    assert.ok(!keys.includes("platformAdmin"));
-  });
-
-  it("nao mostra atalhos de igreja para admin da plataforma sem igreja", () => {
-    const items = getMoreNavigationItems({
-      hasChurch: false,
-      role: "ADMIN",
-      is_admin: true,
-      roles: [],
-    });
-    const keys = items.map((entry) => entry.key);
-
-    assert.deepEqual(keys, ["platformAdmin", "home", "profile"]);
-  });
-
-  it("ordena o menu mais do membro em ordem alfabetica pelo titulo", () => {
-    const items = getMoreNavigationItems(churchUser({}));
-
+describe("itens de Gestão", () => {
+  it("pastor vê todos os grupos, na ordem", () => {
+    const groups = getManagementItems(pastor());
     assert.deepEqual(
-      items.map((entry) => entry.title),
-      ["Conteúdo", "Cultos", "Escalas", "Início", "Meu perfil", "Ministérios", "Oração"],
+      groups.map((group) => group.label),
+      ["Pessoas e cuidado", "Ministérios e cultos", "Comunicação", "Igreja"],
     );
-  });
-
-  it("lista completa do pastor nao tem duplicatas e cobre tudo", () => {
-    const items = getAllNavigationItems(churchUser({ role: "PASTOR" }));
-    const keys = items.map((entry) => entry.key);
-
-    assert.equal(new Set(keys).size, keys.length, "nao deve ter chaves repetidas");
-    assert.ok(keys.includes("messages"));
-    assert.ok(keys.includes("rolesManagement"));
-		assert.ok(keys.includes("settings"));
-		assert.ok(keys.includes("people"));
-		assert.ok(keys.includes("profile"));
-		assert.ok(keys.includes("content"));
-		assert.ok(keys.includes("prayer"));
-		assert.ok(keys.includes("messages"));
-		assert.ok(keys.includes("ministries"));
-		assert.ok(!keys.includes("churchHub"));
-  });
-
-  it("monta hub da igreja sem administracao para membro", () => {
-    const items = getChurchHubItems(churchUser({}));
-
-    assert.deepEqual(labels(items), [
-      "Cultos",
-      "Escalas",
-      "Ministérios",
-      "Conteúdo",
-      "Oração",
+    assert.deepEqual(managementKeys(pastor()), [
+      "people",
+      "care",
+      "prayerReview",
+      "ministries",
+      "cults",
+      "communicate",
+      "churchSettings",
+      "reports",
     ]);
+  });
+
+  it("cada pessoa só vê o que pode usar", () => {
+    assert.deepEqual(managementKeys(peopleManager), ["people"]);
+    assert.deepEqual(managementKeys(careOnly), ["people", "care"]);
+    assert.deepEqual(managementKeys(prayerModerator), ["prayerReview"]);
+    assert.deepEqual(managementKeys(publisher), ["communicate"]);
+    assert.deepEqual(managementKeys(churchUser()), []);
+  });
+
+  it("admin da plataforma com igreja chega à Plataforma pela Gestão", () => {
+    const admin = churchUser({ is_admin: true, role: "SUPER_ADMIN" });
+    assert.ok(managementKeys(admin).includes("platform"));
+    assert.equal(getOwnerTab(admin, "/platform-admin"), "management");
+  });
+});
+
+describe("aba dona de cada rota", () => {
+  it("rotas de cada aba", () => {
+    const user = pastor();
+    assert.equal(getOwnerTab(user, "/"), "home");
+    assert.equal(getOwnerTab(user, "/notifications"), "home");
+    assert.equal(getOwnerTab(user, "/scale?aba=igreja"), "scale");
+    assert.equal(getOwnerTab(user, "/cultos/abc"), "scale");
+    assert.equal(getOwnerTab(user, "/igreja"), "church");
+    assert.equal(getOwnerTab(user, "/content/devotionals/1"), "church");
+    assert.equal(getOwnerTab(user, "/prayer"), "church");
+    assert.equal(getOwnerTab(user, "/admin"), "management");
+    assert.equal(getOwnerTab(user, "/admin/relatorios"), "management");
+    assert.equal(getOwnerTab(user, "/pessoas/123"), "management");
+    assert.equal(getOwnerTab(user, "/configuracoes/whatsapp"), "management");
+    assert.equal(getOwnerTab(user, "/user"), "profile");
+    assert.equal(getOwnerTab(user, "/perfil/preferencias"), "profile");
+  });
+
+  it("/ministery é da Igreja (membro), de Ministérios (líder) e da Gestão (pastor)", () => {
+    assert.equal(getOwnerTab(churchUser(), "/ministery/abc"), "church");
+    assert.equal(getOwnerTab(ministryLeader, "/ministery/abc?aba=escalas"), "ministries");
+    assert.equal(getOwnerTab(pastor(), "/ministery"), "management");
+  });
+
+  it("não confunde prefixos parecidos", () => {
+    assert.equal(getOwnerTab(pastor(), "/scale-antigo"), null);
+    assert.equal(getOwnerTab(churchUser(), "/admin"), null);
+  });
+
+  it("sem igreja nenhuma aba é dona", () => {
+    assert.equal(getOwnerTab(churchUser({ hasChurch: false }), "/"), null);
+  });
+});
+
+describe("invariantes", () => {
+  const users: RoleNavigationUser[] = [
+    churchUser(),
+    ministryLeader,
+    peopleManager,
+    careOnly,
+    prayerModerator,
+    publisher,
+    pastor(),
+    pastor({ navPreviewRole: "MEMBRO" }),
+    pastor({ navPreviewRole: "LIDER" }),
+    churchUser({ is_admin: true, role: "SUPER_ADMIN" }),
+    churchUser({ canManageMembers: true }),
+    churchUser({ permissions: ["SCHEDULE_CREATE"] }),
+  ];
+
+  it("com igreja, a barra tem de 3 a 5 abas, começa em Início e termina em Perfil", () => {
+    for (const user of users) {
+      const tabs = getPrimaryTabs(user);
+      assert.ok(tabs.length >= 3 && tabs.length <= 5, `${tabs.length} abas`);
+      assert.equal(tabs[0]?.key, "home");
+      assert.equal(tabs.at(-1)?.key, "profile");
+    }
+  });
+
+  it("as 3 primeiras abas são sempre as mesmas (só a 4ª muda)", () => {
+    for (const user of users) {
+      assert.deepEqual(
+        getPrimaryTabs(user).slice(0, 3).map((tab) => tab.key),
+        ["home", "scale", "church"],
+      );
+    }
+  });
+
+  it("sem chaves ou rotas repetidas", () => {
+    for (const user of users) {
+      const tabs = getPrimaryTabs(user);
+      assert.equal(new Set(tabs.map((tab) => tab.key)).size, tabs.length);
+      assert.equal(new Set(tabs.map((tab) => tab.route)).size, tabs.length);
+
+      const items = getManagementItems(user).flatMap((group) => group.items);
+      assert.equal(new Set(items.map((item) => item.key)).size, items.length);
+      assert.equal(new Set(items.map((item) => item.route)).size, items.length);
+    }
+  });
+
+  it("cada aba é dona da própria rota", () => {
+    for (const user of users) {
+      for (const tab of getPrimaryTabs(user)) {
+        assert.equal(getOwnerTab(user, tab.route), tab.key, `${tab.key} em ${tab.route}`);
+      }
+    }
+  });
+
+  it("todo item de Gestão tem uma aba dona (para quem vê a aba Gestão)", () => {
+    for (const user of users.filter((entry) => resolveNavTier(entry) === "manager")) {
+      for (const item of getManagementItems(user).flatMap((group) => group.items)) {
+        assert.ok(getOwnerTab(user, item.route), `${item.route} sem aba`);
+      }
+    }
+  });
+
+  it("quem vê a aba Gestão tem pelo menos um item nela", () => {
+    for (const user of users.filter((entry) => resolveNavTier(entry) === "manager")) {
+      if (user.navPreviewRole) continue;
+      assert.ok(getManagementItems(user).length > 0);
+    }
   });
 });

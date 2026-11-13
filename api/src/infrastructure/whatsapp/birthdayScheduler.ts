@@ -2,6 +2,7 @@ import { $prismaClient } from "../../../config/database";
 import { createLogAndDispatch } from "../../interfaces/adapters/messageAdapters";
 import { pushNotificationService } from "../notifications/PushNotificationService";
 import { WhatsAppServiceClient } from "./WhatsAppServiceClient";
+import { canReceiveBulkMessage, CONTACT_CONSENT_SELECT } from "../../interfaces/utils/contactConsent";
 
 const TICK_MS = 60_000;
 
@@ -18,7 +19,13 @@ function hasReachedNotifyTime(notifyTime: string, now: Date): boolean {
   return nowMinutes >= hours * 60 + minutes;
 }
 
-type TodaysMember = { id: string; name: string; phone: string | null; crunchId: string };
+type TodaysMember = {
+  id: string;
+  name: string;
+  phone: string | null;
+  crunchId: string;
+  canReceiveMessage: boolean;
+};
 
 // Roda a cada minuto, mas so faz algo a partir do notifyTime de cada igreja
 // (default "08:00") e uma unica vez por dia por igreja (lastNotifiedAt em
@@ -31,7 +38,7 @@ export async function checkBirthdays(now: Date = new Date()) {
 
   const candidates = await $prismaClient.rosterMember.findMany({
     where: { birthDate: { not: null }, status: { in: ["VISITOR", "MEMBER"] } },
-    select: { id: true, name: true, phone: true, birthDate: true, crunchId: true },
+    select: { id: true, name: true, phone: true, birthDate: true, crunchId: true, ...CONTACT_CONSENT_SELECT },
   });
 
   const todaysMembers = candidates.filter((member) => {
@@ -42,7 +49,13 @@ export async function checkBirthdays(now: Date = new Date()) {
   const byChurch = new Map<string, TodaysMember[]>();
   for (const member of todaysMembers) {
     const list = byChurch.get(member.crunchId) ?? [];
-    list.push({ id: member.id, name: member.name, phone: member.phone, crunchId: member.crunchId });
+    list.push({
+      id: member.id,
+      name: member.name,
+      phone: member.phone,
+      crunchId: member.crunchId,
+      canReceiveMessage: canReceiveBulkMessage(member),
+    });
     byChurch.set(member.crunchId, list);
   }
 
@@ -87,7 +100,7 @@ async function notifyPastors(crunchId: string, members: TodaysMember[]) {
     {
       title: members.length === 1 ? "1 aniversariante hoje" : `${members.length} aniversariantes hoje`,
       body: members.map((member) => member.name).join(", "),
-      url: "/admin/mensagens",
+      url: "/comunicar?aba=automaticos",
       type: "birthday_today",
     },
   );
@@ -100,12 +113,17 @@ async function sendBirthdayMessages(crunchId: string, templateId: string, member
   const template = await $prismaClient.messageTemplate.findUnique({ where: { id: templateId } });
   if (!template || template.crunchId !== crunchId) return;
 
+  // Visitante sem autorizacao de contato nao recebe o WhatsApp (LGPD) - o
+  // pastor continua sendo avisado por push com todos os nomes.
+  const recipients = members.filter((member) => member.canReceiveMessage);
+  if (recipients.length === 0) return;
+
   await createLogAndDispatch({
     crunchId,
     templateId: template.id,
     templateBody: template.body,
     audience: "BIRTHDAY",
-    recipients: members.map((member) => ({ id: member.id, name: member.name, phone: member.phone })),
+    recipients: recipients.map((member) => ({ id: member.id, name: member.name, phone: member.phone })),
   });
 }
 

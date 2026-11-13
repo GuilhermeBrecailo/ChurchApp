@@ -28,8 +28,16 @@ export interface PendingMember {
 interface CreateMemberDTO {
   name: string;
   email: string;
-  phone: string;
-  password: string;
+  phone?: string;
+  /** Sem senha, a API gera uma senha temporária e devolve em temporaryPassword. */
+  password?: string;
+  /** Liga a conta a esta pessoa do rol em vez de criar outra. */
+  rosterMemberId?: string;
+}
+
+export interface CreatedMember extends ChurchMember {
+  rosterMemberId: string | null;
+  temporaryPassword: string | null;
 }
 
 interface UpdateMemberDTO {
@@ -76,8 +84,8 @@ export const useMembers = () => {
 
   const createMember = async (
     member: CreateMemberDTO,
-  ): Promise<ApiResponse<ChurchMember>> => {
-    return await $customFetch<ChurchMember>(
+  ): Promise<ApiResponse<CreatedMember>> => {
+    return await $customFetch<CreatedMember>(
       `${config.public.URL_BACKEND}/api/church/members`,
       {
         method: "POST",
@@ -152,7 +160,18 @@ export const useMembers = () => {
     );
   };
 
+  // Gera uma senha temporária; a pessoa troca no próximo acesso.
+  const resetMemberPassword = async (
+    memberId: string,
+  ): Promise<ApiResponse<{ success: boolean; temporaryPassword: string }>> => {
+    return await $customFetch<{ success: boolean; temporaryPassword: string }>(
+      `${config.public.URL_BACKEND}/api/church/members/${memberId}/reset-password`,
+      { method: "POST", headers: authHeadersNoBody() },
+    );
+  };
+
   return {
+    resetMemberPassword,
     getMembers,
     createMember,
     updateMemberPermissions,

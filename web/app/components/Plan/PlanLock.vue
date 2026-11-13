@@ -39,7 +39,7 @@ const locked = computed(() => !hasFeature(props.feature));
 const label = computed(() => PLAN_FEATURE_LABELS[props.feature]);
 
 function goToPlans() {
-  router.push("/plans");
+  router.push("/configuracoes/plano");
 }
 </script>
 
@@ -78,7 +78,7 @@ function goToPlans() {
   gap: 3px;
   background: #92400e;
   color: #fef3c7;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.03em;
   padding: 2px 6px;

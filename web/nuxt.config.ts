@@ -13,13 +13,60 @@ const hasNuxtModule = (moduleName: string) => {
   }
 };
 
+// Modo demonstração (web/demo/README.md): NUXT_PUBLIC_DEMO=1 liga a API
+// falsa no navegador; DEMO_BUILD=1 gera um site estático (SPA, hash router,
+// caminhos relativos) que abre de qualquer pasta/subcaminho. Sem essas
+// variáveis nada abaixo muda o build normal.
+const isDemo = ["1", "true"].includes(String(process.env.NUXT_PUBLIC_DEMO ?? "").toLowerCase());
+const isDemoBuild = process.env.DEMO_BUILD === "1";
+
 const modules = [
   "@nuxtjs/tailwindcss",
   "vuetify-nuxt-module",
   "motion-v/nuxt",
-  ...(hasNuxtModule("@nuxtjs/sitemap") ? ["@nuxtjs/sitemap"] : []),
+  // Sitemap consulta a API real ao gerar - não faz sentido na demo.
+  ...(hasNuxtModule("@nuxtjs/sitemap") && !isDemo ? ["@nuxtjs/sitemap"] : []),
   deferVuetifyMdiStyles,
 ];
+
+// Na demo tudo roda no navegador (não há API para o SSR chamar).
+const demoOverrides = isDemo
+  ? {
+      ssr: false,
+      routeRules: { "/**": { ssr: false } },
+    }
+  : {};
+
+// Site estático: hash router (#/rota) e assets com caminho relativo ao
+// index.html, para funcionar servido de qualquer subcaminho. O HTML gerado
+// troca "/_nuxt/..." por "./_nuxt/..." e, antes do app iniciar, ajusta
+// app.baseURL para a pasta onde o index.html está - daí os chunks carregados
+// depois (buildAssetsURL) e o hash router usam o subcaminho certo.
+const DEMO_BASE_URL_SCRIPT =
+  "(function(){var c=window.__NUXT__&&window.__NUXT__.config;if(!c||!c.app)return;" +
+  "c.app.baseURL=location.pathname.replace(/[^/]*$/,'')||'/';c.app.cdnURL='';})();";
+
+const relativizeDemoHtml = (html: string) =>
+  html
+    .replace(/(href|src)="\/(?!\/)/g, '$1="./')
+    .replace("</body>", `<script>${DEMO_BASE_URL_SCRIPT}</script></body>`);
+
+const demoBuildOverrides = isDemoBuild
+  ? {
+      router: { options: { hashMode: true } },
+      nitro: {
+        // .br/.gz não servem para um site estático aberto de qualquer lugar.
+        compressPublicAssets: false,
+        hooks: {
+          "prerender:generate"(route: { fileName?: string; contents?: unknown }) {
+            if (route.fileName?.endsWith(".html") && typeof route.contents === "string") {
+              route.contents = relativizeDemoHtml(route.contents);
+            }
+          },
+        },
+      },
+    }
+  : {};
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
@@ -44,6 +91,9 @@ export default defineNuxtConfig({
       "/admin/**",
       "/user",
       "/settings",
+      "/configuracoes/**",
+      "/comunicar",
+      "/perfil/**",
       "/notifications",
       "/scale/**",
       "/ministery/**",
@@ -54,6 +104,20 @@ export default defineNuxtConfig({
     sources: ["/api/__sitemap__/churches"],
   },
   css: ["~/assets/css/theme.css"],
+  // iPhones antigos: o Vuetify 4 já exige iOS 15.4 (@layer). Para quem está
+  // entre 15.4 e 16.x (iPhone 6s/7/SE 1ª geração e quem não atualizou):
+  // - CSS: cor de reserva para color-mix() (postcss/color-mix-fallback.cjs);
+  // - JS: código gerado compatível com Safari 15 (o padrão do Vite 7 é 16).
+  postcss: {
+    plugins: {
+      "./postcss/color-mix-fallback.cjs": {},
+    },
+  },
+  vite: {
+    build: {
+      target: ["es2020", "safari15", "ios15", "chrome100", "edge100", "firefox100"],
+    },
+  },
   imports: {
     dirs: ["../composables"],
   },
@@ -83,6 +147,31 @@ export default defineNuxtConfig({
     // schema.org que useSeoMeta/useHead geram; sem isso cai na regra geral
     // "/**": ssr:false e vira uma casca vazia pra qualquer bot que nao roda JS.
     "/comece": { ssr: true },
+    // Navegação nova: o conteúdo (versículo, Bíblia, devocionais, playlist)
+    // fica dentro da aba Igreja.
+    "/content": { redirect: "/igreja" },
+    // Configurações, Comunicar e Perfil (redesign): endereços antigos.
+    // /admin/configuracoes?secao=… é uma página de redirecionamento própria
+    // (precisa traduzir a seção), ver app/pages/admin/configuracoes.vue.
+    "/settings": { redirect: "/configuracoes/cadastro" },
+    "/plans": { redirect: "/configuracoes/plano" },
+    "/admin/mensagens": { redirect: "/comunicar" },
+    "/admin/publicacoes": { redirect: "/comunicar" },
+    // Pessoas num lugar só (redesign): as telas antigas de Admin › Pessoas
+    // e do painel pastoral viraram /pessoas, /pessoas/[id] e /pessoas/cuidado.
+    // /admin/pessoas?secao=cargos chega em /pessoas?secao=cargos e a página
+    // manda para /pessoas/cargos; /pastoral/pessoas/:id fica no middleware
+    // legacy-people-routes (o redirect com ** não funciona na navegação do
+    // lado do cliente).
+    "/admin/pessoas": { redirect: "/pessoas" },
+    "/pastoral": { redirect: "/pessoas/cuidado" },
+    "/pastoral/pessoas": { redirect: "/pessoas?filtro=cuidado" },
+    "/pastoral/visitas": { redirect: "/pessoas/cuidado" },
+    "/pastoral/visitantes": { redirect: "/pessoas?filtro=visitantes" },
+    // Gestão de ministérios foi para a própria lista (/ministery).
+    "/admin/ministerios": { redirect: "/ministery" },
+    // A agenda de cultos virou a aba "Cultos" de Escalas (/cultos/[id] continua).
+    "/cultos": { redirect: "/scale?aba=cultos" },
   },
   nitro: {
     compressPublicAssets: true,
@@ -104,7 +193,7 @@ export default defineNuxtConfig({
             colors: {
               primary: "#b5472a",
               secondary: "#0f766e",
-              background: "#f6f7f9",
+              background: "#f2f2f7",
               surface: "#ffffff",
               error: "#dc2626",
             },
@@ -117,8 +206,8 @@ export default defineNuxtConfig({
               // #f0975a dá ~2.3:1 de contraste (ilegível em "Salvar Perfil").
               "on-primary": "#1f1410",
               secondary: "#5eead4",
-              background: "#12100e",
-              surface: "#1b1815",
+              background: "#000000",
+              surface: "#1c1c1e",
               error: "#f87171",
             },
           },
@@ -169,6 +258,8 @@ export default defineNuxtConfig({
       ],
     },
   },
+  ...demoOverrides,
+  ...demoBuildOverrides,
   runtimeConfig: {
     // Server-only: usado pelo SSR (middleware de auth) para chamar a API de
     // dentro do container. "localhost" dentro do container web NÃO alcança o
@@ -181,6 +272,8 @@ export default defineNuxtConfig({
       // publicas (c/[slug].vue, comece.vue) - precisa ser absoluta porque
       // WhatsApp/Instagram nao resolvem caminho relativo ao gerar preview.
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "https://churchapp.site",
+      // Modo demonstração: API falsa no navegador (web/demo). Padrão desligado.
+      DEMO: isDemo,
     },
   },
 });

@@ -3,7 +3,7 @@
     <v-text-field
       v-if="activityResources.length"
       v-model="search"
-      label="Buscar atividade"
+      label="Buscar aula"
       prepend-inner-icon="mdi-magnify"
       variant="outlined"
       density="compact"
@@ -13,27 +13,32 @@
       class="mb-4"
     />
 
-    <div class="ministery-section-actions mb-4">
-      <PlanLock v-if="canManageDepartment" feature="MINISTRY_RESOURCES">
+    <div v-if="canManageDepartment && activityResources.length" class="ministery-section-actions mb-4">
+      <PlanLock feature="MINISTRY_RESOURCES">
         <v-btn
           color="primary"
           class="rounded-lg text-none"
           @click="$emit('create')"
         >
-          <Plus size="18" class="mr-1" /> Nova atividade
+          <Plus size="18" class="mr-1" /> Nova aula
         </v-btn>
       </PlanLock>
     </div>
 
-    <v-card
+    <UtilsEmptyState
       v-if="activityResources.length === 0 && !resourcesError"
-      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
+      :icon="BookOpen"
+      title="Nenhuma aula ainda"
+      :description="canManageDepartment
+        ? 'Envie as atividades em PDF de cada aula. A equipe abre direto no celular.'
+        : 'Quando o líder enviar as aulas, elas aparecem aqui para abrir no celular.'"
     >
-      <BookOpen size="32" color="#9CA3AF" class="mb-3" />
-      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-        Nenhuma atividade cadastrada ainda
-      </p>
-    </v-card>
+      <PlanLock v-if="canManageDepartment" feature="MINISTRY_RESOURCES">
+        <v-btn color="primary" variant="flat" class="text-none font-weight-bold" @click="$emit('create')">
+          Enviar aula
+        </v-btn>
+      </PlanLock>
+    </UtilsEmptyState>
 
     <div v-else-if="visibleActivities.length" class="ministery-card-grid">
       <v-card
@@ -96,15 +101,14 @@
       </v-card>
     </div>
 
-    <v-card
+    <UtilsEmptyState
       v-else-if="activityResources.length"
-      class="app-surface rounded-xl pa-6 d-flex flex-column align-center justify-center border-subtle"
-    >
-      <BookOpen size="32" color="#9CA3AF" class="mb-3" />
-      <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
-        Nenhuma atividade encontrada
-      </p>
-    </v-card>
+      compact
+      variant="no-results"
+      :icon="BookOpen"
+      title="Nenhuma aula encontrada"
+      description="Tente outro nome."
+    />
 
     <v-alert
       v-if="resourcesError"
@@ -150,9 +154,6 @@ defineEmits<{
 </script>
 
 <style scoped>
-.border-subtle {
-  border: 1px solid #f3f4f6;
-}
 .ministery-section-actions,
 .ministery-card-actions {
   display: flex;
@@ -168,13 +169,13 @@ defineEmits<{
   gap: 12px;
 }
 .ministery-content-card {
-  border: 1px solid #eef2f7;
+  border: 1px solid var(--app-color-border-subtle);
   border-radius: 8px !important;
 }
 .ministery-card-actions {
   justify-content: flex-end;
   gap: 8px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--app-color-border-subtle);
   padding-top: 10px;
 }
 @media (max-width: 420px) {

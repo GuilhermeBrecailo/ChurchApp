@@ -1,470 +1,209 @@
 <template>
-  <div class="pa-4 pb-8 app-operational-page dashboard-page">
+  <div class="pa-4 pb-8 app-operational-page home-page">
     <template v-if="hasChurch">
-      <div class="app-page-header">
-        <div class="app-page-header-copy">
-          <div class="app-help-title-row">
-            <h1 class="app-page-title text-h5 text-grey-darken-4 mb-1">Sua semana começa aqui</h1>
-            <UtilsPageHelpButton title="Início" />
-          </div>
-          <p class="text-body-2 text-grey-darken-1 mb-0">
-            Escalas, avisos e conteúdos importantes para você acompanhar a rotina da igreja.
-          </p>
-        </div>
-      </div>
+      <OnboardingHomeSlot part="checklist" />
 
-      <v-skeleton-loader
-        v-if="!setupStateLoaded"
-        type="card"
-        class="app-surface mb-4"
-      />
+      <UtilsPageHeader :kicker="todayLabel" :title="greeting" />
 
-      <DashboardGettingStartedCard
-        v-else-if="needsSetup"
-        :members-count="churchMembersCount"
-        :departments-count="churchDepartmentsCount"
-      />
+      <div class="home-grid">
+        <div class="home-primary">
+          <!-- A escala que a pessoa vai servir, para conferir e abrir rápido
+               (quando ela já não está no destaque de "Para você"). -->
+          <section v-if="nextScheduleCard" aria-labelledby="next-schedule-title" class="home-next">
+            <UtilsSectionHeader id="next-schedule-title" title="Sua próxima escala" />
+            <HomeNextScheduleCard :view="nextScheduleCard" hide-kicker />
+          </section>
 
-      <template v-else>
-        <div class="dashboard-grid">
-          <main class="dashboard-primary">
-            <section class="dashboard-routine" aria-labelledby="dashboard-routine-title">
-              <h2 id="dashboard-routine-title" class="dashboard-section-title">
-                Sua rotina
-              </h2>
-              <DashboardTodayCard />
-              <DashboardMyNextAssignmentCard />
-              <DashboardNextScheduleCard :schedule="nextSchedule" />
-            </section>
-            <DashboardPastoralOverviewCard v-if="canSeePastoralDashboard" />
-
-            <v-alert
-              v-if="schedulesError"
-              type="error"
-              variant="tonal"
-              density="compact"
-              class="mb-4"
-            >
-              {{ schedulesError }}
-            </v-alert>
-
-            <DashboardUpcomingEvents :schedules="upcomingSchedules" title="Próximas escalas" />
-            <DashboardUpcomingEvents
-              v-if="upcomingSchedules.length === 0 && recentSchedules.length > 0"
-              :schedules="recentSchedules"
-              title="Escalas recentes"
-              link-label="Ver histórico"
-              link-to="/scale?period=history"
-            />
-          </main>
-
-          <aside class="dashboard-secondary">
-            <DashboardQuickAccess />
-            <DashboardAnnouncementsSection />
-            <DashboardDailyVerseCard />
-            <DashboardPrayerPreviewCard />
-          </aside>
-        </div>
-      </template>
-    </template>
-
-    <template v-else-if="isPastorWithoutChurch">
-      <v-card class="app-surface pa-5">
-        <div class="d-flex align-center mb-4">
-          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="48" class="mr-3">
-            <Church size="24" :color="isDark ? '#f0975a' : '#B5472A'" />
-          </v-avatar>
-          <div>
-            <h1 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              Crie sua igreja
-            </h1>
-            <p class="text-body-2 text-grey-darken-1 mb-0">
-              Esse passo libera escalas, ministérios e administração.
-            </p>
-          </div>
-        </div>
-
-        <v-form @submit.prevent="handleCreateChurch">
-          <v-text-field
-            v-model="churchForm.name"
-            label="Nome da igreja"
-            required
-            variant="outlined"
-            density="comfortable"
-            color="primary"
-            class="mb-4"
-            hide-details="auto"
-            :disabled="loading"
+          <HomeForYouList
+            :items="forYouItems"
+            :featured-view="featuredScheduleView"
+            :loading="loading"
+            :answering="answering"
+            :push-loading="pushLoading"
+            @answer="answerSchedule"
+            @enable-push="enablePush"
+            @open="handleOpen"
           />
 
-          <div class="responsive-grid mb-4">
-            <v-text-field
-              v-model="churchForm.city"
-              label="Cidade"
-              variant="outlined"
-              density="comfortable"
-              color="primary"
-              hide-details="auto"
-              :disabled="loading"
-            />
+          <OnboardingHomeSlot part="welcome" />
 
-            <v-text-field
-              v-model="churchForm.state"
-              label="Estado"
-              variant="outlined"
-              density="comfortable"
-              color="primary"
-              hide-details="auto"
-              :disabled="loading"
-            />
-          </div>
-
-          <v-text-field
-            v-model="churchForm.road"
-            label="Endereço"
-            variant="outlined"
-            density="comfortable"
-            color="primary"
-            class="mb-4"
-            hide-details="auto"
-            :disabled="loading"
-          />
-
-          <div class="responsive-grid">
-            <v-text-field
-              v-model="churchForm.number"
-              label="Número"
-              variant="outlined"
-              density="comfortable"
-              color="primary"
-              hide-details="auto"
-              :disabled="loading"
-            />
-
-            <v-text-field
-              v-model="churchForm.localZipCode"
-              label="CEP"
-              variant="outlined"
-              density="comfortable"
-              color="primary"
-              hide-details="auto"
-              :disabled="loading"
-            />
-          </div>
-
-          <ChurchMinistrySetup
-            v-model="churchSetup"
-            :disabled="loading"
-          />
-
-          <v-alert
-            v-if="errorMessage"
-            type="error"
-            variant="tonal"
-            density="compact"
-            class="mb-4"
-          >
-            {{ errorMessage }}
+          <v-alert v-if="schedulesError" type="error" variant="tonal" density="compact">
+            {{ schedulesError }}
           </v-alert>
 
-          <v-btn
-            type="submit"
-            color="primary"
-            size="large"
-            block
-            class="text-none font-weight-bold rounded-lg"
+          <DashboardTodayCard v-if="homeAgenda" :agenda="homeAgenda" :loading="loading" />
+        </div>
+
+        <aside class="home-secondary" aria-label="Da igreja">
+          <DashboardAnnouncementsSection
+            :announcements="homeAnnouncements"
             :loading="loading"
-            :disabled="loading"
-          >
-            Criar igreja
-          </v-btn>
-        </v-form>
-      </v-card>
+            :limit="2"
+            clamp
+            link-to="/igreja"
+          />
+          <DashboardDailyVerseCard :verse="verse" compact />
+        </aside>
+      </div>
     </template>
 
-    <template v-else-if="isMemberWithPendingChurch">
-      <v-card class="app-surface pa-5">
-        <div class="d-flex align-center mb-4">
-          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="48" class="mr-3">
-            <Clock size="24" :color="isDark ? '#f0975a' : '#B5472A'" />
-          </v-avatar>
-          <div>
-            <h1 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              Aguardando aprovação
-            </h1>
-            <p class="text-body-2 text-grey-darken-1 mb-0">
-              Sua solicitação para entrar em <strong>{{ pendingChurchName }}</strong> está com o pastor.
-              Assim que for aprovada, você acessa normalmente.
-            </p>
-          </div>
-        </div>
-
-        <v-btn
-          block
-          variant="tonal"
-          color="primary"
-          class="text-none font-weight-bold rounded-lg"
-          size="large"
-          @click="fetchMe"
-        >
-          Já fui aprovado, verificar de novo
-        </v-btn>
-      </v-card>
-    </template>
-
-    <template v-else-if="isMemberWithoutChurch">
-      <v-card class="app-surface pa-5">
-        <div class="d-flex align-center mb-4">
-          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="48" class="mr-3">
-            <Church size="24" :color="isDark ? '#f0975a' : '#B5472A'" />
-          </v-avatar>
-          <div>
-            <h1 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              Vincule sua igreja
-            </h1>
-            <p class="text-body-2 text-grey-darken-1 mb-0">
-              Um pastor ou administrador precisa vincular sua conta.
-            </p>
-          </div>
-        </div>
-
-        <v-btn
-          to="/onboarding/church"
-          block
-          color="primary"
-          class="text-none font-weight-bold rounded-lg"
-          size="large"
-        >
-          Vincular a uma igreja
-        </v-btn>
-      </v-card>
+    <!-- Admin da plataforma sem igreja: o Início só aponta para a Plataforma. -->
+    <template v-else-if="isPlatformAdminWithoutChurch">
+      <UtilsPageHeader :kicker="todayLabel" :title="greeting" />
+      <UtilsEmptyState
+        :icon="ShieldCheck"
+        title="Você não está em nenhuma igreja"
+        description="Como administrador da plataforma, você gerencia igrejas, planos e usuários na Plataforma."
+        action-label="Abrir Plataforma"
+        action-to="/platform-admin"
+      />
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import { Church, Clock } from "lucide-vue-next";
-import ChurchMinistrySetup from "../components/onboarding/ChurchMinistrySetup.vue";
+import { computed, onMounted, watch } from "vue";
+import { ShieldCheck } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
-import { useThemeMode } from "../../../composables/useThemeMode";
-import { useChurch } from "../../composables/useChurch";
-import { createDefaultChurchSetup } from "../../composables/churchOnboarding";
-import {
-  useDepartments,
-  type DepartmentSchedule,
-} from "../../composables/useDepartments";
-import { useMembers } from "../../composables/useMembers";
-import { usePermissions } from "../../composables/usePermissions";
-import { splitSchedulesByDate } from "../utils/dashboardSchedules";
+import { useHomeFeed } from "../../composables/useHomeFeed";
+import { usePushNotifications } from "../../composables/usePushNotifications";
+import type { ForYouItem } from "../utils/forYouItems";
+import { toScheduleView, type ApiSchedule, type ScheduleView } from "../utils/scheduleView";
 
 const router = useRouter();
-const { user, fetchMe } = useAuth();
-const { isDark } = useThemeMode();
-const { createOwnChurch } = useChurch();
-const { getChurchSchedules, getDepartments } = useDepartments();
-const { getMembers } = useMembers();
-const { canRef } = usePermissions();
-
+const { user } = useAuth();
+const {
+  loading,
+  schedulesError,
+  announcements,
+  verse,
+  forYouItems,
+  schedules,
+  agenda,
+  answering,
+  load,
+  answerSchedule,
+  markAnnouncementSeen,
+} = useHomeFeed();
+const { enable, loading: pushLoading } = usePushNotifications();
 
 const hasChurch = computed(() => user.value?.hasChurch === true);
-const canSeePastoralDashboard = canRef("PASTORAL_CARE_MANAGE");
-const isPastorWithoutChurch = computed(
-  () => !hasChurch.value && user.value?.role === "PASTOR",
-);
-const pendingChurchName = computed(
-  () => user.value?.pendingChurches?.[0]?.name ?? null,
-);
-const isMemberWithPendingChurch = computed(
-  () => !hasChurch.value && user.value?.role !== "PASTOR" && !!pendingChurchName.value,
-);
-const isMemberWithoutChurch = computed(
-  () =>
-    !hasChurch.value &&
-    user.value?.role !== "PASTOR" &&
-    !pendingChurchName.value,
+const isPlatformAdminWithoutChurch = computed(
+  () => Boolean(user.value?.id) && !hasChurch.value && user.value?.is_admin === true,
 );
 
-const loading = ref(false);
-const errorMessage = ref("");
-const schedules = ref<DepartmentSchedule[]>([]);
-const schedulesError = ref("");
-const churchMembersCount = ref(0);
-const churchDepartmentsCount = ref(0);
-const setupStateLoaded = ref(false);
-const canManageChurchMembers = canRef("MEMBER_CREATE");
-
-const needsSetup = computed(
-  () =>
-    setupStateLoaded.value &&
-    churchMembersCount.value <= 1 &&
-    canManageChurchMembers.value,
-);
-
-const churchForm = reactive({
-  name: "",
-  city: "",
-  state: "",
-  road: "",
-  number: "",
-  localZipCode: "",
+const firstName = computed(() => user.value?.name?.trim().split(/\s+/)[0] ?? "");
+const greeting = computed(() => {
+  const hour = new Date().getHours();
+  const hello = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+  return firstName.value ? `${hello}, ${firstName.value}` : hello;
 });
-const churchSetup = ref(createDefaultChurchSetup());
+const todayLabel = computed(() =>
+  new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date()),
+);
 
-const handleCreateChurch = async () => {
-  errorMessage.value = "";
+// O aviso que já aparece em "Para você" (Aviso novo) não se repete abaixo.
+const featuredAnnouncementId = computed(
+  () => forYouItems.value.find((item) => item.kind === "announcement")?.key.split(":")[1] ?? null,
+);
+const homeAnnouncements = computed(() =>
+  announcements.value.filter((announcement) => announcement.id !== featuredAnnouncementId.value),
+);
 
-  if (!churchForm.name.trim()) {
-    errorMessage.value = "Informe o nome da igreja.";
-    return;
-  }
+// Escalas em que a pessoa está, ainda por vir (sem as que ela disse que não pode).
+const myUpcoming = computed<ScheduleView[]>(() => {
+  const userId = user.value?.id;
+  if (!userId) return [];
+  return schedules.value
+    .map((schedule) => toScheduleView(schedule as unknown as ApiSchedule, { userId }))
+    .filter((view) => view.me && !view.hasStarted && view.me.status !== "DECLINED")
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+});
 
-  loading.value = true;
+// Se a escala do destaque é uma das minhas, o destaque mostra o resumo dela.
+const featuredScheduleId = computed(() => {
+  const first = forYouItems.value[0];
+  return first?.kind === "schedule-response" ? first.schedule?.id ?? null : null;
+});
+const featuredScheduleView = computed(
+  () => myUpcoming.value.find((view) => view.id === featuredScheduleId.value) ?? null,
+);
+const nextScheduleCard = computed(() => {
+  const next = myUpcoming.value[0];
+  return next && next.id !== featuredScheduleId.value ? next : null;
+});
 
-  const { error } = await createOwnChurch({
-    name: churchForm.name,
-    city: churchForm.city,
-    state: churchForm.state,
-    road: churchForm.road,
-    number: churchForm.number,
-    localZipCode: churchForm.localZipCode,
-    setupMode: churchSetup.value.mode,
-    initialDepartments:
-      churchSetup.value.mode === "now" ? churchSetup.value.departments : [],
-  });
+// "Esta semana na igreja" sem repetir o que já está acima: a escala do
+// destaque e a "Sua próxima escala" (culto e ensaio) saem da lista. Se não
+// sobrar nada, a seção some (não diz "Semana livre", que seria mentira).
+const homeAgenda = computed(() => {
+  const shownAbove = new Set([featuredScheduleId.value, nextScheduleCard.value?.id].filter(Boolean));
+  if (!shownAbove.size || agenda.value.mode === "empty") return agenda.value;
+  const items = agenda.value.items.filter((item) => !(item.iServe && shownAbove.has(item.scheduleId)));
+  return items.length ? { ...agenda.value, items } : null;
+});
 
-  loading.value = false;
-
-  if (error) {
-    errorMessage.value = error;
-    return;
-  }
-
-  await router.replace("/");
+const handleOpen = (item: ForYouItem) => {
+  if (item.kind === "announcement") markAnnouncementSeen([item.key.split(":")[1] ?? ""]);
 };
 
-const scheduleSections = computed(() => splitSchedulesByDate(schedules.value));
-const upcomingSchedules = computed(() => scheduleSections.value.upcoming);
-const recentSchedules = computed(() => scheduleSections.value.recent.slice(0, 5));
-
-const nextSchedule = computed(() => upcomingSchedules.value[0] || null);
-
-const loadSchedules = async () => {
-  if (!hasChurch.value) return;
-
-  schedulesError.value = "";
-  const { data, error } = await getChurchSchedules();
-
-  if (error) {
-    schedulesError.value = error;
-    schedules.value = [];
-    return;
-  }
-
-  schedules.value = data ?? [];
+const enablePush = async () => {
+  await enable();
 };
 
-const loadSetupState = async () => {
-  if (!hasChurch.value) return;
-
-  const [membersResult, departmentsResult] = await Promise.all([
-    getMembers(),
-    getDepartments(),
-  ]);
-
-  churchMembersCount.value = membersResult.data?.length ?? 0;
-  churchDepartmentsCount.value = departmentsResult.data?.length ?? 0;
-  setupStateLoaded.value = true;
+// Sem igreja, o primeiro uso mora em /onboarding/* (fluxo de primeiro uso).
+const redirectWithoutChurch = () => {
+  if (!user.value?.id || hasChurch.value || user.value.is_admin === true) return;
+  const pending = Boolean(user.value.pendingChurches?.length);
+  const waitingRoute = "/onboarding/aguardando";
+  const target =
+    pending && router.resolve(waitingRoute).matched.length ? waitingRoute : "/onboarding/church";
+  navigateTo(target, { replace: true });
 };
 
 watch(hasChurch, (value) => {
-  if (value) {
-    loadSchedules();
-    loadSetupState();
-  }
+  if (value) load();
+  else redirectWithoutChurch();
 });
 
 onMounted(() => {
-  loadSchedules();
-  loadSetupState();
+  if (hasChurch.value) load();
+  else redirectWithoutChurch();
 });
+
+useHead({ title: "Início" });
 </script>
 
 <style scoped>
-.border-subtle {
-  border: 1px solid var(--app-color-border-subtle);
-}
-
-.dashboard-page {
+.home-page {
   max-width: 1180px;
   margin: 0 auto;
 }
 
-.dashboard-grid {
+.home-next {
   display: grid;
-  gap: 18px;
+  gap: 10px;
+  min-width: 0;
 }
 
-.dashboard-primary,
-.dashboard-secondary {
+.home-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.home-primary,
+.home-secondary {
   display: grid;
   align-content: start;
-  gap: 14px;
-  /* Grid items default to min-width: auto, so they refuse to shrink below
-     their content's natural size - a flex row further down (pastoral-header,
-     pastoral-row) with nowrap text then blows this column past the viewport
-     on mobile instead of wrapping/truncating. */
+  gap: 24px;
+  /* Itens de grid não encolhem abaixo do conteúdo sem isto (texto longo
+     estourava a coluna no celular). */
   min-width: 0;
-}
-
-.dashboard-routine {
-  display: grid;
-  gap: 12px;
-  min-width: 0;
-}
-
-.dashboard-section-title {
-  margin: 0;
-  color: var(--app-color-text);
-  font-size: 0.96rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-}
-
-.dashboard-secondary :deep(.quick-access-section h3) {
-  margin-bottom: 8px !important;
-}
-
-.dashboard-primary :deep(.mb-8),
-.dashboard-secondary :deep(.mb-8),
-.dashboard-primary :deep(.mb-6),
-.dashboard-secondary :deep(.mb-6),
-.dashboard-primary :deep(.mb-4),
-.dashboard-secondary :deep(.mb-4),
-.dashboard-secondary :deep(.mb-3) {
-  margin-bottom: 0 !important;
-  /* Same grid min-width:auto blowout as .dashboard-primary/.dashboard-secondary
-     above, one level deeper: each card's own root wrapper is a grid item too,
-     so a horizontally-scrolling row inside it (Acesso Rapido) never actually
-     gets an overflow to scroll - the wrapper just grows to fit it instead. */
-  min-width: 0;
-}
-
-.responsive-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-}
-
-@media (min-width: 640px) {
-  .responsive-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (min-width: 960px) {
-  .dashboard-grid {
-    grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.8fr);
+  .home-grid {
+    grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.85fr);
     align-items: start;
   }
 }

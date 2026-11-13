@@ -28,7 +28,7 @@
             type="button"
             aria-label="Agora não"
             title="Agora não"
-            @click="dismiss"
+            @click="handleDismiss"
           >
             <X size="19" aria-hidden="true" />
           </button>
@@ -93,19 +93,49 @@
 <script setup lang="ts">
 import { Download, Share2, Smartphone, X } from "lucide-vue-next";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { usePwaInstallPrompt } from "../../../composables/usePwaInstallPrompt";
+import { usePwaInstallPrompt } from "../../composables/usePwaInstallPrompt";
+import { useFirstRunPrompts } from "../../composables/useFirstRunPrompts";
 
 const route = useRoute();
 const {
   platform,
   visible,
+  available,
   instructionsOpen,
   hasNativePrompt,
   initialize,
   install,
   dismiss,
+  show,
+  hide,
   closeInstructions,
 } = usePwaInstallPrompt();
+const prompts = useFirstRunPrompts();
+prompts.watchActivity();
+
+// Regra única dos avisos (app/utils/promptGate.ts): fora das telas de
+// entrada e da página pública, depois do primeiro minuto, só com uma ação
+// concluída ou na segunda visita, e no máximo um aviso por visita.
+const allowed = computed(() => available.value && prompts.canShow("pwa-install"));
+
+watch(
+  allowed,
+  (canShow) => {
+    if (canShow) {
+      show();
+      if (visible.value) prompts.markShown("pwa-install");
+      return;
+    }
+    // Mudou para uma tela sem avisos: esconde sem contar como "Agora não".
+    hide();
+  },
+  { immediate: true },
+);
+
+const handleDismiss = () => {
+  prompts.markDismissed("pwa-install");
+  dismiss();
+};
 
 const guideDialog = ref<HTMLDialogElement | null>(null);
 const hasBottomNavigation = computed(() => (route.meta.layout ?? "default") === "default");
@@ -180,7 +210,7 @@ onMounted(initialize);
 
 .pwa-install-copy > span {
   color: var(--app-color-text-muted);
-  font-size: 0.77rem;
+  font-size: 0.8125rem;
   line-height: 1.35;
 }
 
@@ -266,7 +296,7 @@ onMounted(initialize);
 
 .pwa-install-eyebrow {
   color: var(--app-color-accent);
-  font-size: 0.73rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   margin: 0 0 6px;
@@ -307,7 +337,7 @@ onMounted(initialize);
 
 .pwa-install-guide-note {
   color: var(--app-color-text-muted);
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   line-height: 1.45;
   margin: 14px 0 0;
 }
@@ -346,7 +376,7 @@ onMounted(initialize);
   }
 
   .pwa-install-action {
-    min-height: 38px;
+    min-height: 44px;
   }
 }
 

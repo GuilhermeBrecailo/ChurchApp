@@ -10,7 +10,7 @@ const props = withDefaults(
   }>(),
   {
     tag: "div",
-    stagger: 0.08,
+    stagger: 0.03,
     delay: 0,
   },
 );
