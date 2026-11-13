@@ -20,7 +20,7 @@ permissions:
 env:
   VPS_HOST: 187.77.238.124
   # Chave de host ED25519 da VPS (fingerprint SHA256:U5b8Aa3ab/X8sfQd6rab4JFjq2wlkbbLQedCTRYbfA8).
-  VPS_HOST_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFSxeiVR/S4WJICL+HrOfOXmgm/7H
+  VPS_HOST_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFSxeiVR/S4WJICL+HrOfOXmgm/7H8JUeT6iUCez9NfS
 
 jobs:
   deploy:
