@@ -3,9 +3,13 @@ import { defineNuxtPlugin, useRuntimeConfig } from "#app";
 export default defineNuxtPlugin(() => {
   if (useRuntimeConfig().public.DEMO || !("serviceWorker" in navigator)) return;
 
+  // O Cloudflare guarda /sw.js por horas (TTL de navegador/edge). Com o build id
+  // na URL, cada deploy registra um endereco novo e nao depende desse cache.
+  const swUrl = `/sw.js?b=${encodeURIComponent(useRuntimeConfig().app.buildId)}`;
+
   const register = () => {
     navigator.serviceWorker
-      .register("/sw.js", {
+      .register(swUrl, {
         scope: "/",
       })
       .catch(() => {
