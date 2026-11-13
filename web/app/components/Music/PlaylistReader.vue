@@ -111,8 +111,13 @@
       ref="scrollContainer"
       class="playlist-reader-body"
       :style="{ '--reader-font-scale': fontScale }"
-      @pointerdown="pauseAutoScroll"
-      @touchstart.passive="pauseAutoScroll"
+      @pointerdown="markPointerDown"
+      @pointerup="markPointerUp"
+      @pointercancel="markPointerUp"
+      @touchstart.passive="markPointerDown"
+      @touchend.passive="markPointerUp"
+      @touchcancel.passive="markPointerUp"
+      @wheel.passive="markManualInteraction"
       @scroll="handleScroll"
     >
       <section
@@ -152,16 +157,7 @@
       </section>
     </div>
 
-    <v-btn
-      v-if="showResumeScrollButton"
-      class="playlist-resume-btn text-none"
-      color="primary"
-      rounded="pill"
-      prepend-icon="mdi-play"
-      @click="resumeAutoScroll"
-    >
-      Retomar rolagem
-    </v-btn>
+    <MusicAutoScrollButton :state="autoScrollState" @toggle="toggleAutoScroll" />
   </div>
 </template>
 
@@ -374,7 +370,14 @@ const runAutoScroll = (timestamp: number) => {
     return;
   }
 
-  if (!isAutoScrollPaused.value) {
+  // Enquanto o usuario mexe (dedo na tela, roda do mouse, inercia), a rolagem
+  // automatica so segura e acompanha a posicao - nao pausa. Volta sozinha.
+  const isHolding = isPointerDown || timestamp - lastManualAt < MANUAL_HOLD_MS;
+
+  if (isHolding) {
+    scrollPosition.value = container.scrollTop;
+    lastFrameAt.value = 0;
+  } else if (!isAutoScrollPaused.value) {
     if (lastFrameAt.value && (timestamp - lastFrameAt.value) / 1000 <= MAX_FRAME_GAP_SECONDS) {
       const elapsedSeconds = (timestamp - lastFrameAt.value) / 1000;
       const maxScrollTop = container.scrollHeight - container.clientHeight;
@@ -406,11 +409,24 @@ const startAutoScroll = () => {
   animationFrameId.value = window.requestAnimationFrame(runAutoScroll);
 };
 
-// Toque manual pausa e fica pausado - nao retoma sozinho ao soltar o dedo.
-// So volta a rolar quando o usuario mexe no slider de velocidade de novo
-// (ver watch abaixo), pra nao brigar com quem rolou pra reler um trecho.
-const pauseAutoScroll = () => {
-  isAutoScrollPaused.value = true;
+// Rolar a mao (pra cima ou pra baixo) nao pausa: a rolagem automatica espera
+// o usuario terminar o gesto e segue dali. Pausar e so pelo botao.
+const MANUAL_HOLD_MS = 700;
+let isPointerDown = false;
+let lastManualAt = -Infinity;
+
+const markManualInteraction = () => {
+  lastManualAt = performance.now();
+};
+
+const markPointerDown = () => {
+  isPointerDown = true;
+  markManualInteraction();
+};
+
+const markPointerUp = () => {
+  isPointerDown = false;
+  markManualInteraction();
 };
 
 const handleScroll = () => {
@@ -418,17 +434,32 @@ const handleScroll = () => {
   if (!container) return;
   if (Math.abs(container.scrollTop - lastProgrammaticScrollTop.value) < 2) return;
 
-  isAutoScrollPaused.value = true;
+  markManualInteraction();
   scrollPosition.value = container.scrollTop;
 };
 
-// Atalho flutuante pra voltar a rolar sem abrir o menu de velocidade -
-// rolagem manual pausa e nao retoma sozinha (ver handleScroll acima).
-const showResumeScrollButton = computed(() => scrollSpeed.value > 0 && isAutoScrollPaused.value);
+// Botao flutuante unico: um toque inicia a rolagem na ultima velocidade usada
+// (ou na padrao), outro pausa, outro retoma.
+const DEFAULT_SCROLL_SPEED = 24;
+let lastScrollSpeed = DEFAULT_SCROLL_SPEED;
+watch(scrollSpeed, (speed) => {
+  if (speed > 0) lastScrollSpeed = speed;
+});
 
-const resumeAutoScroll = () => {
-  isAutoScrollPaused.value = false;
-  startAutoScroll();
+const autoScrollState = computed<"idle" | "running" | "paused">(() => {
+  if (scrollSpeed.value <= 0) return "idle";
+  return isAutoScrollPaused.value ? "paused" : "running";
+});
+
+const toggleAutoScroll = () => {
+  if (autoScrollState.value === "idle") {
+    scrollSpeed.value = lastScrollSpeed;
+  } else if (autoScrollState.value === "running") {
+    isAutoScrollPaused.value = true;
+  } else {
+    isAutoScrollPaused.value = false;
+    startAutoScroll();
+  }
 };
 
 watch(scrollSpeed, () => {
@@ -455,15 +486,6 @@ onBeforeUnmount(() => {
   height: 100%;
   min-height: 0;
   background: var(--app-color-surface);
-}
-
-.playlist-resume-btn {
-  position: absolute;
-  left: 50%;
-  bottom: 16px;
-  transform: translateX(-50%);
-  z-index: 2;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
 }
 
 .playlist-reader-header {

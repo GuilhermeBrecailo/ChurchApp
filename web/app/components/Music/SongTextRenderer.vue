@@ -4,8 +4,13 @@
     class="song-text-renderer"
     :class="rendererClasses"
     :style="rendererStyle"
-    @pointerdown="pauseAutoScroll"
-    @touchstart.passive="pauseAutoScroll"
+    @pointerdown="markPointerDown"
+    @pointerup="markPointerUp"
+    @pointercancel="markPointerUp"
+    @touchstart.passive="markPointerDown"
+    @touchend.passive="markPointerUp"
+    @touchcancel.passive="markPointerUp"
+    @wheel.passive="markManualInteraction"
     @scroll="handleScroll"
   >
     <span
@@ -234,7 +239,14 @@ const runAutoScroll = (timestamp: number) => {
     return;
   }
 
-  if (!isAutoScrollPaused.value) {
+  // Enquanto o usuario mexe (dedo na tela, roda do mouse, inercia), a rolagem
+  // automatica so segura e acompanha a posicao - nao pausa. Volta sozinha.
+  const isHolding = isPointerDown || timestamp - lastManualAt < MANUAL_HOLD_MS;
+
+  if (isHolding) {
+    scrollPosition.value = container.scrollTop;
+    lastFrameAt.value = 0;
+  } else if (!isAutoScrollPaused.value) {
     if (lastFrameAt.value && (timestamp - lastFrameAt.value) / 1000 <= MAX_FRAME_GAP_SECONDS) {
       const elapsedSeconds = (timestamp - lastFrameAt.value) / 1000;
       const maxScrollTop = container.scrollHeight - container.clientHeight;
@@ -266,23 +278,34 @@ const startAutoScroll = () => {
   animationFrameId.value = window.requestAnimationFrame(runAutoScroll);
 };
 
-// Toque manual pausa e fica pausado - nao retoma sozinho ao soltar o dedo.
-// So volta a rolar quando o usuario mexe no slider de velocidade de novo
-// (ver watch abaixo), pra nao brigar com quem rolou pra reler um trecho.
-const pauseAutoScroll = () => {
-  isAutoScrollPaused.value = true;
+// Rolar a mao (pra cima ou pra baixo) nao pausa: a rolagem automatica espera
+// o usuario terminar o gesto e segue dali. Pausar e so pelo botao.
+const MANUAL_HOLD_MS = 700;
+let isPointerDown = false;
+let lastManualAt = -Infinity;
+
+const markManualInteraction = () => {
+  lastManualAt = performance.now();
 };
 
-// Rede de seguranca contra qualquer gesto de rolagem manual (touch, mouse,
-// scrollbar, teclado) que o pointerdown/touchstart nao cubra - em alguns
-// navegadores mobile o scroll por inercia continua sem esses eventos.
-// Se o scrollTop mudou e nao foi a gente que escreveu, e o usuario rolando.
+const markPointerDown = () => {
+  isPointerDown = true;
+  markManualInteraction();
+};
+
+const markPointerUp = () => {
+  isPointerDown = false;
+  markManualInteraction();
+};
+
+// Rede de seguranca pra qualquer rolagem manual (scrollbar, teclado, inercia
+// do touch): se o scrollTop mudou e nao foi a gente que escreveu, e o usuario.
 const handleScroll = () => {
   const container = scrollContainer.value;
   if (!container) return;
   if (Math.abs(container.scrollTop - lastProgrammaticScrollTop.value) < 2) return;
 
-  isAutoScrollPaused.value = true;
+  markManualInteraction();
   scrollPosition.value = container.scrollTop;
 };
 
@@ -331,10 +354,12 @@ onBeforeUnmount(() => {
   resizeObserver = null;
 });
 
-// Exposto pro pai (SongReader) mostrar um botao de retomar quando pausado
-// por gesto manual, sem precisar que o usuario mexa no slider de velocidade.
+// Exposto pro pai (SongReader) controlar pausa/retomada pelo botao flutuante.
 defineExpose({
   isPaused: computed(() => isAutoScrollPaused.value),
+  pause: () => {
+    isAutoScrollPaused.value = true;
+  },
   resume: () => {
     isAutoScrollPaused.value = false;
     startAutoScroll();

@@ -49,6 +49,9 @@ export default defineNuxtConfig({
     sources: ["/api/__sitemap__/churches"],
   },
   css: ["~/assets/css/theme.css"],
+  // Rotas ssr:false chegam como casca vazia; este template (app/spa-loading-template.html)
+  // evita a tela branca ate o JS montar o app.
+  spaLoadingTemplate: true,
   imports: {
     dirs: ["../composables"],
   },
@@ -148,6 +151,9 @@ export default defineNuxtConfig({
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" },
         { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,750&family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700&family=Space+Grotesk:wght@500;600;700&display=swap" },
+        // Icones (mdi) sao pedidos pelo vuetify-nuxt-module so depois da
+        // hidratacao; o preload baixa o CSS em paralelo com o JS.
+        { rel: "preload", as: "style", href: "https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css", crossorigin: "" },
         { rel: "manifest", href: "/manifest.webmanifest" },
         { rel: "icon", href: "/pwa-icon.svg", type: "image/svg+xml" },
         { rel: "apple-touch-icon", href: "/pwa-icon-192.png" },
