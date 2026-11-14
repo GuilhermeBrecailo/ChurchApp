@@ -447,7 +447,14 @@ const access = useChurchAccess();
 const toast = useAppToast();
 const { isDark } = useThemeMode();
 
-const scaleSelectMenuProps = { attach: "body", contentClass: "scale-select-menu", maxHeight: 320 };
+// scrollStrategy "block": com o menu aberto a tela não rola, então ele fica preso
+// embaixo do campo (antes, rolar a tela deixava o menu para trás).
+const scaleSelectMenuProps = {
+  attach: "body",
+  contentClass: "scale-select-menu",
+  maxHeight: 320,
+  scrollStrategy: "block" as const,
+};
 
 const departments = ref<ChurchDepartment[]>([]);
 const upcoming = ref<UpcomingOccurrence[]>([]);
