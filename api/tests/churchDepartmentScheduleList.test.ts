@@ -126,6 +126,7 @@ describe("Escalas - lista, detalhe e avisos do editor", () => {
     mockPrismaClient.user.findUnique.mockResolvedValue({ id: "user-1", crunchId: "church-1", role: "PASTOR" });
     mockPrismaClient.crunch.findUnique.mockResolvedValue({ id: "church-1" });
     mockPrismaClient.department.findFirst.mockResolvedValue(departmentRow);
+    mockPrismaClient.department.findMany.mockResolvedValue([]);
   });
 
   describe("GET /schedules (lista)", () => {

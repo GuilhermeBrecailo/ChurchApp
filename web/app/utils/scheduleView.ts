@@ -62,6 +62,7 @@ export type ApiSchedule = {
   rehearsalAt?: string | null;
   rehearsalNotes?: string | null;
   isCommunionService?: boolean;
+  isDraft?: boolean;
   createdAt?: string;
   departmentId: string;
   serviceOccurrenceId?: string | null;
@@ -143,6 +144,8 @@ export type ScheduleView = {
   rehearsalShortLabel: string;
   rehearsalNotes: string;
   isCommunionService: boolean;
+  /** Rascunho: só quem organiza vê; a equipe ainda não foi avisada. */
+  isDraft: boolean;
   occurrenceId: string | null;
   serviceTimeId: string | null;
   team: TeamMember[];
@@ -309,6 +312,7 @@ export function toScheduleView(
     rehearsalShortLabel: rehearsal ? shortDayTime(rehearsal) : "",
     rehearsalNotes: schedule.rehearsalNotes?.trim() ?? "",
     isCommunionService: schedule.isCommunionService === true,
+    isDraft: schedule.isDraft === true,
     occurrenceId: schedule.serviceOccurrenceId ?? null,
     serviceTimeId: schedule.serviceOccurrence?.serviceTimeId ?? null,
     team,

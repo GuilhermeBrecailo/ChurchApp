@@ -461,7 +461,148 @@ describe("ChurchDepartmentAdapters - escalas", () => {
     });
   });
 
-  describe("sendChurchScheduleReminder", () => {
+  describe("rascunho de escala", () => {
+  let adapters: ChurchDepartmentAdapters;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    adapters = new ChurchDepartmentAdapters();
+    mockPrismaClient.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      crunchId: "church-1",
+      role: "PASTOR",
+    });
+    mockPrismaClient.crunch.findUnique.mockResolvedValue({ id: "church-1" });
+    mockPrismaClient.department.findFirst.mockResolvedValue(departmentRow);
+    mockPrismaClient.userDepartmentMembership.findMany.mockResolvedValue([]);
+  });
+
+  const teamMocks = () => {
+    mockPrismaClient.scheduleAssignment.findMany.mockResolvedValue([
+      { id: "a-1", userId: "vol-1", role: "Vocal" },
+      { id: "a-2", userId: "vol-2", role: "Baixo" },
+    ]);
+    mockPrismaClient.user.findMany.mockResolvedValue([{ id: "vol-1" }, { id: "vol-2" }]);
+    mockPrismaClient.userDepartmentMembership.findMany.mockResolvedValue([
+      { userId: "vol-1" },
+      { userId: "vol-2" },
+    ]);
+    mockPrismaClient.$transaction.mockResolvedValue(undefined);
+  };
+
+  const team = [
+    { id: "a-1", userId: "vol-1", role: "Vocal" },
+    { id: "a-2", userId: "vol-2", role: "Baixo" },
+  ];
+
+  it("cria a escala como rascunho quando pedido", async () => {
+    mockPrismaClient.schedule.create.mockResolvedValue(scheduleRow({ isDraft: true }));
+
+    await adapters.createChurchDepartmentSchedule(
+      makeRequest({
+        params: { id: "dept-1" },
+        body: { title: "Culto de domingo", date: "2026-08-20", isDraft: true },
+      }),
+    );
+
+    expect(mockPrismaClient.schedule.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ isDraft: true }) }),
+    );
+  });
+
+  it("nao avisa ninguem ao salvar a equipe de um rascunho", async () => {
+    const draft = scheduleRow({ isDraft: true, assignments: team });
+    mockPrismaClient.schedule.findFirst.mockResolvedValueOnce(draft).mockResolvedValueOnce(draft);
+    mockPrismaClient.schedule.update.mockResolvedValue(draft);
+    teamMocks();
+
+    await adapters.updateChurchSchedule(
+      makeRequest({
+        params: { id: "schedule-1" },
+        body: { assignments: [{ userId: "vol-1", role: "Vocal" }, { userId: "vol-2", role: "Baixo" }] },
+      }),
+    );
+
+    expect(mockSendToUsers).not.toHaveBeenCalled();
+  });
+
+  it("ao publicar o rascunho, cada pessoa da equipe recebe um aviso de escala nova", async () => {
+    const draft = scheduleRow({ isDraft: true, assignments: team });
+    const published = scheduleRow({ isDraft: false, assignments: team });
+    mockPrismaClient.schedule.findFirst.mockResolvedValueOnce(draft).mockResolvedValueOnce(published);
+    mockPrismaClient.schedule.update.mockResolvedValue(published);
+    teamMocks();
+
+    await adapters.updateChurchSchedule(
+      makeRequest({
+        params: { id: "schedule-1" },
+        body: {
+          isDraft: false,
+          assignments: [{ userId: "vol-1", role: "Vocal" }, { userId: "vol-2", role: "Baixo" }],
+        },
+      }),
+    );
+
+    expect(mockPrismaClient.schedule.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ isDraft: false }) }),
+    );
+    expect(mockSendToUsers).toHaveBeenCalledTimes(2);
+    expect(mockSendToUsers).toHaveBeenCalledWith(
+      ["vol-1"],
+      expect.objectContaining({ type: "schedule-assigned", body: expect.stringContaining("como Vocal") }),
+    );
+    expect(mockSendToUsers).toHaveBeenCalledWith(
+      ["vol-2"],
+      expect.objectContaining({ type: "schedule-assigned" }),
+    );
+  });
+
+  it("escala publicada nao volta a ser rascunho", async () => {
+    const published = scheduleRow({ isDraft: false });
+    mockPrismaClient.schedule.findFirst.mockResolvedValueOnce(published).mockResolvedValueOnce(published);
+    mockPrismaClient.schedule.update.mockResolvedValue(published);
+
+    await adapters.updateChurchSchedule(
+      makeRequest({ params: { id: "schedule-1" }, body: { isDraft: true, title: "Novo nome" } }),
+    );
+
+    expect(mockPrismaClient.schedule.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.not.objectContaining({ isDraft: expect.anything() }) }),
+    );
+  });
+
+  it("nao deixa mandar lembrete de rascunho", async () => {
+    mockPrismaClient.schedule.findFirst.mockResolvedValue(scheduleRow({ isDraft: true, assignments: team }));
+
+    await expect(
+      adapters.sendChurchScheduleReminder(makeRequest({ params: { id: "schedule-1" } })),
+    ).rejects.toThrow("Publique a escala antes de enviar lembretes");
+    expect(mockSendToUsers).not.toHaveBeenCalled();
+  });
+
+  it("voluntario nao abre nem responde um rascunho", async () => {
+    mockPrismaClient.schedule.findFirst.mockResolvedValue(scheduleRow({ isDraft: true, assignments: team }));
+
+    await expect(
+      adapters.getChurchScheduleById(makeRequest({ role: "MEMBRO", params: { id: "schedule-1" } })),
+    ).rejects.toThrow("Escala não encontrada nesta igreja");
+    await expect(
+      adapters.updateMyChurchScheduleAssignment(
+        makeRequest({ role: "MEMBRO", params: { id: "schedule-1" }, body: { action: "CONFIRMED" } }),
+      ),
+    ).rejects.toThrow("Escala não encontrada nesta igreja");
+  });
+
+  it("quem gerencia a escala abre o rascunho", async () => {
+    mockPrismaClient.schedule.findFirst.mockResolvedValue(scheduleRow({ isDraft: true }));
+
+    const result = await adapters.getChurchScheduleById(makeRequest({ params: { id: "schedule-1" } }));
+
+    expect(result.isDraft).toBe(true);
+  });
+});
+
+describe("sendChurchScheduleReminder", () => {
     it("bloqueia no plano FREE (sem feature SCHEDULE_REMINDER)", async () => {
       await expect(
         adapters.sendChurchScheduleReminder(

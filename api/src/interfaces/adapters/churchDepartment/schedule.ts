@@ -18,6 +18,7 @@ const scheduleSelect = {
   rehearsalAt: true,
   rehearsalNotes: true,
   isCommunionService: true,
+  isDraft: true,
   createdAt: true,
   departmentId: true,
   serviceOccurrenceId: true,
@@ -178,6 +179,14 @@ export class ScheduleAdapters {
       .map((department) => department.id);
   }
 
+  // Rascunho so aparece para quem gerencia escalas do ministerio; os demais
+  // (voluntarios) nao veem nem recebem aviso ate a escala ser publicada.
+  private async visibleScheduleFilter(user: CurrentUser): Promise<Prisma.ScheduleWhereInput> {
+    const managedDepartmentIds = await this.getManagedDepartmentIds(user);
+
+    return { OR: [{ isDraft: false }, { departmentId: { in: managedDepartmentIds } }] };
+  }
+
   private async getScheduleFromCurrentChurch(scheduleId: string, crunchId: string) {
     const schedule = await $prismaClient.schedule.findFirst({
       where: {
@@ -319,6 +328,7 @@ export class ScheduleAdapters {
     return await $prismaClient.schedule.findMany({
       where: {
         departmentId: id,
+        ...(await this.visibleScheduleFilter(user)),
       },
       orderBy: {
         createdAt: "desc",
@@ -342,6 +352,7 @@ export class ScheduleAdapters {
           department: {
             crunchId: user.crunchId!,
           },
+          ...(await this.visibleScheduleFilter(user)),
         },
         orderBy: {
           date: "desc",
@@ -379,6 +390,7 @@ export class ScheduleAdapters {
 
     const where: Prisma.ScheduleWhereInput = {
       department: { crunchId: user.crunchId! },
+      AND: [await this.visibleScheduleFilter(user)],
     };
 
     if (from || to) {
@@ -427,7 +439,13 @@ export class ScheduleAdapters {
     }
 
     const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
-    return { ...schedule, ...this.scheduleCapabilities(user, schedule.department) };
+    const capabilities = this.scheduleCapabilities(user, schedule.department);
+
+    if (schedule.isDraft && !capabilities.canManage) {
+      throw new DomainError("Escala não encontrada nesta igreja");
+    }
+
+    return { ...schedule, ...capabilities };
   }
 
   async createChurchDepartmentSchedule(request: FastifyRequest) {
@@ -471,6 +489,7 @@ export class ScheduleAdapters {
       serviceOccurrenceId?: string | null;
       isCommunionService?: boolean;
       assignments?: unknown;
+      isDraft?: boolean;
     };
 
     if (!body.title?.trim()) {
@@ -559,6 +578,7 @@ export class ScheduleAdapters {
         rehearsalAt: this.getOptionalDateTime(body.rehearsalDate, body.rehearsalTime),
         rehearsalNotes: body.rehearsalNotes?.trim() || null,
         isCommunionService,
+        isDraft: body.isDraft === true,
         mediaItems: {
           create: mediaItemIds.map((mediaItemId, index) => ({
             id: crypto.randomUUID(),
@@ -582,7 +602,10 @@ export class ScheduleAdapters {
       createdSchedule.id,
       user.crunchId!,
     );
-    await this.notifyAssignmentChanges(scheduleWithTeam, changes);
+    // Rascunho: ninguem e avisado. A equipe e notificada quando a escala for publicada.
+    if (!scheduleWithTeam.isDraft) {
+      await this.notifyAssignmentChanges(scheduleWithTeam, changes);
+    }
 
     return scheduleWithTeam;
   }
@@ -605,6 +628,7 @@ export class ScheduleAdapters {
       serviceOccurrenceId?: string | null;
       isCommunionService?: boolean;
       assignments?: unknown;
+      isDraft?: boolean;
     };
 
     if (!id) {
@@ -656,6 +680,11 @@ export class ScheduleAdapters {
     }
 
     const data: Prisma.ScheduleUpdateInput = {};
+
+    // Escala publicada nao volta a ser rascunho: os voluntarios ja a viram.
+    if (body.isDraft === false) {
+      data.isDraft = false;
+    }
 
     if (body.title !== undefined || body.description !== undefined) {
       const description = body.title ?? body.description;
@@ -845,6 +874,17 @@ export class ScheduleAdapters {
       ? changes.retainedUserIds
       : [...new Set(updatedSchedule.assignments.map((assignment) => assignment.userId))];
 
+    // Rascunho: ninguem e avisado.
+    if (updatedSchedule.isDraft) {
+      return { ...updatedSchedule, ...this.scheduleCapabilities(user, updatedSchedule.department) };
+    }
+
+    // Publicada agora: a equipe inteira recebe o aviso de escala nova, uma vez.
+    if (schedule.isDraft) {
+      await this.notifyAssignmentChanges(updatedSchedule, this.everyoneAsNewlyAssigned(updatedSchedule));
+      return { ...updatedSchedule, ...this.scheduleCapabilities(user, updatedSchedule.department) };
+    }
+
     await Promise.all([
       changes ? this.notifyAssignmentChanges(updatedSchedule, changes) : Promise.resolve(),
       this.notifyRetainedVolunteers(
@@ -869,6 +909,10 @@ export class ScheduleAdapters {
     }
 
     const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    if (schedule.isDraft) {
+      throw new DomainError("Publique a escala antes de enviar lembretes");
+    }
+
     await this.context.assertCanSendScheduleNotifications(user, schedule.departmentId);
 
     const body = (request.body ?? {}) as { onlyPending?: unknown };
@@ -1144,6 +1188,21 @@ export class ScheduleAdapters {
     };
   }
 
+  private everyoneAsNewlyAssigned(schedule: ScheduleRow): AssignmentChanges {
+    const rolesByUser = new Map<string, string[]>();
+
+    for (const assignment of schedule.assignments) {
+      rolesByUser.set(assignment.userId, [...(rolesByUser.get(assignment.userId) ?? []), assignment.role]);
+    }
+
+    return {
+      newlyAssignedUserIds: [...rolesByUser.keys()],
+      removedUserIds: [],
+      retainedUserIds: [],
+      rolesByUser,
+    };
+  }
+
   private async notifyAssignmentChanges(schedule: ScheduleRow, changes: AssignmentChanges) {
     await Promise.all([
       ...changes.newlyAssignedUserIds.map((userId) => {
@@ -1245,7 +1304,9 @@ export class ScheduleAdapters {
     // Quem continua na escala não recebe push por mudança de equipe: a edição
     // da escala (PATCH /schedules/:id) já avisa quando muda a data ou o
     // horário — antes a mesma edição mandava dois pushes.
-    await this.notifyAssignmentChanges(updatedSchedule, changes);
+    if (!updatedSchedule.isDraft) {
+      await this.notifyAssignmentChanges(updatedSchedule, changes);
+    }
 
     return updatedSchedule;
   }
@@ -1456,6 +1517,10 @@ export class ScheduleAdapters {
     }
 
     const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+
+    if (schedule.isDraft) {
+      throw new DomainError("Escala não encontrada nesta igreja");
+    }
 
     const assignment = await $prismaClient.scheduleAssignment.findFirst({
       where: {

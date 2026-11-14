@@ -19,7 +19,10 @@
           {{ view.shortDateLabel }} · {{ view.timeLabel }}
           <template v-if="view.arrivalLabel"> · chegar {{ view.arrivalLabel }}</template>
         </p>
-        <h3 class="schedule-list-card-title">{{ view.title }}</h3>
+        <h3 class="schedule-list-card-title">
+          {{ view.title }}
+          <v-chip v-if="view.isDraft" size="x-small" color="warning" variant="tonal" class="ml-1">Rascunho</v-chip>
+        </h3>
         <p class="schedule-list-card-meta">
           <span class="font-weight-bold">{{ view.departmentName }}</span>
           <template v-if="view.me"> · Você: {{ view.me.roles.join(", ") }}</template>

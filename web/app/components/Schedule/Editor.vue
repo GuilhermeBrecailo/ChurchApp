@@ -25,7 +25,7 @@
         compact
       />
 
-      <v-form v-else autocomplete="off" @submit.prevent="save">
+      <v-form v-else autocomplete="off" @submit.prevent="save(false)">
         <v-btn
           v-if="!isEditing && copyCandidates.length"
           variant="tonal"
@@ -327,8 +327,18 @@
 
       <template v-if="!isPreparing && departmentOptions.length" #actions>
         <v-btn variant="text" class="text-none" :disabled="isSaving" @click="close(false)">Cancelar</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none font-weight-bold" :loading="isSaving" @click="save">
-          <Send :size="16" class="mr-2" aria-hidden="true" /> Salvar e avisar a equipe
+        <v-btn
+          v-if="!isEditing || isEditingDraft"
+          variant="tonal"
+          class="text-none"
+          :disabled="isSaving"
+          @click="save(true)"
+        >
+          Salvar rascunho
+        </v-btn>
+        <v-btn color="primary" variant="flat" class="text-none font-weight-bold" :loading="isSaving" @click="save(false)">
+          <Send :size="16" class="mr-2" aria-hidden="true" />
+          {{ isEditingDraft ? "Publicar e avisar a equipe" : "Salvar e avisar a equipe" }}
         </v-btn>
       </template>
     </UtilsOverlayCard>
@@ -490,6 +500,7 @@ const emptyDraft = (): EditorDraft => ({
 const draft = reactive<EditorDraft>(emptyDraft());
 
 const isEditing = computed(() => Boolean(props.schedule));
+const isEditingDraft = computed(() => props.schedule?.isDraft === true);
 
 // Ao editar: a resposta de quem já estava na escala (Confirmado, Pediu troca,
 // Não posso…), para o líder não trocar gente às cegas.
@@ -883,7 +894,7 @@ const titleField = ref<{ focus?: () => void } | null>(null);
 watch(() => [cultValue.value, draft.date, draft.time], () => { whenError.value = ""; });
 watch(() => draft.title, () => { titleError.value = ""; });
 
-const save = async () => {
+const save = async (asDraft = false) => {
   const problem = validateDraft(draft);
   if (problem) {
     if (/culto|data|horário/i.test(problem)) {
@@ -914,7 +925,11 @@ const save = async () => {
       }
     }
 
-    const payload = buildSchedulePayload(draft, config.value);
+    // Rascunho não avisa ninguém; publicar um rascunho (isDraft: false) avisa a equipe toda.
+    const payload = {
+      ...buildSchedulePayload(draft, config.value),
+      ...(asDraft ? { isDraft: true } : isEditingDraft.value ? { isDraft: false } : {}),
+    };
     const { data, error } = await schedulesApi.save(payload, props.schedule?.id);
     if (error || !data) {
       toast.error(error || "Não foi possível salvar a escala.");
@@ -922,7 +937,13 @@ const save = async () => {
     }
 
     const people = new Set(payload.assignments.map((item) => item.userId)).size;
-    toast.success(people ? "Escala salva. A equipe foi avisada." : "Escala salva.");
+    toast.success(
+      asDraft
+        ? "Rascunho salvo. Ninguém foi avisado."
+        : people
+          ? "Escala salva. A equipe foi avisada."
+          : "Escala salva.",
+    );
     editorState.lastSaved.value = { id: data.id, at: Date.now() };
     emit("saved", data);
     emit("update:modelValue", false);

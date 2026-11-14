@@ -890,6 +890,8 @@ model Schedule {
     rehearsalAt DateTime?
     rehearsalNotes String?
     isCommunionService Boolean @default(false)
+    // Rascunho: visivel so para quem gerencia a escala; nao notifica voluntarios.
+    isDraft     Boolean  @default(false)
     createdAt   DateTime @default(now())
 
     departmentId String

@@ -27,8 +27,12 @@
       />
 
       <template v-else>
+        <v-alert v-if="view.isDraft" type="warning" variant="tonal" density="compact" class="mb-3">
+          Rascunho: a equipe ainda não foi avisada. Abra a escala para editar e publicar quando estiver pronta.
+        </v-alert>
+
         <!-- Líder: saúde da escala -->
-        <section v-if="view.canManage && view.team.length" class="sheet-health" aria-label="Respostas da equipe">
+        <section v-if="view.canManage && view.team.length && !view.isDraft" class="sheet-health" aria-label="Respostas da equipe">
           <p class="sheet-health-text">{{ view.health.text }}</p>
           <PlanLock
             v-if="view.canNotify && view.health.pending > 0 && !view.hasStarted"
@@ -51,7 +55,7 @@
         </section>
 
         <!-- Sua resposta -->
-        <section v-if="view.me" class="sheet-section">
+        <section v-if="view.me && !view.isDraft" class="sheet-section">
           <UtilsSectionHeader title="Sua resposta" />
           <p class="sheet-line">
             <strong>{{ view.me.roles.join(", ") }}</strong>

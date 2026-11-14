@@ -43,6 +43,8 @@ export type ScheduleSavePayload = {
   songIds?: string[];
   resourceIds?: string[];
   isCommunionService?: boolean;
+  /** true salva como rascunho (ninguém é avisado); false publica um rascunho. */
+  isDraft?: boolean;
   assignments?: { id?: string; userId: string; role: string }[];
 };
 
