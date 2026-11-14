@@ -35,6 +35,7 @@ const occurrenceSelect = {
   serviceTimeId: true,
   serviceTime: { select: { id: true, label: true, weekday: true, time: true } },
   schedules: {
+    where: { isDraft: false },
     select: {
       id: true,
       description: true,
@@ -195,7 +196,7 @@ export class ServiceOccurrenceAdapters {
         imageUrl: true,
         serviceTimeId: true,
         serviceTime: { select: { id: true, label: true, weekday: true, time: true } },
-        _count: { select: { schedules: true, attendees: true } },
+        _count: { select: { schedules: { where: { isDraft: false } }, attendees: true } },
       },
       orderBy: { date: "desc" },
     });

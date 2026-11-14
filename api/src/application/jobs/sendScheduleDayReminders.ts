@@ -36,6 +36,7 @@ export async function sendScheduleDayReminders(
   const schedules = await prisma.schedule.findMany({
     where: {
       date: { gt: now, lt: endOfDay },
+      isDraft: false,
       assignments: { some: { confirmationStatus: "PENDING" } },
     },
     select: {

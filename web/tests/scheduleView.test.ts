@@ -52,6 +52,11 @@ const schedule = (overrides: Partial<ApiSchedule> = {}): ApiSchedule => ({
 });
 
 describe("toScheduleView", () => {
+  it("marca a escala como rascunho só quando a API manda isDraft", () => {
+    assert.equal(toScheduleView(schedule({ isDraft: true }), { userId: "ana" }).isDraft, true);
+    assert.equal(toScheduleView(schedule({}), { userId: "ana" }).isDraft, false);
+  });
+
   it("junta as funções da mesma pessoa e mostra o status de quem pede atenção", () => {
     const view = toScheduleView(
       schedule({
