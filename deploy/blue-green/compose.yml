@@ -1,0 +1,43 @@
+name: ${PROJECT_NAME}-${DEPLOY_SLOT}
+
+services:
+  api:
+    image: ghcr.io/guilhermebrecailo/churchapp-api:${IMAGE_TAG}@sha256:${API_DIGEST}
+    networks:
+      - internal
+      - churchapp-persistent
+    ports:
+      - target: 8000
+        published: ${API_PORT}
+        host_ip: 127.0.0.1
+        protocol: tcp
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://127.0.0.1:8000/status"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
+
+  web:
+    image: ghcr.io/guilhermebrecailo/churchapp-web:${IMAGE_TAG}@sha256:${WEB_DIGEST}
+    networks:
+      - internal
+      - churchapp-persistent
+    ports:
+      - target: 3000
+        published: ${WEB_PORT}
+        host_ip: 127.0.0.1
+        protocol: tcp
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://127.0.0.1:3000/login"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
+
+networks:
+  internal:
+    internal: true
+  churchapp-persistent:
+    external: true
+    name: churchapp-persistent

@@ -1,18 +1,96 @@
-name: Deploy CrunchApp
+name: Deploy ChurchApp blue-green
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
-  deploy:
-    runs-on: [self-hosted, churchapp]
-
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.meta.outputs.sha }}
+      api-digest: ${{ steps.api.outputs.digest }}
+      web-digest: ${{ steps.web.outputs.digest }}
     steps:
-      - name: Atualizar servidor
+      - uses: actions/checkout@v4
+      - name: Set release SHA
+        id: meta
+        run: echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - name: Authenticate to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish API image
+        id: api
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/churchapp-api:sha-${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/churchapp-api:${{ github.sha }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+      - name: Build and publish web image
+        id: web
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/churchapp-web:sha-${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/churchapp-web:${{ github.sha }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+
+  deploy-staging:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Request staging deployment from controller
+        env:
+          CONTROLLER_URL: ${{ secrets.DEPLOY_CONTROLLER_URL }}
+          CONTROLLER_TOKEN: ${{ secrets.DEPLOY_CONTROLLER_TOKEN }}
+          RELEASE_SHA: ${{ needs.build.outputs.sha }}
+          API_DIGEST: ${{ needs.build.outputs.api-digest }}
+          WEB_DIGEST: ${{ needs.build.outputs.web-digest }}
         run: |
-          set -e
-          cd /root/CrunchApp
-          git pull origin main
-          docker compose up -d --build web api
+          set -eu
+          test -n "$CONTROLLER_URL"
+          test -n "$CONTROLLER_TOKEN"
+          curl --fail --silent --show-error --max-time 30 \
+            -H "Authorization: Bearer $CONTROLLER_TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data "{\"service\":\"churchapp\",\"repository\":\"${GITHUB_REPOSITORY}\",\"sha\":\"${RELEASE_SHA}\",\"environment\":\"staging\",\"api_digest\":\"${API_DIGEST}\",\"web_digest\":\"${WEB_DIGEST}\"}" \
+            "$CONTROLLER_URL/v1/deploy"
+
+  deploy-production:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Request production deployment from controller
+        env:
+          CONTROLLER_URL: ${{ secrets.DEPLOY_CONTROLLER_URL }}
+          CONTROLLER_TOKEN: ${{ secrets.DEPLOY_CONTROLLER_TOKEN }}
+          RELEASE_SHA: ${{ needs.build.outputs.sha }}
+          API_DIGEST: ${{ needs.build.outputs.api-digest }}
+          WEB_DIGEST: ${{ needs.build.outputs.web-digest }}
+        run: |
+          set -eu
+          test -n "$CONTROLLER_URL"
+          test -n "$CONTROLLER_TOKEN"
+          curl --fail --silent --show-error --max-time 30 \
+            -H "Authorization: Bearer $CONTROLLER_TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data "{\"service\":\"churchapp\",\"repository\":\"${GITHUB_REPOSITORY}\",\"sha\":\"${RELEASE_SHA}\",\"environment\":\"production\",\"api_digest\":\"${API_DIGEST}\",\"web_digest\":\"${WEB_DIGEST}\"}" \
+            "$CONTROLLER_URL/v1/deploy"

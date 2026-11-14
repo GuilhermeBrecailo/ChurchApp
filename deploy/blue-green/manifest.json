@@ -1,0 +1,28 @@
+{
+  "service": "churchapp",
+  "repository": "GuilhermeBrecailo/ChurchApp",
+  "artifacts": {
+    "api": "ghcr.io/guilhermebrecailo/churchapp-api",
+    "web": "ghcr.io/guilhermebrecailo/churchapp-web"
+  },
+  "slots": {
+    "blue": {
+      "api_port": 18080,
+      "web_port": 18081
+    },
+    "green": {
+      "api_port": 18082,
+      "web_port": 18083
+    }
+  },
+  "healthchecks": {
+    "api": "/status",
+    "web": "/login",
+    "keycloak": "/realms/master"
+  },
+  "persistent_dependencies": {
+    "network": "churchapp-persistent",
+    "services": ["application-database", "keycloak"]
+  },
+  "volumes": []
+}
