@@ -1,6 +1,8 @@
 # Usa a versão leve do Node 20
 FROM node:20-alpine
 
+RUN apk add --no-cache curl
+
 # Cria a pasta do app dentro do container
 WORKDIR /usr/src/app
 
@@ -17,7 +19,7 @@ COPY . .
 RUN npx prisma generate
 
 # Expõe a porta que o Fastify vai usar
-EXPOSE 3333
+EXPOSE 8000
 
 # Comando para rodar o servidor em modo de desenvolvimento
 CMD ["npm", "run", "dev"]
