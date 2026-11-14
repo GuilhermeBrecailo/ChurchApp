@@ -1,10 +1,7 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper app-operational-page app-page--narrow">
     <div class="notif-header mb-5">
-      <div class="app-help-title-row">
-        <h1 class="text-h5 font-weight-bold mb-1">Notificações</h1>
-        <UtilsPageHelpButton title="Notificações" />
-      </div>
+      <UtilsPageHeader title="Notificações" back="/" back-label="Voltar para Início" help-title="Notificações" compact />
       <div class="notif-subheader">
         <p class="text-body-2 mb-0">
           Histórico de avisos recebidos<template v-if="unreadCount > 0"> · {{ unreadCount }} não {{ unreadCount === 1 ? "lida" : "lidas" }}</template>
