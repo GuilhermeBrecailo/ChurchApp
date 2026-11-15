@@ -1,5 +1,6 @@
 import { DomainError } from "../../../domain/value-objects/utils/DomainError";
 import { normalizeSongKey } from "../../../application/Services/Department/SongKey";
+import { stripInvisibleChars } from "../../../application/Services/Department/SongText";
 
 export const CIFRA_CLUB_BASE_URL = "https://www.cifraclub.com.br";
 
@@ -24,7 +25,7 @@ export function stripHtml(value: string) {
 }
 
 export function normalizeTextBlock(value: string) {
-  return value
+  return stripInvisibleChars(value)
     .replace(/\r\n/g, "\n")
     .replace(/\t/g, "  ")
     .split("\n")
@@ -116,17 +117,26 @@ function looksLikeChordLine(line: string) {
   if (!cleaned) return false;
   if (/^\[[^\]]+\]$/.test(cleaned)) return false;
 
-  const chordToken = /\b[A-G](?:#|b)?(?:m|maj|min|dim|aug|sus|add)?\d*(?:\/[A-G](?:#|b)?)?\b/;
+  // Aceita a notacao brasileira de setima maior ("D7M", "C7M(9)").
+  const chordToken =
+    /(?<![A-Za-z0-9])[A-G](?:#|b)?(?:m|maj|min|dim|aug|sus|add)?\d*M?(?:\([^)]*\))?(?:\/[A-G](?:#|b)?)?(?![A-Za-z0-9#])/;
   const onlyChordSymbols = /^[\sA-G#bmmajindugsadto/()0-9+\-.|:]+$/i;
 
   return chordToken.test(cleaned) && onlyChordSymbols.test(cleaned);
 }
 
+// "[Intro] Bm G6 D": o marcador fica na letra, os acordes saem.
+const SECTION_WITH_CHORDS_RE = /^\s*(\[[^\]]+\])\s+(.+)$/;
+
 export function deriveLyricsFromChords(chords: string) {
   return normalizeTextBlock(
-    chords
+    stripInvisibleChars(chords)
       .split("\n")
       .filter((line) => !looksLikeChordLine(line))
+      .map((line) => {
+        const section = line.match(SECTION_WITH_CHORDS_RE);
+        return section && looksLikeChordLine(section[2]) ? section[1] : line;
+      })
       .join("\n"),
   );
 }

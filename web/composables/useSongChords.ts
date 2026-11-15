@@ -122,10 +122,15 @@ const LABELED_CHORD_LINE = /^([^\s:]{1,24}:\s*)(.+)$/;
 
 /** Transpõe acordes preservando a letra: linhas de acorde inteiras e acordes
  * inline entre colchetes ([G]) são convertidos, o resto do texto fica intacto. */
+// Músicas importadas do Cifra Club chegam com um zero-width space no começo
+// de cada linha. Invisível, mas impede reconhecer "Am  F  C" como acorde e
+// "[Refrão]" como cabeçalho de seção.
+export const stripInvisibleChars = (text: string) => text.replace(/[\u200b-\u200d\u2060\ufeff]/g, "");
+
 export const transposeChordText = (text: string, steps: number) => {
   if (!text || !steps) return text || "";
 
-  return text
+  return stripInvisibleChars(text)
     .split("\n")
     .map((line) => {
       if (isChordLine(line)) return transposeChordLine(line, steps);
