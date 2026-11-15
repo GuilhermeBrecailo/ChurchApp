@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { $prismaClient } from "../../../../config/database";
 import { DomainError } from "../../../domain/value-objects/utils/DomainError";
 import { normalizeSongKey } from "../../../application/Services/Department/SongKey";
+import { stripInvisibleChars } from "../../../application/Services/Department/SongText";
 import {
   extractPdfPages,
   extractSongsFromPages,
@@ -19,6 +20,8 @@ import {
   deriveLyricsFromChords,
   preserveCifraClubDisplayOptions,
 } from "./cifraClub";
+
+const cleanSongText = (value?: string | null) => stripInvisibleChars(value ?? "").trim();
 
 const songSelect = {
   ...resourceSelect,
@@ -208,9 +211,9 @@ export class SongAdapters {
       bpm: body.bpm === undefined || body.bpm === null ? "" : String(body.bpm).trim(),
       songCategory: body.songCategory?.trim() || "Louvor",
       notes: body.notes?.trim() || "",
-      lyrics: body.lyrics?.trim() || "",
-      chords: body.chords?.trim() || "",
-      keyboardChords: body.keyboardChords?.trim() || "",
+      lyrics: cleanSongText(body.lyrics) || "",
+      chords: cleanSongText(body.chords) || "",
+      keyboardChords: cleanSongText(body.keyboardChords) || "",
       mediaLink: body.mediaLink?.trim() || "",
       ...normalizePdfMetadata(body),
     };
@@ -415,8 +418,8 @@ export class SongAdapters {
             title: song.title?.trim() || "",
             artist: song.artist?.trim() || "",
             key: song.key?.trim() || "",
-            lyrics: song.lyrics?.trim() || "",
-            chords: song.chords?.trim() || "",
+            lyrics: cleanSongText(song.lyrics) || "",
+            chords: cleanSongText(song.chords) || "",
           }))
           .filter((song) => song.title)
       : [];
@@ -531,10 +534,10 @@ export class SongAdapters {
         ? { songCategory: body.songCategory.trim() || "Louvor" }
         : {}),
       ...(body.notes !== undefined ? { notes: body.notes?.trim() || "" } : {}),
-      ...(body.lyrics !== undefined ? { lyrics: body.lyrics?.trim() || "" } : {}),
-      ...(body.chords !== undefined ? { chords: body.chords?.trim() || "" } : {}),
+      ...(body.lyrics !== undefined ? { lyrics: cleanSongText(body.lyrics) || "" } : {}),
+      ...(body.chords !== undefined ? { chords: cleanSongText(body.chords) || "" } : {}),
       ...(body.keyboardChords !== undefined
-        ? { keyboardChords: body.keyboardChords?.trim() || "" }
+        ? { keyboardChords: cleanSongText(body.keyboardChords) || "" }
         : {}),
       ...(body.mediaLink !== undefined
         ? { mediaLink: body.mediaLink?.trim() || "" }
@@ -699,12 +702,12 @@ export class SongAdapters {
         userId: user.id,
         mediaItemId: songId,
         personalKey: body.personalKey?.trim() || null,
-        chords: body.chords?.trim() || null,
+        chords: cleanSongText(body.chords) || null,
         notes: body.notes?.trim() || null,
       },
       update: {
         personalKey: body.personalKey?.trim() || null,
-        chords: body.chords?.trim() || null,
+        chords: cleanSongText(body.chords) || null,
         notes: body.notes?.trim() || null,
       },
       select: {

@@ -132,7 +132,7 @@ const isSectionHeaderLine = (line: string) => /^\[[^\]]+\]$/.test(line.trim());
 
 const renderedLines = computed(() => {
   const value = props.text?.length ? props.text : props.emptyText;
-  const lines = (value || "").split("\n");
+  const lines = stripInvisibleChars(value || "").split("\n");
 
   return lines.map((line) => {
     if (isSectionHeaderLine(line)) {

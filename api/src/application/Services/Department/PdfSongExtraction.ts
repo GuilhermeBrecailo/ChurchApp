@@ -1,3 +1,5 @@
+import { stripInvisibleChars } from "./SongText";
+
 // pdf-parse tipa a opcao pagerender de forma generica (any); redeclaramos a
 // assinatura real do pageData do pdf.js que ele repassa, para tipar o
 // pagerender proprio abaixo sem perder seguranca de tipos no resto do modulo.
@@ -722,7 +724,8 @@ function pushCurrentSong(songs: ExtractedSong[], current: ExtractedSong | null) 
   if (title) songs.push({ ...current, title, lyrics, chords });
 }
 
-export function extractSongsFromPages(pages: string[]): ExtractedSong[] {
+export function extractSongsFromPages(rawPages: string[]): ExtractedSong[] {
+  const pages = rawPages.map(stripInvisibleChars);
   const songs: ExtractedSong[] = [];
   let currentSong: ExtractedSong | null = null;
   let foundCifraClubMetadata = false;
