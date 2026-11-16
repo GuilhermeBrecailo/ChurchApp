@@ -12,6 +12,7 @@ import {
   transposeChordText,
 } from "../useSongChords";
 import { duplicateSongTitleMessage } from "../../app/utils/songMessages";
+import { useSchedules } from "../useSchedules";
 
 /**
  * Abrir uma música em tela cheia com "meu tom" e "minha cifra" (por
@@ -128,6 +129,7 @@ export function useMinistrySongs(departmentId: string) {
     previewSongsFromPdf,
     importSongsFromPdf,
   } = useDepartments();
+  const { applySongChange } = useSchedules();
 
   const songs = ref<DepartmentSong[]>([]);
   const isLoading = ref(false);
@@ -398,6 +400,7 @@ export function useMinistrySongs(departmentId: string) {
       songs.value = sortSongs(
         wasEditing ? songs.value.map((song) => (song.id === data.id ? data : song)) : [...songs.value, data],
       );
+      if (wasEditing) applySongChange(data.id, data);
       closeForm();
       return true;
     } catch (error: unknown) {
@@ -412,6 +415,7 @@ export function useMinistrySongs(departmentId: string) {
     const { error } = await deleteDepartmentSong(departmentId, song.id);
     if (error) return error;
     songs.value = songs.value.filter((item) => item.id !== song.id);
+    applySongChange(song.id, null);
     return null;
   };
 

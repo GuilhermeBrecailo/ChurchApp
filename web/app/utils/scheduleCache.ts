@@ -8,7 +8,7 @@
  *   cifras); as listas trazem uma versão leve.
  * - `lists`: ids de cada lista (minhas, igreja, organizar, histórico…).
  */
-import type { ApiSchedule } from "./scheduleView";
+import type { ApiSchedule, ApiScheduleMediaItem } from "./scheduleView";
 
 export type ScheduleListEntry = {
   ids: string[];
@@ -134,6 +134,58 @@ export function patchSchedule(
   const current = state.byId[id];
   if (!current) return state;
   return { ...state, byId: { ...state.byId, [id]: patch(current) } };
+}
+
+export type CachedSongUpdate = {
+  id: string;
+  title?: string;
+  url?: string;
+  metadata?: ApiScheduleMediaItem["mediaItem"]["metadata"];
+};
+
+/**
+ * A escala aponta para a música do repertório, mas o cache guarda uma cópia
+ * dela (com letra e cifra). Ao editar a música, troca a cópia em toda escala
+ * que a usa; ao apagar (`song` nulo), tira a música dessas escalas. Em ambos
+ * os casos a próxima abertura busca a escala completa de novo.
+ */
+export function applySongChangeToSchedules(
+  state: ScheduleCacheState,
+  songId: string,
+  song: CachedSongUpdate | null,
+): ScheduleCacheState {
+  const byId = { ...state.byId };
+  const full = { ...state.full };
+
+  for (const [scheduleId, schedule] of Object.entries(state.byId)) {
+    const items = schedule.mediaItems ?? [];
+    if (!items.some((item) => item.mediaItem.id === songId)) continue;
+
+    byId[scheduleId] = {
+      ...schedule,
+      mediaItems: song
+        ? items.map((item) =>
+            item.mediaItem.id === songId
+              ? {
+                  ...item,
+                  mediaItem: {
+                    ...item.mediaItem,
+                    ...(song.title !== undefined ? { title: song.title } : {}),
+                    ...(song.url !== undefined ? { url: song.url } : {}),
+                    ...(song.metadata !== undefined ? { metadata: song.metadata } : {}),
+                  },
+                }
+              : item,
+          )
+        : items.filter((item) => item.mediaItem.id !== songId),
+    };
+    delete full[scheduleId];
+  }
+
+  const lists = Object.fromEntries(
+    Object.entries(state.lists).map(([key, entry]) => [key, { ...entry, stale: true }]),
+  );
+  return { ...state, byId, full, lists };
 }
 
 export function removeScheduleFromCache(state: ScheduleCacheState, id: string): ScheduleCacheState {
