@@ -18,6 +18,15 @@
       </div>
 
       <UtilsEmptyState
+        v-else-if="!departmentOptions.length && !isEditing && !departments.length && access.canCreateMinistry"
+        title="Crie o primeiro ministério"
+        description="A escala é de um ministério (Louvor, Infantil…). Crie o primeiro e volte aqui para montar a escala."
+        action-label="Criar ministério"
+        compact
+        @action="goCreateMinistry"
+      />
+
+      <UtilsEmptyState
         v-else-if="!departmentOptions.length"
         variant="no-permission"
         title="Você ainda não organiza escalas"
@@ -887,6 +896,12 @@ const copyFrom = (source: DepartmentSchedule) => {
 const close = (value = false) => {
   if (isSaving.value) return;
   emit("update:modelValue", value);
+};
+
+// Igreja sem ministério: leva quem pode criar direto ao assistente de ministério.
+const goCreateMinistry = () => {
+  close(false);
+  void navigateTo({ path: "/ministery", query: { criar: "1" } });
 };
 
 // Erros de preenchimento aparecem no próprio campo (e o foco vai até ele),
