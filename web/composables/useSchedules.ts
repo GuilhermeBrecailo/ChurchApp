@@ -12,6 +12,7 @@ import {
   type ScheduleAction,
 } from "../app/utils/scheduleView";
 import {
+  applySongChangeToSchedules,
   createInFlightDeduper,
   emptyScheduleCache,
   invalidateScheduleCache,
@@ -23,6 +24,7 @@ import {
   selectScheduleList,
   setScheduleList,
   storeSchedules,
+  type CachedSongUpdate,
   type ScheduleCacheState,
   type ScheduleListParams,
 } from "../app/utils/scheduleCache";
@@ -160,8 +162,15 @@ export const useSchedules = () => {
   /** Escala completa (com letras e cifras). */
   const get = async (id: string, options: { force?: boolean } = {}): Promise<ApiResponse<ApiSchedule>> => {
     if (!options.force && cache.value.full[id] && cache.value.byId[id]) {
+      // Mostra na hora o que já temos e busca de novo por trás: alguém pode
+      // ter editado uma música da escala em outro aparelho.
+      void fetchFull(id).catch(() => undefined);
       return { data: cache.value.byId[id] };
     }
+    return await fetchFull(id);
+  };
+
+  const fetchFull = async (id: string): Promise<ApiResponse<ApiSchedule>> => {
     return await dedupe(`get:${id}`, async () => {
       const response = await $customFetch<ApiSchedule>(`${base}/${id}`, {
         method: "GET",
@@ -363,10 +372,16 @@ export const useSchedules = () => {
     return response;
   };
 
+  /** Música editada (ou apagada, com `song` nulo) no repertório: reflete em toda escala que a usa. */
+  const applySongChange = (songId: string, song: CachedSongUpdate | null) => {
+    cache.value = applySongChangeToSchedules(cache.value, songId, song);
+  };
+
   return {
     cache,
     lastRemoved,
     byId,
+    applySongChange,
     listFor,
     select,
     mineParams,
