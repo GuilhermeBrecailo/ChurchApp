@@ -3,7 +3,7 @@
     <div class="ui-section-header-copy">
       <component :is="tag" class="app-section-title ui-section-header-title">
         {{ title }}
-        <span v-if="count !== undefined && count !== null" class="ui-section-header-count">
+        <span v-if="count !== undefined && count !== null && count !== 0 && count !== '0'" class="ui-section-header-count">
           {{ count }}
         </span>
       </component>
