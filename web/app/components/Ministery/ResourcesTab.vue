@@ -47,7 +47,7 @@
         class="ministery-content-card app-surface pa-4"
       >
         <div class="d-flex justify-space-between align-start ga-3">
-          <div>
+          <div class="min-w-0" style="overflow-wrap: anywhere">
             <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
               {{ resource.title }}
             </h3>
@@ -66,7 +66,7 @@
               {{ resource.metadata.notes }}
             </p>
           </div>
-          <v-chip size="small" color="primary" variant="tonal">
+          <v-chip size="small" color="primary" variant="tonal" class="flex-shrink-0">
             {{ resource.category }}
           </v-chip>
         </div>

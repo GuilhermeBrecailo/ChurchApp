@@ -12,7 +12,7 @@
     />
 
     <div class="stats-grid mb-5">
-      <AdminStatCard title="Membros" :value="members.length" :icon="Users" icon-color="#B5472A" bg-color="#F7E2D3" />
+      <AdminStatCard title="Usuários do app" :value="members.length" :icon="Users" icon-color="#B5472A" bg-color="#F7E2D3" />
       <AdminStatCard title="Ministérios" :value="departments.length" :icon="Building" icon-color="#C2542C" bg-color="#F7E2D3" />
       <AdminStatCard title="Escalas" :value="churchTotals.schedules" :icon="Calendar" icon-color="#14B8A6" bg-color="#F0FDFA" />
       <AdminStatCard title="Músicas" :value="churchTotals.songs" :icon="Music" icon-color="#EAB308" bg-color="#FEFCE8" />

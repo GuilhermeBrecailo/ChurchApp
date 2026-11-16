@@ -7,7 +7,7 @@
     <header class="setup-header">
       <div class="setup-heading">
         <h2 id="setup-checklist-title" class="setup-title">
-          Configure sua igreja <span class="setup-count">· {{ summary.done }} de {{ summary.total }}</span>
+          Configure sua igreja <span class="setup-count"><span class="setup-count__dot" aria-hidden="true">· </span>{{ summary.done }} de {{ summary.total }}</span>
         </h2>
         <p class="setup-subtitle">Cada passo abre a tela de verdade. Leva poucos minutos.</p>
       </div>
@@ -405,6 +405,16 @@ onBeforeUnmount(() => {
 @media (max-width: 600px) {
   .setup-card {
     padding: 16px 14px;
+  }
+
+  /* Sem espaço na linha, o contador vai inteiro para a linha de baixo, sem o ponto solto. */
+  .setup-count {
+    display: block;
+    font-size: 0.95rem;
+  }
+
+  .setup-count__dot {
+    display: none;
   }
 
   .setup-card--done {

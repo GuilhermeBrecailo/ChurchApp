@@ -154,7 +154,7 @@
         :description="organizerFilter
           ? 'Nenhuma escala próxima com esse aviso.'
           : 'Monte a próxima escala: escolha o culto, as pessoas e avise a equipe de uma vez.'"
-        :action-label="organizerFilter ? undefined : 'Nova escala'"
+        :action-label="organizerFilter || managesAny ? undefined : 'Nova escala'"
         @action="editor.open({ departmentId: ministryFilter || undefined })"
       />
       <template v-else>
