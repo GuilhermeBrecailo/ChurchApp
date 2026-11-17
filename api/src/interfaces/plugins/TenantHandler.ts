@@ -41,12 +41,24 @@ async function isProtectedKidsUpload(request: FastifyRequest) {
   }
 
   const segments = requestPath.split("/").filter(Boolean);
+
+  // O servidor estático normaliza "." e ".." antes de abrir o arquivo
+  // (/uploads/church/X/./departments/Y/a.pdf chega no mesmo arquivo de
+  // /uploads/church/X/departments/Y/a.pdf). Como a decisão abaixo olha
+  // posições fixas, qualquer caminho de upload com esses segmentos é
+  // recusado: nenhum link legítimo os contém.
+  if (
+    segments[0] === "uploads" &&
+    segments.some((segment) => segment === "." || segment === "..")
+  ) {
+    return true;
+  }
+
   if (
     segments.length < 6 ||
     segments[0] !== "uploads" ||
     segments[1] !== "church" ||
-    segments[3] !== "departments" ||
-    segments.slice(5).some((segment) => segment === "." || segment === "..")
+    segments[3] !== "departments"
   ) {
     return false;
   }

@@ -43,12 +43,22 @@ export class JwtValidationUseCase {
       return this.verifyDemoToken(token);
     }
 
-    const client = this.getJwksClient(payload.iss!);
+    // O `iss` do token é dado de quem enviou o token: serve só para conferir
+    // se o token é do nosso realm, nunca para decidir de onde vêm as chaves.
+    const allowedIssuers = this.getAllowedIssuers();
+    if (!this.isAllowedIssuer(payload.iss!, allowedIssuers)) {
+      throw new DomainToken("Token inválido");
+    }
+
+    const client = this.getJwksClient();
     const publicKey = await this.getPublicKey(client, header.kid!);
 
     try {
       const tokenDecode = jwt.verify(token, publicKey, {
         algorithms: this.allowedAlgorithms as jwt.Algorithm[],
+        ...(allowedIssuers.explicit
+          ? { issuer: allowedIssuers.explicit as [string, ...string[]] }
+          : {}),
       }) as JwtDecoded;
 
       return tokenDecode;
@@ -112,41 +122,67 @@ export class JwtValidationUseCase {
     }
   }
 
-  private getJwksClient(issuer: string) {
-    if (!this.cache[issuer]) {
-      const jwksBaseUrl = this.getJwksBaseUrl(issuer);
+  private getRealm() {
+    return process.env.KEYCLOAK_REALM || "clientA";
+  }
 
-      this.cache[issuer] = jwksClient({
-        jwksUri: `${jwksBaseUrl}/protocol/openid-connect/certs`,
+  /**
+   * Endereço do Keycloak configurado no servidor (mesmo que o login usa em
+   * authAdapters). Em produção é o endereço interno da rede do Docker.
+   */
+  private getKeycloakBaseUrl() {
+    return (
+      process.env.KEYCLOAK_ENDPOINT_BASE ||
+      process.env.KEYCLOAK_BASE_URL ||
+      "http://localhost:8080"
+    ).replace(/\/$/, "");
+  }
+
+  /**
+   * Issuers aceitos. `KEYCLOAK_ISSUER` (lista separada por vírgula) fixa os
+   * valores exatos; sem ela, exige que o `iss` seja do realm configurado
+   * (`.../realms/<realm>`), porque o issuer público (ex.: auth.dominio) é
+   * diferente do endereço interno usado para buscar as chaves.
+   */
+  private getAllowedIssuers(): { explicit: string[] | null; realmPath: string } {
+    const explicit = (process.env.KEYCLOAK_ISSUER || "")
+      .split(",")
+      .map((item) => item.trim().replace(/\/$/, ""))
+      .filter(Boolean);
+
+    return {
+      explicit: explicit.length ? explicit : null,
+      realmPath: `/realms/${this.getRealm()}`,
+    };
+  }
+
+  private isAllowedIssuer(
+    issuer: string,
+    allowed: { explicit: string[] | null; realmPath: string },
+  ) {
+    if (allowed.explicit) {
+      return allowed.explicit.includes(issuer.replace(/\/$/, ""));
+    }
+
+    try {
+      return new URL(issuer).pathname.replace(/\/$/, "") === allowed.realmPath;
+    } catch {
+      return false;
+    }
+  }
+
+  private getJwksClient() {
+    const jwksUri = `${this.getKeycloakBaseUrl()}/realms/${this.getRealm()}/protocol/openid-connect/certs`;
+
+    if (!this.cache[jwksUri]) {
+      this.cache[jwksUri] = jwksClient({
+        jwksUri,
         cache: true,
         cacheMaxEntries: 5,
         cacheMaxAge: 3600_000, // 1h
       });
     }
-    return this.cache[issuer];
-  }
-
-  private getJwksBaseUrl(issuer: string) {
-    const keycloakBaseUrl = process.env.KEYCLOAK_ENDPOINT_BASE;
-
-    if (!keycloakBaseUrl) return issuer;
-
-    try {
-      const issuerUrl = new URL(issuer);
-
-      if (!["localhost", "127.0.0.1"].includes(issuerUrl.hostname)) {
-        return issuer;
-      }
-
-      const internalUrl = new URL(keycloakBaseUrl);
-      internalUrl.pathname = issuerUrl.pathname;
-      internalUrl.search = "";
-      internalUrl.hash = "";
-
-      return internalUrl.toString().replace(/\/$/, "");
-    } catch {
-      return issuer;
-    }
+    return this.cache[jwksUri];
   }
 
   private async getPublicKey(

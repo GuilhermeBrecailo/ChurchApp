@@ -16,6 +16,7 @@ jest.mock("../src/application/use-cases/Auth/JwtValidationUseCase", () => ({
 
 import { FastifyReply, FastifyRequest } from "fastify";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import http from "node:http";
 import path from "node:path";
 import os from "node:os";
 import Fastify from "fastify";
@@ -262,6 +263,51 @@ describe("Ministério Infantil - PDFs protegidos", () => {
     expect(protectedFile.statusCode).toBe(404);
     expect(publicFile.statusCode).toBe(200);
     expect(publicFile.headers["content-type"]).toContain("application/pdf");
+    await app.close();
+  });
+
+  it("não deixa contornar a proteção do Infantil com '.' ou '..' no caminho", async () => {
+    mockPrismaClient.department.findFirst.mockImplementation(async ({ where }: { where: { id: string } }) => {
+      if (where.id === "kids-1") return { id: "kids-1", type: "KIDS" };
+      return { id: where.id, type: "OTHER" };
+    });
+    const app = Fastify();
+    await app.register(TenantHandler);
+    await app.register(fastifyStatic, {
+      root: path.join(temporaryRoot, "uploads"),
+      prefix: "/uploads/",
+    });
+
+    const bypasses = [
+      "/uploads/church/church-1/./departments/kids-1/aula.pdf",
+      "/uploads/church/church-1/%2e/departments/kids-1/aula.pdf",
+      "/uploads/./church/church-1/departments/kids-1/aula.pdf",
+      "/uploads/church/church-1/departments/./kids-1/aula.pdf",
+      "/uploads/church/church-1/departments/kids-1/./aula.pdf",
+      "/uploads/church/church-1/departments/kids-1/../kids-1/aula.pdf",
+      "/uploads/church/church-1/departments/other-1/../kids-1/aula.pdf",
+    ];
+
+    // app.inject normaliza o caminho antes de chegar ao servidor e esconderia
+    // o problema; http.get envia o caminho cru, como um cliente malicioso.
+    await app.listen({ port: 0, host: "127.0.0.1" });
+    const { port } = app.server.address() as { port: number };
+    const rawGet = (rawPath: string) =>
+      new Promise<{ status: number; body: string }>((resolve, reject) => {
+        http
+          .get({ host: "127.0.0.1", port, path: rawPath }, (res) => {
+            let body = "";
+            res.on("data", (chunk) => (body += chunk));
+            res.on("end", () => resolve({ status: res.statusCode ?? 0, body }));
+          })
+          .on("error", reject);
+      });
+
+    for (const url of bypasses) {
+      const response = await rawGet(url);
+      expect([url, response.status]).toEqual([url, 404]);
+      expect(response.body).not.toContain("restrito");
+    }
     await app.close();
   });
 });
