@@ -1,3 +1,31 @@
+// O jwks-rsa traz o `jose` (ESM puro), que o jest não transforma. Este
+// substituto faz o essencial: busca o JWKS no `jwksUri` que o código escolheu
+// e devolve a chave. É o endereço escolhido que este teste precisa provar.
+jest.mock("jwks-rsa", () => {
+  const { createPublicKey } = require("node:crypto");
+  return {
+    __esModule: true,
+    default: ({ jwksUri }: { jwksUri: string }) => ({
+      getSigningKey: (
+        kid: string,
+        callback: (error: Error | null, key?: { getPublicKey: () => string }) => void,
+      ) => {
+        fetch(jwksUri)
+          .then((response) => response.json())
+          .then(({ keys }: { keys: Array<{ kid: string }> }) => {
+            const jwk = keys.find((item) => item.kid === kid);
+            if (!jwk) throw new Error("key_not_found");
+            const key = createPublicKey({ key: jwk, format: "jwk" });
+            callback(null, {
+              getPublicKey: () => key.export({ type: "spki", format: "pem" }).toString(),
+            });
+          })
+          .catch((error: Error) => callback(error));
+      },
+    }),
+  };
+});
+
 import http from "node:http";
 import { generateKeyPairSync, type KeyObject } from "node:crypto";
 import type { AddressInfo } from "node:net";
