@@ -2,7 +2,7 @@
 // substituto faz o essencial: busca o JWKS no `jwksUri` que o código escolheu
 // e devolve a chave. É o endereço escolhido que este teste precisa provar.
 jest.mock("jwks-rsa", () => {
-  const { createPublicKey } = require("node:crypto");
+  const { createPublicKey } = jest.requireActual<typeof import("node:crypto")>("node:crypto");
   return {
     __esModule: true,
     default: ({ jwksUri }: { jwksUri: string }) => ({
@@ -15,7 +15,10 @@ jest.mock("jwks-rsa", () => {
           .then(({ keys }: { keys: Array<{ kid: string }> }) => {
             const jwk = keys.find((item) => item.kid === kid);
             if (!jwk) throw new Error("key_not_found");
-            const key = createPublicKey({ key: jwk, format: "jwk" });
+            const key = createPublicKey({
+              key: jwk as import("node:crypto").JsonWebKeyInput["key"],
+              format: "jwk",
+            });
             callback(null, {
               getPublicKey: () => key.export({ type: "spki", format: "pem" }).toString(),
             });
