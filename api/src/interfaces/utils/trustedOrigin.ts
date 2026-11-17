@@ -55,8 +55,14 @@ export function isTrustedOrigin(origin: string | undefined | null): boolean {
   return false;
 }
 
-/** preHandler: recusa com 403 quando a origem não é confiável. */
-export function rejectUntrustedOrigin(
+/**
+ * preHandler: recusa com 403 quando a origem não é confiável.
+ *
+ * Precisa ser `async`: o Fastify só segue para a rota quando o hook devolve uma
+ * Promise ou chama `done`. Uma função síncrona de 2 parâmetros que apenas
+ * retorna deixa a requisição pendurada para sempre.
+ */
+export async function rejectUntrustedOrigin(
   request: FastifyRequest,
   reply: FastifyReply,
 ) {

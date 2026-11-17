@@ -1,3 +1,5 @@
+import Fastify from "fastify";
+import { authRateLimits, registerRateLimit } from "../src/interfaces/plugins/RateLimit";
 import {
   isTrustedOrigin,
   rejectUntrustedOrigin,
@@ -72,8 +74,48 @@ describe("isTrustedOrigin (desenvolvimento)", () => {
   });
 });
 
+describe("rejectUntrustedOrigin numa rota real do Fastify", () => {
+  // Regressão: o hook era síncrono com 2 parâmetros e nunca avisava o Fastify
+  // que terminou, então toda requisição de origem confiável ficava pendurada.
+  const buildApp = async () => {
+    const app = Fastify();
+    await registerRateLimit(app);
+    app.get(
+      "/refresh",
+      { config: { rateLimit: authRateLimits.refreshToken }, preHandler: rejectUntrustedOrigin },
+      async () => ({ data: { ok: true }, status: 200 }),
+    );
+    await app.ready();
+    return app;
+  };
+
+  beforeEach(() => {
+    setEnv({ NODE_ENV: "production", REFRESH_COOKIE_DOMAIN: undefined, CORS_ALLOWED_ORIGINS: undefined });
+  });
+  afterEach(() => {
+    process.env = { ...original };
+  });
+
+  it("responde 200 para o app legítimo e para quem não manda Origin", async () => {
+    const app = await buildApp();
+    const fromApp = await app.inject({ method: "GET", url: "/refresh", headers: { origin: "https://churchapp.site" } });
+    const noOrigin = await app.inject({ method: "GET", url: "/refresh" });
+    expect(fromApp.statusCode).toBe(200);
+    expect(noOrigin.statusCode).toBe(200);
+    await app.close();
+  }, 4000);
+
+  it("responde 403 sem executar a rota para site de terceiros", async () => {
+    const app = await buildApp();
+    const response = await app.inject({ method: "GET", url: "/refresh", headers: { origin: "https://evil.example" } });
+    expect(response.statusCode).toBe(403);
+    expect(response.body).not.toContain("ok");
+    await app.close();
+  }, 4000);
+});
+
 describe("rejectUntrustedOrigin", () => {
-  const run = (origin: string | undefined) => {
+  const run = async (origin: string | undefined) => {
     const sent: { code?: number; body?: unknown } = {};
     const reply = {
       code(c: number) {
@@ -85,7 +127,7 @@ describe("rejectUntrustedOrigin", () => {
         return this;
       },
     };
-    const result = rejectUntrustedOrigin({ headers: origin ? { origin } : {} } as never, reply as never);
+    const result = await rejectUntrustedOrigin({ headers: origin ? { origin } : {} } as never, reply as never);
     return { sent, blocked: result !== undefined };
   };
 
@@ -96,15 +138,15 @@ describe("rejectUntrustedOrigin", () => {
     process.env = { ...original };
   });
 
-  it("bloqueia com 403 e corpo sem token quando a origem não é confiável", () => {
-    const { sent, blocked } = run("https://evil.example");
+  it("bloqueia com 403 e corpo sem token quando a origem não é confiável", async () => {
+    const { sent, blocked } = await run("https://evil.example");
     expect(blocked).toBe(true);
     expect(sent.code).toBe(403);
     expect(sent.body).toMatchObject({ status: 403 });
   });
 
-  it("deixa passar o app legítimo", () => {
-    const { sent, blocked } = run("https://churchapp.site");
+  it("deixa passar o app legítimo", async () => {
+    const { sent, blocked } = await run("https://churchapp.site");
     expect(blocked).toBe(false);
     expect(sent.code).toBe(undefined);
   });
