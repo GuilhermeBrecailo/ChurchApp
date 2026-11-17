@@ -20,7 +20,8 @@ import { computed } from "vue";
 const props = defineProps({
   title: { type: String, required: true },
   value: { type: [String, Number], required: true },
-  icon: { type: Object, required: true },
+  // Os ícones do lucide-vue-next são componentes funcionais (Function).
+  icon: { type: [Object, Function], required: true },
   iconColor: { type: String, required: true },
   bgColor: { type: String, required: true },
 });

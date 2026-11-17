@@ -28,7 +28,7 @@ const OUT_DIR = resolve(process.env.OUT_DIR || "screenshots");
 const API_ORIGIN = "http://mock.local";
 
 const PAGES = (process.env.PAGES ||
-  "/,/scale,/ministery,/ministery/demo,/igreja,/prayer,/notifications,/content/devotionals,/user,/admin,/configuracoes,/comunicar,/pessoas,/login")
+  "/,/scale,/ministery,/ministery/demo,/igreja,/prayer,/notifications,/content/devotionals,/user,/admin,/platform-admin,/configuracoes,/comunicar,/pessoas,/login")
   .split(",")
   .map((page) => page.trim())
   .filter(Boolean);
@@ -47,15 +47,21 @@ const VIEWPORTS = {
   desktop: { width: 1366, height: 860 },
 };
 
+// Telas do admin da plataforma: abertas com um usuário SUPER_ADMIN e igrejas de exemplo.
+const PLATFORM_PAGES = new Set(["/platform-admin"]);
+
 const base64Url = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
 // Token sem assinatura: o front só decodifica o payload (jwt-decode).
-const accessToken = `${base64Url({ alg: "none" })}.${base64Url({
-  sub: "user-1",
-  email: "pastor@exemplo.com",
-  name: "Carlos Mendes",
-  role: "PASTOR",
-  exp: 4102444800,
-})}.sig`;
+const tokenFor = (role) =>
+  `${base64Url({ alg: "none" })}.${base64Url({
+    sub: "user-1",
+    email: "pastor@exemplo.com",
+    name: "Carlos Mendes",
+    role,
+    exp: 4102444800,
+  })}.sig`;
+const accessToken = tokenFor("PASTOR");
+const platformAccessToken = tokenFor("SUPER_ADMIN");
 
 const church = {
   id: "church-1",
@@ -96,10 +102,100 @@ const demoDepartment = {
   leader: { id: "user-1", name: "Carlos Mendes", email: "pastor@exemplo.com" },
 };
 
-function mockResponse(url) {
-  if (url.includes("refresh-token")) return { access_token: accessToken };
+const platformMe = {
+  ...me,
+  role: "SUPER_ADMIN",
+  memberships: [{ isActive: true, role: "SUPER_ADMIN", church, roles: [], canManageMembers: true }],
+};
+
+// Igrejas de exemplo do admin master, com datas relativas a hoje para os
+// números de "testes terminando" e "novas em 30 dias" aparecerem nos prints.
+const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+const platformChurch = (id, name, city, overrides = {}) => ({
+  id,
+  name,
+  city,
+  state: "PR",
+  document: null,
+  logo: null,
+  isActive: true,
+  createdAt: daysFromNow(-120),
+  userMainId: null,
+  plan: "FREE",
+  subscriptionStatus: "ACTIVE",
+  trialEndsAt: null,
+  membersCount: 24,
+  departmentsCount: 4,
+  pastorHistoryCount: 1,
+  ...overrides,
+});
+const platformChurches = [
+  platformChurch("c1", "Igreja Batista Central", "Curitiba", {
+    plan: "PRO",
+    membersCount: 142,
+    departmentsCount: 9,
+  }),
+  platformChurch("c2", "Comunidade Vida Nova", "Londrina", {
+    plan: "PRO",
+    subscriptionStatus: "TRIALING",
+    trialEndsAt: daysFromNow(3),
+    createdAt: daysFromNow(-11),
+    membersCount: 38,
+  }),
+  platformChurch("c3", "Igreja Presbiteriana do Bairro Alto com um nome bem comprido", "Maringá", {
+    plan: "PRO",
+    subscriptionStatus: "TRIALING",
+    trialEndsAt: daysFromNow(20),
+    createdAt: daysFromNow(-10),
+    membersCount: 17,
+  }),
+  platformChurch("c4", "Ministério Águas Vivas", "Cascavel", {
+    plan: "ILIMITADO",
+    membersCount: 310,
+    departmentsCount: 14,
+  }),
+  platformChurch("c5", "Igreja Esperança", "Ponta Grossa", {
+    plan: "PRO",
+    subscriptionStatus: "PAST_DUE",
+    membersCount: 56,
+  }),
+  platformChurch("c6", "Comunidade Betel", "Foz do Iguaçu", {
+    isActive: false,
+    membersCount: 0,
+    departmentsCount: 0,
+    createdAt: daysFromNow(-4),
+  }),
+];
+const platformChurchDetails = (id) => ({
+  ...(platformChurches.find((item) => item.id === id) ?? platformChurches[0]),
+  road: "Rua das Flores",
+  number: "120",
+  complement: null,
+  localZipCode: "80000-000",
+  users: [
+    { id: "u1", name: "Carlos Mendes", email: "carlos@exemplo.com", phone: "(41) 99999-0001", role: "PASTOR", canManageMembers: true, createdAt: daysFromNow(-90), roles: [] },
+    { id: "u2", name: "Ana Souza", email: "ana@exemplo.com", phone: null, role: "MEMBER", canManageMembers: false, createdAt: daysFromNow(-40), roles: [] },
+    { id: "u3", name: "João Pereira", email: "joao@exemplo.com", phone: null, role: "MEMBER", canManageMembers: false, createdAt: daysFromNow(-12), roles: [] },
+    { id: "u4", name: "Marta Lima", email: "marta@exemplo.com", phone: null, role: "MEMBER", canManageMembers: false, createdAt: daysFromNow(-3), roles: [] },
+  ],
+  departments: [
+    { id: "d1", name: "Louvor", type: "WORSHIP", isActive: true, leaderId: "u1", leader: { id: "u1", name: "Carlos Mendes", email: "carlos@exemplo.com" }, membersCount: 8, schedulesCount: 5, tasksCount: 0, resourcesCount: 2 },
+    { id: "d2", name: "Recepção", type: "RECEPTION", isActive: true, leaderId: "u2", leader: { id: "u2", name: "Ana Souza", email: "ana@exemplo.com" }, membersCount: 6, schedulesCount: 3, tasksCount: 0, resourcesCount: 0 },
+  ],
+  schedules: [
+    { id: "s1", date: daysFromNow(5), description: "Culto de domingo", rehearsalAt: null, department: { id: "d1", name: "Louvor" }, assignmentsCount: 6, mediaItemsCount: 4 },
+  ],
+  pastorHistory: [],
+});
+
+function mockResponse(url, platform = false) {
+  if (url.includes("refresh-token")) return { access_token: platform ? platformAccessToken : accessToken };
+  if (platform && /\/api\/admin\/churches\/[^/?]+$/.test(url)) {
+    return platformChurchDetails(url.split("/").pop());
+  }
+  if (platform && /\/api\/admin\/churches(\?|$)/.test(url)) return platformChurches;
   if (/\/api\/church\/departments\/[^/?]+$/.test(url)) return demoDepartment;
-  if (url.endsWith("/api/me")) return me;
+  if (url.endsWith("/api/me")) return platform ? platformMe : me;
   if (url.includes("/api/notifications/public-key")) return { publicKey: null, configured: false };
   if (/\/api\/notifications(\?|$)/.test(url)) return { notifications: [], unreadCount: 0 };
   return [];
@@ -141,6 +237,7 @@ async function run() {
     for (const page of PAGES) {
       const tab = await context.newPage();
       const loggedOut = PUBLIC_PAGES.has(page);
+      const platform = PLATFORM_PAGES.has(page.split("?")[0]);
       await tab.route(`${API_ORIGIN}/**`, (route) => {
         const url = route.request().url();
         const refuseSession = loggedOut && url.includes("refresh-token");
@@ -155,7 +252,7 @@ async function run() {
           body: JSON.stringify(
             refuseSession
               ? { error: "Sessão expirada", status: 401 }
-              : { data: mockResponse(url), status: 200 },
+              : { data: mockResponse(url, platform), status: 200 },
           ),
         });
       });
