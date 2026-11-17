@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { AuthAdapters } from "../adapters/authAdapters";
 import { controllerHandler } from "../controllers/Handler";
 import { authRateLimits } from "../plugins/RateLimit";
+import { rejectUntrustedOrigin } from "../utils/trustedOrigin";
 
 export async function AuthRoutes(app: FastifyInstance) {
   const adapters = new AuthAdapters();
@@ -12,20 +13,29 @@ export async function AuthRoutes(app: FastifyInstance) {
     controllerHandler(adapters.login.bind(adapters)),
   );
 
+  // Rotas que dependem do cookie de refresh: só o nosso front pode chamá-las
+  // pelo navegador (ver utils/trustedOrigin).
   app.get(
     "/public/auth/refresh-token",
-    { config: { rateLimit: authRateLimits.refreshToken } },
+    {
+      config: { rateLimit: authRateLimits.refreshToken },
+      preHandler: rejectUntrustedOrigin,
+    },
     controllerHandler(adapters.refreshToken.bind(adapters)),
   );
 
   app.post(
     "/public/auth/refresh-token",
-    { config: { rateLimit: authRateLimits.refreshToken } },
+    {
+      config: { rateLimit: authRateLimits.refreshToken },
+      preHandler: rejectUntrustedOrigin,
+    },
     controllerHandler(adapters.refreshToken.bind(adapters)),
   );
 
   app.get(
     "/public/auth/logout",
+    { preHandler: rejectUntrustedOrigin },
     controllerHandler(adapters.logout.bind(adapters)),
   );
 }
