@@ -33,8 +33,9 @@
           :no-data-text="people.isLoading.value ? 'Carregando…' : 'Todas as pessoas da igreja já estão aqui'"
           :menu-props="{ maxHeight: 280 }"
         >
+          <!-- Vuetify 4: `item` já é o objeto de `addOptions` (o antigo ".raw" não existe mais). -->
           <template #item="{ props: itemProps, item }">
-            <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle" />
+            <v-list-item v-bind="itemProps" :subtitle="item.subtitle" />
           </template>
         </v-autocomplete>
 

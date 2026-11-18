@@ -321,7 +321,8 @@ import {
 // bater exatamente com route.path daquela tela - e o que o botao usa pra
 // encontrar o tutorial certo, sem precisar mudar nenhuma pagina.
 type HelpPage = { pageKey: string; label: string };
-type HelpSelectItem = { raw?: Partial<HelpPage>; value?: unknown };
+// Vuetify 4: no slot `#item`, `item` é o próprio objeto de `pageSelectItems`.
+type HelpSelectItem = Partial<HelpPage> & { value?: unknown };
 
 const HELP_PAGES: HelpPage[] = [
   { pageKey: "/", label: "Início" },
@@ -412,8 +413,7 @@ const formatUpdatedAt = (value: string) => {
 };
 
 const getSelectItemPageKey = (item: HelpSelectItem) => {
-  const rawPageKey = item.raw?.pageKey;
-  if (typeof rawPageKey === "string") return rawPageKey;
+  if (typeof item.pageKey === "string") return item.pageKey;
   return typeof item.value === "string" ? item.value : "";
 };
 
