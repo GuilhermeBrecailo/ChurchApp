@@ -16,6 +16,7 @@
       <template v-else>
         <v-autocomplete
           v-model="selectedToAdd"
+          v-model:search="pickerSearch"
           :items="addOptions"
           item-title="title"
           item-value="value"
@@ -30,9 +31,24 @@
           hide-details
           :loading="people.isLoading.value"
           :disabled="people.isAdding.value"
-          :no-data-text="people.isLoading.value ? 'Carregando…' : 'Todas as pessoas da igreja já estão aqui'"
           :menu-props="{ maxHeight: 280 }"
         >
+          <!-- Sem opção: diz o motivo (já está aqui, ou não tem conta no app). -->
+          <template #no-data>
+            <div v-if="people.isLoading.value" class="people-nodata">Carregando…</div>
+            <div v-else class="people-nodata" role="status">
+              <p class="people-nodata-title">{{ emptyState.title }}</p>
+              <p v-if="emptyState.hint" class="people-nodata-hint">{{ emptyState.hint }}</p>
+              <NuxtLink
+                v-if="emptyState.showInviteLink && access.canSeeRoster"
+                to="/pessoas?filtro=sem-conta"
+                class="people-nodata-link"
+              >
+                Ver quem está sem conta
+              </NuxtLink>
+            </div>
+          </template>
+
           <!-- Vuetify 4: `item` já é o objeto de `addOptions` (o antigo ".raw" não existe mais). -->
           <template #item="{ props: itemProps, item }">
             <v-list-item v-bind="itemProps" :subtitle="item.subtitle" />
@@ -180,6 +196,7 @@ import type { DepartmentMember } from "../../../composables/useDepartments";
 import { useMinistryPeople } from "../../../composables/ministry/useMinistryPeople";
 import { getInitials } from "../../utils/initials";
 import { normalizeListText } from "../../utils/listOrdering";
+import { pickerEmptyState } from "../../utils/ministryPicker";
 
 const props = withDefaults(
   defineProps<{
@@ -198,6 +215,9 @@ const access = useChurchAccess();
 const people = useMinistryPeople(() => props.department?.id ?? "");
 const selectedToAdd = ref<string[]>([]);
 const search = ref("");
+const pickerSearch = ref("");
+
+const emptyState = computed(() => pickerEmptyState(pickerSearch.value ?? "", people.people.value));
 
 const addOptions = computed(() =>
   people.availableToAdd.value.map((member) => ({
@@ -235,6 +255,7 @@ watch(
     if (!active || !id) return;
     selectedToAdd.value = [];
     search.value = "";
+    pickerSearch.value = "";
     await people.load({ withCargos: props.canGiveCargo });
     emit("loaded", people.people.value.length);
   },
@@ -318,6 +339,39 @@ const takeCargo = async (person: DepartmentMember, roleId: string, roleName: str
 .people-add-btn {
   justify-self: start;
   min-height: 44px;
+}
+
+/* Aviso do seletor sem opções: texto quebra em linhas (antes era cortado). */
+.people-nodata {
+  display: grid;
+  gap: 6px;
+  padding: 12px 16px;
+  white-space: normal;
+}
+
+.people-nodata-title {
+  margin: 0;
+  color: var(--app-color-text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.people-nodata-hint {
+  margin: 0;
+  color: var(--app-color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.people-nodata-link {
+  justify-self: start;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--app-color-accent);
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .people-list {
